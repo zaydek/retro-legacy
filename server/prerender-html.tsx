@@ -1,34 +1,14 @@
 import fs from "fs"
-import guardServer from "./guardServer"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
-import { detab } from "./utils"
+import { detab, guards, listPages } from "./utils"
 
 // Prerenders HTML and `pageProps` on the server.
-async function run() {
-	guardServer()
-
-	const srcs = fs.readdirSync("pages").filter((each: string) => {
-		return !each.startsWith("_document") && each.endsWith(".tsx")
-	})
-
-	// Prerender page props.
-	for (const each of srcs) {
-		const basename = each.replace(/\.tsx$/, "")
-
-		const { load } = require("../pages/" + each)
-		let response = null
-		if (load) {
-			response = await load()
-		}
-		const pageProps = require("../cache/__pageProps.json")
-		pageProps[basename] = response
-		fs.writeFileSync("cache/__pageProps.json", JSON.stringify(pageProps, null, "\t"))
-	}
+function run() {
+	guards()
 
 	// Prerender pages.
-	//
-	// TODO: Add conditional logic for `<Document>`.
+	const srcs = listPages()
 	for (const each of srcs) {
 		const basename = each.replace(/\.tsx$/, "")
 
@@ -58,6 +38,7 @@ async function run() {
 					<body>
 						<noscript>You need to enable JavaScript to run this app.</noscript>
 						<div id="root">${ReactDOMServer.renderToString(<Page data={pageProps[basename]} />)}</div>
+						<script src="/react.out.js"></script>
 						<script src="/${basename}.js"></script>
 					</body>
 				</html>
@@ -76,7 +57,8 @@ async function run() {
 										__html: ReactDOMServer.renderToString(<Page data={pageProps[basename]} />),
 									}}
 								/>
-								<script src={`/${basename}.js`} />
+								<script src="/react.out.js" />
+								<script src={`/${basename}.out.js`} />
 							</>
 						)}
 					/>,
@@ -89,6 +71,6 @@ async function run() {
 	}
 }
 
-;(async () => {
-	await run()
+;(() => {
+	run()
 })()

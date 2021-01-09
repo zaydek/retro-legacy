@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-function Component() {
+function App() {
 	const [state, setState] = useState(0)
 	return (
 		<div>
@@ -8,3 +8,5 @@ function Component() {
 		</div>
 	)
 }
+
+ReactDOM.render(<App />, document.getElementById("root"))

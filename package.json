@@ -4,13 +4,17 @@
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"dev": "yarn rimraf build && yarn ts-node -T server/prerender-html.tsx && yarn ts-node -T server/prerender-js.ts",
-		"prod": "yarn rimraf build && NODE_ENV=production yarn ts-node -T server/prerender-html.tsx && NODE_ENV=production yarn ts-node -T server/prerender-js.ts",
+		"prerender-pageProps": "ts-node -T server/prerender-pageProps.ts",
+		"prerender-html": "ts-node -T server/prerender-html.tsx",
+		"prerender-js": "ts-node -T server/prerender-js.ts",
+		"build": "yarn rimraf build && yarn prerender-pageProps && yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
+		"rebuild": "yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
 		"serve": "http-server build"
 	},
 	"devDependencies": {
 		"@types/react": "^17.0.0",
 		"@types/react-dom": "^17.0.0",
+		"concurrently": "^5.3.0",
 		"esbuild": "^0.8.31",
 		"express": "^4.17.1",
 		"http-server": "^0.12.3",

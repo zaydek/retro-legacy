@@ -1,21 +1,26 @@
 import fs from "fs"
-import guardServer from "./guardServer"
 import { buildSync, transformSync } from "esbuild"
+import { guards, listPages } from "./utils"
 
 const __DEV__ = process.env.NODE_ENV !== "production"
 
 // Bundles JavaScript on the server.
 function run() {
-	guardServer()
+	guards()
 
-	const srcs = fs.readdirSync("pages").filter((each: string) => {
-		// prettier-ignore
-		const ok = (
-			!each.startsWith("_document") &&
-			each.endsWith(".tsx")
-		)
-		return ok
+	// yarn esbuild react.js \
+	//   --bundle \
+	//   --define:process.env.NODE_ENV=\"production\" \
+	//   --outfile=react.out.js
+	//
+	buildSync({
+		bundle: true,
+		define: { "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development") },
+		entryPoints: ["server/react.js"],
+		outfile: "build/react.out.js",
 	})
+
+	const srcs = listPages()
 	for (const each of srcs) {
 		const basename = each.replace(/\.tsx$/, "")
 
@@ -46,8 +51,9 @@ ReactDOM.hydrate(
 				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development"),
 			},
 			entryPoints: [`cache/${basename}.js`],
+			external: ["react", "react-dom"],
 			minify: !__DEV__,
-			outfile: `build/${basename}.js`,
+			outfile: `build/${basename}.out.js`,
 		})
 	}
 }

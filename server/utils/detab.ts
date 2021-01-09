@@ -10,7 +10,7 @@
 // ->   bar: baz;
 // -> }
 //
-export function detab(str: string) {
+export default function detab(str: string) {
 	// ^\n
 	let detabbed = str
 	if (detabbed.length > 0 && detabbed[0] === "\n") {
