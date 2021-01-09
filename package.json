@@ -1,0 +1,26 @@
+{
+	"name": "page-based-router",
+	"version": "1.0.0",
+	"main": "index.js",
+	"license": "MIT",
+	"scripts": {
+		"build-dev": "yarn rimraf build && yarn ts-node -T server/prerender-html.tsx && NODE_ENV=development yarn ts-node -T server/prerender-js.ts",
+		"build-prod": "yarn rimraf build && yarn ts-node -T server/prerender-html.tsx && NODE_ENV=production yarn ts-node -T server/prerender-js.ts",
+		"serve": "http-server build"
+	},
+	"devDependencies": {
+		"@types/react": "^17.0.0",
+		"@types/react-dom": "^17.0.0",
+		"esbuild": "^0.8.31",
+		"express": "^4.17.1",
+		"http-server": "^0.12.3",
+		"jest": "^26.6.3",
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1",
+		"rimraf": "^3.0.2",
+		"sass": "^1.32.2",
+		"ts-jest": "^26.4.4",
+		"ts-node": "^9.1.1",
+		"typescript": "^4.1.3"
+	}
+}
