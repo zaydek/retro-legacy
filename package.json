@@ -4,8 +4,8 @@
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"build-dev": "yarn rimraf build && yarn ts-node -T server/prerender-html.tsx && NODE_ENV=development yarn ts-node -T server/prerender-js.ts",
-		"build-prod": "yarn rimraf build && yarn ts-node -T server/prerender-html.tsx && NODE_ENV=production yarn ts-node -T server/prerender-js.ts",
+		"dev": "yarn rimraf build && yarn ts-node -T server/prerender-html.tsx && yarn ts-node -T server/prerender-js.ts",
+		"prod": "yarn rimraf build && NODE_ENV=production yarn ts-node -T server/prerender-html.tsx && NODE_ENV=production yarn ts-node -T server/prerender-js.ts",
 		"serve": "http-server build"
 	},
 	"devDependencies": {

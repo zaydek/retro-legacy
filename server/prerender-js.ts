@@ -1,12 +1,12 @@
 import fs from "fs"
-import guards from "./guards"
+import guardServer from "./guardServer"
 import { buildSync, transformSync } from "esbuild"
 
 const __DEV__ = process.env.NODE_ENV !== "production"
 
 // Bundles JavaScript on the server.
 function run() {
-	guards()
+	guardServer()
 
 	const srcs = fs.readdirSync("pages").filter((each: string) => {
 		// prettier-ignore
