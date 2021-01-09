@@ -4,8 +4,8 @@ export default function guards() {
 	if (!fs.existsSync("cache")) {
 		fs.mkdirSync("cache")
 	}
-	if (!fs.existsSync("cache/__pageProps.json")) {
-		fs.writeFileSync("cache/__pageProps.json", JSON.stringify({}, null, "\t") + "\n")
+	if (!fs.existsSync("cache/__props.json")) {
+		fs.writeFileSync("cache/__props.json", JSON.stringify({}, null, "\t") + "\n")
 	}
 	if (!fs.existsSync("build")) {
 		fs.mkdirSync("build")

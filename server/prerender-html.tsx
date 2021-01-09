@@ -1,19 +1,19 @@
 import fs from "fs"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
-import { detab, guards, listPages } from "./utils"
+import { detab, getPageSrcs, guards } from "./utils"
 
-// Prerenders HTML and `pageProps` on the server.
+// Prerenders HTML and props on the server.
 function run() {
 	guards()
 
 	// Prerender pages.
-	const srcs = listPages()
+	const srcs = getPageSrcs()
 	for (const each of srcs) {
 		const basename = each.replace(/\.tsx$/, "")
 
 		const { default: Page, head: Head } = require("../pages/" + each)
-		const pageProps = require("../cache/__pageProps.json")
+		const props = require("../cache/__props.json")
 
 		// The page rendered as a string.
 		let pageStr = ""
@@ -37,7 +37,7 @@ function run() {
 					</head>
 					<body>
 						<noscript>You need to enable JavaScript to run this app.</noscript>
-						<div id="root">${ReactDOMServer.renderToString(<Page data={pageProps[basename]} />)}</div>
+						<div id="root">${ReactDOMServer.renderToString(<Page data={props[basename]} />)}</div>
 						<script src="/react.out.js"></script>
 						<script src="/${basename}.js"></script>
 					</body>
@@ -54,7 +54,7 @@ function run() {
 								<div
 									id="root"
 									dangerouslySetInnerHTML={{
-										__html: ReactDOMServer.renderToString(<Page data={pageProps[basename]} />),
+										__html: ReactDOMServer.renderToString(<Page data={props[basename]} />),
 									}}
 								/>
 								<script src="/react.out.js" />

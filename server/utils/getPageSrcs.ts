@@ -1,6 +1,6 @@
 import fs from "fs"
 
-export default function listPages() {
+export default function getPageSrcs() {
 	// prettier-ignore
 	const srcs = fs.readdirSync("pages").filter((each: string) => {
 		const ok = (

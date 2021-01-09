@@ -1,6 +1,6 @@
 import fs from "fs"
 import { buildSync, transformSync } from "esbuild"
-import { guards, listPages } from "./utils"
+import { getPageSrcs, guards } from "./utils"
 
 const __DEV__ = process.env.NODE_ENV !== "production"
 
@@ -20,7 +20,7 @@ function run() {
 		outfile: "build/react.out.js",
 	})
 
-	const srcs = listPages()
+	const srcs = getPageSrcs()
 	for (const each of srcs) {
 		const basename = each.replace(/\.tsx$/, "")
 
@@ -30,10 +30,10 @@ import React from "react"
 import ReactDOM from "react-dom"
 
 import Component from "../pages/${basename}"
-import pageProps from "./__pageProps.json"
+import props from "./__props.json"
 
 ReactDOM.hydrate(
-	<Component data={pageProps[${JSON.stringify(basename)}]} />,
+	<Component data={props[${JSON.stringify(basename)}]} />,
 	document.getElementById("root"),
 )
 `,

@@ -4,10 +4,10 @@
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"prerender-pageProps": "ts-node -T server/prerender-pageProps.ts",
+		"prerender-props": "ts-node -T server/prerender-props.ts",
 		"prerender-html": "ts-node -T server/prerender-html.tsx",
 		"prerender-js": "ts-node -T server/prerender-js.ts",
-		"build": "yarn rimraf build && yarn prerender-pageProps && yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
+		"build": "yarn rimraf build && yarn prerender-props && yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
 		"rebuild": "yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
 		"serve": "http-server build"
 	},

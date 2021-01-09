@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import Component from "../pages/idea";
-import pageProps from "./__pageProps.json";
+import props from "./__props.json";
 ReactDOM.hydrate(/* @__PURE__ */ React.createElement(Component, {
-  data: pageProps["idea"]
+  data: props["idea"]
 }), document.getElementById("root"));
