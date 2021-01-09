@@ -20,7 +20,7 @@ export default function detab(str: string) {
 	if (detabbed.length > 0 && str[str.length - 1] === "\n") {
 		str = detabbed.slice(0, -1)
 	}
-	// Iterate to non-tab:
+	// Iterate to a non-tab character:
 	let tabCount = 0
 	for (let x = 0; x < detabbed.length; x++) {
 		if (detabbed[x] !== "\t") {

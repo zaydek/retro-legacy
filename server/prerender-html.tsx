@@ -15,7 +15,6 @@ function run() {
 		const { default: Page, head: Head } = require("../pages/" + each)
 		const props = require("../cache/__props.json")
 
-		// The page rendered as a string.
 		let pageStr = ""
 
 		// The custom document component.
