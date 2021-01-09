@@ -3,7 +3,7 @@ import React, { useEffect } from "react"
 export async function load() {
 	const p = new Promise(resolve => {
 		setTimeout(() => {
-			resolve("Hello, world! (home-2)")
+			resolve({ data: "Hello, world! (home-2)" })
 		}, 1e3)
 	})
 	return p

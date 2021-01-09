@@ -29,11 +29,11 @@ function run() {
 import React from "react"
 import ReactDOM from "react-dom"
 
-import Component from "../pages/${basename}"
+import Page from "../pages/${basename}"
 import props from "./__props.json"
 
 ReactDOM.hydrate(
-	<Component data={props[${JSON.stringify(basename)}]} />,
+	<Page {...props[${JSON.stringify(basename)}]} />,
 	document.getElementById("root"),
 )
 `,

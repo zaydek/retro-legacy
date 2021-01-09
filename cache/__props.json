@@ -1,5 +1,9 @@
 {
-	"home-2": "Hello, world! (home-2)",
-	"home": "Hello, world!",
+	"home-2": {
+		"data": "Hello, world! (home-2)"
+	},
+	"home": {
+		"data": "Hello, world!"
+	},
 	"idea": null
 }

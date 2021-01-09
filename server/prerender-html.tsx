@@ -37,7 +37,7 @@ function run() {
 					</head>
 					<body>
 						<noscript>You need to enable JavaScript to run this app.</noscript>
-						<div id="root">${ReactDOMServer.renderToString(<Page data={props[basename]} />)}</div>
+						<div id="root">${ReactDOMServer.renderToString(<Page {...props[basename]} />)}</div>
 						<script src="/react.out.js"></script>
 						<script src="/${basename}.js"></script>
 					</body>
@@ -54,7 +54,7 @@ function run() {
 								<div
 									id="root"
 									dangerouslySetInnerHTML={{
-										__html: ReactDOMServer.renderToString(<Page data={props[basename]} />),
+										__html: ReactDOMServer.renderToString(<Page {...props[basename]} />),
 									}}
 								/>
 								<script src="/react.out.js" />
