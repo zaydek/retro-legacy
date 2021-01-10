@@ -1,7 +1,11 @@
-import React, { Fragment, useEffect, useLayoutEffect, useState } from "react"
+import React, { Fragment, useEffect, useState } from "react"
 import { createBrowserHistory } from "history"
 
 export const history = createBrowserHistory()
+
+// TODO: Missing support for parsed params, scroll restoration, scroll callbacks
+// or equivalent, propagating state between history changes. Also, possibly
+// direct access to the history value.
 
 /*
  * Anchor
@@ -47,6 +51,7 @@ function newHash() {
  * Router
  */
 
+// Converts React children to an array.
 function childrenToArray(children) {
 	const els = []
 
@@ -57,7 +62,8 @@ function childrenToArray(children) {
 	return els
 }
 
-function testRoutesForHref(routes, href) {
+// Searches routes for an route matching `href`.
+function findRoute(routes, href) {
 	const els = childrenToArray(routes)
 
 	// prettier-ignore
@@ -67,11 +73,10 @@ function testRoutesForHref(routes, href) {
 			each.props.href === href
 		return ok
 	})
-	return !!found // Coerece
+	return found
 }
 
 // TODO: Test empty routes e.g. `<Route href="/404"></Route>`.
-//
 export function Router({ children }) {
 	// prettier-ignore
 	const [urlState, setURLState] = useState({
@@ -80,7 +85,7 @@ export function Router({ children }) {
 	})
 
 	useEffect(() => {
-		if (!testRoutesForHref(children, "/404")) {
+		if (!findRoute(children, "/404")) {
 			console.warn(
 				"<Router>: " +
 					"No such `/404` route. " +
@@ -107,26 +112,10 @@ export function Router({ children }) {
 		return unlisten
 	})
 
-	// TODO
-	let foundElement = null
-	React.Children.forEach(children, each => {
-		// prettier-ignore
-		const ok = (
-			React.isValidElement(each) &&
-			each.type === Route &&
-			each.props.href === urlState.url
-		)
-		if (!ok) {
-			// No-op
-			return
-		}
-		foundElement = each
-	})
-
-	if (!foundElement) {
+	const route = findRoute(children, urlState.url)
+	if (!route) {
 		return <Redirect href="/404" />
 	}
-
 	// Use `key={...}` to force rerender the same route.
-	return <Fragment key={urlState.key}>{foundElement}</Fragment>
+	return <Fragment key={urlState.key}>{route}</Fragment>
 }
