@@ -50,13 +50,6 @@ export class Route extends React.Component {
 			return children
 		}
 		return null
-
-		// console.log({ path, pathname: window.location.pathname })
-		// const matches = testPath({ path, pathname: window.location.pathname })
-		// if (!matches) {
-		// 	return null
-		// }
-		// return children
 	}
 }
 
@@ -79,14 +72,13 @@ export function Link({ href, children, ...props }) {
 	)
 }
 
-// export class Redirect extends React.Component {
-// 	componentDidMount() {
-// 		const { to, push } = this.props
-//
-// 		push ? historyPush(to) : historyReplace(to)
-// 	}
-//
-// 	render() {
-// 		return null
-// 	}
-// }
+// NOTE: Uses `historyReplace` by default.
+export class Redirect extends React.Component {
+	componentDidMount() {
+		const { href /* , push */ } = this.props
+		historyReplace(href)
+	}
+	render() {
+		return null
+	}
+}

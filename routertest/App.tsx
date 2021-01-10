@@ -1,6 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom"
-import { Link as Anchor, Route, Router } from "./Router2"
+import { Link as Anchor, Route, Redirect } from "./Router2"
 
 // import { Anchor, Route, Router } from "./Router"
 
@@ -68,6 +68,10 @@ function FourZeroFour() {
 	)
 }
 
+function RedirectTest() {
+	return <Redirect href="/haha" />
+}
+
 export default function RoutedApp() {
 	return (
 		<div className="container py-16">
@@ -79,6 +83,9 @@ export default function RoutedApp() {
 			</Route>
 			<Route path="/page-b">
 				<PageB />
+			</Route>
+			<Route path="/oops">
+				<RedirectTest />
 			</Route>
 			<Route path="/404">
 				<FourZeroFour />

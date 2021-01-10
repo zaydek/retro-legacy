@@ -20642,6 +20642,10 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     window.history.pushState({}, "", path);
     instances.forEach((instance) => instance.forceUpdate());
   }
+  function historyReplace(path) {
+    window.history.replaceState({}, "", path);
+    instances.forEach((instance) => instance.forceUpdate());
+  }
   var Route = class extends import_react.default.Component {
     componentDidMount() {
       window.addEventListener("popstate", this.handlePop);
@@ -20673,6 +20677,15 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       ...props
     }, children);
   }
+  var Redirect = class extends import_react.default.Component {
+    componentDidMount() {
+      const {href} = this.props;
+      historyReplace(href);
+    }
+    render() {
+      return null;
+    }
+  };
 
   // routertest/App.tsx
   function NavWrapper({children}) {
@@ -20700,6 +20713,11 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function FourZeroFour() {
     return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Oops! Wrong page (404)"));
   }
+  function RedirectTest() {
+    return /* @__PURE__ */ import_react2.default.createElement(Redirect, {
+      href: "/haha"
+    });
+  }
   function RoutedApp() {
     return /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "container py-16"
@@ -20710,6 +20728,8 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }, /* @__PURE__ */ import_react2.default.createElement(PageA, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
       path: "/page-b"
     }, /* @__PURE__ */ import_react2.default.createElement(PageB, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
+      path: "/oops"
+    }, /* @__PURE__ */ import_react2.default.createElement(RedirectTest, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
       path: "/404"
     }, /* @__PURE__ */ import_react2.default.createElement(FourZeroFour, null)));
   }
