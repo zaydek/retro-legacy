@@ -47,12 +47,48 @@ function newHash() {
  * Router
  */
 
+function childrenToArray(children) {
+	const els = []
+
+	// Use `React.Children.forEach` because `React.Children.toArray` sets keys.
+	//
+	// https://reactjs.org/docs/react-api.html#reactchildrentoarray
+	React.Children.forEach(children, each => els.push(each))
+	return els
+}
+
+function testRoutesForHref(routes, href) {
+	const els = childrenToArray(routes)
+
+	// prettier-ignore
+	const found = els.find(each => {
+		const ok = React.isValidElement(each) &&
+			each.type === Route &&
+			each.props.href === href
+		return ok
+	})
+	return !!found // Coerece
+}
+
+// TODO: Test empty routes e.g. `<Route href="/404"></Route>`.
+//
 export function Router({ children }) {
 	// prettier-ignore
 	const [urlState, setURLState] = useState({
 		key: newHash(),                // A four-character hash to force rerender routes
 		url: window.location.pathname, // The current pathname, per render
 	})
+
+	useEffect(() => {
+		if (!testRoutesForHref(children, "/404")) {
+			console.warn(
+				"<Router>: " +
+					"No such `/404` route. " +
+					'`<Router>` uses `<Redirect href="/404">` when no routes are matched. ' +
+					'Add `<Route href="/404">...</Route>`.',
+			)
+		}
+	}, [])
 
 	useEffect(() => {
 		const unlisten = history.listen(e => {
@@ -71,6 +107,7 @@ export function Router({ children }) {
 		return unlisten
 	})
 
+	// TODO
 	let foundElement = null
 	React.Children.forEach(children, each => {
 		// prettier-ignore

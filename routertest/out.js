@@ -20826,11 +20826,29 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function newHash() {
     return Math.random().toString(16).slice(2, 6);
   }
+  function childrenToArray(children) {
+    const els = [];
+    import_react.default.Children.forEach(children, (each) => els.push(each));
+    return els;
+  }
+  function testRoutesForHref(routes, href) {
+    const els = childrenToArray(routes);
+    const found = els.find((each) => {
+      const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.href === href;
+      return ok;
+    });
+    return !!found;
+  }
   function Router({children}) {
     const [urlState, setURLState] = import_react.useState({
       key: newHash(),
       url: window.location.pathname
     });
+    import_react.useEffect(() => {
+      if (!testRoutesForHref(children, "/404")) {
+        console.warn('<Router>: No such `/404` route. `<Router>` uses `<Redirect href="/404">` when no routes are matched. Add `<Route href="/404">...</Route>`.');
+      }
+    }, []);
     import_react.useEffect(() => {
       const unlisten = history.listen((e) => {
         if (e.location.pathname === urlState.url) {
@@ -20901,6 +20919,9 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       href: "/page-a"
     }, "Open Page A")));
   }
+  function FourZeroFour() {
+    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Oops! Wrong page (404)"));
+  }
   function RedirectTest() {
     return /* @__PURE__ */ import_react2.default.createElement(Redirect, {
       href: "/haha"
@@ -20917,7 +20938,9 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       href: "/page-b"
     }, /* @__PURE__ */ import_react2.default.createElement(PageB, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
       href: "/oops"
-    }, /* @__PURE__ */ import_react2.default.createElement(RedirectTest, null))));
+    }, /* @__PURE__ */ import_react2.default.createElement(RedirectTest, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
+      href: "/404"
+    }, /* @__PURE__ */ import_react2.default.createElement(FourZeroFour, null))));
   }
   import_react_dom.default.render(/* @__PURE__ */ import_react2.default.createElement(RoutedApp, null), document.getElementById("root"));
 })();

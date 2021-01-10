@@ -105,9 +105,9 @@ export default function RoutedApp() {
 				<Route href="/oops">
 					<RedirectTest />
 				</Route>
-				{/* <Route path="/404">
+				<Route href="/404">
 					<FourZeroFour />
-				</Route> */}
+				</Route>
 			</Router>
 		</div>
 	)
