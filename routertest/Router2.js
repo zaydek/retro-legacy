@@ -1,14 +1,17 @@
-import React, { Fragment, useEffect, useState } from "react"
+import React, { Fragment, useEffect, useLayoutEffect, useState } from "react"
 import { createBrowserHistory } from "history"
 
 export const history = createBrowserHistory()
 
-// TODO: Add support for `history.push` or `history.replace`.
-export function Link({ href, children, ...props }) {
+/*
+ * Anchor
+ */
+
+export function Anchor({ href, children, shouldReplaceHistory, ...props }) {
 	function handleClick(e) {
 		e.preventDefault()
-		console.log(`clicked href=${href}`)
-		history.push(href)
+		const fn = shouldReplaceHistory ? history.replace : history.push
+		fn(href)
 	}
 	return (
 		<a href={href} onClick={handleClick} {...props}>
@@ -17,59 +20,76 @@ export function Link({ href, children, ...props }) {
 	)
 }
 
-// TODO: Add support for `history.push` or `history.replace`.
-function Redirect({ href }) {
-	// TODO: Change to `useLayoutEffect`?
-	useEffect(() => {
-		history.replace(href)
-	}, [])
+/*
+ * Redirect
+ */
+
+export function Redirect({ href, shouldReplaceHistory }) {
+	const fn = shouldReplaceHistory ? history.replace : history.push
+	fn(href)
 	return null
 }
+
+/*
+ * Route
+ */
 
 export function Route({ href, children }) {
 	return children
 }
 
-// Routers are so simple it’s laughable. At least this one is. We model the DOM
-// URL as a virtual URL which allows us to control how and when to rerender
-// children, e.g. our app.
-//
-// When bind a listener to `history.listen` which triggers our URL to rerender
-// when the polyfilled history API catches synthetic `popState` or `pushState`
-// events, which can be triggered from `<Anchor>` clicks or the back and forward
-// buttons.
-//
-// Then we query children for a matching pathname and selectively rerender.
-//
+// Creates a four-character hash.
+function newHash() {
+	return Math.random().toString(16).slice(2, 6)
+}
+
+/*
+ * Router
+ */
+
 export function Router({ children }) {
+	// prettier-ignore
 	const [urlState, setURLState] = useState({
-		key: Math.random(),
-		url: window.location.pathname,
+		key: newHash(),                // A four-character hash to force rerender routes
+		url: window.location.pathname, // The current pathname, per render
 	})
 
 	useEffect(() => {
 		const unlisten = history.listen(e => {
 			if (e.location.pathname === urlState.url) {
-				setURLState({ ...urlState, key: Math.random() })
+				setURLState({
+					...urlState,
+					key: newHash(),
+				})
 				return
 			}
-			setURLState({ key: Math.random(), url: e.location.pathname })
+			setURLState({
+				key: Math.random(),
+				url: e.location.pathname,
+			})
 		})
 		return unlisten
 	})
 
-	// prettier-ignore
-	const found = children.find(each => {
-    const ok = (
-      each.type === Route &&
-      each.props.href === urlState.url
-    )
-    return ok
-  })
+	let foundElement = null
+	React.Children.forEach(children, each => {
+		// prettier-ignore
+		const ok = (
+			React.isValidElement(each) &&
+			each.type === Route &&
+			each.props.href === urlState.url
+		)
+		if (!ok) {
+			// No-op
+			return
+		}
+		foundElement = each
+	})
 
-	if (!found) {
+	if (!foundElement) {
 		return <Redirect href="/404" />
 	}
 
-	return <Fragment key={urlState.key}>{found}</Fragment>
+	// Use `key={...}` to force rerender the same route.
+	return <Fragment key={urlState.key}>{foundElement}</Fragment>
 }
