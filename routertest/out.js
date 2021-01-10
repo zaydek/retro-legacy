@@ -1073,7 +1073,7 @@
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
-        function useEffect(create, deps) {
+        function useEffect2(create, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create, deps);
         }
@@ -1643,7 +1643,7 @@
         exports.useCallback = useCallback;
         exports.useContext = useContext;
         exports.useDebugValue = useDebugValue;
-        exports.useEffect = useEffect;
+        exports.useEffect = useEffect2;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useLayoutEffect = useLayoutEffect;
         exports.useMemo = useMemo;
@@ -20806,6 +20806,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function Link({href, children, ...props}) {
     function handleClick(e) {
       e.preventDefault();
+      console.log(`clicked href=${href}`);
       history.push(href);
     }
     return /* @__PURE__ */ import_react.default.createElement("a", {
@@ -20814,27 +20815,34 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       ...props
     }, children);
   }
+  function Redirect({href}) {
+    import_react.useEffect(() => {
+      history.replace(href);
+    }, []);
+    return null;
+  }
   function Route({href, children}) {
     return children;
   }
   function Router({children}) {
     const [url, setURL] = import_react.useState(window.location.pathname);
-    import_react.default.useEffect(() => {
-      history.listen((e) => {
-        console.log({e, caller: "history.listen"});
+    import_react.useEffect(() => {
+      const unlisten = history.listen((e) => {
         if (e.location.pathname === url) {
           return;
         }
         setURL(e.location.pathname);
       });
-    }, []);
-    console.log({url});
+      return unlisten;
+    });
     const found = children.find((each) => {
       const ok = each.type === Route && each.props.href === url;
       return ok;
     });
     if (!found) {
-      return "404";
+      return /* @__PURE__ */ import_react.default.createElement(Redirect, {
+        href: "/404"
+      });
     }
     return found;
   }
