@@ -32,8 +32,6 @@ function historyPush(path) {
 export function Anchor({ href, children, ...props }: AnchorProps) {
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
-		// const { replace, to } = this.props
-		e.preventDefault()
 		historyPush(href)
 	}
 

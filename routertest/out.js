@@ -397,7 +397,7 @@
                 var init = lazyComponent._init;
                 try {
                   return getComponentName(init(payload));
-                } catch (x) {
+                } catch (x2) {
                   return null;
                 }
               }
@@ -1061,7 +1061,7 @@
           }
           return dispatcher.useContext(Context, unstable_observedBits);
         }
-        function useState(initialState) {
+        function useState2(initialState) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useState(initialState);
         }
@@ -1184,8 +1184,8 @@
             if (prefix === void 0) {
               try {
                 throw Error();
-              } catch (x) {
-                var match = x.stack.trim().match(/\n( *(at )?)/);
+              } catch (x2) {
+                var match = x2.stack.trim().match(/\n( *(at )?)/);
                 prefix = match && match[1] || "";
               }
             }
@@ -1231,23 +1231,23 @@
               if (typeof Reflect === "object" && Reflect.construct) {
                 try {
                   Reflect.construct(Fake, []);
-                } catch (x) {
-                  control = x;
+                } catch (x2) {
+                  control = x2;
                 }
                 Reflect.construct(fn, [], Fake);
               } else {
                 try {
                   Fake.call();
-                } catch (x) {
-                  control = x;
+                } catch (x2) {
+                  control = x2;
                 }
                 fn.call(Fake.prototype);
               }
             } else {
               try {
                 throw Error();
-              } catch (x) {
-                control = x;
+              } catch (x2) {
+                control = x2;
               }
               fn();
             }
@@ -1339,7 +1339,7 @@
                 var init = lazyComponent._init;
                 try {
                   return describeUnknownElementTypeFrameInDEV(init(payload), source, ownerFn);
-                } catch (x) {
+                } catch (x2) {
                 }
               }
             }
@@ -1649,7 +1649,7 @@
         exports.useMemo = useMemo;
         exports.useReducer = useReducer;
         exports.useRef = useRef;
-        exports.useState = useState;
+        exports.useState = useState2;
         exports.version = ReactVersion;
       })();
     }
@@ -3285,8 +3285,8 @@
             if (prefix === void 0) {
               try {
                 throw Error();
-              } catch (x) {
-                var match = x.stack.trim().match(/\n( *(at )?)/);
+              } catch (x2) {
+                var match = x2.stack.trim().match(/\n( *(at )?)/);
                 prefix = match && match[1] || "";
               }
             }
@@ -3332,23 +3332,23 @@
               if (typeof Reflect === "object" && Reflect.construct) {
                 try {
                   Reflect.construct(Fake, []);
-                } catch (x) {
-                  control = x;
+                } catch (x2) {
+                  control = x2;
                 }
                 Reflect.construct(fn, [], Fake);
               } else {
                 try {
                   Fake.call();
-                } catch (x) {
-                  control = x;
+                } catch (x2) {
+                  control = x2;
                 }
                 fn.call(Fake.prototype);
               }
             } else {
               try {
                 throw Error();
-              } catch (x) {
-                control = x;
+              } catch (x2) {
+                control = x2;
               }
               fn();
             }
@@ -3445,7 +3445,7 @@
                 var init = lazyComponent._init;
                 try {
                   return describeUnknownElementTypeFrameInDEV(init(payload), source, ownerFn);
-                } catch (x) {
+                } catch (x2) {
                 }
               }
             }
@@ -3487,8 +3487,8 @@
               node = node.return;
             } while (node);
             return info;
-          } catch (x) {
-            return "\nError generating stack: " + x.message + "\n" + x.stack;
+          } catch (x2) {
+            return "\nError generating stack: " + x2.message + "\n" + x2.stack;
           }
         }
         function getWrappedName(outerType, innerType, wrapperName) {
@@ -3547,7 +3547,7 @@
                 var init = lazyComponent._init;
                 try {
                   return getComponentName(init(payload));
-                } catch (x) {
+                } catch (x2) {
                   return null;
                 }
               }
@@ -7737,8 +7737,8 @@
           }
           accumulateEnterLeaveTwoPhaseListeners(dispatchQueue, leave, enter, from, to);
         }
-        function is(x, y) {
-          return x === y && (x !== 0 || 1 / x === 1 / y) || x !== x && y !== y;
+        function is(x2, y2) {
+          return x2 === y2 && (x2 !== 0 || 1 / x2 === 1 / y2) || x2 !== x2 && y2 !== y2;
         }
         var objectIs = typeof Object.is === "function" ? Object.is : is;
         var hasOwnProperty$2 = Object.prototype.hasOwnProperty;
@@ -14615,7 +14615,7 @@
                 var init = lazyComponent._init;
                 try {
                   outerMemoType = init(payload);
-                } catch (x) {
+                } catch (x2) {
                   outerMemoType = null;
                 }
                 var outerPropTypes = outerMemoType && outerMemoType.propTypes;
@@ -20631,45 +20631,182 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
 
   // routertest/Router2.js
   var import_react = __toModule(require_react());
-  var instances = [];
-  function register(comp) {
-    instances.push(comp);
-  }
-  function unregister(comp) {
-    instances.splice(instances.indexOf(comp), 1);
-  }
-  function historyPush(path) {
-    window.history.pushState({}, "", path);
-    instances.forEach((instance) => instance.forceUpdate());
-  }
-  function historyReplace(path) {
-    window.history.replaceState({}, "", path);
-    instances.forEach((instance) => instance.forceUpdate());
-  }
-  var Route = class extends import_react.default.Component {
-    componentDidMount() {
-      window.addEventListener("popstate", this.handlePop);
-      register(this);
-    }
-    componentWillUnmount() {
-      unregister(this);
-      window.removeEventListener("popstate", this.handlePop);
-    }
-    handlePop = () => {
-      this.forceUpdate();
-    };
-    render() {
-      const {path, children} = this.props;
-      if (window.location.pathname === path) {
-        return children;
+
+  // node_modules/@babel/runtime/helpers/esm/extends.js
+  function _extends() {
+    _extends = Object.assign || function(target) {
+      for (var i = 1; i < arguments.length; i++) {
+        var source = arguments[i];
+        for (var key in source) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            target[key] = source[key];
+          }
+        }
       }
-      return null;
-    }
+      return target;
+    };
+    return _extends.apply(this, arguments);
+  }
+
+  // node_modules/history/index.js
+  var m;
+  var x = m || (m = {});
+  x.Pop = "POP";
+  x.Push = "PUSH";
+  x.Replace = "REPLACE";
+  var y = function(a) {
+    return Object.freeze(a);
   };
+  function z(a, b) {
+    if (!a) {
+      typeof console !== "undefined" && console.warn(b);
+      try {
+        throw Error(b);
+      } catch (g) {
+      }
+    }
+  }
+  function A(a) {
+    a.preventDefault();
+    a.returnValue = "";
+  }
+  function B() {
+    var a = [];
+    return {get length() {
+      return a.length;
+    }, push: function(b) {
+      a.push(b);
+      return function() {
+        a = a.filter(function(a2) {
+          return a2 !== b;
+        });
+      };
+    }, call: function(b) {
+      a.forEach(function(a2) {
+        return a2 && a2(b);
+      });
+    }};
+  }
+  function D() {
+    return Math.random().toString(36).substr(2, 8);
+  }
+  function E(a) {
+    var b = a.pathname, g = a.search;
+    a = a.hash;
+    return (b === void 0 ? "/" : b) + (g === void 0 ? "" : g) + (a === void 0 ? "" : a);
+  }
+  function F(a) {
+    var b = {};
+    if (a) {
+      var g = a.indexOf("#");
+      0 <= g && (b.hash = a.substr(g), a = a.substr(0, g));
+      g = a.indexOf("?");
+      0 <= g && (b.search = a.substr(g), a = a.substr(0, g));
+      a && (b.pathname = a);
+    }
+    return b;
+  }
+  function createBrowserHistory(a) {
+    function b() {
+      var a2 = h.location, d = f.state || {};
+      return [d.idx, y({pathname: a2.pathname, search: a2.search, hash: a2.hash, state: d.usr || null, key: d.key || "default"})];
+    }
+    function g(a2) {
+      return typeof a2 === "string" ? a2 : E(a2);
+    }
+    function t(a2, d) {
+      d === void 0 && (d = null);
+      return y(_extends({}, l, {}, typeof a2 === "string" ? F(a2) : a2, {state: d, key: D()}));
+    }
+    function v(a2) {
+      n = a2;
+      a2 = b();
+      q = a2[0];
+      l = a2[1];
+      c.call({action: n, location: l});
+    }
+    function w(a2, d) {
+      function c2() {
+        w(a2, d);
+      }
+      var k = m.Push, C = t(a2, d);
+      if (!e.length || (e.call({
+        action: k,
+        location: C,
+        retry: c2
+      }), false)) {
+        var b2 = [{usr: C.state, key: C.key, idx: q + 1}, g(C)];
+        C = b2[0];
+        b2 = b2[1];
+        try {
+          f.pushState(C, "", b2);
+        } catch (G) {
+          h.location.assign(b2);
+        }
+        v(k);
+      }
+    }
+    function u(a2, d) {
+      function c2() {
+        u(a2, d);
+      }
+      var b2 = m.Replace, k = t(a2, d);
+      e.length && (e.call({action: b2, location: k, retry: c2}), 1) || (k = [{usr: k.state, key: k.key, idx: q}, g(k)], f.replaceState(k[0], "", k[1]), v(b2));
+    }
+    function r(a2) {
+      f.go(a2);
+    }
+    a === void 0 && (a = {});
+    a = a.window;
+    var h = a === void 0 ? document.defaultView : a, f = h.history, p = null;
+    h.addEventListener("popstate", function() {
+      if (p)
+        e.call(p), p = null;
+      else {
+        var a2 = m.Pop, d = b(), c2 = d[0];
+        d = d[1];
+        if (e.length)
+          if (c2 != null) {
+            var f2 = q - c2;
+            f2 && (p = {action: a2, location: d, retry: function() {
+              r(-1 * f2);
+            }}, r(f2));
+          } else
+            z(false, "You are trying to block a POP navigation to a location that was not created by the history library. The block will fail silently in production, but in general you should do all navigation with the history library (instead of using window.history.pushState directly) to avoid this situation.");
+        else
+          v(a2);
+      }
+    });
+    var n = m.Pop;
+    a = b();
+    var q = a[0], l = a[1], c = B(), e = B();
+    q == null && (q = 0, f.replaceState(_extends({}, f.state, {idx: q}), ""));
+    return {get action() {
+      return n;
+    }, get location() {
+      return l;
+    }, createHref: g, push: w, replace: u, go: r, back: function() {
+      r(-1);
+    }, forward: function() {
+      r(1);
+    }, listen: function(a2) {
+      return c.push(a2);
+    }, block: function(a2) {
+      var d = e.push(a2);
+      e.length === 1 && h.addEventListener("beforeunload", A);
+      return function() {
+        d();
+        e.length || h.removeEventListener("beforeunload", A);
+      };
+    }};
+  }
+
+  // routertest/Router2.js
+  var history = createBrowserHistory();
   function Link({href, children, ...props}) {
     function handleClick(e) {
       e.preventDefault();
-      historyPush(href);
+      history.push(href);
     }
     return /* @__PURE__ */ import_react.default.createElement("a", {
       href,
@@ -20677,27 +20814,45 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       ...props
     }, children);
   }
-  var Redirect = class extends import_react.default.Component {
-    componentDidMount() {
-      const {href} = this.props;
-      historyReplace(href);
+  function Route({href, children}) {
+    return children;
+  }
+  function Router({children}) {
+    const [url, setURL] = import_react.useState(window.location.pathname);
+    import_react.default.useEffect(() => {
+      history.listen((e) => {
+        console.log({e, caller: "history.listen"});
+        if (e.location.pathname === url) {
+          return;
+        }
+        setURL(e.location.pathname);
+      });
+    }, []);
+    console.log({url});
+    const found = children.find((each) => {
+      const ok = each.type === Route && each.props.href === url;
+      return ok;
+    });
+    if (!found) {
+      return "404";
     }
-    render() {
-      return null;
-    }
-  };
+    return found;
+  }
 
   // routertest/App.tsx
   function NavWrapper({children}) {
     return /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "flex-col m-gap-16"
     }, /* @__PURE__ */ import_react2.default.createElement("div", null, "You are currently viewing ", /* @__PURE__ */ import_react2.default.createElement("code", null, "`", window.location.pathname, "`")), /* @__PURE__ */ import_react2.default.createElement("div", {
-      className: "flex-row m-gap-16"
+      className: "flex-row m-gap-8"
     }, /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
       href: "/"
     }, "Open home"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
       href: "/page-a"
     }, "Open page A"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
       href: "/page-b"
     }, "Open page B")), /* @__PURE__ */ import_react2.default.createElement("div", null, children));
   }
@@ -20710,28 +20865,16 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function PageB() {
     return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (page B)"));
   }
-  function FourZeroFour() {
-    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Oops! Wrong page (404)"));
-  }
-  function RedirectTest() {
-    return /* @__PURE__ */ import_react2.default.createElement(Redirect, {
-      href: "/haha"
-    });
-  }
   function RoutedApp() {
     return /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "container py-16"
-    }, /* @__PURE__ */ import_react2.default.createElement(Route, {
-      path: "/"
+    }, /* @__PURE__ */ import_react2.default.createElement(Router, null, /* @__PURE__ */ import_react2.default.createElement(Route, {
+      href: "/"
     }, /* @__PURE__ */ import_react2.default.createElement(Home, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      path: "/page-a"
+      href: "/page-a"
     }, /* @__PURE__ */ import_react2.default.createElement(PageA, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      path: "/page-b"
-    }, /* @__PURE__ */ import_react2.default.createElement(PageB, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      path: "/oops"
-    }, /* @__PURE__ */ import_react2.default.createElement(RedirectTest, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      path: "/404"
-    }, /* @__PURE__ */ import_react2.default.createElement(FourZeroFour, null)));
+      href: "/page-b"
+    }, /* @__PURE__ */ import_react2.default.createElement(PageB, null))));
   }
   import_react_dom.default.render(/* @__PURE__ */ import_react2.default.createElement(RoutedApp, null), document.getElementById("root"));
 })();

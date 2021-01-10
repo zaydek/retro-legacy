@@ -1,6 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom"
-import { Link as Anchor, Route, Redirect } from "./Router2"
+import { Link as Anchor, Route, Router, Redirect } from "./Router2"
 
 // import { Anchor, Route, Router } from "./Router"
 
@@ -26,10 +26,16 @@ function NavWrapper({ children }: NavWrapperProps) {
 			<div>
 				You are currently viewing <code>`{window.location.pathname}`</code>
 			</div>
-			<div className="flex-row m-gap-16">
-				<Anchor href="/">Open home</Anchor>
-				<Anchor href="/page-a">Open page A</Anchor>
-				<Anchor href="/page-b">Open page B</Anchor>
+			<div className="flex-row m-gap-8">
+				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/">
+					Open home
+				</Anchor>
+				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-a">
+					Open page A
+				</Anchor>
+				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-b">
+					Open page B
+				</Anchor>
 			</div>
 			<div>{children}</div>
 		</div>
@@ -68,28 +74,31 @@ function FourZeroFour() {
 	)
 }
 
-function RedirectTest() {
-	return <Redirect href="/haha" />
-}
+// function RedirectTest() {
+// 	return <Redirect href="/haha" />
+// }
 
 export default function RoutedApp() {
 	return (
 		<div className="container py-16">
-			<Route path="/">
-				<Home />
-			</Route>
-			<Route path="/page-a">
-				<PageA />
-			</Route>
-			<Route path="/page-b">
-				<PageB />
-			</Route>
-			<Route path="/oops">
-				<RedirectTest />
-			</Route>
-			<Route path="/404">
-				<FourZeroFour />
-			</Route>
+			{/* TODO: What if `<Router>` accepted `window.location.pathname` for SSG? */}
+			<Router>
+				<Route href="/">
+					<Home />
+				</Route>
+				<Route href="/page-a">
+					<PageA />
+				</Route>
+				<Route href="/page-b">
+					<PageB />
+				</Route>
+				{/* <Route path="/oops">
+					<RedirectTest />
+				</Route>
+				<Route path="/404">
+					<FourZeroFour />
+				</Route> */}
+			</Router>
 		</div>
 	)
 }
