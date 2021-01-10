@@ -37,7 +37,7 @@ async function run() {
 		return acc
 	}, {} as PagePropsMap)
 
-	fs.writeFileSync("cache/__props.json", JSON.stringify(propsMap, null, "\t"))
+	fs.writeFileSync("cache/__props.json", JSON.stringify(propsMap, null, "\t") + "\n")
 }
 
 ;(async () => {
