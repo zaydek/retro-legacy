@@ -9,7 +9,7 @@ interface PageProps {
 
 type PagePropsMap = { [key: string]: PageProps }
 
-async function run() {
+async function asyncRun() {
 	guards()
 
 	const ps = []
@@ -30,16 +30,16 @@ async function run() {
 		ps.push(p)
 	}
 
-	// Convert response from an array of to a map:
+	// Convert response from an array of a map:
 	const propsArr = await Promise.all(ps)
 	const propsMap = propsArr.reduce((acc, each) => {
 		acc[each.basename] = each.props
 		return acc
 	}, {} as PagePropsMap)
 
-	fs.writeFileSync("cache/__props.json", JSON.stringify(propsMap, null, "\t") + "\n")
+	fs.writeFileSync("cache/props.generated.json", JSON.stringify(propsMap, null, "\t") + "\n")
 }
 
 ;(async () => {
-	await run()
+	await asyncRun()
 })()

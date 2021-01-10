@@ -13,7 +13,7 @@ function run() {
 		const basename = each.replace(/\.tsx$/, "")
 
 		const { default: Page, head: Head } = require("../pages/" + each)
-		const props = require("../cache/__props.json")
+		const props = require("../cache/props.generated.json")
 
 		let pageStr = ""
 

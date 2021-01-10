@@ -33,7 +33,7 @@ import React from "react"
 import ReactDOM from "react-dom"
 
 import Page from "../pages/${basename}"
-import props from "./__props.json"
+import props from "./props.generated.json"
 
 ReactDOM.hydrate(
 	<Page {...props[${JSON.stringify(basename)}]} />,
