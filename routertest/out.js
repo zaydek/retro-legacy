@@ -2684,7 +2684,7 @@
         var HostPortal = 4;
         var HostComponent = 5;
         var HostText = 6;
-        var Fragment = 7;
+        var Fragment2 = 7;
         var Mode = 8;
         var ContextConsumer = 9;
         var ContextProvider = 10;
@@ -11881,7 +11881,7 @@
             }
           }
           function updateFragment2(returnFiber, current2, fragment, lanes, key) {
-            if (current2 === null || current2.tag !== Fragment) {
+            if (current2 === null || current2.tag !== Fragment2) {
               var created = createFiberFromFragment(fragment, returnFiber.mode, lanes, key);
               created.return = returnFiber;
               return created;
@@ -12249,7 +12249,7 @@
             while (child !== null) {
               if (child.key === key) {
                 switch (child.tag) {
-                  case Fragment: {
+                  case Fragment2: {
                     if (element.type === REACT_FRAGMENT_TYPE) {
                       deleteRemainingChildren(returnFiber, child.sibling);
                       var existing = useFiber(child, element.props.children);
@@ -15853,7 +15853,7 @@
               var _resolvedProps2 = workInProgress2.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
               return updateForwardRef(current2, workInProgress2, type, _resolvedProps2, renderLanes2);
             }
-            case Fragment:
+            case Fragment2:
               return updateFragment(current2, workInProgress2, renderLanes2);
             case Mode:
               return updateMode(current2, workInProgress2, renderLanes2);
@@ -16020,7 +16020,7 @@
             case SimpleMemoComponent:
             case FunctionComponent:
             case ForwardRef:
-            case Fragment:
+            case Fragment2:
             case Mode:
             case Profiler:
             case ContextConsumer:
@@ -19724,7 +19724,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
           return fiber;
         }
         function createFiberFromFragment(elements, mode, lanes, key) {
-          var fiber = createFiber(Fragment, elements, key, mode);
+          var fiber = createFiber(Fragment2, elements, key, mode);
           fiber.lanes = lanes;
           return fiber;
         }
@@ -20825,18 +20825,22 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     return children;
   }
   function Router({children}) {
-    const [url, setURL] = import_react.useState(window.location.pathname);
+    const [urlState, setURLState] = import_react.useState({
+      key: Math.random(),
+      url: window.location.pathname
+    });
     import_react.useEffect(() => {
       const unlisten = history.listen((e) => {
-        if (e.location.pathname === url) {
+        if (e.location.pathname === urlState.url) {
+          setURLState({...urlState, key: Math.random()});
           return;
         }
-        setURL(e.location.pathname);
+        setURLState({key: Math.random(), url: e.location.pathname});
       });
       return unlisten;
     });
     const found = children.find((each) => {
-      const ok = each.type === Route && each.props.href === url;
+      const ok = each.type === Route && each.props.href === urlState.url;
       return ok;
     });
     if (!found) {
@@ -20844,7 +20848,9 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
         href: "/404"
       });
     }
-    return found;
+    return /* @__PURE__ */ import_react.default.createElement(import_react.Fragment, {
+      key: urlState.key
+    }, found);
   }
 
   // routertest/App.tsx
@@ -20859,19 +20865,29 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }, "Open home"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
       href: "/page-a"
-    }, "Open page A"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+    }, "Open Page A"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
       href: "/page-b"
-    }, "Open page B")), /* @__PURE__ */ import_react2.default.createElement("div", null, children));
+    }, "Open Page B")), /* @__PURE__ */ import_react2.default.createElement("div", null, children));
   }
   function Home() {
-    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world!"));
+    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! ", Date.now().toString()));
   }
   function PageA() {
-    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (page A)"));
+    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("div", {
+      className: "flex-row m-gap-16"
+    }, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (Page A)"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
+      href: "/page-b"
+    }, "Open Page B")));
   }
   function PageB() {
-    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (page B)"));
+    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("div", {
+      className: "flex-row m-gap-16"
+    }, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (Page B)"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
+      href: "/page-a"
+    }, "Open Page A")));
   }
   function RoutedApp() {
     return /* @__PURE__ */ import_react2.default.createElement("div", {

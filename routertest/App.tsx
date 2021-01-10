@@ -31,10 +31,10 @@ function NavWrapper({ children }: NavWrapperProps) {
 					Open home
 				</Anchor>
 				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-a">
-					Open page A
+					Open Page A
 				</Anchor>
 				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-b">
-					Open page B
+					Open Page B
 				</Anchor>
 			</div>
 			<div>{children}</div>
@@ -45,7 +45,7 @@ function NavWrapper({ children }: NavWrapperProps) {
 function Home() {
 	return (
 		<NavWrapper>
-			<h1>Hello, world!</h1>
+			<h1>Hello, world! {Date.now().toString()}</h1>
 		</NavWrapper>
 	)
 }
@@ -53,7 +53,12 @@ function Home() {
 function PageA() {
 	return (
 		<NavWrapper>
-			<h1>Hello, world! (page A)</h1>
+			<div className="flex-row m-gap-16">
+				<h1>Hello, world! (Page A)</h1>
+				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-b">
+					Open Page B
+				</Anchor>
+			</div>
 		</NavWrapper>
 	)
 }
@@ -61,7 +66,12 @@ function PageA() {
 function PageB() {
 	return (
 		<NavWrapper>
-			<h1>Hello, world! (page B)</h1>
+			<div className="flex-row m-gap-16">
+				<h1>Hello, world! (Page B)</h1>
+				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-a">
+					Open Page A
+				</Anchor>
+			</div>
 		</NavWrapper>
 	)
 }
@@ -103,5 +113,4 @@ export default function RoutedApp() {
 	)
 }
 
-// ReactDOM.render(<div>Hello, world!</div>, document.getElementById("root"))
 ReactDOM.render(<RoutedApp />, document.getElementById("root"))
