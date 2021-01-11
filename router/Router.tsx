@@ -3,9 +3,10 @@ import { createBrowserHistory } from "history"
 
 export const history = createBrowserHistory()
 
-// TODO: Missing support for parsed params, scroll restoration, scroll callbacks
-// or equivalent, propagating state between history changes. Also, possibly
-// direct access to the history value.
+// TODO: Missing support for parsed params, scroll restoration (is this not
+// automatic?), scroll callbacks or equivalent, propagating state between
+// history changes (see the state parameter). Also, possibly direct access to
+// the history value? Maybe a hook or something else.
 
 // Creates a four-character hash.
 function newHash() {
