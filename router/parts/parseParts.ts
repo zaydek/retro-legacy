@@ -16,8 +16,6 @@ export function parseParts(path: string) {
 		}
 
 		// Start of a non-dynamic part:
-		//
-		// TODO: Extract to a helper function that returns `part, x`?
 		if (path[x] !== "[") {
 			let start = 0
 			let end = 0
@@ -31,19 +29,14 @@ export function parseParts(path: string) {
 			}
 			end = x
 			parts.push({
-				// The part; `part`.
 				part: path.slice(start, end),
-				// Is the part dynamic?
 				dynamic: false,
-				// Whether the part nests other parts.
 				nests: path[x] == "/",
 			})
 			continue
 		}
 
 		// Start of a dynamic part:
-		//
-		// TODO: Extract to a helper function that returns `part, x`?
 		if (path[x] === "[") {
 			let start = 0
 			let end = 0
@@ -56,11 +49,8 @@ export function parseParts(path: string) {
 				if (path[x] === "]") { // Iterate to `]`
 					end = x
 					parts.push({
-						// The part; `part`.
 						part: path.slice(start - 1, end + 1),
-						// Is the part dynamic?
 						dynamic: true,
-						// Whether the part nests other parts.
 						nests: x + 1 < path.length && path[x + 1] == "/",
 					})
 					x++

@@ -1,33 +1,106 @@
-import { compareParts, parseParts as p } from "../router/parts"
+import { compareParts, parseParts as parse } from "../router/parts"
 
+// prettier-ignore
 test("integration", () => {
-	expect(compareParts(p("/hello")!, p("/hello")!)).toBe(true)
-	expect(compareParts(p("/hello")!, p("/hello/")!)).toBe(false)
-	expect(compareParts(p("/hello/")!, p("/hello")!)).toBe(false)
-	expect(compareParts(p("/hello/")!, p("/hello/")!)).toBe(true)
+	expect(compareParts(
+		parse("/hello")!,
+		parse("/hello")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello")!,
+		parse("/hello/")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/")!,
+		parse("/hello")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/")!,
+		parse("/hello/")!),
+	).toBe(true)
 
-	expect(compareParts(p("/hello/world")!, p("/hello/world")!)).toBe(true)
-	expect(compareParts(p("/hello/world")!, p("/hello/world/")!)).toBe(false)
-	expect(compareParts(p("/hello/world/")!, p("/hello/world")!)).toBe(false)
-	expect(compareParts(p("/hello/world/")!, p("/hello/world/")!)).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/hello/world")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/hello/world/")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/world/")!,
+		parse("/hello/world")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/world/")!,
+		parse("/hello/world/")!),
+	).toBe(true)
 
-	expect(compareParts(p("/hello")!, p("/[hello]")!)).toBe(true)
-	expect(compareParts(p("/hello/")!, p("/[hello]")!)).toBe(false)
-	expect(compareParts(p("/hello")!, p("/[hello]/")!)).toBe(false)
-	expect(compareParts(p("/hello/")!, p("/[hello]/")!)).toBe(true)
+	expect(compareParts(
+		parse("/hello")!,
+		parse("/[hello]")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/")!,
+		parse("/[hello]")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello")!,
+		parse("/[hello]/")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/")!,
+		parse("/[hello]/")!),
+	).toBe(true)
 
-	expect(compareParts(p("/hello/world")!, p("/hello/[world]")!)).toBe(true)
-	expect(compareParts(p("/hello/world/")!, p("/hello/[world]")!)).toBe(false)
-	expect(compareParts(p("/hello/world")!, p("/hello/[world]/")!)).toBe(false)
-	expect(compareParts(p("/hello/world/")!, p("/hello/[world]/")!)).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/hello/[world]")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/world/")!,
+		parse("/hello/[world]")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/hello/[world]/")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/world/")!,
+		parse("/hello/[world]/")!),
+	).toBe(true)
 
-	expect(compareParts(p("/hello/world")!, p("/[hello]/[world]")!)).toBe(true)
-	expect(compareParts(p("/hello/world/")!, p("/[hello]/[world]")!)).toBe(false)
-	expect(compareParts(p("/hello/world")!, p("/[hello]/[world]/")!)).toBe(false)
-	expect(compareParts(p("/hello/world/")!, p("/[hello]/[world]/")!)).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/[hello]/[world]")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/world/")!,
+		parse("/[hello]/[world]")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/[hello]/[world]/")!),
+	).toBe(false)
+	expect(compareParts(
+		parse("/hello/world/")!,
+		parse("/[hello]/[world]/")!),
+	).toBe(true)
 
-	expect(compareParts(p("/hello/world")!, p("/[hello]/world")!)).toBe(true)
-	expect(compareParts(p("/hello/world")!, p("/[hello]/[world]")!)).toBe(true)
-	expect(compareParts(p("/hello/world")!, p("/hello/[world]")!)).toBe(true)
-	expect(compareParts(p("/hello/world")!, p("/[hello]/[world]")!)).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/[hello]/world")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/[hello]/[world]")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/hello/[world]")!),
+	).toBe(true)
+	expect(compareParts(
+		parse("/hello/world")!,
+		parse("/[hello]/[world]")!),
+	).toBe(true)
 })
