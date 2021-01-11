@@ -1,17 +1,12 @@
-interface Part {
-	part: string
-	dynamic: boolean
-	nests: boolean
-}
+import { Part } from "./types"
 
-// Parses parts from a dynamic path.
-export function parseDynamicPaths(path: string) {
+export function parseParts(path: string) {
 	const parts: Part[] = []
 
 	let x = 0
 	top: while (x < path.length) {
 		if (path[x] !== "/") {
-			throw new Error(`parseDynamicPaths: Expected \`/\` at the start of a part; path[x]=${path[x]}.`)
+			throw new Error(`parseParts: Expected \`/\` at the start of a part; path[x]=${path[x]}.`)
 		}
 
 		// Step-over `/`:
@@ -21,6 +16,8 @@ export function parseDynamicPaths(path: string) {
 		}
 
 		// Start of a non-dynamic part:
+		//
+		// TODO: Extract to a helper function that returns `part, x`?
 		if (path[x] !== "[") {
 			let start = 0
 			let end = 0
@@ -45,6 +42,8 @@ export function parseDynamicPaths(path: string) {
 		}
 
 		// Start of a dynamic part:
+		//
+		// TODO: Extract to a helper function that returns `part, x`?
 		if (path[x] === "[") {
 			let start = 0
 			let end = 0
@@ -77,22 +76,3 @@ export function parseDynamicPaths(path: string) {
 	}
 	return parts
 }
-
-// // Compares parsed parts to a path.
-// export function comparePartsToPath(parts: Part[], path: string) {
-// 	let partsX = 0
-//
-// 	let x= 0
-// 	while ( x < path.length) {
-// 		if (path[x] === "/") {
-// 			if (partsX < parts.length) {
-// 				return false
-// 			}
-// 			while (x < path.length && path[x] !== "/")  {
-// 				x++
-// 			}
-// 			if (parts[partsX].)
-// 		}
-// 	x++
-// 	}
-// }
