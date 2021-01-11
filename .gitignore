@@ -1,5 +1,5 @@
 # Generated
-*.out.*
+out.*
 
 # macOS
 .DS_Store
