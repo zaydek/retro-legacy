@@ -1077,7 +1077,7 @@
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create, deps);
         }
-        function useLayoutEffect2(create, deps) {
+        function useLayoutEffect(create, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useLayoutEffect(create, deps);
         }
@@ -1645,7 +1645,7 @@
         exports.useDebugValue = useDebugValue;
         exports.useEffect = useEffect2;
         exports.useImperativeHandle = useImperativeHandle;
-        exports.useLayoutEffect = useLayoutEffect2;
+        exports.useLayoutEffect = useLayoutEffect;
         exports.useMemo = useMemo;
         exports.useReducer = useReducer;
         exports.useRef = useRef;
@@ -20629,7 +20629,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   var import_react2 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
-  // routertest/Router2.js
+  // routertest/Router.js
   var import_react = __toModule(require_react());
 
   // node_modules/@babel/runtime/helpers/esm/extends.js
@@ -20801,7 +20801,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }};
   }
 
-  // routertest/Router2.js
+  // routertest/Router.js
   var history = createBrowserHistory();
   function Anchor({href, children, shouldReplaceHistory, ...props}) {
     function handleClick(e) {
@@ -20831,13 +20831,12 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     import_react.default.Children.forEach(children, (each) => els.push(each));
     return els;
   }
-  function testRoutesForHref(routes, href) {
-    const els = childrenToArray(routes);
-    const found = els.find((each) => {
+  function findRouteWithHref(routes, href) {
+    const route = routes.find((each) => {
       const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.href === href;
       return ok;
     });
-    return !!found;
+    return route;
   }
   function Router({children}) {
     const [urlState, setURLState] = import_react.useState({
@@ -20845,8 +20844,14 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       url: window.location.pathname
     });
     import_react.useEffect(() => {
-      if (!testRoutesForHref(children, "/404")) {
-        console.warn('<Router>: No such `/404` route. `<Router>` uses `<Redirect href="/404">` when no routes are matched. Add `<Route href="/404">...</Route>`.');
+      const routes = childrenToArray(children);
+      const childrenAreOnlyRoutes = !routes.every((each) => import_react.default.isValidElement(each) && each.type === Router);
+      if (childrenAreOnlyRoutes) {
+        console.warn('Router: `<Router>` children must be React elements of type `<Route>`; Use `<Route href="...">...</Route>` to suppress this warning.');
+      }
+      const route404 = !findRouteWithHref(routes, "/404");
+      if (!route404) {
+        console.warn('Router: No such `/404` route. `<Router>` uses `<Redirect href="/404">` internally when no routes are matched. Add `<Route href="/404">...</Route>` to suppress this warning.');
       }
     }, []);
     import_react.useEffect(() => {
@@ -20865,22 +20870,15 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       });
       return unlisten;
     });
-    let foundElement = null;
-    import_react.default.Children.forEach(children, (each) => {
-      const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.href === urlState.url;
-      if (!ok) {
-        return;
-      }
-      foundElement = each;
-    });
-    if (!foundElement) {
+    const route = findRouteWithHref(children, urlState.url);
+    if (!route) {
       return /* @__PURE__ */ import_react.default.createElement(Redirect, {
         href: "/404"
       });
     }
     return /* @__PURE__ */ import_react.default.createElement(import_react.Fragment, {
       key: urlState.key
-    }, foundElement);
+    }, route);
   }
 
   // routertest/App.tsx
@@ -20919,14 +20917,6 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       href: "/page-a"
     }, "Open Page A")));
   }
-  function FourZeroFour() {
-    return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Oops! Wrong page (404)"));
-  }
-  function RedirectTest() {
-    return /* @__PURE__ */ import_react2.default.createElement(Redirect, {
-      href: "/haha"
-    });
-  }
   function RoutedApp() {
     return /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "container py-16"
@@ -20936,11 +20926,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       href: "/page-a"
     }, /* @__PURE__ */ import_react2.default.createElement(PageA, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
       href: "/page-b"
-    }, /* @__PURE__ */ import_react2.default.createElement(PageB, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      href: "/oops"
-    }, /* @__PURE__ */ import_react2.default.createElement(RedirectTest, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      href: "/404"
-    }, /* @__PURE__ */ import_react2.default.createElement(FourZeroFour, null))));
+    }, /* @__PURE__ */ import_react2.default.createElement(PageB, null))));
   }
   import_react_dom.default.render(/* @__PURE__ */ import_react2.default.createElement(RoutedApp, null), document.getElementById("root"));
 })();

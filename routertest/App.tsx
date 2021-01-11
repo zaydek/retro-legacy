@@ -1,6 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom"
-import { Anchor, Route, Router, Redirect } from "./Router2"
+import { Anchor, Route, Router, Redirect } from "./Router"
 
 // import { Anchor, Route, Router } from "./Router"
 
@@ -76,13 +76,13 @@ function PageB() {
 	)
 }
 
-function FourZeroFour() {
-	return (
-		<NavWrapper>
-			<h1>Oops! Wrong page (404)</h1>
-		</NavWrapper>
-	)
-}
+// function FourZeroFour() {
+// 	return (
+// 		<NavWrapper>
+// 			<h1>Oops! Wrong page (404)</h1>
+// 		</NavWrapper>
+// 	)
+// }
 
 function RedirectTest() {
 	return <Redirect href="/haha" />
@@ -102,12 +102,12 @@ export default function RoutedApp() {
 				<Route href="/page-b">
 					<PageB />
 				</Route>
-				<Route href="/oops">
+				{/* <Route href="/oops">
 					<RedirectTest />
-				</Route>
-				<Route href="/404">
+				</Route> */}
+				{/* <Route path="/404">
 					<FourZeroFour />
-				</Route>
+				</Route> */}
 			</Router>
 		</div>
 	)

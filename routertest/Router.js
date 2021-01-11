@@ -63,15 +63,16 @@ function childrenToArray(children) {
 }
 
 // Searches routes for an route matching `href`.
-function searchHref(els, href) {
-	// prettier-ignore
-	const found = els.find(each => {
+//
+// prettier-ignore
+function findRouteWithHref(routes, href) {
+	const route = routes.find(each => {
 		const ok = React.isValidElement(each) &&
 			each.type === Route &&
 			each.props.href === href
 		return ok
 	})
-	return found
+	return route
 }
 
 // TODO: Test empty routes e.g. `<Route href="/404"></Route>`.
@@ -83,15 +84,17 @@ export function Router({ children }) {
 	})
 
 	useEffect(() => {
-		const els = childrenToArray(routes)
-		if (!els.every(each => React.isValidElement(each) && each.type === Router)) {
+		const routes = childrenToArray(children)
+		const childrenAreOnlyRoutes = !routes.every(each => React.isValidElement(each) && each.type === Router)
+		if (childrenAreOnlyRoutes) {
 			console.warn(
 				"Router: " +
 					"`<Router>` children must be React elements of type `<Route>`; " +
 					'Use `<Route href="...">...</Route>` to suppress this warning.',
 			)
 		}
-		if (!searchHref(els, "/404")) {
+		const route404 = !findRouteWithHref(routes, "/404")
+		if (!route404) {
 			console.warn(
 				"Router: " +
 					"No such `/404` route. " +
@@ -118,10 +121,11 @@ export function Router({ children }) {
 		return unlisten
 	})
 
-	const route = searchHref(children, urlState.url)
+	const route = findRouteWithHref(children, urlState.url)
 	if (!route) {
 		return <Redirect href="/404" />
 	}
+
 	// Use `key={...}` to force rerender the same route.
 	return <Fragment key={urlState.key}>{route}</Fragment>
 }
