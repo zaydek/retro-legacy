@@ -142,12 +142,8 @@ function RedirectTest() {
 // It also might be interesting if we can force the router to some route.
 //
 export default function RoutedApp() {
-	const ref = useRef()
-	useEffect(() => {
-		console.log(ref)
-	}, [])
 	return (
-		<div ref={ref} className="container py-16">
+		<div className="container py-16">
 			{/* `<Router>` is responsible for routing `window.location.pathname` to
 			to a route -- `<Route>` -- based on the `page` prop. */}
 			<Router>

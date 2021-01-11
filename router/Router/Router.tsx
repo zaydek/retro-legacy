@@ -1,7 +1,6 @@
 import React, { Fragment, useLayoutEffect, useState } from "react"
-import { createBrowserHistory } from "history"
-
-export const history = createBrowserHistory()
+import { history } from "./history"
+import { Route } from "./Route"
 
 // TODO: Missing support for parsed params, scroll restoration (is this not
 // automatic?), scroll callbacks or equivalent, propagating state between
@@ -12,99 +11,6 @@ export const history = createBrowserHistory()
 function newHash() {
 	return Math.random().toString(16).slice(2, 6)
 }
-
-/*
- * <Link>
- */
-
-type ScrollTo = "no-op" | number | string | HTMLElement
-
-// TODO: Is `React.HTMLAttributes<HTMLElement>` right?
-export interface LinkProps extends React.HTMLAttributes<HTMLElement> {
-	page: string
-	children?: React.ReactNode
-	shouldReplaceHistory?: boolean
-	scrollTo?: ScrollTo
-}
-
-// Implementation for scrolling behavior for `<Link>`.
-function scrollToImpl(scrollTo?: ScrollTo) {
-	let el = null
-	switch (typeof scrollTo) {
-		case "undefined":
-			// Scroll to the top of the page (reset):
-			window.scrollTo(0, 0)
-			break
-		case "number":
-			// Scroll to the number:
-			window.scrollTo(0, scrollTo)
-			break
-		case "string":
-			// Constant "no-op" case:
-			if (scrollTo === "no-op") {
-				// No-op
-				return
-			}
-			// Scroll to the selector:
-			//
-			// TODO: Add support for `scroll-padding-top`?
-			el = document.querySelector(scrollTo)
-			if (!el) {
-				console.error(`Link: Selector \`scrollTo\` returned \`${el}\`; scrollTo=${scrollTo}.`)
-			} else {
-				window.scrollTo(0, el.getBoundingClientRect().y)
-			}
-			break
-		default:
-			break
-	}
-}
-
-export function Link({ page, children, shouldReplaceHistory, scrollTo, ...props }: LinkProps) {
-	function handleClick(e: React.MouseEvent) {
-		e.preventDefault()
-		const fn = shouldReplaceHistory ? history.replace : history.push
-		fn(page)
-		scrollToImpl(scrollTo)
-	}
-	return (
-		<a href={page} onClick={handleClick} {...props}>
-			{children}
-		</a>
-	)
-}
-
-/*
- * <Redirect>
- */
-
-export interface RedirectProps {
-	page: string
-	shouldReplaceHistory?: boolean
-}
-
-export function Redirect({ page, shouldReplaceHistory }: RedirectProps) {
-	const fn = shouldReplaceHistory ? history.replace : history.push
-	fn(page)
-	return null
-}
-
-/*
- * <Route>
- */
-
-export interface RouteProps {
-	page: string
-	children?: React.ReactNode
-}
-
-export function Route({ children }: RouteProps) {
-	return <>{children}</>
-}
-
-/*
- * <Router>
- */
 
 // Converts React children to an array.
 function childrenToArray(children?: React.ReactNode) {
