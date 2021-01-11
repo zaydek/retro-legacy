@@ -26,10 +26,16 @@ test("should route to /404", () => {
       !
     </h1>
   `)
+
+	// Never changes:
+	expect(window.location.pathname).toBe("/oops")
 })
 
 test("should route to null; there is no /404 route", () => {
 	window.location.pathname = "/oops"
 	const tree = renderer.create(<Router>{/* Nothing to see here. */}</Router>)
 	expect(tree).toMatchInlineSnapshot("null")
+
+	// Never changes:
+	expect(window.location.pathname).toBe("/oops")
 })
