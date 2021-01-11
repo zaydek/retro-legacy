@@ -1,4 +1,5 @@
 import React from "react"
+import renderer from "react-test-renderer"
 import { Route, Router } from "../routertest/Router"
 
 beforeAll(() => {
@@ -6,8 +7,8 @@ beforeAll(() => {
 })
 
 test("should route to /404", () => {
-	const snapshot = renderSnapshot(
-		"/oops",
+	window.location.pathname = "/oops"
+	const tree = renderer.create(
 		<Router>
 			<Route page="/404">
 				<h1>
@@ -16,7 +17,7 @@ test("should route to /404", () => {
 			</Route>
 		</Router>,
 	)
-	expect(snapshot).toMatchInlineSnapshot(`
+	expect(tree).toMatchInlineSnapshot(`
     <h1>
       Hello,\u0020
       <code>
@@ -28,6 +29,7 @@ test("should route to /404", () => {
 })
 
 test("should route to null; there is no /404 route", () => {
-	const snapshot = renderSnapshot("/oops", <Router>{/* Nothing to see here. */}</Router>)
-	expect(snapshot).toMatchInlineSnapshot("null")
+	window.location.pathname = "/oops"
+	const tree = renderer.create(<Router>{/* Nothing to see here. */}</Router>)
+	expect(tree).toMatchInlineSnapshot("null")
 })

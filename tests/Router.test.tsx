@@ -2,14 +2,6 @@ import React from "react"
 import renderer from "react-test-renderer"
 import { Route, Router } from "../routertest/Router"
 
-// https://stackoverflow.com/a/54034379
-function mock_location_pathname() {
-	Object.defineProperty(window, "location", {
-		value: { pathname: "/" },
-		writable: true,
-	})
-}
-
 beforeAll(() => {
 	mock_location_pathname()
 })
