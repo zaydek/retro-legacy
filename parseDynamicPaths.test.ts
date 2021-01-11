@@ -1,18 +1,22 @@
-import parseDynamicPaths from "./parseDynamicPaths"
+import { parseDynamicPaths } from "./parseDynamicPaths"
 
 test("integration", () => {
-	expect(parseDynamicPaths("")).toBe(null)
-	expect(parseDynamicPaths("/")).toBe(null)
-	expect(parseDynamicPaths("/hello")).toBe(null)
-	expect(parseDynamicPaths("/hello/world")).toBe(null)
-	expect(parseDynamicPaths("/[hello]")).toEqual([{ part: "[hello]", partName: "hello", nests: false }])
-	expect(parseDynamicPaths("/[hello]/")).toEqual([{ part: "[hello]", partName: "hello", nests: true }])
+	expect(parseDynamicPaths("")).toEqual(null)
+	expect(parseDynamicPaths("/")).toEqual(null)
+	expect(parseDynamicPaths("/hello")).toEqual([{ part: "hello", dynamic: false, nests: false }])
+	expect(parseDynamicPaths("/hello/")).toEqual([{ part: "hello", dynamic: false, nests: true }])
+	expect(parseDynamicPaths("/hello/world")).toEqual([
+		{ part: "hello", dynamic: false, nests: true },
+		{ part: "world", dynamic: false, nests: false },
+	])
+	expect(parseDynamicPaths("/[hello]")).toEqual([{ part: "[hello]", dynamic: true, nests: false }])
+	expect(parseDynamicPaths("/[hello]/")).toEqual([{ part: "[hello]", dynamic: true, nests: true }])
 	expect(parseDynamicPaths("/[hello]/[world]")).toEqual([
-		{ part: "[hello]", partName: "hello", nests: true },
-		{ part: "[world]", partName: "world", nests: false },
+		{ part: "[hello]", dynamic: true, nests: true },
+		{ part: "[world]", dynamic: true, nests: false },
 	])
 	expect(parseDynamicPaths("/[hello]/[world]/")).toEqual([
-		{ part: "[hello]", partName: "hello", nests: true },
-		{ part: "[world]", partName: "world", nests: true },
+		{ part: "[hello]", dynamic: true, nests: true },
+		{ part: "[world]", dynamic: true, nests: true },
 	])
 })
