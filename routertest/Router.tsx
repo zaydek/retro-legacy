@@ -30,7 +30,7 @@ export function Link({ page, children, shouldReplaceHistory, ...props }: AnchorP
 		fn(page)
 	}
 	return (
-		<a page={page} onClick={handleClick} {...props}>
+		<a href={page} onClick={handleClick} {...props}>
 			{children}
 		</a>
 	)
