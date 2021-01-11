@@ -2,25 +2,35 @@ import React from "react"
 import renderer from "react-test-renderer"
 import { Route, Router } from "../routertest/Router"
 
-// Mocks `window.loation.pathname`.
-//
 // https://stackoverflow.com/a/54034379
-Object.defineProperty(window, "location", {
-	value: { pathname: "/" },
-	writable: true,
+function mock_location_pathname() {
+	Object.defineProperty(window, "location", {
+		value: { pathname: "/" },
+		writable: true,
+	})
+}
+
+beforeAll(() => {
+	mock_location_pathname()
 })
 
 function Routes() {
 	return (
 		<Router>
 			<Route page="/">
-				<code>/</code>
+				<h1>
+					Hello, <code>/</code>!
+				</h1>
 			</Route>
 			<Route page="/page-a">
-				<code>/page-a</code>
+				<h1>
+					Hello, <code>/page-a</code>!
+				</h1>
 			</Route>
 			<Route page="/page-b">
-				<code>/page-b</code>
+				<h1>
+					Hello, <code>/page-b</code>!
+				</h1>
 			</Route>
 		</Router>
 	)
@@ -30,28 +40,40 @@ test("should route to /", () => {
 	window.location.pathname = "/"
 	const tree = renderer.create(<Routes />).toJSON()
 	expect(tree).toMatchInlineSnapshot(`
-		<code>
-		  /
-		</code>
-	`)
+    <h1>
+      Hello,\u0020
+      <code>
+        /
+      </code>
+      !
+    </h1>
+  `)
 })
 
 test("should route to /page-a", () => {
 	window.location.pathname = "/page-a"
 	const tree = renderer.create(<Routes />).toJSON()
 	expect(tree).toMatchInlineSnapshot(`
-		<code>
-		  /page-a
-		</code>
-	`)
+    <h1>
+      Hello,\u0020
+      <code>
+        /page-a
+      </code>
+      !
+    </h1>
+  `)
 })
 
 test("should route to /page-b", () => {
 	window.location.pathname = "/page-b"
 	const tree = renderer.create(<Routes />).toJSON()
 	expect(tree).toMatchInlineSnapshot(`
-		<code>
-		  /page-b
-		</code>
-	`)
+    <h1>
+      Hello,\u0020
+      <code>
+        /page-b
+      </code>
+      !
+    </h1>
+  `)
 })
