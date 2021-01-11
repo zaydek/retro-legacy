@@ -17,18 +17,55 @@ function newHash() {
  * <Link>
  */
 
-// TODO: Is `React.HTMLAttributes<HTMLElement>` right here?
-interface AnchorProps extends React.HTMLAttributes<HTMLElement> {
+type ScrollTo = "no-op" | number | string | HTMLElement
+
+// TODO: Is `React.HTMLAttributes<HTMLElement>` right?
+export interface LinkProps extends React.HTMLAttributes<HTMLElement> {
 	page: string
 	children?: React.ReactNode
 	shouldReplaceHistory?: boolean
+	scrollTo?: ScrollTo
 }
 
-export function Link({ page, children, shouldReplaceHistory, ...props }: AnchorProps) {
+// Implementation for scrolling behavior for `<Link>`.
+function scrollToImpl(scrollTo?: ScrollTo) {
+	let el = null
+	switch (typeof scrollTo) {
+		case "undefined":
+			// Scroll to the top of the page (reset):
+			window.scrollTo(0, 0)
+			break
+		case "number":
+			// Scroll to the number:
+			window.scrollTo(0, scrollTo)
+			break
+		case "string":
+			// Constant "no-op" case:
+			if (scrollTo === "no-op") {
+				// No-op
+				return
+			}
+			// Scroll to the selector:
+			//
+			// TODO: Add support for `scroll-padding-top`?
+			el = document.querySelector(scrollTo)
+			if (!el) {
+				console.error(`Link: Selector \`scrollTo\` returned \`${el}\`; scrollTo=${scrollTo}.`)
+			} else {
+				window.scrollTo(0, el.getBoundingClientRect().y)
+			}
+			break
+		default:
+			break
+	}
+}
+
+export function Link({ page, children, shouldReplaceHistory, scrollTo, ...props }: LinkProps) {
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
 		const fn = shouldReplaceHistory ? history.replace : history.push
 		fn(page)
+		scrollToImpl(scrollTo)
 	}
 	return (
 		<a href={page} onClick={handleClick} {...props}>
@@ -41,7 +78,7 @@ export function Link({ page, children, shouldReplaceHistory, ...props }: AnchorP
  * <Redirect>
  */
 
-interface RedirectProps {
+export interface RedirectProps {
 	page: string
 	shouldReplaceHistory?: boolean
 }
@@ -56,7 +93,7 @@ export function Redirect({ page, shouldReplaceHistory }: RedirectProps) {
  * <Route>
  */
 
-interface RouteProps {
+export interface RouteProps {
 	page: string
 	children?: React.ReactNode
 }
@@ -95,7 +132,7 @@ function findRoute(children: undefined | React.ReactNode, page: string) {
 	return route
 }
 
-interface RouterProps {
+export interface RouterProps {
 	children?: React.ReactNode
 }
 

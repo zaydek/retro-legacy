@@ -1,6 +1,57 @@
-import React from "react"
+import React, { useEffect, useLayoutEffect, useRef } from "react"
 import ReactDOM from "react-dom"
 import { Link, Redirect, Route, Router } from "./Router"
+
+function Junk() {
+	return (
+		<div className="flex-col m-gap-16">
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+			<div>Hello, world!</div>
+		</div>
+	)
+}
 
 interface NavWrapperProps {
 	children?: React.ReactNode
@@ -39,6 +90,7 @@ function Home() {
 	return (
 		<NavWrapper>
 			<h1>Hello, world! {Date.now().toString()}</h1>
+			<Junk />
 		</NavWrapper>
 	)
 }
@@ -52,6 +104,7 @@ function PageA() {
 					Open Page B
 				</Link>
 			</div>
+			<Junk />
 		</NavWrapper>
 	)
 }
@@ -65,6 +118,7 @@ function PageB() {
 					Open Page A
 				</Link>
 			</div>
+			<Junk />
 		</NavWrapper>
 	)
 }
@@ -88,8 +142,12 @@ function RedirectTest() {
 // It also might be interesting if we can force the router to some route.
 //
 export default function RoutedApp() {
+	const ref = useRef()
+	useEffect(() => {
+		console.log(ref)
+	}, [])
 	return (
-		<div className="container py-16">
+		<div ref={ref} className="container py-16">
 			{/* `<Router>` is responsible for routing `window.location.pathname` to
 			to a route -- `<Route>` -- based on the `page` prop. */}
 			<Router>
