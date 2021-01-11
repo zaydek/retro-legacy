@@ -41,8 +41,8 @@ export interface LinkProps extends React.HTMLAttributes<HTMLElement> {
 export function Link({ page, children, shouldReplaceHistory, scrollTo, ...props }: LinkProps) {
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
-		const fn = shouldReplaceHistory ? history.replace : history.push
-		fn(page)
+		const goTo = shouldReplaceHistory ? history.replace : history.push
+		goTo(page)
 		scrollImpl(scrollTo)
 	}
 	return (

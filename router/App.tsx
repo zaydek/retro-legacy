@@ -1,6 +1,6 @@
-import React, { useEffect, useLayoutEffect, useRef } from "react"
+import React from "react"
 import ReactDOM from "react-dom"
-import { Link, Redirect, Route, Router } from "./Router"
+import { Link, Route, Router } from "./Router"
 
 function Junk() {
 	return (
@@ -123,18 +123,6 @@ function PageB() {
 	)
 }
 
-// function FourZeroFour() {
-// 	return (
-// 		<NavWrapper>
-// 			<h1>Oops! Wrong page (404)</h1>
-// 		</NavWrapper>
-// 	)
-// }
-
-function RedirectTest() {
-	return <Redirect page="/haha" />
-}
-
 // TODO: What if `<Router>` accepted `window.location.pathname` for SSG?
 // Alternatively, we simply mock `window.location.pathname` the same as we do
 // for unit tests (if necessary).
@@ -159,12 +147,6 @@ export default function RoutedApp() {
 				<Route page="/404">
 					<div>Oops! (Page 404)</div>
 				</Route>
-				{/* <Route page="/oops">
-					<RedirectTest />
-				</Route> */}
-				{/* <Route path="/404">
-					<FourZeroFour />
-				</Route> */}
 			</Router>
 		</div>
 	)

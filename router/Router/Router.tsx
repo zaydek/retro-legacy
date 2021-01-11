@@ -49,7 +49,6 @@ export function Router({ children }: RouterProps) {
 		page: window.location.pathname, // The current pathname, per render
 	})
 
-	// TODO: Change to `useEffect`?
 	useLayoutEffect(() => {
 		const defer = history.listen(e => {
 			if (e.location.pathname === state.page) {
@@ -61,6 +60,7 @@ export function Router({ children }: RouterProps) {
 		return defer
 	})
 
+	// Absolute redirect (forward the found route) or not found:
 	const route = findRoute(children, state.page)
 	if (!route) {
 		return <>{findRoute(children, "/404")}</>
