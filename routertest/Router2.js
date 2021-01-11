@@ -63,9 +63,7 @@ function childrenToArray(children) {
 }
 
 // Searches routes for an route matching `href`.
-function findRoute(routes, href) {
-	const els = childrenToArray(routes)
-
+function searchHref(els, href) {
 	// prettier-ignore
 	const found = els.find(each => {
 		const ok = React.isValidElement(each) &&
@@ -85,12 +83,20 @@ export function Router({ children }) {
 	})
 
 	useEffect(() => {
-		if (!findRoute(children, "/404")) {
+		const els = childrenToArray(routes)
+		if (!els.every(each => React.isValidElement(each) && each.type === Router)) {
 			console.warn(
-				"<Router>: " +
+				"Router: " +
+					"`<Router>` children must be React elements of type `<Route>`; " +
+					'Use `<Route href="...">...</Route>` to suppress this warning.',
+			)
+		}
+		if (!searchHref(els, "/404")) {
+			console.warn(
+				"Router: " +
 					"No such `/404` route. " +
-					'`<Router>` uses `<Redirect href="/404">` when no routes are matched. ' +
-					'Add `<Route href="/404">...</Route>`.',
+					'`<Router>` uses `<Redirect href="/404">` internally when no routes are matched. ' +
+					'Add `<Route href="/404">...</Route>` to suppress this warning.',
 			)
 		}
 	}, [])
@@ -112,7 +118,7 @@ export function Router({ children }) {
 		return unlisten
 	})
 
-	const route = findRoute(children, urlState.url)
+	const route = searchHref(children, urlState.url)
 	if (!route) {
 		return <Redirect href="/404" />
 	}
