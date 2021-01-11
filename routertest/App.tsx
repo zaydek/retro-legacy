@@ -2,20 +2,6 @@ import React from "react"
 import ReactDOM from "react-dom"
 import { Anchor, Route, Router, Redirect } from "./Router"
 
-// import { Anchor, Route, Router } from "./Router"
-
-// const routes = [
-// 	{ href: "/", children: "Open home" },
-// 	{ href: "/page-a", children: "Open page A" },
-// 	{ href: "/page-b", children: "Open page B" },
-// ]
-
-// {/* {routes.map(({ href, children }) => (
-// 	<Anchor key={href} href={href}>
-// 		{children}
-// 	</Anchor>
-// ))} */}
-
 interface NavWrapperProps {
 	children?: React.ReactNode
 }

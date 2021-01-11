@@ -20629,7 +20629,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   var import_react2 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
-  // routertest/Router.js
+  // routertest/Router.tsx
   var import_react = __toModule(require_react());
 
   // node_modules/@babel/runtime/helpers/esm/extends.js
@@ -20801,8 +20801,11 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }};
   }
 
-  // routertest/Router.js
+  // routertest/Router.tsx
   var history = createBrowserHistory();
+  function newHash() {
+    return Math.random().toString(16).slice(2, 6);
+  }
   function Anchor({href, children, shouldReplaceHistory, ...props}) {
     function handleClick(e) {
       e.preventDefault();
@@ -20820,19 +20823,16 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     fn(href);
     return null;
   }
-  function Route({href, children}) {
-    return children;
-  }
-  function newHash() {
-    return Math.random().toString(16).slice(2, 6);
+  function Route({children}) {
+    return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, children);
   }
   function childrenToArray(children) {
-    const els = [];
-    import_react.default.Children.forEach(children, (each) => els.push(each));
-    return els;
+    const childrenArr = [];
+    import_react.default.Children.forEach(children, (each) => childrenArr.push(each));
+    return childrenArr;
   }
-  function findRouteWithHref(routes, href) {
-    const route = routes.find((each) => {
+  function findRouteWithHref(childrenArr, href) {
+    const route = childrenArr.find((each) => {
       const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.href === href;
       return ok;
     });
@@ -20844,17 +20844,6 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       url: window.location.pathname
     });
     import_react.useEffect(() => {
-      const routes = childrenToArray(children);
-      const childrenAreOnlyRoutes = !routes.every((each) => import_react.default.isValidElement(each) && each.type === Router);
-      if (childrenAreOnlyRoutes) {
-        console.warn('Router: `<Router>` children must be React elements of type `<Route>`; Use `<Route href="...">...</Route>` to suppress this warning.');
-      }
-      const route404 = !findRouteWithHref(routes, "/404");
-      if (!route404) {
-        console.warn('Router: No such `/404` route. `<Router>` uses `<Redirect href="/404">` internally when no routes are matched. Add `<Route href="/404">...</Route>` to suppress this warning.');
-      }
-    }, []);
-    import_react.useEffect(() => {
       const unlisten = history.listen((e) => {
         if (e.location.pathname === urlState.url) {
           setURLState({
@@ -20864,13 +20853,14 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
           return;
         }
         setURLState({
-          key: Math.random(),
+          key: newHash(),
           url: e.location.pathname
         });
       });
       return unlisten;
     });
-    const route = findRouteWithHref(children, urlState.url);
+    const childrenArr = childrenToArray(children);
+    const route = findRouteWithHref(childrenArr, urlState.url);
     if (!route) {
       return /* @__PURE__ */ import_react.default.createElement(Redirect, {
         href: "/404"
