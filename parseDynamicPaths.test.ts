@@ -1,6 +1,7 @@
 import parseDynamicPaths from "./parseDynamicPaths"
 
 test("integration", () => {
+	expect(parseDynamicPaths("")).toBe(null)
 	expect(parseDynamicPaths("/")).toBe(null)
 	expect(parseDynamicPaths("/hello")).toBe(null)
 	expect(parseDynamicPaths("/hello/world")).toBe(null)

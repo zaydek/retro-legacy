@@ -2,17 +2,21 @@ export default function parseDynamicPaths(path: string) {
 	const dynamicPaths = []
 
 	let x = 0
-	while (x < path.length) {
+	outer: while (x < path.length) {
 		if (path[x] !== "/") {
-			// error condition
+			throw new Error(`parseDynamicPaths: Expected \`/\` at the start of a part; path[x]=${path[x]}.`)
 		}
+		// Step-over `/`:
+		x++
+
 		// Start of a dynamic path:
-		if (path[x] === "[") {
+		if (x < path.length && path[x] === "[") {
+			// Scan the current part:
 			let start = 0
 			let end = 0
 			x++
 			start = x
-			while (x < path.length) {
+			inner: while (x < path.length) {
 				// Emit a dynamic path:
 				if (path[x] === "]") {
 					end = x
@@ -25,10 +29,17 @@ export default function parseDynamicPaths(path: string) {
 						nests: end + 1 < path.length && path[x + 1] == "/",
 					})
 					x++
-					break
+					continue outer
 				}
 				x++
 			}
+		} else {
+			// Iterate to next part:
+			x++
+			while (x < path.length && path[x] !== "/") {
+				x++
+			}
+			continue
 		}
 		x++
 	}
