@@ -27,6 +27,7 @@ function run() {
 	for (const each of srcs) {
 		const basename = each.replace(/\.tsx$/, "")
 
+		// TODO: Should we be deserializing, e.g. `JSON.parse`, on cached props?
 		const transformed = transformSync(
 			`
 import React from "react"

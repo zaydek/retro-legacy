@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react"
+import React, { Fragment, useLayoutEffect, useState } from "react"
 import { createBrowserHistory } from "history"
 
 export const history = createBrowserHistory()
@@ -13,7 +13,7 @@ function newHash() {
 }
 
 /*
- * Link
+ * <Link>
  */
 
 // TODO: Is `React.HTMLAttributes<HTMLElement>` right here?
@@ -37,7 +37,7 @@ export function Link({ page, children, shouldReplaceHistory, ...props }: AnchorP
 }
 
 /*
- * Redirect
+ * <Redirect>
  */
 
 interface RedirectProps {
@@ -52,7 +52,7 @@ export function Redirect({ page, shouldReplaceHistory }: RedirectProps) {
 }
 
 /*
- * Route
+ * <Route>
  */
 
 interface RouteProps {
@@ -65,7 +65,7 @@ export function Route({ children }: RouteProps) {
 }
 
 /*
- * Router
+ * <Router>
  */
 
 // Converts React children to an array.
@@ -105,7 +105,8 @@ export function Router({ children }: RouterProps) {
 		page: window.location.pathname, // The current pathname, per render
 	})
 
-	useEffect(() => {
+	// TODO: Change to `useEffect`?
+	useLayoutEffect(() => {
 		const defer = history.listen(e => {
 			if (e.location.pathname === state.page) {
 				setState({ ...state, hash: newHash() })
