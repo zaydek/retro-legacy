@@ -1,4 +1,4 @@
-import React, { /* Fragment, */ useEffect, useState } from "react"
+import React, { Fragment, useEffect, useState } from "react"
 import { createBrowserHistory } from "history"
 
 export const history = createBrowserHistory()
@@ -7,10 +7,10 @@ export const history = createBrowserHistory()
 // or equivalent, propagating state between history changes. Also, possibly
 // direct access to the history value.
 
-// // Creates a four-character hash.
-// function newHash() {
-// 	return Math.random().toString(16).slice(2, 6)
-// }
+// Creates a four-character hash.
+function newHash() {
+	return Math.random().toString(16).slice(2, 6)
+}
 
 /*
  * Link
@@ -95,48 +95,23 @@ function findRoute(children: undefined | React.ReactNode, page: string) {
 }
 
 interface RouterProps {
-	// TODO: Can we constrain `children` to be of type `Route | Route[]`?
-	// E.g. `React.ReactElement<RouteProps> | React.ReactElement<RouteProps>[]`?
-	//
 	children?: React.ReactNode
 }
 
-// useEffect(() => {
-// 	const childrenArr = childrenToArray(children)
-// 	const childrenAreOnlyRoutes = !childrenArr.every(each => React.isValidElement(each) && each.type === Router)
-// 	if (childrenAreOnlyRoutes) {
-// 		console.warn(
-// 			"Router: " +
-// 				"`<Router>` children must be React elements of type `<Route>`; " +
-// 				'Use `<Route page="...">...</Route>` to suppress this warning.',
-// 		)
-// 	}
-// 	const route404 = !findRoute(childrenArr, "/404")
-// 	if (!route404) {
-// 		console.warn(
-// 			"Router: " +
-// 				"No such `/404` route. " +
-// 				'`<Router>` uses `<Redirect page="/404">` internally when no routes are matched. ' +
-// 				'Add `<Route page="/404">...</Route>` to suppress this warning.',
-// 		)
-// 	}
-// }, [])
-
-// TODO: Test empty routes e.g. `<Route page="/404"></Route>`.
 export function Router({ children }: RouterProps) {
 	// prettier-ignore
 	const [state, setState] = useState({
-		// hash: newHash(),                // A four-character hash to force rerender routes
+		hash: newHash(),                // A four-character hash to force rerender the same route
 		page: window.location.pathname, // The current pathname, per render
 	})
 
 	useEffect(() => {
 		const defer = history.listen(e => {
 			if (e.location.pathname === state.page) {
-				// setState({ ...state, hash: newHash() })
+				setState({ ...state, hash: newHash() })
 				return
 			}
-			setState({ /* hash: newHash(), */ page: e.location.pathname })
+			setState({ hash: newHash(), page: e.location.pathname })
 		})
 		return defer
 	})
@@ -145,8 +120,5 @@ export function Router({ children }: RouterProps) {
 	if (!route) {
 		return <>{findRoute(children, "/404")}</>
 	}
-	return <>{route}</>
+	return <Fragment key={state.hash}>{route}</Fragment>
 }
-
-// Use `key={...}` to force rerender the same route.
-// return <Fragment key={state.hash}>{route}</Fragment>

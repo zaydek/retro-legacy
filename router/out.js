@@ -2684,7 +2684,7 @@
         var HostPortal = 4;
         var HostComponent = 5;
         var HostText = 6;
-        var Fragment = 7;
+        var Fragment2 = 7;
         var Mode = 8;
         var ContextConsumer = 9;
         var ContextProvider = 10;
@@ -11881,7 +11881,7 @@
             }
           }
           function updateFragment2(returnFiber, current2, fragment, lanes, key) {
-            if (current2 === null || current2.tag !== Fragment) {
+            if (current2 === null || current2.tag !== Fragment2) {
               var created = createFiberFromFragment(fragment, returnFiber.mode, lanes, key);
               created.return = returnFiber;
               return created;
@@ -12249,7 +12249,7 @@
             while (child !== null) {
               if (child.key === key) {
                 switch (child.tag) {
-                  case Fragment: {
+                  case Fragment2: {
                     if (element.type === REACT_FRAGMENT_TYPE) {
                       deleteRemainingChildren(returnFiber, child.sibling);
                       var existing = useFiber(child, element.props.children);
@@ -15853,7 +15853,7 @@
               var _resolvedProps2 = workInProgress2.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
               return updateForwardRef(current2, workInProgress2, type, _resolvedProps2, renderLanes2);
             }
-            case Fragment:
+            case Fragment2:
               return updateFragment(current2, workInProgress2, renderLanes2);
             case Mode:
               return updateMode(current2, workInProgress2, renderLanes2);
@@ -16020,7 +16020,7 @@
             case SimpleMemoComponent:
             case FunctionComponent:
             case ForwardRef:
-            case Fragment:
+            case Fragment2:
             case Mode:
             case Profiler:
             case ContextConsumer:
@@ -19724,7 +19724,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
           return fiber;
         }
         function createFiberFromFragment(elements, mode, lanes, key) {
-          var fiber = createFiber(Fragment, elements, key, mode);
+          var fiber = createFiber(Fragment2, elements, key, mode);
           fiber.lanes = lanes;
           return fiber;
         }
@@ -20625,11 +20625,11 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }
   });
 
-  // routertest/App.tsx
+  // router/App.tsx
   var import_react2 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
-  // routertest/Router.tsx
+  // router/Router.tsx
   var import_react = __toModule(require_react());
 
   // node_modules/@babel/runtime/helpers/esm/extends.js
@@ -20801,8 +20801,11 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }};
   }
 
-  // routertest/Router.tsx
+  // router/Router.tsx
   var history = createBrowserHistory();
+  function newHash() {
+    return Math.random().toString(16).slice(2, 6);
+  }
   function Link({page, children, shouldReplaceHistory, ...props}) {
     function handleClick(e) {
       e.preventDefault();
@@ -20833,14 +20836,16 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   }
   function Router({children}) {
     const [state, setState] = import_react.useState({
+      hash: newHash(),
       page: window.location.pathname
     });
     import_react.useEffect(() => {
       const defer = history.listen((e) => {
         if (e.location.pathname === state.page) {
+          setState({...state, hash: newHash()});
           return;
         }
-        setState({page: e.location.pathname});
+        setState({hash: newHash(), page: e.location.pathname});
       });
       return defer;
     });
@@ -20848,10 +20853,12 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     if (!route) {
       return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, findRoute(children, "/404"));
     }
-    return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, route);
+    return /* @__PURE__ */ import_react.default.createElement(import_react.Fragment, {
+      key: state.hash
+    }, route);
   }
 
-  // routertest/App.tsx
+  // router/App.tsx
   function NavWrapper({children}) {
     return /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "flex-col m-gap-16"
