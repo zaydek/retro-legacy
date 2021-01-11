@@ -2684,7 +2684,7 @@
         var HostPortal = 4;
         var HostComponent = 5;
         var HostText = 6;
-        var Fragment2 = 7;
+        var Fragment = 7;
         var Mode = 8;
         var ContextConsumer = 9;
         var ContextProvider = 10;
@@ -11881,7 +11881,7 @@
             }
           }
           function updateFragment2(returnFiber, current2, fragment, lanes, key) {
-            if (current2 === null || current2.tag !== Fragment2) {
+            if (current2 === null || current2.tag !== Fragment) {
               var created = createFiberFromFragment(fragment, returnFiber.mode, lanes, key);
               created.return = returnFiber;
               return created;
@@ -12249,7 +12249,7 @@
             while (child !== null) {
               if (child.key === key) {
                 switch (child.tag) {
-                  case Fragment2: {
+                  case Fragment: {
                     if (element.type === REACT_FRAGMENT_TYPE) {
                       deleteRemainingChildren(returnFiber, child.sibling);
                       var existing = useFiber(child, element.props.children);
@@ -15853,7 +15853,7 @@
               var _resolvedProps2 = workInProgress2.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
               return updateForwardRef(current2, workInProgress2, type, _resolvedProps2, renderLanes2);
             }
-            case Fragment2:
+            case Fragment:
               return updateFragment(current2, workInProgress2, renderLanes2);
             case Mode:
               return updateMode(current2, workInProgress2, renderLanes2);
@@ -16020,7 +16020,7 @@
             case SimpleMemoComponent:
             case FunctionComponent:
             case ForwardRef:
-            case Fragment2:
+            case Fragment:
             case Mode:
             case Profiler:
             case ContextConsumer:
@@ -19724,7 +19724,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
           return fiber;
         }
         function createFiberFromFragment(elements, mode, lanes, key) {
-          var fiber = createFiber(Fragment2, elements, key, mode);
+          var fiber = createFiber(Fragment, elements, key, mode);
           fiber.lanes = lanes;
           return fiber;
         }
@@ -20803,9 +20803,6 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
 
   // routertest/Router.tsx
   var history = createBrowserHistory();
-  function newHash() {
-    return Math.random().toString(16).slice(2, 6);
-  }
   function Link({page, children, shouldReplaceHistory, ...props}) {
     function handleClick(e) {
       e.preventDefault();
@@ -20813,15 +20810,10 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       fn(page);
     }
     return /* @__PURE__ */ import_react.default.createElement("a", {
-      page,
+      href: page,
       onClick: handleClick,
       ...props
     }, children);
-  }
-  function Redirect({page, shouldReplaceHistory}) {
-    const fn = shouldReplaceHistory ? history.replace : history.push;
-    fn(page);
-    return null;
   }
   function Route({children}) {
     return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, children);
@@ -20831,7 +20823,8 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     import_react.default.Children.forEach(children, (each) => childrenArr.push(each));
     return childrenArr;
   }
-  function findRouteWithHref(childrenArr, page) {
+  function findRoute(children, page) {
+    const childrenArr = childrenToArray(children);
     const route = childrenArr.find((each) => {
       const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.page === page;
       return ok;
@@ -20839,36 +20832,23 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     return route;
   }
   function Router({children}) {
-    const [urlState, setURLState] = import_react.useState({
-      key: newHash(),
-      url: window.location.pathname
+    const [state, setState] = import_react.useState({
+      page: window.location.pathname
     });
     import_react.useEffect(() => {
-      const unlisten = history.listen((e) => {
-        if (e.location.pathname === urlState.url) {
-          setURLState({
-            ...urlState,
-            key: newHash()
-          });
+      const defer = history.listen((e) => {
+        if (e.location.pathname === state.page) {
           return;
         }
-        setURLState({
-          key: newHash(),
-          url: e.location.pathname
-        });
+        setState({page: e.location.pathname});
       });
-      return unlisten;
+      return defer;
     });
-    const childrenArr = childrenToArray(children);
-    const route = findRouteWithHref(childrenArr, urlState.url);
+    const route = findRoute(children, state.page);
     if (!route) {
-      return /* @__PURE__ */ import_react.default.createElement(Redirect, {
-        page: "/404"
-      });
+      return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, findRoute(children, "/404"));
     }
-    return /* @__PURE__ */ import_react.default.createElement(import_react.Fragment, {
-      key: urlState.key
-    }, route);
+    return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, route);
   }
 
   // routertest/App.tsx
@@ -20886,7 +20866,13 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }, "Open Page A"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
       page: "/page-b"
-    }, "Open Page B")), /* @__PURE__ */ import_react2.default.createElement("div", null, children));
+    }, "Open Page B"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
+      page: "/oops"
+    }, "Open Oops"), /* @__PURE__ */ import_react2.default.createElement(Link, {
+      className: "px-16 py-8 bg-cool-gray-200 rounded-full",
+      page: "/404"
+    }, "Open 404")), /* @__PURE__ */ import_react2.default.createElement("div", null, children));
   }
   function Home() {
     return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! ", Date.now().toString()));
@@ -20916,7 +20902,9 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       page: "/page-a"
     }, /* @__PURE__ */ import_react2.default.createElement(PageA, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
       page: "/page-b"
-    }, /* @__PURE__ */ import_react2.default.createElement(PageB, null))));
+    }, /* @__PURE__ */ import_react2.default.createElement(PageB, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
+      page: "/404"
+    }, /* @__PURE__ */ import_react2.default.createElement("div", null, "Oops! (Page 404)"))));
   }
   import_react_dom.default.render(/* @__PURE__ */ import_react2.default.createElement(RoutedApp, null), document.getElementById("root"));
 })();

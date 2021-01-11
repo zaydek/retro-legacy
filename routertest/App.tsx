@@ -22,6 +22,12 @@ function NavWrapper({ children }: NavWrapperProps) {
 				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-b">
 					Open Page B
 				</Link>
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/oops">
+					Open Oops
+				</Link>
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/404">
+					Open 404
+				</Link>
 			</div>
 			<div>{children}</div>
 		</div>
@@ -87,6 +93,9 @@ export default function RoutedApp() {
 				</Route>
 				<Route page="/page-b">
 					<PageB />
+				</Route>
+				<Route page="/404">
+					<div>Oops! (Page 404)</div>
 				</Route>
 				{/* <Route page="/oops">
 					<RedirectTest />
