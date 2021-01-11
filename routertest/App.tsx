@@ -1,6 +1,6 @@
 import React from "react"
 import ReactDOM from "react-dom"
-import { Anchor, Route, Router, Redirect } from "./Router"
+import { Link, Redirect, Route, Router } from "./Router"
 
 interface NavWrapperProps {
 	children?: React.ReactNode
@@ -13,15 +13,15 @@ function NavWrapper({ children }: NavWrapperProps) {
 				You are currently viewing <code>`{window.location.pathname}`</code>
 			</div>
 			<div className="flex-row m-gap-8">
-				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/">
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/">
 					Open home
-				</Anchor>
-				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-a">
+				</Link>
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-a">
 					Open Page A
-				</Anchor>
-				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-b">
+				</Link>
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-b">
 					Open Page B
-				</Anchor>
+				</Link>
 			</div>
 			<div>{children}</div>
 		</div>
@@ -41,9 +41,9 @@ function PageA() {
 		<NavWrapper>
 			<div className="flex-row m-gap-16">
 				<h1>Hello, world! (Page A)</h1>
-				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-b">
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-b">
 					Open Page B
-				</Anchor>
+				</Link>
 			</div>
 		</NavWrapper>
 	)
@@ -54,9 +54,9 @@ function PageB() {
 		<NavWrapper>
 			<div className="flex-row m-gap-16">
 				<h1>Hello, world! (Page B)</h1>
-				<Anchor className="px-16 py-8 bg-cool-gray-200 rounded-full" href="/page-a">
+				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-a">
 					Open Page A
-				</Anchor>
+				</Link>
 			</div>
 		</NavWrapper>
 	)
@@ -71,7 +71,7 @@ function PageB() {
 // }
 
 function RedirectTest() {
-	return <Redirect href="/haha" />
+	return <Redirect page="/haha" />
 }
 
 export default function RoutedApp() {
@@ -79,16 +79,16 @@ export default function RoutedApp() {
 		<div className="container py-16">
 			{/* TODO: What if `<Router>` accepted `window.location.pathname` for SSG? */}
 			<Router>
-				<Route href="/">
+				<Route page="/">
 					<Home />
 				</Route>
-				<Route href="/page-a">
+				<Route page="/page-a">
 					<PageA />
 				</Route>
-				<Route href="/page-b">
+				<Route page="/page-b">
 					<PageB />
 				</Route>
-				{/* <Route href="/oops">
+				{/* <Route page="/oops">
 					<RedirectTest />
 				</Route> */}
 				{/* <Route path="/404">

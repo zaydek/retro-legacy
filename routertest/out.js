@@ -20806,21 +20806,21 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function newHash() {
     return Math.random().toString(16).slice(2, 6);
   }
-  function Anchor({href, children, shouldReplaceHistory, ...props}) {
+  function Link({page, children, shouldReplaceHistory, ...props}) {
     function handleClick(e) {
       e.preventDefault();
       const fn = shouldReplaceHistory ? history.replace : history.push;
-      fn(href);
+      fn(page);
     }
     return /* @__PURE__ */ import_react.default.createElement("a", {
-      href,
+      page,
       onClick: handleClick,
       ...props
     }, children);
   }
-  function Redirect({href, shouldReplaceHistory}) {
+  function Redirect({page, shouldReplaceHistory}) {
     const fn = shouldReplaceHistory ? history.replace : history.push;
-    fn(href);
+    fn(page);
     return null;
   }
   function Route({children}) {
@@ -20831,9 +20831,9 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     import_react.default.Children.forEach(children, (each) => childrenArr.push(each));
     return childrenArr;
   }
-  function findRouteWithHref(childrenArr, href) {
+  function findRouteWithHref(childrenArr, page) {
     const route = childrenArr.find((each) => {
-      const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.href === href;
+      const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.page === page;
       return ok;
     });
     return route;
@@ -20863,7 +20863,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     const route = findRouteWithHref(childrenArr, urlState.url);
     if (!route) {
       return /* @__PURE__ */ import_react.default.createElement(Redirect, {
-        href: "/404"
+        page: "/404"
       });
     }
     return /* @__PURE__ */ import_react.default.createElement(import_react.Fragment, {
@@ -20877,15 +20877,15 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       className: "flex-col m-gap-16"
     }, /* @__PURE__ */ import_react2.default.createElement("div", null, "You are currently viewing ", /* @__PURE__ */ import_react2.default.createElement("code", null, "`", window.location.pathname, "`")), /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "flex-row m-gap-8"
-    }, /* @__PURE__ */ import_react2.default.createElement(Anchor, {
+    }, /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
-      href: "/"
-    }, "Open home"), /* @__PURE__ */ import_react2.default.createElement(Anchor, {
+      page: "/"
+    }, "Open home"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
-      href: "/page-a"
-    }, "Open Page A"), /* @__PURE__ */ import_react2.default.createElement(Anchor, {
+      page: "/page-a"
+    }, "Open Page A"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
-      href: "/page-b"
+      page: "/page-b"
     }, "Open Page B")), /* @__PURE__ */ import_react2.default.createElement("div", null, children));
   }
   function Home() {
@@ -20894,28 +20894,28 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function PageA() {
     return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "flex-row m-gap-16"
-    }, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (Page A)"), /* @__PURE__ */ import_react2.default.createElement(Anchor, {
+    }, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (Page A)"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
-      href: "/page-b"
+      page: "/page-b"
     }, "Open Page B")));
   }
   function PageB() {
     return /* @__PURE__ */ import_react2.default.createElement(NavWrapper, null, /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "flex-row m-gap-16"
-    }, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (Page B)"), /* @__PURE__ */ import_react2.default.createElement(Anchor, {
+    }, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world! (Page B)"), /* @__PURE__ */ import_react2.default.createElement(Link, {
       className: "px-16 py-8 bg-cool-gray-200 rounded-full",
-      href: "/page-a"
+      page: "/page-a"
     }, "Open Page A")));
   }
   function RoutedApp() {
     return /* @__PURE__ */ import_react2.default.createElement("div", {
       className: "container py-16"
     }, /* @__PURE__ */ import_react2.default.createElement(Router, null, /* @__PURE__ */ import_react2.default.createElement(Route, {
-      href: "/"
+      page: "/"
     }, /* @__PURE__ */ import_react2.default.createElement(Home, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      href: "/page-a"
+      page: "/page-a"
     }, /* @__PURE__ */ import_react2.default.createElement(PageA, null)), /* @__PURE__ */ import_react2.default.createElement(Route, {
-      href: "/page-b"
+      page: "/page-b"
     }, /* @__PURE__ */ import_react2.default.createElement(PageB, null))));
   }
   import_react_dom.default.render(/* @__PURE__ */ import_react2.default.createElement(RoutedApp, null), document.getElementById("root"));

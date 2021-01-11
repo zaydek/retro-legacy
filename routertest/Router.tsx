@@ -13,24 +13,24 @@ function newHash() {
 }
 
 /*
- * Anchor
+ * Link
  */
 
 // TODO: Is `React.HTMLAttributes<HTMLElement>` right here?
 interface AnchorProps extends React.HTMLAttributes<HTMLElement> {
-	href: string
+	page: string
 	children?: React.ReactNode
 	shouldReplaceHistory?: boolean
 }
 
-export function Anchor({ href, children, shouldReplaceHistory, ...props }: AnchorProps) {
+export function Link({ page, children, shouldReplaceHistory, ...props }: AnchorProps) {
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
 		const fn = shouldReplaceHistory ? history.replace : history.push
-		fn(href)
+		fn(page)
 	}
 	return (
-		<a href={href} onClick={handleClick} {...props}>
+		<a page={page} onClick={handleClick} {...props}>
 			{children}
 		</a>
 	)
@@ -41,13 +41,13 @@ export function Anchor({ href, children, shouldReplaceHistory, ...props }: Ancho
  */
 
 interface RedirectProps {
-	href: string
+	page: string
 	shouldReplaceHistory?: boolean
 }
 
-export function Redirect({ href, shouldReplaceHistory }: RedirectProps) {
+export function Redirect({ page, shouldReplaceHistory }: RedirectProps) {
 	const fn = shouldReplaceHistory ? history.replace : history.push
-	fn(href)
+	fn(page)
 	return null
 }
 
@@ -56,7 +56,7 @@ export function Redirect({ href, shouldReplaceHistory }: RedirectProps) {
  */
 
 interface RouteProps {
-	href: string
+	page: string
 	children?: React.ReactNode
 }
 
@@ -79,25 +79,27 @@ function childrenToArray(children?: React.ReactNode) {
 	return childrenArr
 }
 
-// Searches routes for an route matching `href`.
+// Searches routes for an route matching `page`.
 //
 // prettier-ignore
-function findRouteWithHref(childrenArr: React.ReactNode[], href: string) {
+function findRouteWithHref(childrenArr: React.ReactNode[], page: string) {
 	const route = childrenArr.find(each => {
 		const ok = React.isValidElement(each) &&
 			each.type === Route &&
-			each.props.href === href
+			each.props.page === page
 		return ok
 	})
 	return route
 }
 
-// TODO: Constrain `children` to `Route[]`?
 interface RouterProps {
+	// TODO: Can we constrain `children` to be of type `Route | Route[]`?
+	// E.g. `React.ReactElement<RouteProps> | React.ReactElement<RouteProps>[]`?
+	//
 	children?: React.ReactNode
 }
 
-// TODO: Test empty routes e.g. `<Route href="/404"></Route>`.
+// TODO: Test empty routes e.g. `<Route page="/404"></Route>`.
 export function Router({ children }: RouterProps) {
 	// prettier-ignore
 	const [urlState, setURLState] = useState({
@@ -105,7 +107,6 @@ export function Router({ children }: RouterProps) {
 		url: window.location.pathname, // The current pathname, per render
 	})
 
-	// // TODO: Constrain `children` to `Route[]`?
 	// useEffect(() => {
 	// 	const childrenArr = childrenToArray(children)
 	// 	const childrenAreOnlyRoutes = !childrenArr.every(each => React.isValidElement(each) && each.type === Router)
@@ -113,7 +114,7 @@ export function Router({ children }: RouterProps) {
 	// 		console.warn(
 	// 			"Router: " +
 	// 				"`<Router>` children must be React elements of type `<Route>`; " +
-	// 				'Use `<Route href="...">...</Route>` to suppress this warning.',
+	// 				'Use `<Route page="...">...</Route>` to suppress this warning.',
 	// 		)
 	// 	}
 	// 	const route404 = !findRouteWithHref(childrenArr, "/404")
@@ -121,8 +122,8 @@ export function Router({ children }: RouterProps) {
 	// 		console.warn(
 	// 			"Router: " +
 	// 				"No such `/404` route. " +
-	// 				'`<Router>` uses `<Redirect href="/404">` internally when no routes are matched. ' +
-	// 				'Add `<Route href="/404">...</Route>` to suppress this warning.',
+	// 				'`<Router>` uses `<Redirect page="/404">` internally when no routes are matched. ' +
+	// 				'Add `<Route page="/404">...</Route>` to suppress this warning.',
 	// 		)
 	// 	}
 	// }, [])
@@ -148,7 +149,7 @@ export function Router({ children }: RouterProps) {
 	const childrenArr = childrenToArray(children)
 	const route = findRouteWithHref(childrenArr, urlState.url)
 	if (!route) {
-		return <Redirect href="/404" />
+		return <Redirect page="/404" />
 	}
 
 	// Use `key={...}` to force rerender the same route.
