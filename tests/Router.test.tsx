@@ -1,23 +1,57 @@
 import React from "react"
 import renderer from "react-test-renderer"
-import { Link } from "../routertest/Router"
+import { Route, Router } from "../routertest/Router"
 
-// interface LinkProps extends React.HTMLAttributes<HTMLElement> {
-// 	href: string
-// }
+// Mocks `window.loation.pathname`.
+//
+// https://stackoverflow.com/a/54034379
+Object.defineProperty(window, "location", {
+	value: { pathname: "/" },
+	writable: true,
+})
 
-// function Link(props: LinkProps) {
-// 	return <a {...props} />
-// }
+function Routes() {
+	return (
+		<Router>
+			<Route page="/">
+				<code>/</code>
+			</Route>
+			<Route page="/page-a">
+				<code>/page-a</code>
+			</Route>
+			<Route page="/page-b">
+				<code>/page-b</code>
+			</Route>
+		</Router>
+	)
+}
 
-test("renders correctly", () => {
-	const tree = renderer.create(<Link page="https://google.com">Google</Link>).toJSON()
+test("should route to /", () => {
+	window.location.pathname = "/"
+	const tree = renderer.create(<Routes />).toJSON()
 	expect(tree).toMatchInlineSnapshot(`
-		<a
-		  href="https://google.com"
-		  onClick={[Function]}
-		>
-		  Google
-		</a>
+		<code>
+		  /
+		</code>
+	`)
+})
+
+test("should route to /page-a", () => {
+	window.location.pathname = "/page-a"
+	const tree = renderer.create(<Routes />).toJSON()
+	expect(tree).toMatchInlineSnapshot(`
+		<code>
+		  /page-a
+		</code>
+	`)
+})
+
+test("should route to /page-b", () => {
+	window.location.pathname = "/page-b"
+	const tree = renderer.create(<Routes />).toJSON()
+	expect(tree).toMatchInlineSnapshot(`
+		<code>
+		  /page-b
+		</code>
 	`)
 })
