@@ -1,14 +1,13 @@
 import fs from "fs"
 import path from "path"
-import React from "react"
-import ReactDOM from "react-dom"
-import { Route, Router } from "./Router"
+import { routeInfo } from "./parts"
 
-function getPageComponents() {
+// Gets pages as names.
+function getPageSrcs() {
 	const paths = fs.readdirSync("./router")
 
 	// prettier-ignore
-	const filteredPaths = paths.filter(each => {
+	const srcs = paths.filter(each => {
 		const ok = (
 			fs.statSync("./router/" + each).isFile() &&
 			path.parse("./router/" + each).ext === ".tsx" &&
@@ -16,62 +15,43 @@ function getPageComponents() {
 		)
 		return ok
 	})
-
-	const pages = filteredPaths.map(each => path.parse(each).name)
-	const components = pages.map(each => {
-		try {
-			return require(`./${each}.tsx`).default
-		} catch (err) {}
-	})
-	return { pages, components }
+	const pages = srcs.map(each => path.parse(each).name)
+	return pages
 }
 
-// console.log(getPageComponents())
-const { pages, components } = getPageComponents()
+const pages = getPageSrcs()
+const routeInfos = pages.map(each => routeInfo("/" + each))
 
-// console.log(pages.map(each => `import ${each} from ${JSON.stringify("./" + each)}`))
-console.log(
-	`
+// TODO: Add support for props?
+function run() {
+	// prettier-ignore
+	fs.writeFileSync("router/App.cache.js", `
 import React from "react"
 import ReactDOM from "react-dom"
 import { Route, Router } from "./Router"
 
-${pages.map(each => `import ${each} from ${JSON.stringify("./" + each)}`).join("\n")}
+${routeInfos.map(each => `import ${each!.component} from ${JSON.stringify("." + each!.page)}`).join("\n")}
 
-export default function RoutedApp() {
+export default function App() {
 	return (
 		<Router>
-			${pages
-				.map(
-					each => `
-			<Route page=${JSON.stringify("/" + each)}>
-				<${each} />
+			${routeInfos.map(each => `
+			<Route page=${JSON.stringify(each!.page)}>
+				<${each!.component} />
 			</Route>
-`,
-				)
-				.join("")}
+`).join("")}
 		</Router>
 	)
 }
-`.trimStart(),
+
+ReactDOM.render(
+	<App />,
+	document.getElementById("root"),
 )
+`.trimStart(),
+	)
+}
 
-// {${JSON.stringify(pages)}.map((Each, x) => (
-// 	<Route page={pages[x]}>
-// 		<Each />
-// 	</Route>
-// ))}
-
-// function App() {
-// 	return (
-// 		<Router>
-// 			{components.map((Each, x) => (
-// 				<Route page={pages[x]!}>
-// 					<Each />
-// 				</Route>
-// 			))}
-// 		</Router>
-// 	)
-// }
-
-// ReactDOM.render(<App />, document.getElementById("root"))
+;(() => {
+	run()
+})()
