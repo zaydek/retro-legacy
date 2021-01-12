@@ -1,155 +1,77 @@
+import fs from "fs"
+import path from "path"
 import React from "react"
 import ReactDOM from "react-dom"
-import { Link, Route, Router } from "./Router"
+import { Route, Router } from "./Router"
 
-function Junk() {
-	return (
-		<div className="flex-col m-gap-16">
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-			<div>Hello, world!</div>
-		</div>
-	)
+function getPageComponents() {
+	const paths = fs.readdirSync("./router")
+
+	// prettier-ignore
+	const filteredPaths = paths.filter(each => {
+		const ok = (
+			fs.statSync("./router/" + each).isFile() &&
+			path.parse("./router/" + each).ext === ".tsx" &&
+			each !== "App.tsx"
+		)
+		return ok
+	})
+
+	const pages = filteredPaths.map(each => path.parse(each).name)
+	const components = pages.map(each => {
+		try {
+			return require(`./${each}.tsx`).default
+		} catch (err) {}
+	})
+	return { pages, components }
 }
 
-interface NavWrapperProps {
-	children?: React.ReactNode
-}
+// console.log(getPageComponents())
+const { pages, components } = getPageComponents()
 
-// Simply wraps children with a `<nav>` bar.
-function NavWrapper({ children }: NavWrapperProps) {
-	return (
-		<div className="flex-col m-gap-16">
-			{/* <div>
-				You are currently viewing <code>`{window.location.pathname}`</code>
-			</div> */}
-			<nav className="flex-row m-gap-8">
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/">
-					Open home
-				</Link>
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-a">
-					Open Page A
-				</Link>
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-b">
-					Open Page B
-				</Link>
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/oops">
-					Open Oops
-				</Link>
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/404">
-					Open 404
-				</Link>
-			</nav>
-			{children}
-		</div>
-	)
-}
+// console.log(pages.map(each => `import ${each} from ${JSON.stringify("./" + each)}`))
+console.log(
+	`
+import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "./Router"
 
-function Home() {
-	return (
-		<NavWrapper>
-			<h1>Hello, world! {Date.now().toString()}</h1>
-			<Junk />
-		</NavWrapper>
-	)
-}
+${pages.map(each => `import ${each} from ${JSON.stringify("./" + each)}`).join("\n")}
 
-function PageA() {
-	return (
-		<NavWrapper>
-			<div className="flex-row m-gap-16">
-				<h1>Hello, world! (Page A)</h1>
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-b">
-					Open Page B
-				</Link>
-			</div>
-			<Junk />
-		</NavWrapper>
-	)
-}
-
-function PageB() {
-	return (
-		<NavWrapper>
-			<div className="flex-row m-gap-16">
-				<h1>Hello, world! (Page B)</h1>
-				<Link className="px-16 py-8 bg-cool-gray-200 rounded-full" page="/page-a">
-					Open Page A
-				</Link>
-			</div>
-			<Junk />
-		</NavWrapper>
-	)
-}
-
-// TODO: What if `<Router>` accepted `window.location.pathname` for SSG?
-// Alternatively, we simply mock `window.location.pathname` the same as we do
-// for unit tests (if necessary).
-//
-// It also might be interesting if we can force the router to some route.
-//
 export default function RoutedApp() {
 	return (
-		<div className="container py-16">
-			{/* `<Router>` is responsible for routing `window.location.pathname` to
-			to a route -- `<Route>` -- based on the `page` prop. */}
-			<Router>
-				<Route page="/">
-					<Home />
-				</Route>
-				<Route page="/page-a">
-					<PageA />
-				</Route>
-				<Route page="/page-b">
-					<PageB />
-				</Route>
-				<Route page="/404">
-					<div>Oops! (Page 404)</div>
-				</Route>
-			</Router>
-		</div>
+		<Router>
+			${pages
+				.map(
+					each => `
+			<Route page=${JSON.stringify("/" + each)}>
+				<${each} />
+			</Route>
+`,
+				)
+				.join("")}
+		</Router>
 	)
 }
+`.trimStart(),
+)
 
-ReactDOM.render(<RoutedApp />, document.getElementById("root"))
+// {${JSON.stringify(pages)}.map((Each, x) => (
+// 	<Route page={pages[x]}>
+// 		<Each />
+// 	</Route>
+// ))}
+
+// function App() {
+// 	return (
+// 		<Router>
+// 			{components.map((Each, x) => (
+// 				<Route page={pages[x]!}>
+// 					<Each />
+// 				</Route>
+// 			))}
+// 		</Router>
+// 	)
+// }
+
+// ReactDOM.render(<App />, document.getElementById("root"))

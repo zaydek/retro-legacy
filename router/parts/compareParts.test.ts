@@ -1,4 +1,5 @@
-import { compareParts, parseParts as parse } from "../router/parts"
+import { compareParts } from "./compareParts"
+import { parseParts as parse } from "./parseParts"
 
 // prettier-ignore
 test("integration", () => {

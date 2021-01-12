@@ -1,4 +1,4 @@
-import { parseParts } from "../router/parts"
+import { parseParts } from "./parseParts"
 
 test("integration", () => {
 	expect(parseParts("")).toEqual(null)

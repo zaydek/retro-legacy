@@ -2,10 +2,8 @@ import React, { Fragment, useLayoutEffect, useState } from "react"
 import { history } from "./history"
 import { Route } from "./Route"
 
-// TODO: Missing support for parsed params, scroll restoration (is this not
-// automatic?), scroll callbacks or equivalent, propagating state between
-// history changes (see the state parameter). Also, possibly direct access to
-// the history value? Maybe a hook or something else.
+// TODO: Missing support for parsed params, propagating state between history
+// changes (see the state parameter).
 
 // Creates a four-character hash.
 function newHash() {
