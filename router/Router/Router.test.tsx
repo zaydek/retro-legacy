@@ -1,6 +1,7 @@
 import React from "react"
 import renderer from "react-test-renderer"
-import { Route, Router } from "../router/Router"
+import { Route } from "./Route"
+import { Router } from "./Router"
 
 beforeAll(() => {
 	mock_location_pathname()
