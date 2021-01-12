@@ -11,7 +11,8 @@ function getPageSrcs() {
 		const ok = (
 			fs.statSync("./router/" + each).isFile() &&
 			path.parse("./router/" + each).ext === ".tsx" &&
-			each !== "App.tsx"
+			!each.startsWith("_") &&
+			each !== "App.tsx" // TODO
 		)
 		return ok
 	})
@@ -28,6 +29,8 @@ function run() {
 	fs.writeFileSync("router/App.cache.js", `
 import React from "react"
 import ReactDOM from "react-dom"
+
+import Wrapper from "./_wrapper"
 import { Route, Router } from "./Router"
 
 ${routeInfos.map(each => `import ${each!.component} from ${JSON.stringify("." + each!.page)}`).join("\n")}
@@ -37,7 +40,9 @@ export default function App() {
 		<Router>
 			${routeInfos.map(each => `
 			<Route page=${JSON.stringify(each!.page)}>
-				<${each!.component} />
+				<Wrapper>
+					<${each!.component} />
+				</Wrapper>
 			</Route>
 `).join("")}
 		</Router>

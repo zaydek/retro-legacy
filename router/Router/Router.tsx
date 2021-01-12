@@ -2,8 +2,7 @@ import React, { Fragment, useLayoutEffect, useState } from "react"
 import { history } from "./history"
 import { Route } from "./Route"
 
-// TODO: Missing support for parsed params, propagating state between history
-// changes (see the state parameter).
+// TODO: Propagating state between history changes (see the state parameter).
 
 // Creates a four-character hash.
 function newHash() {
@@ -40,6 +39,7 @@ export interface RouterProps {
 	children?: React.ReactNode
 }
 
+// TODO: Add support for force rerender?
 export function Router({ children }: RouterProps) {
 	// prettier-ignore
 	const [state, setState] = useState({
@@ -63,5 +63,7 @@ export function Router({ children }: RouterProps) {
 	if (!route) {
 		return <>{findRoute(children, "/404")}</>
 	}
-	return <Fragment key={state.hash}>{route}</Fragment>
+
+	// return <Fragment key={state.hash}>{route}</Fragment>
+	return <>{route}</>
 }

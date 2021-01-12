@@ -1,5 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom"
+
+import Wrapper from "./_wrapper"
 import { Route, Router } from "./Router"
 
 import PageHello from "./hello"
@@ -10,11 +12,15 @@ export default function App() {
 		<Router>
 			
 			<Route page="/hello">
-				<PageHello />
+				<Wrapper>
+					<PageHello />
+				</Wrapper>
 			</Route>
 
 			<Route page="/world">
-				<PageWorld />
+				<Wrapper>
+					<PageWorld />
+				</Wrapper>
 			</Route>
 
 		</Router>
