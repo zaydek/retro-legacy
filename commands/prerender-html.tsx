@@ -1,3 +1,4 @@
+import conf from "./conf"
 import fs from "fs"
 import path from "path"
 import React from "react"
@@ -5,11 +6,6 @@ import ReactDOMServer from "react-dom/server"
 import { detab } from "../utils"
 import { getPageSrcs, serverGuards } from "./utils"
 import { parseRouteInfo } from "../Router/parts"
-
-// import React from "react"
-
-// TODO: Export to some a configuration module or map.
-const PAGEDIR = "pages"
 
 // Prerenders HTML on the server.
 //
@@ -25,21 +21,20 @@ function run() {
 			throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
 		}
 
-		const { default: Page, head: Head } = require("../" + PAGEDIR + "/" + src) // FIXME: Change `/` for COMPAT
+		const { default: Page, head: Head } = require("../" + conf.PAGES_DIR + "/" + src) // FIXME: Change `/` for COMPAT
 		const props = require("../cache/props.generated.json") // FIXME: Change `/` for COMPAT
 
 		let pageStr = ""
 
-		// // The custom document component.
-		// let Document = null
-		// try {
-		// 	Document = require("../pages/_document.tsx").default // FIXME: Change `/` for COMPAT
-		// } catch (_) {}
+		// The custom document component.
+		let Document = null
+		try {
+			Document = require("../pages/_document.tsx").default // FIXME: Change `/` for COMPAT
+		} catch (_) {}
 
-		// if (!Document) {
-		// Does not use `_document.tsx`:
-
-		pageStr = detab(`
+		if (!Document) {
+			// Does not use `_document.tsx`:
+			pageStr = detab(`
 		<!DOCTYPE html>
 		<html lang="en">
 			<head>
@@ -54,30 +49,30 @@ function run() {
 			</body>
 		</html>
 		`)
-		// } else {
-		// 	// Uses `_document.tsx`:
-		// 	pageStr = detab(
-		// 		`<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
-		// 			<Document
-		// 				Head={Head || (() => null)}
-		// 				Root={() => (
-		// 					<>
-		// 						<div
-		// 							id="root"
-		// 							dangerouslySetInnerHTML={{
-		// 								__html: ReactDOMServer.renderToString(<Page {...props[each]} />),
-		// 							}}
-		// 						/>
-		// 						<script src="/app.js" />
-		// 					</>
-		// 				)}
-		// 			/>,
-		// 		)}`,
-		// 	)
-		// 	pageStr += "\n" // EOF
-		// }
+		} else {
+			// Uses `_document.tsx`:
+			pageStr = detab(
+				`<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
+					<Document
+						Head={Head || (() => null)}
+						Root={() => (
+							<>
+								<div
+									id="root"
+									dangerouslySetInnerHTML={{
+										__html: ReactDOMServer.renderToString(<Page {...props[routeInfo.component]} />),
+									}}
+								/>
+								<script src="/app.js" />
+							</>
+						)}
+					/>,
+				)}`,
+			)
+			pageStr += "\n" // EOF
+		}
 
-		fs.writeFileSync(`build/${basename}.html`, pageStr)
+		fs.writeFileSync(conf.BUILD_DIR + "/" + basename + ".html", pageStr)
 	}
 }
 

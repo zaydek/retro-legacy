@@ -1,10 +1,8 @@
+import conf from "./conf"
 import fs from "fs"
 import path from "path"
 import { getPageSrcs, serverGuards } from "./utils"
 import { parseRouteInfo } from "../Router/parts"
-
-// TODO: Export to some a configuration module or map.
-const PAGEDIR = "pages"
 
 // prettier-ignore
 interface PageProps {
@@ -32,7 +30,7 @@ async function asyncRun() {
 				throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
 			}
 
-			const { load } = require("../" + PAGEDIR + "/" + src) // FIXME: Change `/` for COMPAT
+			const { load } = require("../" + conf.PAGES_DIR + "/" + src) // FIXME: Change `/` for COMPAT
 			let props = null
 			if (load) {
 				props = await load()
@@ -49,7 +47,7 @@ async function asyncRun() {
 		return acc
 	}, {} as PagePropsMap)
 
-	fs.writeFileSync("cache/props.generated.json", JSON.stringify(propsMap, null, "\t") + "\n")
+	fs.writeFileSync(conf.CACHE_DIR + "/props.generated.json", JSON.stringify(propsMap, null, "\t") + "\n")
 }
 
 ;(async () => {

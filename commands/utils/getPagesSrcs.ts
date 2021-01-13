@@ -1,12 +1,10 @@
+import conf from "../conf"
 import fs from "fs"
-
-// TODO: Export to some a configuration module or map.
-const PAGEDIR = "pages"
 
 const routeFileTypesRegex = /\.(jsx?|tsx?|mdx?)$/
 
 function isFile(src: string) {
-	return fs.statSync(PAGEDIR + "/" + src).isFile() // FIXME: Change `/` for COMPAT
+	return fs.statSync(conf.PAGES_DIR + "/" + src).isFile() // FIXME: Change `/` for COMPAT
 }
 
 function isRouterFiletype(src: string) {
