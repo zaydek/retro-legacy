@@ -1,11 +1,11 @@
 {
 	"compilerOptions": {
 		"target": "es2017", // Changed from `"es5"`
-		"module": "commonjs", // Unchanged
+		"module": "commonjs",
 		"lib": ["dom", "esnext"], // Added
 		"jsx": "react", // Added
 
-		"strict": true, // Unchanged
+		"strict": true,
 		"noImplicitAny": true, // Added
 		"strictNullChecks": true, // Added
 		"strictFunctionTypes": true, // Added
@@ -20,12 +20,9 @@
 		"noFallthroughCasesInSwitch": true, // Added
 		"noUncheckedIndexedAccess": true, // Added
 
-		// TODO: Check whether this influences esbuild’s behavior when it comes to
-		// importing JSON as JS.
-		"resolveJsonModule": true, // Added
-		"esModuleInterop": true, // Unchanged
+		"esModuleInterop": true,
 
-		"skipLibCheck": true, // Unchanged
-		"forceConsistentCasingInFileNames": true // Unchanged
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true
 	}
 }

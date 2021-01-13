@@ -13,8 +13,6 @@ const routeInfos = srcs
 	.map(each => path.parse(each).name)      // Pages
 	.map(each => parseRouteInfo("/" + each)) // RouteInfo
 
-// TODO: Change to `ReactDOM.hydrate`.
-// TODO: Add support for `React.StrictMode`?
 // TODO: Add support for `<App>` wrapper component.
 // TODO: Add support for **not** bundling JavaScript.
 function run() {
@@ -29,7 +27,7 @@ import { Route, Router } from "../Router"
 
 // Pages
 ${routeInfos.map(each =>
-	`import ${each!.component} from ${JSON.stringify("../" + conf.PAGES_DIR + each!.page)}`
+	`import ${each!.component} from ${JSON.stringify("../" + conf.PAGES_DIR + each!.page) /* FIXME: Change `/` for COMPAT */}`
 ).join("\n")}
 
 // Page props
@@ -48,23 +46,22 @@ export default function App() {
 }
 
 ${
-	!conf.STRICT_MODE ?
-	detab(`
-		ReactDOM.hydrate(
-			<App />,
-			document.getElementById("root"),
-		)`)
-	:
-	detab(`
-		ReactDOM.hydrate(
-			<React.StrictMode>
-				<App />
-			</React.StrictMode>,
-			document.getElementById("root"),
-		)`)
+	!conf.STRICT_MODE
+		? detab(`
+			ReactDOM.hydrate(
+				<App />,
+				document.getElementById("root"),
+			)`)
+		: detab(`
+			ReactDOM.hydrate(
+				<React.StrictMode>
+					<App />
+				</React.StrictMode>,
+				document.getElementById("root"),
+			)`)
 }`.trimStart()
 
-	fs.writeFileSync(conf.CACHE_DIR + "/app.js", app + "\n")
+	fs.writeFileSync(conf.CACHE_DIR + "/app.js", app + "\n") // FIXME: Change `/` for COMPAT
 
 	buildSync({
 		bundle: true,
