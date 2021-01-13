@@ -1,7 +1,8 @@
+// import seedHash from "./seedHash"
+
 import conf from "./conf"
 import fs from "fs"
 import path from "path"
-import seedHash from "./seedHash"
 import { buildSync } from "esbuild"
 import { detab } from "../utils"
 import { getPageSrcs } from "./utils"
@@ -85,7 +86,7 @@ ${
 		entryPoints: [conf.CACHE_DIR + "/app.js"],
 		loader: { ".js": "jsx" },
 		minify: !conf.__DEV__,
-		outfile: conf.BUILD_DIR + `/app-${seedHash}.js`,
+		outfile: conf.BUILD_DIR + "/app.js",
 	})
 }
 
