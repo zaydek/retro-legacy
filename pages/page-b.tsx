@@ -18,10 +18,11 @@ interface PageProps {
 	data: string
 }
 
-export default function PageB(_: PageProps) {
+export default function PageB({ data }: PageProps) {
 	return (
 		<div>
 			<h1>Hello, world! (/page-b)</h1>
+			PageProps: <pre>{JSON.stringify(data)}</pre>
 			<Link page="/">
 				<p>Go to page /</p>
 			</Link>

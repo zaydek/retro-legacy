@@ -46,8 +46,7 @@ function run() {
 						<div id="root">${ReactDOMServer.renderToString(<Page {...props[routeInfo.component]} />)}</div>
 						<script src="/app.js"></script>
 					</body>
-				</html>
-		`)
+				</html>`)
 		} else {
 			pageStr = `<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
 				<Document
@@ -65,10 +64,9 @@ function run() {
 					)}
 				/>,
 			)}`
-			pageStr += "\n" // EOF
 		}
 
-		fs.writeFileSync(conf.BUILD_DIR + "/" + basename + ".html", pageStr) // FIXME: Change `/` for COMPAT
+		fs.writeFileSync(conf.BUILD_DIR + "/" + basename + ".html", pageStr + "\n") // FIXME: Change `/` for COMPAT
 	}
 }
 

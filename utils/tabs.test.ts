@@ -1,6 +1,6 @@
 import { detab } from "./tabs"
 
-test("Hello, world!", () => {
+test("detab: Hello, world!", () => {
 	expect(detab("")).toBe("")
 	expect(detab("\t")).toBe("")
 	expect(detab("\tHello, world!")).toBe("Hello, world!")
@@ -112,7 +112,7 @@ Hello, world!
 	).toBe("\t\tHello, world!\n\tHello, world!\nHello, world!\n")
 })
 
-test("HTML", () => {
+test("detab: HTML", () => {
 	expect(
 		detab(`
 <!DOCTYPE html>
