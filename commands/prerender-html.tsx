@@ -35,8 +35,6 @@ function run() {
 		}
 
 		// TODO: Can we format `ReactDOMServer.renderToStaticMarkup(<Head />)`?
-		// TODO: We don’t actually need to use `routeInfo.component`? Why not use
-		// `routeInfo.page`?
 		if (!Document) {
 			out = detab(`
 				<!DOCTYPE html>
@@ -48,7 +46,7 @@ function run() {
 					</head>
 					<body>
 						<noscript>You need to enable JavaScript to run this app.</noscript>
-						<div id="root">${ReactDOMServer.renderToString(<Page {...pageProps[routeInfo.component]} />)}</div>
+						<div id="root">${ReactDOMServer.renderToString(<Page {...pageProps[routeInfo.page]} />)}</div>
 						<script src="/app.js"></script>
 					</body>
 				</html>`)
@@ -62,7 +60,7 @@ function run() {
 								<div
 									id="root"
 									dangerouslySetInnerHTML={{
-										__html: ReactDOMServer.renderToString(<Page {...pageProps[routeInfo.component]} />),
+										__html: ReactDOMServer.renderToString(<Page {...pageProps[routeInfo.page]} />),
 									}}
 								/>
 								<script src="/app.js" />

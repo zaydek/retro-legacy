@@ -35,7 +35,7 @@ async function asyncRun() {
 			if (load) {
 				props = await load()
 			}
-			resolve({ component: routeInfo.component, props })
+			resolve({ component: routeInfo.page, props })
 		})
 		propPromises.push(promise)
 	}

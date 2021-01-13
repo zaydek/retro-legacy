@@ -4,6 +4,7 @@ import path from "path"
 import { buildSync } from "esbuild"
 import { getPageSrcs } from "./utils"
 import { parseRouteInfo } from "../Router/parts"
+import { detab } from "../utils"
 
 const srcs = getPageSrcs()
 
@@ -39,18 +40,30 @@ export default function App() {
 		<Router>
 			${routeInfos.map(each => `
 			<Route page=${JSON.stringify(each!.page)}>
-				<${each!.component} {...pageProps.${each!.component}} />
+				<${each!.component} {...pageProps[${JSON.stringify(each!.page)}]} />
 			</Route>
 `).join("")}
 		</Router>
 	)
 }
 
-ReactDOM.hydrate(
-	<App />,
-	document.getElementById("root"),
-)
-`.trim()
+${
+	!conf.STRICT_MODE ?
+	detab(`
+		ReactDOM.hydrate(
+			<App />,
+			document.getElementById("root"),
+		)`)
+	:
+	detab(`
+		ReactDOM.hydrate(
+			<React.StrictMode>
+				<App />
+			</React.StrictMode>,
+			document.getElementById("root"),
+		)`)
+}`.trimStart()
+
 	fs.writeFileSync(conf.CACHE_DIR + "/app.js", app + "\n")
 
 	buildSync({
