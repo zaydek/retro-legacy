@@ -8,14 +8,10 @@
 		"prerender-html": "ts-node -T commands/prerender-html.tsx",
 		"prerender-js": "ts-node -T commands/prerender-js.ts",
 		"test": "jest",
-		"watch-app": "nodemon --exec 'yarn concurrently --raw \"yarn prerender-html\" \"yarn prerender-js\"' --watch pages --watch src",
-		"serve-app": "PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent",
-		"dev": "concurrently --raw 'yarn watch-app' 'yarn serve-app'",
-		"build": "yarn rimraf build && yarn prerender-props && yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
-		"build:production": "yarn rimraf build && NODE_ENV=production yarn prerender-props && yarn concurrently 'NODE_ENV=production yarn prerender-html' 'NODE_ENV=production yarn prerender-js'",
-		"rebuild": "yarn concurrently 'yarn prerender-html' 'yarn prerender-js'",
-		"rebuild:production": "yarn concurrently 'NODE_ENV=production yarn prerender-html' 'NODE_ENV=production yarn prerender-js'",
-		"serve": "http-server build"
+		"watch-src": "nodemon --exec 'yarn concurrently --raw \"yarn prerender-html\" \"yarn prerender-js\"' --watch pages --watch src",
+		"start": "yarn rimraf build && yarn prerender-props && yarn concurrently --raw 'yarn watch-src' 'PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent'",
+		"restart": "yarn concurrently --raw 'yarn watch-src' 'PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent'",
+		"build": "yarn rimraf build && NODE_ENV=production yarn prerender-props && yarn concurrently --raw 'NODE_ENV=production yarn prerender-html' 'NODE_ENV=production yarn prerender-js'"
 	},
 	"devDependencies": {
 		"@mdx-js/mdx": "^1.6.22",
