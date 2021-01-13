@@ -1,12 +1,12 @@
 import fs from "fs"
 import { buildSync, transformSync } from "esbuild"
-import { getPageSrcs, guards } from "./utils"
+import { getPageSrcs, serverGuards } from "./utils"
 
 const __DEV__ = process.env.NODE_ENV !== "production"
 
 // Prerenders JavaScript on the server.
 function run() {
-	guards()
+	serverGuards()
 
 	// Bundles dependencies (React, React DOM).
 	//
@@ -18,9 +18,9 @@ function run() {
 	buildSync({
 		bundle: true,
 		define: { "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV || "development") },
-		entryPoints: ["server/react.js"],
+		entryPoints: ["server/react.js"], // FIXME: Change `/` for COMPAT
 		minify: !__DEV__,
-		outfile: "build/react.out.js",
+		outfile: "build/react.out.js", // FIXME: Change `/` for COMPAT
 	})
 
 	const srcs = getPageSrcs()
@@ -46,7 +46,7 @@ ReactDOM.hydrate(
 			},
 		)
 
-		fs.writeFileSync(`cache/${basename}.js`, transformed.code)
+		fs.writeFileSync(`cache/${basename}.js`, transformed.code) // FIXME: Change `/` for COMPAT
 
 		buildSync({
 			bundle: true,

@@ -47,7 +47,7 @@ async function asyncRun() {
 		return acc
 	}, {} as PagePropsMap)
 
-	fs.writeFileSync(conf.CACHE_DIR + "/props.generated.json", JSON.stringify(propsMap, null, "\t") + "\n")
+	fs.writeFileSync(conf.CACHE_DIR + "/props.generated.json", JSON.stringify(propsMap, null, "\t") + "\n") // FIXME: Change `/` for COMPAT
 }
 
 ;(async () => {

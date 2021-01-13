@@ -9,7 +9,7 @@ import { parseRouteInfo } from "../Router/parts"
 
 // Prerenders HTML on the server.
 //
-// TODO: Change to asynchronous implementation.
+// TODO: Upgrade implementation to be concurrent.
 function run() {
 	serverGuards()
 
@@ -26,53 +26,49 @@ function run() {
 
 		let pageStr = ""
 
-		// The custom document component.
 		let Document = null
-		try {
-			Document = require("../pages/_document.tsx").default // FIXME: Change `/` for COMPAT
-		} catch (_) {}
+		// prettier-ignore
+		if (fs.existsSync("../" + conf.PAGES_DIR + "/_document.tsx")) {// FIXME: Change `/` for COMPAT
+			Document = require("../" +  conf.PAGES_DIR + "/_document.tsx").default // FIXME: Change `/` for COMPAT
+		}
 
 		if (!Document) {
-			// Does not use `_document.tsx`:
 			pageStr = detab(`
-		<!DOCTYPE html>
-		<html lang="en">
-			<head>
-				<meta charset="utf-8">
-				<meta name="viewport" content="width=device-width, initial-scale=1">
-				${!Head ? "" : ReactDOMServer.renderToStaticMarkup(<Head />)}
-			</head>
-			<body>
-				<noscript>You need to enable JavaScript to run this app.</noscript>
-				<div id="root">${ReactDOMServer.renderToString(<Page {...props[routeInfo.component]} />)}</div>
-				<script src="/app.js"></script>
-			</body>
-		</html>
+				<!DOCTYPE html>
+				<html lang="en">
+					<head>
+						<meta charset="utf-8">
+						<meta name="viewport" content="width=device-width, initial-scale=1">
+						${!Head ? "" : ReactDOMServer.renderToStaticMarkup(<Head />)}
+					</head>
+					<body>
+						<noscript>You need to enable JavaScript to run this app.</noscript>
+						<div id="root">${ReactDOMServer.renderToString(<Page {...props[routeInfo.component]} />)}</div>
+						<script src="/app.js"></script>
+					</body>
+				</html>
 		`)
 		} else {
-			// Uses `_document.tsx`:
-			pageStr = detab(
-				`<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
-					<Document
-						Head={Head || (() => null)}
-						Root={() => (
-							<>
-								<div
-									id="root"
-									dangerouslySetInnerHTML={{
-										__html: ReactDOMServer.renderToString(<Page {...props[routeInfo.component]} />),
-									}}
-								/>
-								<script src="/app.js" />
-							</>
-						)}
-					/>,
-				)}`,
-			)
+			pageStr = `<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
+				<Document
+					Head={Head || (() => null)}
+					Root={() => (
+						<>
+							<div
+								id="root"
+								dangerouslySetInnerHTML={{
+									__html: ReactDOMServer.renderToString(<Page {...props[routeInfo.component]} />),
+								}}
+							/>
+							<script src="/app.js" />
+						</>
+					)}
+				/>,
+			)}`
 			pageStr += "\n" // EOF
 		}
 
-		fs.writeFileSync(conf.BUILD_DIR + "/" + basename + ".html", pageStr)
+		fs.writeFileSync(conf.BUILD_DIR + "/" + basename + ".html", pageStr) // FIXME: Change `/` for COMPAT
 	}
 }
 
