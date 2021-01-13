@@ -1,15 +1,21 @@
 import conf from "./conf"
 import fs from "fs"
 import path from "path"
+import { buildSync } from "esbuild"
 import { getPageSrcs } from "./utils"
 import { parseRouteInfo } from "../Router/parts"
 
 const srcs = getPageSrcs()
-const routeInfos = srcs.map(each => path.parse(each).name).map(each => parseRouteInfo("/" + each))
+
+// prettier-ignore
+const routeInfos = srcs
+	.map(each => path.parse(each).name)      // Pages
+	.map(each => parseRouteInfo("/" + each)) // RouteInfo
 
 // TODO: Change to `ReactDOM.hydrate`.
 // TODO: Add support for `React.StrictMode`?
 // TODO: Add support for `<App>` wrapper component.
+// TODO: Add support for **not** bundling JavaScript.
 function run() {
 	// prettier-ignore
 	const app = `
@@ -18,10 +24,12 @@ function run() {
 
 import React from "react"
 import ReactDOM from "react-dom"
-import { Route, Router } from "./Router"
+import { Route, Router } from "../Router"
 
 // Pages
-${routeInfos.map(each => `import ${each!.component} from ${JSON.stringify("." + each!.page)}`).join("\n")}
+${routeInfos.map(each =>
+	`import ${each!.component} from ${JSON.stringify("../" + conf.PAGES_DIR + each!.page)}`
+).join("\n")}
 
 // Page props
 import pageProps from "./pageProps"
@@ -38,12 +46,24 @@ export default function App() {
 	)
 }
 
-ReactDOM.render(
+ReactDOM.hydrate(
 	<App />,
 	document.getElementById("root"),
 )
 `.trim()
 	fs.writeFileSync(conf.CACHE_DIR + "/app.js", app + "\n")
+
+	buildSync({
+		bundle: true,
+		define: {
+			__DEV__: JSON.stringify(conf.__DEV__),
+			"process.env.NODE_ENV": JSON.stringify(conf.NODE_ENV),
+		},
+		entryPoints: [conf.CACHE_DIR + "/app.js"],
+		loader: { ".js": "jsx" },
+		minify: !conf.__DEV__,
+		outfile: conf.BUILD_DIR + "/app.js",
+	})
 }
 
 ;(() => {
