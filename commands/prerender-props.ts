@@ -2,7 +2,7 @@ import conf from "./conf"
 import fs from "fs"
 import path from "path"
 import { getPageSrcs, serverGuards } from "./utils"
-import { parseRouteInfo } from "../Router/parts"
+import { parseRoutes } from "../Router/parts"
 
 // prettier-ignore
 interface PageProps {
@@ -25,9 +25,9 @@ async function asyncRun() {
 	for (const src of srcs) {
 		const promise = new Promise<PageProps>(async resolve => {
 			const basename = path.parse(src).name
-			const routes = parseRouteInfo("/" + basename)
+			const routes = parseRoutes("/" + basename)
 			if (routes === null) {
-				throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
+				throw new Error(`prerender-props: parseRoutes(${JSON.stringify(basename)})`)
 			}
 
 			const { load } = require("../" + conf.PAGES_DIR + "/" + src) // FIXME: Change `/` for COMPAT

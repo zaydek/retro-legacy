@@ -11,14 +11,14 @@ function index(pageStr: string) {
 
 // Ex:
 //
-// parseRouteInfo("/[hello]/[world]")
+// parseRoutes("/[hello]/[world]")
 //
 // -> {
 // ->   page: "/[hello]/[world]",
 // ->   component: "PageDynamicHelloSlashDynamicWorld",
 // -> }
 //
-export default function parseRouteInfo(partsStr: string) {
+export default function parseRoutes(partsStr: string) {
 	const parts = parseParts(partsStr)
 	if (!parts) {
 		return null
@@ -37,7 +37,6 @@ export default function parseRouteInfo(partsStr: string) {
 		})
 		.join("")
 
-	// TODO: Add `file` field.
 	const info: RouteInfo = {
 		page: index(partsStr),
 		component: "Page" + componentStr,

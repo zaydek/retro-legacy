@@ -1,4 +1,4 @@
-import parse from "./parseRouteInfo"
+import parse from "./parseRoutes"
 
 test("integration", () => {
 	expect(parse("")).toEqual(null)

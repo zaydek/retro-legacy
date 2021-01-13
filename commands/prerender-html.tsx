@@ -5,7 +5,7 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 import { detab } from "../utils"
 import { getPageSrcs, serverGuards } from "./utils"
-import { parseRouteInfo } from "../Router/parts"
+import { parseRoutes } from "../Router/parts"
 
 const App = require("../" + conf.PAGES_DIR + "/internal/app.tsx").default // FIXME: Change `/` for COMPAT
 
@@ -21,9 +21,9 @@ async function asyncRun() {
 	for (const src of srcs) {
 		const p = new Promise(() => {
 			const basename = path.parse(src).name
-			const route = parseRouteInfo("/" + basename)
+			const route = parseRoutes("/" + basename)
 			if (route === null) {
-				throw new Error(`prerender-html: parseRouteInfo(${JSON.stringify(basename)})`)
+				throw new Error(`prerender-html: parseRoutes(${JSON.stringify(basename)})`)
 			}
 
 			const { default: Page, head: Head } = require("../" + conf.PAGES_DIR + "/" + src) // FIXME: Change `/` for COMPAT

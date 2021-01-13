@@ -3,7 +3,7 @@ import fs from "fs"
 import path from "path"
 import { buildSync } from "esbuild"
 import { getPageSrcs } from "./utils"
-import { parseRouteInfo } from "../Router/parts"
+import { parseRoutes } from "../Router/parts"
 import { detab } from "../utils"
 
 const App = require("../" + conf.PAGES_DIR + "/internal/app.tsx").default // FIXME: Change `/` for COMPAT
@@ -13,7 +13,7 @@ const srcs = getPageSrcs()
 // prettier-ignore
 const routes = srcs
 	.map(each => path.parse(each).name)      // Pages
-	.map(each => parseRouteInfo("/" + each)) // RouteInfo
+	.map(each => parseRoutes("/" + each)) // RouteInfo
 
 function run() {
 	// prettier-ignore
