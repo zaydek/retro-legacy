@@ -1,11 +1,11 @@
 import React from "react"
 
-interface DocumentProps {
+interface HTMLProps {
 	Head: React.ElementType
 	Root: React.ElementType
 }
 
-export default function Document({ Head, Root }: DocumentProps) {
+export default function HTML({ Head, Root }: HTMLProps) {
 	return (
 		<html lang="en">
 			<head>

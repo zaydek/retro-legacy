@@ -9,7 +9,7 @@ import { parseRouteInfo } from "../Router/parts"
 
 // Prerenders HTML on the server.
 //
-// TODO: Upgrade implementation to be concurrent.
+// TODO: Change to `asyncRun`.
 function run() {
 	serverGuards()
 
@@ -18,21 +18,23 @@ function run() {
 		const basename = path.parse(src).name
 		const routeInfo = parseRouteInfo("/" + basename)
 		if (routeInfo === null) {
-			throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
+			throw new Error(`prerender-html: parseRouteInfo(${JSON.stringify(basename)})`)
 		}
 
 		const { default: Page, head: Head } = require("../" + conf.PAGES_DIR + "/" + src) // FIXME: Change `/` for COMPAT
-		const props = require("../cache/props.generated.json") // FIXME: Change `/` for COMPAT
+		const props = require("../" + conf.CACHE_DIR + "/props.generated.json") // FIXME: Change `/` for COMPAT
 
 		let pageStr = ""
 
-		let Document = null
+		// TODO: `_html.tsx` should work for non-`.tsx` extensions.
+		let HTML = null
 		// prettier-ignore
-		if (fs.existsSync("../" + conf.PAGES_DIR + "/_document.tsx")) {// FIXME: Change `/` for COMPAT
-			Document = require("../" +  conf.PAGES_DIR + "/_document.tsx").default // FIXME: Change `/` for COMPAT
+		if (fs.existsSync(conf.PAGES_DIR + "/_html.tsx")) {// FIXME: Change `/` for COMPAT
+			HTML = require("../" +  conf.PAGES_DIR + "/_html.tsx").default // FIXME: Change `/` for COMPAT
 		}
 
-		if (!Document) {
+		// TODO: Can we format `ReactDOMServer.renderToStaticMarkup(<Head />)`?
+		if (!HTML) {
 			pageStr = detab(`
 				<!DOCTYPE html>
 				<html lang="en">
@@ -49,7 +51,7 @@ function run() {
 				</html>`)
 		} else {
 			pageStr = `<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
-				<Document
+				<HTML
 					Head={Head || (() => null)}
 					Root={() => (
 						<>
