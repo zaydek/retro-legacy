@@ -2,15 +2,19 @@ import fs from "fs"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 import { detab } from "../utils"
-import { getPageSrcs, guards } from "./utils"
+import { getPages, guards } from "./utils"
 
 // Prerenders HTML on the server.
 function run() {
 	guards()
 
+	const ps = getPages()
+	console.log(ps)
+	return
+
 	// Prerender pages.
-	const srcs = getPageSrcs()
-	for (const each of srcs) {
+	const pages = getPages()
+	for (const each of pages) {
 		const basename = each.replace(/\.tsx$/, "")
 
 		const { default: Page, head: Head } = require("../pages/" + each)

@@ -4,9 +4,9 @@
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"prerender-props": "ts-node -T server/prerender-props.ts",
-		"prerender-html": "ts-node -T server/prerender-html.tsx",
-		"prerender-js": "ts-node -T server/prerender-js.ts",
+		"prerender-props": "ts-node -T commands/prerender-props.ts",
+		"prerender-html": "ts-node -T commands/prerender-html.tsx",
+		"prerender-js": "ts-node -T commands/prerender-js.ts",
 		"test": "jest",
 		"// build-router-app": "yarn nodemon --exec 'yarn esbuild router/App.tsx --bundle --define:process.env.NODE_ENV=\\\"development\\\" --outfile=router/out.js' --ext tsx --watch router",
 		"// serve-router-app": "PORT=8080 yarn http-server router --proxy http://127.0.0.1:8080? --silent",
