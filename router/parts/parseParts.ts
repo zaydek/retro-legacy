@@ -1,10 +1,11 @@
 import { Part } from "./types"
 
+// TODO
 // if (x > 0 && path[x] !== "/") {
 // 	throw new Error(`parseParts: Expected \`/\` at the start of a part; path[x]=${path[x]}.`)
 // }
 
-export function parseParts(path: string) {
+export default function parseParts(path: string) {
 	const parts: Part[] = []
 
 	let x = 0

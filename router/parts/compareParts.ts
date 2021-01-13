@@ -9,7 +9,7 @@ function comparePartImpl(p1: Part, p2: Part) {
 	return ok
 }
 
-export function compareParts(parts1: Part[], parts2: Part[]) {
+export default function compareParts(parts1: Part[], parts2: Part[]) {
 	if (parts1.length !== parts2.length) {
 		return false // Parts are **not** the same
 	}

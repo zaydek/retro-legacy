@@ -1,21 +1,21 @@
-import { parseParts } from "./parseParts"
+import parse from "./parseParts"
 
 test("integration", () => {
-	expect(parseParts("")).toEqual(null)
-	expect(parseParts("/")).toEqual(null)
-	expect(parseParts("/hello")).toEqual([{ part: "hello", dynamic: false, nests: false }])
-	expect(parseParts("/hello/")).toEqual([{ part: "hello", dynamic: false, nests: true }])
-	expect(parseParts("/hello/world")).toEqual([
+	expect(parse("")).toEqual(null)
+	expect(parse("/")).toEqual(null)
+	expect(parse("/hello")).toEqual([{ part: "hello", dynamic: false, nests: false }])
+	expect(parse("/hello/")).toEqual([{ part: "hello", dynamic: false, nests: true }])
+	expect(parse("/hello/world")).toEqual([
 		{ part: "hello", dynamic: false, nests: true },
 		{ part: "world", dynamic: false, nests: false },
 	])
-	expect(parseParts("/[hello]")).toEqual([{ part: "[hello]", dynamic: true, nests: false }])
-	expect(parseParts("/[hello]/")).toEqual([{ part: "[hello]", dynamic: true, nests: true }])
-	expect(parseParts("/[hello]/[world]")).toEqual([
+	expect(parse("/[hello]")).toEqual([{ part: "[hello]", dynamic: true, nests: false }])
+	expect(parse("/[hello]/")).toEqual([{ part: "[hello]", dynamic: true, nests: true }])
+	expect(parse("/[hello]/[world]")).toEqual([
 		{ part: "[hello]", dynamic: true, nests: true },
 		{ part: "[world]", dynamic: true, nests: false },
 	])
-	expect(parseParts("/[hello]/[world]/")).toEqual([
+	expect(parse("/[hello]/[world]/")).toEqual([
 		{ part: "[hello]", dynamic: true, nests: true },
 		{ part: "[world]", dynamic: true, nests: true },
 	])

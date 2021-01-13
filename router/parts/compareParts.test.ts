@@ -1,5 +1,5 @@
-import { compareParts } from "./compareParts"
-import { parseParts as parse } from "./parseParts"
+import compareParts from "./compareParts"
+import parse from "./parseParts"
 
 // prettier-ignore
 test("integration", () => {

@@ -1,4 +1,4 @@
-import { parseParts } from "./parseParts"
+import parseParts from "./parseParts"
 import { RouteInfo } from "./types"
 import { toTitleCase } from "../../utils"
 
@@ -11,7 +11,7 @@ import { toTitleCase } from "../../utils"
 // ->   component: "PageDynamicXSlashDynamicYSlashDynamicZ",
 // -> }
 //
-export function routeInfo(partsStr: string) {
+export default function parseRouteInfo(partsStr: string) {
 	const parts = parseParts(partsStr)
 	if (!parts) {
 		return null
