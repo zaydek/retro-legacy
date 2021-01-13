@@ -4,13 +4,13 @@
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"prerender-props": "ts-node -T commands/prerender-props.ts",
-		"prerender-html": "ts-node -T commands/prerender-html.tsx",
-		"prerender-js": "ts-node -T commands/prerender-js.ts",
+		"prerender-pageProps": "ts-node -T commands/prerender-pageProps.ts",
+		"prerender-pages": "ts-node -T commands/prerender-pages.tsx",
+		"prerender-app": "ts-node -T commands/prerender-app.ts",
 		"test": "jest",
 		"purge": "yarn rimraf cache build",
-		"start": "yarn concurrently --raw 'nodemon --exec \"yarn concurrently --raw \\\"yarn prerender-html\\\" \\\"yarn prerender-js\\\"\" --watch pages --watch src' 'yarn serve'",
-		"build": "yarn rimraf build && NODE_ENV=production yarn prerender-props && yarn concurrently --raw 'NODE_ENV=production yarn prerender-html' 'NODE_ENV=production yarn prerender-js'",
+		"start": "yarn concurrently --raw 'nodemon --exec \"yarn concurrently --raw \\\"yarn prerender-pages\\\" \\\"yarn prerender-app\\\"\" --watch pages --watch src' 'yarn serve'",
+		"build": "yarn rimraf build && NODE_ENV=production yarn prerender-pageProps && yarn concurrently --raw 'NODE_ENV=production yarn prerender-pages' 'NODE_ENV=production yarn prerender-app'",
 		"serve": "PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent"
 	},
 	"devDependencies": {
