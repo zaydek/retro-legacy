@@ -10,9 +10,10 @@
 		"prerender-js": "ts-node -T commands/prerender-js.ts",
 		"test": "jest",
 		"start": "yarn rimraf build && yarn prerender-props && yarn restart",
-		"restart": "yarn concurrently --raw 'nodemon --exec \"yarn concurrently --raw \\\"yarn prerender-html\\\" \\\"yarn prerender-js\\\"\" --watch pages --watch src' 'PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent'",
+		"restart": "yarn concurrently --raw 'nodemon --exec \"yarn concurrently --raw \\\"yarn prerender-html\\\" \\\"yarn prerender-js\\\"\" --watch pages --watch src' 'yarn serve'",
 		"build": "yarn rimraf build && NODE_ENV=production yarn prerender-props && yarn rebuild",
-		"rebuild": "yarn rimraf build && NODE_ENV=production yarn prerender-props && yarn concurrently --raw 'NODE_ENV=production yarn prerender-html' 'NODE_ENV=production yarn prerender-js'"
+		"rebuild": "yarn rimraf build && NODE_ENV=production yarn prerender-props && yarn concurrently --raw 'NODE_ENV=production yarn prerender-html' 'NODE_ENV=production yarn prerender-js'",
+		"serve": "PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent"
 	},
 	"devDependencies": {
 		"@mdx-js/mdx": "^1.6.22",

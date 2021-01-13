@@ -29,11 +29,10 @@ function run() {
 
 			let out = ""
 
-			// TODO: `_document.tsx` should work for non-`.tsx` extensions.
 			let Document = null
 			// prettier-ignore
-			if (fs.existsSync(conf.PAGES_DIR + "/_document.tsx")) { // FIXME: Change `/` for COMPAT
-				Document = require("../" +  conf.PAGES_DIR + "/_document.tsx").default // FIXME: Change `/` for COMPAT
+			if (fs.existsSync(conf.PAGES_DIR + "/internal/document.tsx")) { // FIXME: Change `/` for COMPAT
+				Document = require("../" +  conf.PAGES_DIR + "/internal/document.tsx").default // FIXME: Change `/` for COMPAT
 			}
 
 			// TODO: Can we format `ReactDOMServer.renderToStaticMarkup(<Head />)`?
