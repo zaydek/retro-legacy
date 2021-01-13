@@ -1,10 +1,11 @@
 import conf from "./conf"
 import fs from "fs"
 import path from "path"
+import seedHash from "./seedHash"
 import { buildSync } from "esbuild"
+import { detab } from "../utils"
 import { getPageSrcs } from "./utils"
 import { parseRoutes } from "../Router/parts"
-import { detab } from "../utils"
 
 const App = require("../" + conf.PAGES_DIR + "/internal/app.tsx").default // FIXME: Change `/` for COMPAT
 
@@ -84,7 +85,7 @@ ${
 		entryPoints: [conf.CACHE_DIR + "/app.js"],
 		loader: { ".js": "jsx" },
 		minify: !conf.__DEV__,
-		outfile: conf.BUILD_DIR + "/app.js",
+		outfile: conf.BUILD_DIR + `/app-${seedHash}.js`,
 	})
 }
 

@@ -1,6 +1,6 @@
 import { createBrowserHistory } from "history"
 
-// FIXM@
+// FIXME
 let history = null
 try {
 	history = createBrowserHistory()

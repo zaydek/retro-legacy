@@ -1,14 +1,12 @@
 import conf from "../conf"
 import fs from "fs"
 
-const routeFileTypesRegex = /\.(jsx?|tsx?|mdx?)$/
-
 function isFile(src: string) {
 	return fs.statSync(conf.PAGES_DIR + "/" + src).isFile() // FIXME: Change `/` for COMPAT
 }
 
 function isRouterFiletype(src: string) {
-	return routeFileTypesRegex.test(src)
+	return /\.(jsx?|tsx?|mdx?)$/.test(src)
 }
 
 // TODO: Change to support Perl-style alphabetics?

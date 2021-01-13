@@ -3,6 +3,7 @@ import fs from "fs"
 import path from "path"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
+import seedHash from "./seedHash"
 import { detab } from "../utils"
 import { getPageSrcs, serverGuards } from "./utils"
 import { parseRoutes } from "../Router/parts"
@@ -59,7 +60,7 @@ async function asyncRun() {
 									</App>
 								),
 							)}</div>
-							<script src="/app.js"></script>
+							<script src=${JSON.stringify(`/app-${seedHash}.js`)}></script>
 						</body>
 					</html>`)
 			} else {
@@ -83,7 +84,7 @@ async function asyncRun() {
 											),
 										}}
 									/>
-									<script src="/app.js" />
+									<script src={`/app-${seedHash}.js`} />
 								</>
 							)}
 						/>,
