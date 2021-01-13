@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path"
-import { routeInfo } from "./Router/parts"
+import { routeInfo } from "../Router/parts"
 
 // Gets pages as names.
 function getPageSrcs() {
