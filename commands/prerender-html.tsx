@@ -11,7 +11,7 @@ const App = require("../" + conf.PAGES_DIR + "/internal/app.tsx").default // FIX
 
 // Prerenders HTML on the server.
 //
-// TODO: Add support for `<App>` wrapper component.
+// TODO: Extract API to be more testable? `buildPromise(pageName, app)`?
 async function asyncRun() {
 	serverGuards()
 
