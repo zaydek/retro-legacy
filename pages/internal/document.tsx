@@ -5,7 +5,7 @@ interface HTMLProps {
 	Root: React.ElementType
 }
 
-export default function HTML({ Head, Root }: HTMLProps) {
+export default function Document({ Head, Root }: HTMLProps) {
 	return (
 		<html lang="en">
 			<head>
