@@ -17,17 +17,22 @@ function lastConsecutiveIndex(str: string, ch: string) {
 	return x
 }
 
-// TODO: Add support for space-based tabs?
+// Inserts tabs.
 export function tab(str: string, ntabs: number) {
+	if (ntabs < 0) {
+		return str
+	}
+
 	let rows = str.split("\n")
 	const y = rows.findIndex(each => each !== "")
 	rows = rows.slice(y)
 
 	// Starts here:
-	return rows.map(each => "\t".repeat(ntabs) + each)
+	const tabStr = rows.map(each => "\t".repeat(ntabs) + each)
+	return tabStr
 }
 
-// TODO: Add support for space-based tabs?
+// Removes tabs.
 export function detab(str: string) {
 	let rows = str.split("\n")
 	const y = rows.findIndex(each => each !== "")
@@ -36,6 +41,6 @@ export function detab(str: string) {
 	// Starts here:
 	const xs = rows.map(each => lastConsecutiveIndex(each, "\t")).filter(each => each !== -1)
 	const x = Math.min(...xs)
-	const detabbed = rows.map(each => each.slice(x)).join("\n")
-	return detabbed
+	const detabStr = rows.map(each => each.slice(x)).join("\n")
+	return detabStr
 }

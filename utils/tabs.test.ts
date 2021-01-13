@@ -1,4 +1,4 @@
-import { detab } from "./tabbers"
+import { detab } from "./tabs"
 
 test("integration", () => {
 	expect(detab("")).toBe("")

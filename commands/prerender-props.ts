@@ -9,6 +9,7 @@ interface PageProps {
 
 type PagePropsMap = { [key: string]: PageProps }
 
+// Prerenders props on the server.
 async function asyncRun() {
 	guards()
 

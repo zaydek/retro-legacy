@@ -1,10 +1,10 @@
 import React from "react"
 
-interface WrapperProps {
+interface AppProps {
 	children?: React.ReactNode
 }
 
-export default function Wrapper({ children }: WrapperProps) {
+export default function App({ children }: AppProps) {
 	return (
 		<div>
 			<h1>Welcome to my website</h1>

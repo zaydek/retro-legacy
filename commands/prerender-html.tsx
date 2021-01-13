@@ -1,9 +1,10 @@
 import fs from "fs"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
-import { detab, getPageSrcs, guards } from "./utils"
+import { detab } from "../utils"
+import { getPageSrcs, guards } from "./utils"
 
-// Prerenders HTML and props on the server.
+// Prerenders HTML on the server.
 function run() {
 	guards()
 
@@ -37,8 +38,7 @@ function run() {
 					<body>
 						<noscript>You need to enable JavaScript to run this app.</noscript>
 						<div id="root">${ReactDOMServer.renderToString(<Page {...props[basename]} />)}</div>
-						<script src="/react.out.js"></script>
-						<script src="/${basename}.js"></script>
+						<script src="/app.js"></script>
 					</body>
 				</html>
 			`)
@@ -56,8 +56,7 @@ function run() {
 										__html: ReactDOMServer.renderToString(<Page {...props[basename]} />),
 									}}
 								/>
-								<script src="/react.out.js" />
-								<script src={`/${basename}.out.js`} />
+								<script src="/app.js" />
 							</>
 						)}
 					/>,

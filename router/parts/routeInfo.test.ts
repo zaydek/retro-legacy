@@ -9,7 +9,7 @@ test("integration", () => {
 	})
 	expect(routeInfo("/hello/")).toEqual({
 		page: "/hello/",
-		component: "PageHelloNests",
+		component: "PageHelloSlash",
 	})
 	expect(routeInfo("/[hello]")).toEqual({
 		page: "/[hello]",
@@ -17,22 +17,22 @@ test("integration", () => {
 	})
 	expect(routeInfo("/[hello]/")).toEqual({
 		page: "/[hello]/",
-		component: "PageDynamicHelloNests",
+		component: "PageDynamicHelloSlash",
 	})
 	expect(routeInfo("/[hello]/world")).toEqual({
 		page: "/[hello]/world",
-		component: "PageDynamicHelloNestsWorld",
+		component: "PageDynamicHelloSlashWorld",
 	})
 	expect(routeInfo("/[hello]/world/")).toEqual({
 		page: "/[hello]/world/",
-		component: "PageDynamicHelloNestsWorldNests",
+		component: "PageDynamicHelloSlashWorldSlash",
 	})
 	expect(routeInfo("/[hello]/[world]")).toEqual({
 		page: "/[hello]/[world]",
-		component: "PageDynamicHelloNestsDynamicWorld",
+		component: "PageDynamicHelloSlashDynamicWorld",
 	})
 	expect(routeInfo("/[hello]/[world]/")).toEqual({
 		page: "/[hello]/[world]/",
-		component: "PageDynamicHelloNestsDynamicWorldNests",
+		component: "PageDynamicHelloSlashDynamicWorldSlash",
 	})
 })

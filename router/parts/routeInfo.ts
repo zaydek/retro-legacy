@@ -1,14 +1,14 @@
 import { parseParts } from "./parseParts"
 import { RouteInfo } from "./types"
-import { toTitleCase } from "../utils"
+import { toTitleCase } from "../../utils"
 
 // Ex:
 //
 // [hello]/[world]
 //
 // -> {
-// ->   page: "PageDynamicHelloNestsDynamicWorld",
-// ->   component: "PageDynamicXNestsDynamicYNestsDynamicZ",
+// ->   page: "PageDynamicHelloSlashDynamicWorld",
+// ->   component: "PageDynamicXSlashDynamicYSlashDynamicZ",
 // -> }
 //
 export function routeInfo(partsStr: string) {
@@ -24,7 +24,7 @@ export function routeInfo(partsStr: string) {
 			}
 			str += toTitleCase(!each.dynamic ? each.part : each.part.slice(1, -1))
 			if (each.nests) {
-				str += "Nests"
+				str += "Slash"
 			}
 			return str
 		})

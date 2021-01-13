@@ -1,2 +1,2 @@
 export * from "./case"
-export * from "./detab"
+export * from "./tabs"

@@ -1,6 +1,6 @@
 import fs from "fs"
 import path from "path"
-import { routeInfo } from "./parts"
+import { routeInfo } from "./Router/parts"
 
 // Gets pages as names.
 function getPageSrcs() {
@@ -27,10 +27,9 @@ const routeInfos = pages.map(each => routeInfo("/" + each))
 function run() {
 	// prettier-ignore
 	fs.writeFileSync("router/App.cache.js", `
+import App from "./_app"
 import React from "react"
 import ReactDOM from "react-dom"
-
-import Wrapper from "./_wrapper"
 import { Route, Router } from "./Router"
 
 ${routeInfos.map(each => `import ${each!.component} from ${JSON.stringify("." + each!.page)}`).join("\n")}
@@ -40,9 +39,9 @@ export default function App() {
 		<Router>
 			${routeInfos.map(each => `
 			<Route page=${JSON.stringify(each!.page)}>
-				<Wrapper>
+				<App>
 					<${each!.component} />
-				</Wrapper>
+				</App>
 			</Route>
 `).join("")}
 		</Router>

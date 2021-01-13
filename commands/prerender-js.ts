@@ -4,7 +4,7 @@ import { getPageSrcs, guards } from "./utils"
 
 const __DEV__ = process.env.NODE_ENV !== "production"
 
-// Bundles JavaScript on the server.
+// Prerenders JavaScript on the server.
 function run() {
 	guards()
 
