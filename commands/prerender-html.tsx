@@ -35,6 +35,8 @@ function run() {
 		}
 
 		// TODO: Can we format `ReactDOMServer.renderToStaticMarkup(<Head />)`?
+		// TODO: We don’t actually need to use `routeInfo.component`? Why not use
+		// `routeInfo.page`?
 		if (!Document) {
 			out = detab(`
 				<!DOCTYPE html>

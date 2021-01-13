@@ -2,13 +2,20 @@ import parseParts from "./parseParts"
 import { RouteInfo } from "./types"
 import { toTitleCase } from "../../utils"
 
+function index(pageStr: string) {
+	if (pageStr.endsWith("/index")) {
+		return pageStr.replace(/\/index$/, "/")
+	}
+	return pageStr
+}
+
 // Ex:
 //
-// parseRouteInfo("[hello]/[world]")
+// parseRouteInfo("/[hello]/[world]")
 //
 // -> {
-// ->   page: "PageDynamicHelloSlashDynamicWorld",
-// ->   component: "PageDynamicXSlashDynamicYSlashDynamicZ",
+// ->   page: "/[hello]/[world]",
+// ->   component: "PageDynamicHelloSlashDynamicWorld",
 // -> }
 //
 export default function parseRouteInfo(partsStr: string) {
@@ -30,7 +37,7 @@ export default function parseRouteInfo(partsStr: string) {
 		})
 		.join("")
 	const info: RouteInfo = {
-		page: partsStr,
+		page: index(partsStr),
 		component: "Page" + componentStr,
 	}
 	return info
