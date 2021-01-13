@@ -6,15 +6,15 @@ import { getPageSrcs } from "./utils"
 import { parseRouteInfo } from "../Router/parts"
 import { detab } from "../utils"
 
+const App = require("../" + conf.PAGES_DIR + "/internal/app.tsx").default // FIXME: Change `/` for COMPAT
+
 const srcs = getPageSrcs()
 
 // prettier-ignore
-const routeInfos = srcs
+const routes = srcs
 	.map(each => path.parse(each).name)      // Pages
 	.map(each => parseRouteInfo("/" + each)) // RouteInfo
 
-// TODO: Add support for `<App>` wrapper component.
-// TODO: Add support for **not** bundling JavaScript.
 function run() {
 	// prettier-ignore
 	const app = `
@@ -25,22 +25,34 @@ import React from "react"
 import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
+// App
+${!App ? "/* No-op */" : `import App from ${JSON.stringify("../" + conf.PAGES_DIR + "/internal/app") /* FIXME: Change `/` for COMPAT */}` }
+
 // Pages
-${routeInfos.map(each =>
+${routes.map(each =>
 	`import ${each!.component} from ${JSON.stringify("../" + conf.PAGES_DIR + each!.page) /* FIXME: Change `/` for COMPAT */}`
 ).join("\n")}
 
 // Page props
 import pageProps from "./pageProps"
 
-export default function App() {
+export default function RoutedApp() {
 	return (
 		<Router>
-			${routeInfos.map(each => `
+			${routes.map(each =>
+				!App
+					? `
 			<Route page=${JSON.stringify(each!.page)}>
 				<${each!.component} {...pageProps[${JSON.stringify(each!.page)}]} />
-			</Route>
-`).join("")}
+			</Route>`
+					: `
+			<Route page=${JSON.stringify(each!.page)}>
+				<App {...pageProps[${JSON.stringify(each!.page)}]}>
+					<${each!.component} {...pageProps[${JSON.stringify(each!.page)}]} />
+				</App>
+			</Route>`
+			).join("\n")}
+
 		</Router>
 	)
 }
@@ -49,13 +61,13 @@ ${
 	!conf.STRICT_MODE
 		? detab(`
 			ReactDOM.hydrate(
-				<App />,
+				<RoutedApp />,
 				document.getElementById("root"),
 			)`)
 		: detab(`
 			ReactDOM.hydrate(
 				<React.StrictMode>
-					<App />
+					<RoutedApp />
 				</React.StrictMode>,
 				document.getElementById("root"),
 			)`)

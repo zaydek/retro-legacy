@@ -25,8 +25,8 @@ async function asyncRun() {
 	for (const src of srcs) {
 		const promise = new Promise<PageProps>(async resolve => {
 			const basename = path.parse(src).name
-			const routeInfo = parseRouteInfo("/" + basename)
-			if (routeInfo === null) {
+			const routes = parseRouteInfo("/" + basename)
+			if (routes === null) {
 				throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
 			}
 
@@ -35,7 +35,7 @@ async function asyncRun() {
 			if (load) {
 				props = await load()
 			}
-			resolve({ component: routeInfo.page, props })
+			resolve({ component: routes.page, props })
 		})
 		propPromises.push(promise)
 	}

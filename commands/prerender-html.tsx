@@ -7,10 +7,12 @@ import { detab } from "../utils"
 import { getPageSrcs, serverGuards } from "./utils"
 import { parseRouteInfo } from "../Router/parts"
 
+const App = require("../" + conf.PAGES_DIR + "/internal/app.tsx").default // FIXME: Change `/` for COMPAT
+
 // Prerenders HTML on the server.
 //
 // TODO: Add support for `<App>` wrapper component.
-function run() {
+async function asyncRun() {
 	serverGuards()
 
 	const ps = []
@@ -19,8 +21,8 @@ function run() {
 	for (const src of srcs) {
 		const p = new Promise(() => {
 			const basename = path.parse(src).name
-			const routeInfo = parseRouteInfo("/" + basename)
-			if (routeInfo === null) {
+			const route = parseRouteInfo("/" + basename)
+			if (route === null) {
 				throw new Error(`prerender-html: parseRouteInfo(${JSON.stringify(basename)})`)
 			}
 
@@ -48,7 +50,15 @@ function run() {
 						</head>
 						<body>
 							<noscript>You need to enable JavaScript to run this app.</noscript>
-							<div id="root">${ReactDOMServer.renderToString(<Page {...pageProps[routeInfo.page]} />)}</div>
+							<div id="root">${ReactDOMServer.renderToString(
+								!App ? (
+									<Page {...pageProps[route.page]} />
+								) : (
+									<App {...pageProps[route.page]}>
+										<Page {...pageProps[route.page]} />
+									</App>
+								),
+							)}</div>
 							<script src="/app.js"></script>
 						</body>
 					</html>`)
@@ -62,7 +72,15 @@ function run() {
 									<div
 										id="root"
 										dangerouslySetInnerHTML={{
-											__html: ReactDOMServer.renderToString(<Page {...pageProps[routeInfo.page]} />),
+											__html: ReactDOMServer.renderToString(
+												!App ? (
+													<Page {...pageProps[route.page]} />
+												) : (
+													<App {...pageProps[route.page]}>
+														<Page {...pageProps[route.page]} />
+													</App>
+												),
+											),
 										}}
 									/>
 									<script src="/app.js" />
@@ -77,9 +95,8 @@ function run() {
 		ps.push(p)
 	}
 
-	Promise.all(ps)
+	await Promise.all(ps)
 }
-
 ;(() => {
-	run()
+	asyncRun()
 })()

@@ -36,6 +36,8 @@ export default function parseRouteInfo(partsStr: string) {
 			return str
 		})
 		.join("")
+
+	// TODO: Add `file` field.
 	const info: RouteInfo = {
 		page: index(partsStr),
 		component: "Page" + componentStr,
