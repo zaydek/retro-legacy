@@ -20,6 +20,8 @@
 		"noFallthroughCasesInSwitch": true, // Added
 		"noUncheckedIndexedAccess": true, // Added
 
+		// TODO: Check whether this influences esbuild’s behavior when it comes to
+		// importing JSON as JS.
 		"resolveJsonModule": true, // Added
 		"esModuleInterop": true, // Unchanged
 

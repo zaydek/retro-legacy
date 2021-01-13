@@ -28,7 +28,7 @@ async function asyncRun() {
 		const promise = new Promise<PageProps>(async resolve => {
 			const basename = path.parse(src).name
 			const routeInfo = parseRouteInfo("/" + basename)
-			if (!routeInfo === null) {
+			if (routeInfo === null) {
 				throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
 			}
 
@@ -37,7 +37,7 @@ async function asyncRun() {
 			if (load) {
 				props = await load()
 			}
-			resolve({ component: routeInfo!.component, props })
+			resolve({ component: routeInfo.component, props })
 		})
 		propPromises.push(promise)
 	}
