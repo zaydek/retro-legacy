@@ -4,7 +4,7 @@ import { toTitleCase } from "../../utils"
 
 // Ex:
 //
-// [hello]/[world]
+// parseRouteInfo("[hello]/[world]")
 //
 // -> {
 // ->   page: "PageDynamicHelloSlashDynamicWorld",

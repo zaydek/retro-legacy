@@ -1,17 +1,15 @@
 import fs from "fs"
 import path from "path"
 import { getPageSrcs, serverGuards } from "./utils"
+import { parseRouteInfo } from "../Router/parts"
 
 // TODO: Export to some a configuration module or map.
 const PAGEDIR = "pages"
 
 // prettier-ignore
-//
-// TODO: Prop keys can use the parts API to generate page-unique identifiers.
-// This would enable esbuild to **not** import JSON payloads in-full.
 interface PageProps {
-	basename: string
-	props:    any
+	component: string
+	props:     any
 }
 
 type PagePropsMap = {
@@ -26,24 +24,28 @@ async function asyncRun() {
 
 	// Asynchronously prerender page props.
 	const srcs = getPageSrcs()
-	for (const each of srcs) {
+	for (const src of srcs) {
 		const promise = new Promise<PageProps>(async resolve => {
-			const basename = path.parse(each).name
+			const basename = path.parse(src).name
+			const routeInfo = parseRouteInfo("/" + basename)
+			if (!routeInfo === null) {
+				throw new Error(`prerender-props: parseRouteInfo(${JSON.stringify(basename)})`)
+			}
 
-			const { load } = require("../" + PAGEDIR + "/" + each) // FIXME: Change `/` for COMPAT
+			const { load } = require("../" + PAGEDIR + "/" + src) // FIXME: Change `/` for COMPAT
 			let props = null
 			if (load) {
 				props = await load()
 			}
-			resolve({ basename, props })
+			resolve({ component: routeInfo!.component, props })
 		})
 		propPromises.push(promise)
 	}
 
-	// Array -> map:
+	// Reduce from an array to a map:
 	const propsArr = await Promise.all(propPromises)
 	const propsMap = propsArr.reduce((acc, each) => {
-		acc[each.basename] = each.props
+		acc[each.component] = each.props
 		return acc
 	}, {} as PagePropsMap)
 
