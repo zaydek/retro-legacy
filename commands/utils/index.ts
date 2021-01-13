@@ -1,2 +1,2 @@
-export { default as getPages } from "./getPages"
-export { default as guards } from "./guards"
+export { default as getPageSrcs } from "./getPagesSrcs"
+export { default as serverGuards } from "./serverGuards"

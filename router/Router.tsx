@@ -1,5 +1,5 @@
+import history from "./history"
 import React, { useLayoutEffect, useState } from "react"
-import { history } from "./history"
 import { Route } from "./Route"
 
 // TODO: Propagating state between history changes (see the state parameter).

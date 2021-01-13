@@ -1,2 +1,9 @@
 import { createBrowserHistory } from "history"
-export const history = createBrowserHistory()
+
+// FIXM@
+let history = null
+try {
+	history = createBrowserHistory()
+} catch (err) {}
+
+export default history as any // FIXME

@@ -1,4 +1,4 @@
-import { history } from "./history"
+import history from "./history"
 
 export interface RedirectProps {
 	page: string

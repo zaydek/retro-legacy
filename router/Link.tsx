@@ -1,5 +1,5 @@
+import history from "./history"
 import React from "react"
-import { history } from "./history"
 
 type ScrollTo = "no-op" | number | string | HTMLElement
 

@@ -1,30 +1,27 @@
-// export async function load() {
-// 	const p = new Promise(resolve => {
-// 		setTimeout(() => {
-// 			resolve({ data: "Hello, world! (home-2)" })
-// 		}, 1e3)
-// 	})
-// 	return p
-// }
-//
-// export function head() {
-// 	return <title>Hello, world! (home-2)</title>
-// }
-//
-// interface HomeProps {
-// 	data: string
-// }
-
-// export default function Home({ data }: HomeProps) {
-
 import React from "react"
 import { Link } from "../Router"
 
-export default function PageA() {
+export async function load() {
+	const p = new Promise(resolve => {
+		setTimeout(() => {
+			resolve({ data: "Hello, world! /page-a" })
+		}, 1e3)
+	})
+	return p
+}
+
+export function head() {
+	return <title>Hello, world! (/page-a)</title>
+}
+
+interface PageProps {
+	data: string
+}
+
+export default function PageA(_: PageProps) {
 	return (
 		<div>
 			<h1>Hello, world! (/page-a)</h1>
-			{/* TODO */}
 			<Link page="/">
 				<p>Go to page /</p>
 			</Link>

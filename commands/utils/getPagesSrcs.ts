@@ -1,17 +1,16 @@
 import fs from "fs"
-import path from "path"
 
+// TODO: Export to some a configuration module or map.
 const PAGEDIR = "pages"
 
-const routeFiletypes = ["js", "jsx", "ts", "tsx", "md", "mdx"]
+const routeFileTypesRegex = /\.(jsx?|tsx?|mdx?)$/
 
 function isFile(src: string) {
-	// TODO: Change `"/"` to support more OSs.
-	return fs.statSync(PAGEDIR + "/" + src).isFile()
+	return fs.statSync(PAGEDIR + "/" + src).isFile() // FIXME: Change `/` for COMPAT
 }
 
 function isRouterFiletype(src: string) {
-	return routeFiletypes.some(each => src.endsWith("." + each))
+	return routeFileTypesRegex.test(src)
 }
 
 // TODO: Change to support Perl-style alphabetics?
@@ -27,7 +26,7 @@ function isHiddenFile(src: string) {
 }
 
 // prettier-ignore
-export default function getPages() {
+export default function getPagesSrcs() {
 	const srcs = fs.readdirSync("pages").filter(each => {
 		const ok = (
 			isFile(each) &&
@@ -36,6 +35,5 @@ export default function getPages() {
 		)
 		return ok
 	})
-	const pages = srcs.map(each => path.parse(each).name)
-	return pages
+	return srcs
 }
