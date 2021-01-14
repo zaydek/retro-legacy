@@ -30,6 +30,8 @@ async function asyncRun() {
 				throw new Error(`prerender-props: parseRoutes(${JSON.stringify(basename)})`)
 			}
 
+			// TODO: Rename to `props` and add support for `pages`; `pages` needs to
+			// pass props to `head`.
 			const { load } = require("../" + conf.PAGES_DIR + "/" + src) // FIXME: Change `/` for COMPAT
 			let props = null
 			if (load) {

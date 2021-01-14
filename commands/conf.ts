@@ -1,5 +1,6 @@
 // Top-level configuration.
 //
+// TODO: Add field for `public` or `static` files; `STATIC_DIR`.
 // TODO: Add field for JavaScript-less builds.
 export default {
 	// Env configuration:
