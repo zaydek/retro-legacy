@@ -17,12 +17,11 @@ async function asyncRun(payload: Payload) {
 			pageName: string
 			props: any
 		}>(async resolve => {
-			const exports = require("./" + each.path)
-
 			// TODO: Add guards; exported props, props synchronously returns data or
 			// returns an asynchronous promise, etc. If the page dynamic, props should
 			// return do something else? should Maybe should not take longer than x
 			// seconds or that can be handled by Go.
+			const exports = require("./" + each.path)
 			let resolvedProps = null
 			if (exports.props) {
 				resolvedProps = await exports.props()
@@ -31,7 +30,6 @@ async function asyncRun(payload: Payload) {
 		})
 		chain.push(p)
 	}
-
 	const resolved = await Promise.all(chain)
 	const responsePayload = resolved.reduce((acc, each) => {
 		acc[each.pageName] = each.props
