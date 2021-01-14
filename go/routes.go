@@ -2,42 +2,50 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
-	"strings"
 )
 
 type PageBasedRoute struct {
-	pathStr       string // E.g. a/b/c/page-name.tsx
+	path          string // E.g. a/b/c/page-name.tsx
 	pageName      string // E.g. /page-name
 	componentName string // E.g. PageName
 }
 
+// Allowed file types.
+var allowedFileTypes = []string{
+	".js",  // JavaScript
+	".jsx", // React JavaScript
+	".ts",  // TypeScript
+	".tsx", // React TypeScript
+	".md",  // Markdown
+	".mdx", // MDX (React Markdown)
+}
+
+// Returns whether a path matches one of the allowed file types.
+func isAllowedFileType(path string) bool {
+	ext := filepath.Ext(path)
+	for _, fileType := range allowedFileTypes {
+		if ext == fileType {
+			return true
+		}
+	}
+	return false
+}
+
 // Initializes a new page-based route. A page-based route provides a layer of
-// indirection so that a path name can be queried as a page name or as a
-// React-constructable component name.
-func newPageBasedRoute(pathStr string) (*PageBasedRoute, error) {
-	// TODO: Sanitize `pathStr`; should be limited to set of cross-platform ASCII
+// indirection so that a path name can be queried as a page name or as a React-
+// constructable component name.
+func newPageBasedRoute(path string) *PageBasedRoute {
+	// TODO: Sanitize `path`; should be limited to set of cross-platform ASCII
 	// characters. In the future, this can be broadened to support Unicode
 	// characters more generally.
-
-	var ext = ""
-	ext = filepath.Ext(pathStr)
-	ext = strings.TrimLeft(ext, ".")
-	if ext != "js" && ext != "jsx" && ext != "ts" && ext != "tsx" && ext != "md" && ext != "mdx" {
-		return nil, fmt.Errorf("page-based routes must be of type js|jsx|ts|tsx|md|mdx; ext=%s", ext)
-	}
-
-	var pageName = ""
-	pageName = filepath.Base(pathStr)
-	pageName = pageName[:len(pageName)-len(filepath.Ext(pageName))]
-	pageName = "/" + pageName
-
 	route := &PageBasedRoute{
-		pathStr:       pathStr,
-		pageName:      pageName,
+		path:          path,
+		pageName:      "/" + path[:len(path)-len(filepath.Ext(path))],
 		componentName: "TODO",
 	}
-	return route, nil
+	return route
 }
 
 // Read-only getter for the page name.
@@ -50,5 +58,26 @@ func (r *PageBasedRoute) ComponentName() string {
 	return r.componentName
 }
 
-func getPageBasedRoutes() {
+// Gets page-based routes from a configuration file.
+//
+// Based on https://golang.org/pkg/path/filepath/#Walk.
+func (config *Configuration) GetPageBasedRoutes() ([]*PageBasedRoute, error) {
+	routes := []*PageBasedRoute{}
+	err := filepath.Walk(config.pagesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// TODO: Right now we arbitrarily skip over `internal` folders.
+		if info.IsDir() && info.Name() == "internal" {
+			return filepath.SkipDir
+		}
+		if isAllowedFileType(path) {
+			routes = append(routes, newPageBasedRoute(path))
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("cannot get page-based routes; %w", err)
+	}
+	return routes, nil
 }

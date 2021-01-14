@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 )
 
@@ -23,51 +24,64 @@ type Configuration struct {
 }
 
 // Defaults for an uninitialized configuration.
-var configurationDefaults = Configuration{
+var configDefaults = Configuration{
 	ReactStrictMode: false,
 	pagesDir:        "pages",
 	cacheDir:        "cache",
 	buildDir:        "build",
 }
 
-// Reads a configuration file (encoded as JSON) from the user. Returns a
-// pre-initialized configuration if no such configuration exists. Default values
-// are documented in the `Configuration` struct declaration.
+// Initializes a configuration file. If no such configuration file exists, a
+// pre-initialized configuration will be written to disk and returned.
 //
+// TODO: Shouldn’t `pathStr` be assumed to be `"x.config.json"`?
+// TODO: We do not currently commit the pre-initialized configuration file to
+// disk. See `main.go` for current implementation.
 // TODO: Add unit tests.
-func ReadConfigurationFile(pathstr string) (*Configuration, error) {
-	conf := &Configuration{}
+func InitConfigurationFile(path string) (*Configuration, error) {
+	config := &Configuration{}
 
-	// No such configuration file; return a pre-initialized configuration:
-	info, err := os.Stat(pathstr)
+	// Read from disk; if no configuration file exists, write and return the pre-
+	// initialized configuration.
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		*conf = configurationDefaults
-		return conf, nil
+		*config = configDefaults
+		b, err := json.MarshalIndent(config, "", "\t")
+		if err != nil {
+			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
+		}
+		err = ioutil.WriteFile("config.json", b, os.ModePerm)
+		if err != nil {
+			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
+		}
+		log.Print("no such configuration file; initialized from recommended defaults")
+		return config, nil
 	}
 
-	if info.IsDir() {
-		return nil, errors.New("configuration file must be a JSON-encoded file")
-	}
-	b, err := ioutil.ReadFile("go/conf.json")
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(b, conf)
+	err = json.Unmarshal(b, config)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: Can probably use reflection here. Check for zero values and
-	// iteratively assign default values from `configurationDefaults`.
-	if conf.pagesDir == "" {
-		conf.pagesDir = "pages"
+	// iteratively assign default values from `configDefaults`.
+	if config.pagesDir == "" {
+		config.pagesDir = "pages"
 	}
-	if conf.cacheDir == "" {
-		conf.cacheDir = "cache"
+	if config.cacheDir == "" {
+		config.cacheDir = "cache"
 	}
-	if conf.buildDir == "" {
-		conf.buildDir = "build"
+	if config.buildDir == "" {
+		config.buildDir = "build"
 	}
 
-	return conf, nil
+	// TODO: Add server guards here; guarantee the presence or the creation of
+	// required directories. This is important for `GetPageBasedRoutes` to work
+	// correctly.
+
+	return config, nil
 }
