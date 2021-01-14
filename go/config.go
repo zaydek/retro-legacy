@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -29,9 +30,48 @@ var configDefaults = Configuration{
 	ReactStrictMode: false,
 }
 
+// Server guards.
+func (c *Configuration) serverGuards() error {
+	// PAGES_DIR
+	info, err := os.Stat(c.PagesDir)
+	if os.IsNotExist(err) {
+		err := os.Mkdir(c.PagesDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	} else if !info.IsDir() {
+		return errors.New("cannot proceed; configuration field `PAGES_DIR` must be a directory")
+	}
+
+	// CACHE_DIR
+	info, err = os.Stat(c.CacheDir)
+	if os.IsNotExist(err) {
+		err := os.Mkdir(c.CacheDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	} else if !info.IsDir() {
+		return errors.New("cannot proceed; configuration field `CACHE_DIR` must be a directory")
+	}
+
+	// BUILD_DIR
+	info, err = os.Stat(c.BuildDir)
+	if os.IsNotExist(err) {
+		err := os.Mkdir(c.BuildDir, os.ModePerm)
+		if err != nil {
+			return err
+		}
+	} else if !info.IsDir() {
+		return errors.New("cannot proceed; configuration field `BUILD_DIR` must be a directory")
+	}
+	// Server guards pass; OK to proceed.
+	return nil
+}
+
 // Initializes a configuration file. If no such configuration file exists, a
 // pre-initialized configuration will be written to disk and returned.
 //
+// TODO: Upgrade implementation to support JS or TS-based configuration files?
 // TODO: Add unit tests.
 func InitConfigurationFile(path string) (*Configuration, error) {
 	config := &Configuration{}
@@ -49,9 +89,9 @@ func InitConfigurationFile(path string) (*Configuration, error) {
 		if err != nil {
 			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
 		}
-		fmt.Printf("no such configuration file; initialized from recommended defaults\n")
-		fmt.Printf("wrote %s to disk\n", "config.json")
-		return config, nil
+		// TODO: Technically, ths implementation leads to double-reading the
+		// configuration file, which is fine but also a little weird.
+		path = "config.json"
 	}
 
 	b, err := ioutil.ReadFile(path)
@@ -76,12 +116,10 @@ func InitConfigurationFile(path string) (*Configuration, error) {
 		config.BuildDir = configDefaults.BuildDir
 	}
 
-	// TODO: Add server guards here; guarantee the presence or the creation of
-	// required directories. This is important for `GetPageBasedRoutes` to work
-	// correctly.
-	//
-	// If `pagesDir` does not exist; create it. If `cacheDir` does not exist,
-	// create it, if `buildDir` does not exists, create it.
+	err = config.serverGuards()
+	if err != nil {
+		return nil, err
+	}
 
 	return config, nil
 }
