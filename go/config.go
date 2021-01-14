@@ -73,7 +73,7 @@ func (c *Configuration) serverGuards() error {
 //
 // TODO: Upgrade implementation to support JS or TS-based configuration files?
 // TODO: Add unit tests.
-func InitConfigurationFile(path string) (*Configuration, error) {
+func InitConfiguration(path string) (*Configuration, error) {
 	config := &Configuration{}
 
 	// Read from disk; if no configuration file exists, write and return the pre-
@@ -83,11 +83,11 @@ func InitConfigurationFile(path string) (*Configuration, error) {
 		*config = configDefaults
 		b, err := json.MarshalIndent(config, "", "\t")
 		if err != nil {
-			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
+			return nil, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
 		}
 		err = ioutil.WriteFile("config.json", append(b, []byte("\n")...), os.ModePerm)
 		if err != nil {
-			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
+			return nil, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
 		}
 		// TODO: Technically, ths implementation leads to double-reading the
 		// configuration file, which is fine but also a little weird.

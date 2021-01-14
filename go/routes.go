@@ -7,13 +7,13 @@ import (
 )
 
 type PageBasedRoute struct {
-	path          string // E.g. a/b/c/page-name.tsx
-	pageName      string // E.g. /page-name
-	componentName string // E.g. PageName
+	Path          string `json:"path"`          // E.g. a/b/c/page-name.tsx
+	PageName      string `json:"pageName"`      // E.g. /page-name
+	ComponentName string `json:"componentName"` // E.g. PageName
 }
 
-// Allowed file types.
-var allowedFileTypes = []string{
+// Allowed route file types.
+var allowedRouteFileTypes = []string{
 	".js",  // JavaScript
 	".jsx", // React JavaScript
 	".ts",  // TypeScript
@@ -22,10 +22,10 @@ var allowedFileTypes = []string{
 	".mdx", // MDX (React Markdown)
 }
 
-// Returns whether a path matches one of the allowed file types.
-func isAllowedFileType(path string) bool {
+// Returns whether a path matches one of the allowed route file types.
+func isAllowedRouteFileType(path string) bool {
 	ext := filepath.Ext(path)
-	for _, fileType := range allowedFileTypes {
+	for _, fileType := range allowedRouteFileTypes {
 		if ext == fileType {
 			return true
 		}
@@ -41,29 +41,17 @@ func newPageBasedRoute(path string) *PageBasedRoute {
 	// characters. In the future, this can be broadened to support Unicode
 	// characters more generally.
 	route := &PageBasedRoute{
-		path:          path,
-		pageName:      "/" + path[:len(path)-len(filepath.Ext(path))],
-		componentName: "TODO",
+		Path:          path,
+		PageName:      "/" + path[:len(path)-len(filepath.Ext(path))],
+		ComponentName: "TODO",
 	}
 	return route
 }
 
-// Read-only getter for the page name.
-func (r *PageBasedRoute) PageName() string {
-	return r.pageName
-}
-
-// Read-only getter for the component name.
-func (r *PageBasedRoute) ComponentName() string {
-	return r.componentName
-}
-
-// Gets page-based routes from a configuration file.
-//
 // Based on https://golang.org/pkg/path/filepath/#Walk.
-func (config *Configuration) GetPageBasedRoutes() ([]*PageBasedRoute, error) {
+func (c *Configuration) GetPageBasedRoutes() ([]*PageBasedRoute, error) {
 	routes := []*PageBasedRoute{}
-	err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(c.PagesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -71,7 +59,7 @@ func (config *Configuration) GetPageBasedRoutes() ([]*PageBasedRoute, error) {
 		if info.IsDir() && info.Name() == "internal" {
 			return filepath.SkipDir
 		}
-		if isAllowedFileType(path) {
+		if isAllowedRouteFileType(path) {
 			routes = append(routes, newPageBasedRoute(path))
 		}
 		return nil
