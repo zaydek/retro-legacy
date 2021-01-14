@@ -40,6 +40,8 @@ func newPageBasedRoute(path string) *PageBasedRoute {
 	// TODO: Sanitize `path`; should be limited to set of cross-platform ASCII
 	// characters. In the future, this can be broadened to support Unicode
 	// characters more generally.
+	// TODO: For now, let’s lazily qualify the path name against a regex. Later,
+	// we should qualify more carefully using `parseParts` or equivalent.
 	route := &PageBasedRoute{
 		Path:          path,
 		PageName:      "/" + path[:len(path)-len(filepath.Ext(path))],

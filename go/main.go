@@ -1,11 +1,12 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
+	"os"
 )
 
 func main() {
-	// TODO: This should be inferred or read from the command-line.
 	config, err := InitConfiguration("config.json")
 	if err != nil {
 		log.Fatal(err)
@@ -14,7 +15,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = config.WritePageProps(routes)
+	b, err := ResolvePageProps(routes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = ioutil.WriteFile(config.CacheDir+"/pageProps.js", b, os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}

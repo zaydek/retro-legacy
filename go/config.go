@@ -18,7 +18,7 @@ type Configuration struct {
 	// The build directory.
 	BuildDir string `json:"BUILD_DIR"`
 
-	// Should wrap the app with `<React.StrictMode>`.
+	// Should wrap the app with `<React.StrictMode>`?
 	ReactStrictMode bool
 }
 
@@ -32,7 +32,6 @@ var configDefaults = Configuration{
 
 // Server guards.
 func (c *Configuration) serverGuards() error {
-	// PAGES_DIR
 	info, err := os.Stat(c.PagesDir)
 	if os.IsNotExist(err) {
 		err := os.Mkdir(c.PagesDir, os.ModePerm)
@@ -42,8 +41,6 @@ func (c *Configuration) serverGuards() error {
 	} else if !info.IsDir() {
 		return errors.New("cannot proceed; configuration field `PAGES_DIR` must be a directory")
 	}
-
-	// CACHE_DIR
 	info, err = os.Stat(c.CacheDir)
 	if os.IsNotExist(err) {
 		err := os.Mkdir(c.CacheDir, os.ModePerm)
@@ -53,8 +50,6 @@ func (c *Configuration) serverGuards() error {
 	} else if !info.IsDir() {
 		return errors.New("cannot proceed; configuration field `CACHE_DIR` must be a directory")
 	}
-
-	// BUILD_DIR
 	info, err = os.Stat(c.BuildDir)
 	if os.IsNotExist(err) {
 		err := os.Mkdir(c.BuildDir, os.ModePerm)
@@ -64,7 +59,6 @@ func (c *Configuration) serverGuards() error {
 	} else if !info.IsDir() {
 		return errors.New("cannot proceed; configuration field `BUILD_DIR` must be a directory")
 	}
-	// Server guards pass; OK to proceed.
 	return nil
 }
 
@@ -90,7 +84,7 @@ func InitConfiguration(path string) (*Configuration, error) {
 			return nil, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
 		}
 		// TODO: Technically, ths implementation leads to double-reading the
-		// configuration file, which is fine but also a little weird.
+		// configuration file.
 		path = "config.json"
 	}
 
@@ -98,14 +92,15 @@ func InitConfiguration(path string) (*Configuration, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Add graceful error-handling for missing fields, etc.
+	// TODO: Add support graceful error-handling for missing fields or warn the
+	// required fields. This would be easier if we had documentation.
 	err = json.Unmarshal(b, config)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Can probably use reflection here. Check for zero values and
-	// iteratively assign default values from `configDefaults`.
+	// TODO: Can we use reflection here (do we want to?). We could check for zero
+	// values and iteratively assign default values from `configDefaults`.
 	if config.PagesDir == "" {
 		config.PagesDir = configDefaults.PagesDir
 	}
@@ -116,6 +111,7 @@ func InitConfiguration(path string) (*Configuration, error) {
 		config.BuildDir = configDefaults.BuildDir
 	}
 
+	// These are server assertions that must pass.
 	err = config.serverGuards()
 	if err != nil {
 		return nil, err

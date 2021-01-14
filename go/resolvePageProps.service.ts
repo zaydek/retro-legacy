@@ -35,7 +35,6 @@ async function asyncRun(payload: Payload) {
 		acc[each.pageName] = each.props
 		return acc
 	}, {} as { [key: string]: any })
-
 	return responsePayload
 }
 
@@ -48,6 +47,6 @@ async function asyncRun(payload: Payload) {
 })()
 
 process.on("uncaughtException", err => {
-	console.error({ platform: "node", stack: err.stack })
+	console.error(err.stack)
 	process.exit(1)
 })
