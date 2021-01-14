@@ -4,39 +4,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 )
 
-// Global configuration.
 type Configuration struct {
-	// Wrap the app with `<React.StrictMode>`. Defaults to `false`.
+	// The pages directory.
+	PagesDir string `json:"PAGES_DIR"`
+
+	// The cache directory.
+	CacheDir string `json:"CACHE_DIR"`
+
+	// The build directory.
+	BuildDir string `json:"BUILD_DIR"`
+
+	// Should wrap the app with `<React.StrictMode>`.
 	ReactStrictMode bool
-
-	// The pages directory. Defaults to `"pages"`.
-	pagesDir string
-
-	// The cache directory. Defaults to `"cache"`.
-	cacheDir string
-
-	// The build directory. Defaults to `"build"`.
-	buildDir string
 }
 
 // Defaults for an uninitialized configuration.
 var configDefaults = Configuration{
+	PagesDir:        "pages",
+	CacheDir:        "cache",
+	BuildDir:        "build",
 	ReactStrictMode: false,
-	pagesDir:        "pages",
-	cacheDir:        "cache",
-	buildDir:        "build",
 }
 
 // Initializes a configuration file. If no such configuration file exists, a
 // pre-initialized configuration will be written to disk and returned.
 //
-// TODO: Shouldn’t `pathStr` be assumed to be `"x.config.json"`?
-// TODO: We do not currently commit the pre-initialized configuration file to
-// disk. See `main.go` for current implementation.
 // TODO: Add unit tests.
 func InitConfigurationFile(path string) (*Configuration, error) {
 	config := &Configuration{}
@@ -50,11 +45,12 @@ func InitConfigurationFile(path string) (*Configuration, error) {
 		if err != nil {
 			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
 		}
-		err = ioutil.WriteFile("config.json", b, os.ModePerm)
+		err = ioutil.WriteFile("config.json", append(b, []byte("\n")...), os.ModePerm)
 		if err != nil {
 			return nil, fmt.Errorf("attempted to write a pre-initialized configuration file to disk but failed; %w", err)
 		}
-		log.Print("no such configuration file; initialized from recommended defaults")
+		fmt.Printf("no such configuration file; initialized from recommended defaults\n")
+		fmt.Printf("wrote %s to disk\n", "config.json")
 		return config, nil
 	}
 
@@ -62,6 +58,7 @@ func InitConfigurationFile(path string) (*Configuration, error) {
 	if err != nil {
 		return nil, err
 	}
+	// TODO: Add graceful error-handling for missing fields, etc.
 	err = json.Unmarshal(b, config)
 	if err != nil {
 		return nil, err
@@ -69,19 +66,22 @@ func InitConfigurationFile(path string) (*Configuration, error) {
 
 	// TODO: Can probably use reflection here. Check for zero values and
 	// iteratively assign default values from `configDefaults`.
-	if config.pagesDir == "" {
-		config.pagesDir = "pages"
+	if config.PagesDir == "" {
+		config.PagesDir = configDefaults.PagesDir
 	}
-	if config.cacheDir == "" {
-		config.cacheDir = "cache"
+	if config.CacheDir == "" {
+		config.CacheDir = configDefaults.CacheDir
 	}
-	if config.buildDir == "" {
-		config.buildDir = "build"
+	if config.BuildDir == "" {
+		config.BuildDir = configDefaults.BuildDir
 	}
 
 	// TODO: Add server guards here; guarantee the presence or the creation of
 	// required directories. This is important for `GetPageBasedRoutes` to work
 	// correctly.
+	//
+	// If `pagesDir` does not exist; create it. If `cacheDir` does not exist,
+	// create it, if `buildDir` does not exists, create it.
 
 	return config, nil
 }

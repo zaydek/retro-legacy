@@ -63,7 +63,7 @@ func (r *PageBasedRoute) ComponentName() string {
 // Based on https://golang.org/pkg/path/filepath/#Walk.
 func (config *Configuration) GetPageBasedRoutes() ([]*PageBasedRoute, error) {
 	routes := []*PageBasedRoute{}
-	err := filepath.Walk(config.pagesDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

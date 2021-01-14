@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-const CONF_PATH = "go/config.json"
+const CONF_PATH = "config.json"
 
 func main() {
 	config, err := InitConfigurationFile(CONF_PATH)
@@ -19,4 +19,5 @@ func main() {
 	for _, route := range routes {
 		fmt.Printf("pageName=%s\n", route.pageName)
 	}
+	// ...
 }
