@@ -2,12 +2,16 @@ package main
 
 import (
 	"fmt"
+	"log"
 )
 
 const CONF_PATH = "go/conf.json"
 
 func main() {
-	route := newPageBasedRoute(CONF_PATH)
+	route, err := newPageBasedRoute("test.mdx")
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Printf("%+v\n", route)
 
 	// conf, err := config.ReadConfigurationFile(CONF_PATH)
