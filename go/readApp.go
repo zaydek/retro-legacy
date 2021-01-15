@@ -26,7 +26,7 @@ import { Route, Router } from "../Router"
 // FIXME: We need to check whether the user has a component here. As a temporary
 // fix, we can os.Stat and check whether a file exists. We don’t need to check
 // that the file does what it’s supposed to do for now.
-{{if true -}}
+{{if false -}}
 // App
 import App from "../{{.Config.PagesDir}}/internal/app"
 {{- else -}}
@@ -53,7 +53,7 @@ export default function RoutedApp() {
 	return (
 		<Router>
 		{{range .Router}}
-			<Route page="{{.Page}}">
+			<Route page="/{{.Page}}">
 				<{{.Component }} {...pageProps["{{.Page}}"]} />
 			</Route>
 		{{end}}
