@@ -1,56 +1,55 @@
-interface PayloadItem {
-	path: string
-	page: string
-	component: string
+import { PageBasedRouter, RequestPayload } from "./types"
+
+// prettier-ignore
+interface ResponsePayloadItem {
+	page:  string
+	props: any
 }
 
-type Payload = PayloadItem[]
+// prettier-ignore
+interface ResponsePayload {
+	[key: string]: ResponsePayloadItem
+}
 
 // TODO: Change to a server micro-service architecture later; no-ops the needs
 // for intercommunicating processes over stdout and stderr, which is
 // questionable at best.
-// TODO: Move to some `services` or equivalent folder.
-async function asyncRun(payload: Payload) {
+export async function asyncRun(request: RequestPayload) {
 	const chain = []
-	for (const each of payload) {
-		const p = new Promise<{
-			page: string
-			props: any
-		}>(async resolve => {
-			// TODO: Guard `props` synchronously returns data or returns an
-			// asynchronous promise, etc.
-			const exports = require("../" + each.path)
+	for (const page of request.router) {
+		const p = new Promise<ResponsePayloadItem>(async resolve => {
+			// TODO: Add guards to check whether `props` returns data synchronously or
+			// returns an asynchronous promise.
+			const exports = require("../" + page.path)
 			let resolvedProps = null
 			if (exports.props) {
 				resolvedProps = await exports.props()
 			}
-			resolve({
-				page: each.page,
-				props: resolvedProps,
-			})
+			resolve({ page: page.page, props: resolvedProps })
 		})
 		chain.push(p)
 	}
 	const resolved = await Promise.all(chain)
-	const responsePayload = resolved.reduce((acc, each) => {
-		acc[each.page] = each.props
+	const responsePayload = resolved.reduce((acc, page) => {
+		acc[page.page] = page.props
 		return acc
-	}, {} as { [key: string]: any })
+	}, {} as ResponsePayload)
 	return responsePayload
 }
 
+// TODO: Is there a way to inject the current filename?
 ;(async () => {
-	const jsonPayload = process.argv[process.argv.length - 1]
-	if (!jsonPayload) {
-		throw new Error(`pageProps.js: JSON payload should never be undefined or empty; jsonPayload=${jsonPayload}`)
+	const jsonRequest = process.argv[process.argv.length - 1]
+	if (!jsonRequest) {
+		throw new Error(`pageProps.ts: JSON router should never be undefined or empty; jsonRequest=${jsonRequest}`)
 	}
-	const payload: Payload = JSON.parse(jsonPayload)
-	const responsePayload = await asyncRun(payload)
-	const jsonResponsePayload = JSON.stringify(responsePayload, null, "\t")
-	console.log(jsonResponsePayload)
+	const request: RequestPayload = JSON.parse(jsonRequest)
+	const response = await asyncRun(request)
+	const jsonResponse = JSON.stringify(response, null, "\t")
+	console.log(jsonResponse)
 })()
 
 process.on("uncaughtException", err => {
-	console.error(err.stack) // TODO: Change to `err`?
+	console.error(err)
 	process.exit(1)
 })

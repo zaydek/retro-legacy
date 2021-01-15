@@ -14,7 +14,7 @@ type PageBasedRoute struct {
 
 type PageBasedRouter []PageBasedRoute
 
-var allowedRouteFileTypes = []string{
+var routeFileTypes = []string{
 	".js",  // JavaScript
 	".jsx", // React JavaScript
 	".ts",  // TypeScript
@@ -23,9 +23,9 @@ var allowedRouteFileTypes = []string{
 	".mdx", // MDX (React Markdown)
 }
 
-func isAllowedRouteFileType(path string) bool {
+func isRouteFileType(path string) bool {
 	ext := filepath.Ext(path)
-	for _, fileType := range allowedRouteFileTypes {
+	for _, fileType := range routeFileTypes {
 		if ext == fileType {
 			return true
 		}
@@ -61,7 +61,7 @@ func InitPageBasedRouter(config Configuration) (PageBasedRouter, error) {
 		if info.IsDir() && info.Name() == "internal" {
 			return filepath.SkipDir
 		}
-		if isAllowedRouteFileType(path) {
+		if isRouteFileType(path) {
 			router = append(router, newPageBasedRoute(path))
 		}
 		return nil

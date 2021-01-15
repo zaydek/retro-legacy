@@ -10,12 +10,9 @@ func ReadApp(config Configuration, router PageBasedRouter) ([]byte, error) {
 	var buf bytes.Buffer
 
 	dot := struct {
-		Configuration
-		Pages PageBasedRouter
-	}{
-		Configuration: config,
-		Pages:         router,
-	}
+		Config Configuration   `json:"config"`
+		Router PageBasedRouter `json:"router"`
+	}{Config: config, Router: router}
 
 	const data = `
 // THIS FILE IS AUTO-GENERATED.
@@ -78,10 +75,11 @@ ReactDOM.hydrate(
 )
 {{- end}}
 `
-	t := template.Must(template.New("").Parse(data))
-	err := t.Execute(&buf, dot)
+	tmpl := template.Must(template.New("").Parse(data))
+	err := tmpl.Execute(&buf, dot)
 	if err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	contents := bytes.TrimLeft(buf.Bytes(), "\n") // Remove BOF
+	return contents, nil
 }
