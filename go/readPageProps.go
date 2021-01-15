@@ -19,6 +19,8 @@ import (
 // TODO: Need to guard `null` error case for `json.MarshalIndent` which
 // currently passes.
 func ReadPageProps(config Configuration, router PageBasedRouter) ([]byte, error) {
+	var buf bytes.Buffer
+
 	dot := struct {
 		Config Configuration   `json:"config"`
 		Router PageBasedRouter `json:"router"`
@@ -28,20 +30,25 @@ func ReadPageProps(config Configuration, router PageBasedRouter) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(dotBytes))
+	fmt.Println(string(dotBytes)) // DEBUG
 
-	stdout, stderr, _ := execcmd("yarn", "-s", "ts-node", "-T", "go/services/pageProps.ts", string(dotBytes))
-	if stderr != "" { // Takes precedence
-		return nil, errors.New("resolvePageProps.service.ts: " + stderr)
+	stdout, stderr, err := execcmd("yarn", "-s", "ts-node", "-T", "go/services/pageProps.ts", string(dotBytes))
+	if stderr != nil { // Takes precedence
+		return nil, errors.New(string(stderr))
 	} else if err != nil {
 		return nil, err
 	}
-	contents := []byte(`
+
+	buf.Write([]byte(`
 // THIS FILE IS AUTO-GENERATED.
 // THESE AREN’T THE FILES YOU’RE LOOKING FOR.
 // MOVE ALONG.
 
-module.exports = ` + stdout)
+module.exports = `))
+	buf.Write(stdout)
+
+	contents := buf.Bytes()
 	contents = bytes.TrimLeft(contents, "\n") // Remove BOF
+
 	return contents, nil
 }

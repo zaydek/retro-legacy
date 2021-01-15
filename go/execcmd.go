@@ -5,18 +5,22 @@ import (
 	"os/exec"
 )
 
-func execcmd(cmdargs ...string) (stdout, stderr string, err error) {
-	cmd := exec.Command(cmdargs[0], cmdargs[1:]...)
-
-	// Connect stdout and stderr to buffers:
+func execcmd(cmdargs ...string) (stdout, stderr []byte, err error) {
 	var stdoutBuf bytes.Buffer
 	var stderrBuf bytes.Buffer
+
+	cmd := exec.Command(cmdargs[0], cmdargs[1:]...)
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 
-	// Run the command and read from the buffers:
+	// NOTE: Use `buf.Len() > 0` to prevent `[]byte("")`.
 	err = cmd.Run()
-	stdout = stdoutBuf.String()
-	stderr = stderrBuf.String()
+	if stdoutBuf.Len() > 0 {
+		stdout = stdoutBuf.Bytes()
+	}
+	if stderrBuf.Len() > 0 {
+		stderr = stderrBuf.Bytes()
+	}
+
 	return stdout, stderr, err
 }

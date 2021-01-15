@@ -37,7 +37,7 @@ export async function asyncRun(request: Request) {
 
 	for (const page of request.router) {
 		const promise = new Promise<ResponseItem>(resolve => {
-			const { default: Page, head: Head } = require("../" + request.config.PAGES_DIR + "/" + page)
+			const { default: Page, head: Head } = require("../" + request.config.PAGES_DIR + page.page)
 
 			let document = ""
 			if (Document) {
@@ -85,8 +85,8 @@ export async function asyncRun(request: Request) {
 	}
 	const request: Request = JSON.parse(jsonRequest)
 	const response = await asyncRun(request)
-	const jsonResponse = JSON.stringify(response, null, "\t")
-	console.log(jsonResponse)
+	// const jsonResponse = JSON.stringify(response, null, "\t")
+	// console.log(jsonResponse)
 })()
 
 process.on("uncaughtException", err => {
