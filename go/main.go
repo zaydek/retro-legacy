@@ -27,7 +27,13 @@ func main() {
 		log.Fatal(err)
 	}
 	dur := time.Since(start)
+
+	// TODO: Change to a `bytes.Buffer` implementation.
 	fmt.Printf("✅ %s (%0.1fs)\n", config.CacheDir+"/pageProps.js", dur.Seconds())
+	for _, r := range routes {
+		fmt.Printf("\t- %s\n", r.Path)
+	}
+
 	// TODO: Write sub-routes below.
 	// TODO: Write sub-routes at the same time or progressively?
 }

@@ -1,0 +1,22 @@
+server framework for server-generating and rendering react
+
+desired flags would be
+
+reactstrictmode
+experimentalreactsuspense
+noscript (do not emit any javascript whatsoever, assets are fine)
+ssg (server generation; statically generate all pages with a shared bundle file)
+ssr (server rendering; generate source or a program that can be used to ssr)
+- ssr requirements are different; has to do with caching page rebuilds, caching header responses
+disablerouter (disable the top-level router; pages are loosely linked; navigation clicks require hard page reloads)
+disablelivereload (disable live reload)
+
+we might even want a spa-option where we intentionally don't build pages and instead build the
+whole thing as a one-off app. this would mean pages are always rendered as opposed to hydrated.
+why do this? then we can have client-side rendering too. this makes it easier / possibly to
+experiment with browser-only apis like suspense
+
+maybe we do like `export RENDERING = "CSR" | "SSR" | "SSG"`
+this might be a bad idea because for example suspense is meant to wrap the whole app
+
+want a way to be able to say per route whether it should be generated or rendered

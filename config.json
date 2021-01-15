@@ -1,0 +1,6 @@
+{
+	"PAGES_DIR": "pages",
+	"CACHE_DIR": "cache",
+	"BUILD_DIR": "build",
+	"ReactStrictMode": false
+}
