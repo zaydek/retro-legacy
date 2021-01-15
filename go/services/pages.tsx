@@ -1,12 +1,15 @@
+import fs from "fs"
+import React from "react"
 import ReactDOMServer from "react-dom/server"
-import { detab } from "../../utils"
 import { Request } from "./types"
-import fs from ".fs"
 
 // prettier-ignore
 interface ResponseItem {
-	head: string // Pre-rendered `<Head>` element
-	root: any    // Pre-rendered `<Root>` element
+	page: string
+
+	document: string // Pre-rendered `<Document>` element
+	head:     string // Pre-rendered `<Head>` element
+	root:     string // Pre-rendered `<Root>` element
 }
 
 // prettier-ignore
@@ -18,117 +21,57 @@ interface Response {
 // for intercommunicating processes over stdout and stderr, which is
 // questionable at best.
 export async function asyncRun(request: Request) {
-	// const chain = []
-	// for (const page of request.router) {
-	// 	const p = new Promise<ResponseItem>(async resolve => {
-	// 		// TODO: Add guards to check whether `props` returns data synchronously or
-	// 		// returns an asynchronous promise.
-	// 		const exports = require("../" + page.path)
-	// 		let resolvedProps = null
-	// 		if (exports.props) {
-	// 			resolvedProps = await exports.props()
-	// 		}
-	// 		resolve({ page: page.page, props: resolvedProps })
-	// 	})
-	// 	chain.push(p)
-	// }
-	// const resolved = await Promise.all(chain)
-	// const response = resolved.reduce((acc, page) => {
-	// 	acc[page.page] = page.props
-	// 	return acc
-	// }, {} as Response)
-	// return response
+	const chain = []
 
-	// let Document = null
-	// // prettier-ignore
-	// if (fs.existsSync(conf.PAGES_DIR + "/internal/document.tsx")) {
-	// 	Document = require("../" +  conf.PAGES_DIR + "/internal/document.tsx").default
-	// }
+	const pageProps = require("../" + request.config.CACHE_DIR + "/pageProps.js")
 
-	let Document: null | React.ReactElement = null
+	let Document: null | React.ElementType = null
 	if (fs.existsSync(request.config.PAGES_DIR + "/internal/document.tsx")) {
 		Document = require("../" + request.config.PAGES_DIR + "/internal/document.tsx").default
 	}
 
-	let App: null | React.ReactElement = null
+	let App: null | React.ElementType = null
 	if (fs.existsSync(request.config.PAGES_DIR + "/internal/document.tsx")) {
 		App = require("../" + request.config.PAGES_DIR + "/internal/app.tsx").default
 	}
 
-	const chain = []
 	for (const page of request.router) {
-		const promise = new Promise<Response>(() => {
+		const promise = new Promise<ResponseItem>(resolve => {
 			const { default: Page, head: Head } = require("../" + request.config.PAGES_DIR + "/" + page)
-			const pageProps = require("../" + request.config.CACHE_DIR + "/pageProps.js")
 
-			// TODO: Change to `<Head>` and `<Root>`.
-			let out = ""
-
-			// TODO: Can we format `ReactDOMServer.renderToStaticMarkup(<Head />)`?
-			// Maybe we can use `React.Children` here?
-			if (!Document) {
-				out = detab(`
-					<!DOCTYPE html>
-					<html lang="en">
-						<head>
-							<meta charset="utf-8">
-							<meta name="viewport" content="width=device-width, initial-scale=1">
-							${!Head ? "" : ReactDOMServer.renderToStaticMarkup(<Head />)}
-						</head>
-						<body>
-							<noscript>You need to enable JavaScript to run this app.</noscript>
-							<div id="root">${ReactDOMServer.renderToString(
-								!App ? (
-									<Page {...pageProps[route.page]} />
-								) : (
-									<App {...pageProps[route.page]}>
-										<Page {...pageProps[route.page]} />
-									</App>
-								),
-							)}</div>
-							<script src="/app.js"></script>
-						</body>
-					</html>`)
-			} else {
-				out = detab(`
-					<!DOCTYPE html>${ReactDOMServer.renderToStaticMarkup(
-						<Document
-							Head={Head || (() => null)}
-							Root={() => (
-								<>
-									<div
-										id="root"
-										dangerouslySetInnerHTML={{
-											__html: ReactDOMServer.renderToString(
-												!App ? (
-													<Page {...pageProps[route.page]} />
-												) : (
-													<App {...pageProps[route.page]}>
-														<Page {...pageProps[route.page]} />
-													</App>
-												),
-											),
-										}}
-									/>
-									<script src="/app.js" />
-								</>
-							)}
-						/>,
-					)}`)
+			let document = ""
+			if (Document) {
+				document = ReactDOMServer.renderToStaticMarkup(
+					<Document Head="%%SECRET_INTERNALS__HEAD%%" Root="%%SECRET_INTERNALS__ROOT%%" />,
+				)
 			}
 
-			// fs.writeFileSync(conf.BUILD_DIR + "/" + basename + ".html", out + "\n")
+			let head = ""
+			if (head) {
+				head = ReactDOMServer.renderToStaticMarkup(<Head />)
+			}
 
-			// TODO: Change to `resolve`.
+			let root = ""
+			if (root) {
+				root = ReactDOMServer.renderToString(
+					!App ? (
+						<Page {...pageProps[page.page]} />
+					) : (
+						<App {...pageProps[page.page]}>
+							<Page {...pageProps[page.page]} />
+						</App>
+					),
+				)
+			}
+
+			resolve({ page: page.page, document, head, root })
 		})
 		chain.push(promise)
 	}
 
-	// await Promise.all(ps)
-
 	const resolved = await Promise.all(chain)
-	const response = resolved.reduce((acc, page) => {
-		acc[page.page] = page.props
+	const response = resolved.reduce((acc, each) => {
+		acc[each.page] = each
 		return acc
 	}, {} as Response)
 	return response

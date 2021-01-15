@@ -30,8 +30,8 @@ export async function asyncRun(request: Request) {
 		chain.push(p)
 	}
 	const resolved = await Promise.all(chain)
-	const response = resolved.reduce((acc, page) => {
-		acc[page.page] = page.props
+	const response = resolved.reduce((acc, each) => {
+		acc[each.page] = each.props
 		return acc
 	}, {} as Response)
 	return response
