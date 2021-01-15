@@ -15,14 +15,16 @@ import (
 //
 // TODO: Change this to use channels so we can report resolving props as they
 // happen.
-func PagePropsService(routes []*PageBasedRoute) ([]byte, error) {
+// TODO: Need to guard `null` error case for `json.MarshalIndent` which
+// currently passes.
+func ReadPageProps(config Configuration, router PageBasedRouter) ([]byte, error) {
 	// TODO: If we want to have some kind of stopwatch profiling for services, we
 	// probably need to do this in JavaScript because the only JavaScript is aware
 	// of when and for how long async functions are running. Therefore we can log
 	// stopwatch metadata to stdout for now and unmarshal. If this pattern is
 	// common we can document these ideas in a service data structure. Maybe a
 	// service is composed of tasks and every task is profiled.
-	b, err := json.MarshalIndent(routes, "", "\t")
+	b, err := json.MarshalIndent(router, "", "\t")
 	if err != nil {
 		return nil, err
 	}

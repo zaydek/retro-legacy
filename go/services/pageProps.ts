@@ -1,7 +1,7 @@
 interface PayloadItem {
 	path: string
-	pageName: string
-	componentName: string
+	page: string
+	component: string
 }
 
 type Payload = PayloadItem[]
@@ -14,7 +14,7 @@ async function asyncRun(payload: Payload) {
 	const chain = []
 	for (const each of payload) {
 		const p = new Promise<{
-			pageName: string
+			page: string
 			props: any
 		}>(async resolve => {
 			// TODO: Guard `props` synchronously returns data or returns an
@@ -25,7 +25,7 @@ async function asyncRun(payload: Payload) {
 				resolvedProps = await exports.props()
 			}
 			resolve({
-				pageName: each.pageName,
+				page: each.page,
 				props: resolvedProps,
 			})
 		})
@@ -33,7 +33,7 @@ async function asyncRun(payload: Payload) {
 	}
 	const resolved = await Promise.all(chain)
 	const responsePayload = resolved.reduce((acc, each) => {
-		acc[each.pageName] = each.props
+		acc[each.page] = each.props
 		return acc
 	}, {} as { [key: string]: any })
 	return responsePayload
@@ -41,7 +41,10 @@ async function asyncRun(payload: Payload) {
 
 ;(async () => {
 	const jsonPayload = process.argv[process.argv.length - 1]
-	const payload: Payload = JSON.parse(jsonPayload!)
+	if (!jsonPayload) {
+		throw new Error(`pageProps.js: JSON payload should never be undefined or empty; jsonPayload=${jsonPayload}`)
+	}
+	const payload: Payload = JSON.parse(jsonPayload)
 	const responsePayload = await asyncRun(payload)
 	const jsonResponsePayload = JSON.stringify(responsePayload, null, "\t")
 	console.log(jsonResponsePayload)

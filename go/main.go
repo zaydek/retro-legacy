@@ -12,12 +12,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	routes, err := config.GetPageBasedRoutes()
+	router, err := config.InitPageBasedRouter()
 	if err != nil {
 		panic(err)
 	}
 	start := time.Now()
-	pagePropsBytes, err := PagePropsService(routes)
+	pagePropsBytes, err := ReadPageProps(config, router)
 	if err != nil {
 		panic(err)
 	}
@@ -29,19 +29,19 @@ func main() {
 
 	// TODO: Change to a `bytes.Buffer` implementation.
 	fmt.Printf("✅ %s (%0.1fs)\n", config.CacheDir+"/pageProps.js", dur.Seconds())
-	for _, r := range routes {
+	for _, r := range router {
 		fmt.Printf("\t- %s\n", r.Path)
 	}
 
 	start = time.Now()
-	appBytes, err := AppService(routes)
+	appBytes, err := ReadApp(config, router)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(string(appBytes))
 
 	// fmt.Printf("✅ %s (%0.1fs)\n", config.CacheDir+"/pageProps.js", dur.Seconds())
-	// for _, r := range routes {
+	// for _, r := range router {
 	// 	fmt.Printf("\t- %s\n", r.Path)
 	// }
 }

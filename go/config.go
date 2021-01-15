@@ -18,7 +18,7 @@ type Configuration struct {
 	// The build directory.
 	BuildDir string `json:"BUILD_DIR"`
 
-	// Should wrap the app with `<React.StrictMode>`?
+	// Wrap `<React.StrictMode>`?
 	ReactStrictMode bool
 }
 
@@ -30,8 +30,8 @@ var configDefaults = Configuration{
 	ReactStrictMode: false,
 }
 
-// Server guards.
-func (c *Configuration) serverGuards() error {
+// Server guards; must be run once.
+func (c Configuration) serverGuards() error {
 	info, err := os.Stat(c.PagesDir)
 	if os.IsNotExist(err) {
 		err := os.Mkdir(c.PagesDir, os.ModePerm)
@@ -67,21 +67,21 @@ func (c *Configuration) serverGuards() error {
 //
 // TODO: Upgrade implementation to support JS or TS-based configuration files?
 // TODO: Add unit tests.
-func InitConfiguration(path string) (*Configuration, error) {
-	config := &Configuration{}
+func InitConfiguration(path string) (Configuration, error) {
+	config := Configuration{}
 
 	// Read from disk; if no configuration file exists, write and return the pre-
 	// initialized configuration.
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
-		*config = configDefaults
+		config = configDefaults
 		b, err := json.MarshalIndent(config, "", "\t")
 		if err != nil {
-			return nil, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
+			return Configuration{}, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
 		}
 		err = ioutil.WriteFile("config.json", append(b, []byte("\n")...), os.ModePerm)
 		if err != nil {
-			return nil, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
+			return Configuration{}, fmt.Errorf("attempted to write config.json to disk but failed; %w", err)
 		}
 		// TODO: Technically, ths implementation leads to double-reading the
 		// configuration file.
@@ -90,13 +90,13 @@ func InitConfiguration(path string) (*Configuration, error) {
 
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return Configuration{}, err
 	}
 	// TODO: Add support graceful error-handling for missing fields or warn the
 	// required fields. This would be easier if we had documentation.
-	err = json.Unmarshal(b, config)
+	err = json.Unmarshal(b, &config)
 	if err != nil {
-		return nil, err
+		return Configuration{}, err
 	}
 
 	// TODO: Can we use reflection here (do we want to?). We could check for zero
@@ -111,10 +111,10 @@ func InitConfiguration(path string) (*Configuration, error) {
 		config.BuildDir = configDefaults.BuildDir
 	}
 
-	// These are server assertions that must pass.
+	// TODO: Should this be last or first?
 	err = config.serverGuards()
 	if err != nil {
-		return nil, err
+		return Configuration{}, err
 	}
 
 	return config, nil
