@@ -8,13 +8,13 @@ import (
 func execcmd(cmdargs ...string) (stdout, stderr string, err error) {
 	cmd := exec.Command(cmdargs[0], cmdargs[1:]...)
 
-	// Prepare stdout and stderr:
+	// Connect stdout and stderr to buffers:
 	var stdoutBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
 	var stderrBuf bytes.Buffer
+	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
 
-	// Run the command:
+	// Run the command and read from the buffers:
 	err = cmd.Run()
 	stdout = stdoutBuf.String()
 	stderr = stderrBuf.String()

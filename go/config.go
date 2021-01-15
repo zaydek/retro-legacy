@@ -8,6 +8,11 @@ import (
 	"os"
 )
 
+// TODO: What if the user wanted to override one of these settings? Maybe we
+// could allow for overriding the provided (or empty) configuration with
+// environmental variables that correspond to the values as described in the
+// struct keys. The only thing is that if we end up providing a pretty big
+// surface API for the configuration, it would be too unwieldy to support this.
 type Configuration struct {
 	// The pages directory.
 	PagesDir string `json:"PAGES_DIR"`
@@ -68,7 +73,7 @@ func (c Configuration) serverGuards() error {
 // TODO: Upgrade implementation to support JS or TS-based configuration files?
 // TODO: Add unit tests.
 func InitConfiguration(path string) (Configuration, error) {
-	config := Configuration{}
+	var config Configuration
 
 	// Read from disk; if no configuration file exists, write and return the pre-
 	// initialized configuration.
@@ -94,6 +99,8 @@ func InitConfiguration(path string) (Configuration, error) {
 	}
 	// TODO: Add support graceful error-handling for missing fields or warn the
 	// required fields. This would be easier if we had documentation.
+	// TODO: Wouldn’t it be simpler if we simply initialize `config` as
+	// `configDefaults` and use `json.Unmarshal` to overwrite fields?
 	err = json.Unmarshal(b, &config)
 	if err != nil {
 		return Configuration{}, err

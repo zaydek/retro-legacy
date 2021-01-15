@@ -50,9 +50,10 @@ func newPageBasedRoute(path string) PageBasedRoute {
 	return route
 }
 
-func (c *Configuration) InitPageBasedRouter() (PageBasedRouter, error) {
+// TODO: We still need to remove `config.PagesDir` from `route.Page`.
+func InitPageBasedRouter(config Configuration) (PageBasedRouter, error) {
 	var router PageBasedRouter
-	err := filepath.Walk(c.PagesDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

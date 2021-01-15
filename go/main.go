@@ -33,7 +33,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	router, err = config.InitPageBasedRouter()
+	router, err = InitPageBasedRouter(config)
 	if err != nil {
 		panic(err)
 	}
