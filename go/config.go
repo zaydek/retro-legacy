@@ -119,6 +119,8 @@ func InitConfiguration(path string) (Configuration, error) {
 	}
 
 	// TODO: Should this be last or first?
+	// TODO: Should add a warning that none of the `*Dir` fields are identical to
+	// each other.
 	err = config.serverGuards()
 	if err != nil {
 		return Configuration{}, err

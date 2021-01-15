@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 // This service is responsible for resolving bytes for `cache/pageProps.js`.
@@ -30,7 +29,6 @@ func ReadPageProps(config Configuration, router PageBasedRouter) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(dotBytes)) // DEBUG
 
 	stdout, stderr, err := execcmd("yarn", "-s", "ts-node", "-T", "go/services/pageProps.ts", string(dotBytes))
 	if stderr != nil { // Takes precedence

@@ -28,13 +28,13 @@ import { Route, Router } from "../Router"
 // that the file does what it’s supposed to do for now.
 {{if true -}}
 // App
-import App from "../{{.PagesDir}}/internal/app"
+import App from "../{{.Config.PagesDir}}/internal/app"
 {{- else -}}
 // (No <App> component)
 {{- end}}
 
 // Pages
-{{range $x, $each := .Pages -}}
+{{range $x, $each := .Router -}}
 	{{if gt $x 0}}{{"\n"}}{{end}}import {{ $each.Component }} from "{{ $each.Page }}"
 {{- end}}
 
@@ -52,7 +52,7 @@ import pageProps from "./pageProps"
 export default function RoutedApp() {
 	return (
 		<Router>
-		{{range .Pages}}
+		{{range .Router}}
 			<Route page="{{.Page}}">
 				<{{.Component }} {...pageProps["{{.Page}}"]} />
 			</Route>
@@ -61,7 +61,7 @@ export default function RoutedApp() {
 	)
 }
 
-{{if not .ReactStrictMode -}}
+{{if not .Config.ReactStrictMode -}}
 ReactDOM.hydrate(
 	<RoutedApp />,
 	document.getElementById("root"),

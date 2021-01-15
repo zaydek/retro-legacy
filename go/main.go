@@ -5,24 +5,60 @@ import (
 	"io/ioutil"
 )
 
+// React-rendered page.
+type RenderedPage struct {
+	Page string
+	Data []byte
+}
+
 var (
 	config Configuration
 	router PageBasedRouter
 )
 
-// Writes ... to disk.
-func WritePageProps() {}
+// This service is responsible for resolving bytes for `cache/pageProps.js`.
+func HandlePageProps(config Configuration, router PageBasedRouter) error {
+	pagePropsBytes, err := ReadPageProps(config, router)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(config.CacheDir+"/pageProps.js", pagePropsBytes, 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("✅ %s\n", config.CacheDir+"/pageProps.js")
+	return nil
+}
 
-// Writes ... to disk.
-func WritePages() {}
+// This service is responsible for resolving bytes for `build/*.html`.
+func HandleWritePages(config Configuration, router PageBasedRouter) error {
+	rendered, err := ReadRenderedPages(config, router)
+	if err != nil {
+		return err
+	}
+	for _, render := range rendered {
+		err = ioutil.WriteFile(config.BuildDir+"/"+render.Page+".html", render.Data, 0644)
+		if err != nil {
+			// No-op
+			break
+		}
+		fmt.Printf("✅ %s\n", config.BuildDir+"/"+render.Page+".html")
+	}
+	return err
+}
 
-// Writes ... to disk.
-func WriteApp() {}
-
-// React-rendered page.
-type RenderedPage struct {
-	Page string
-	Data []byte
+// This service is responsible for resolving bytes for `cache/app.js`.
+func HandleApp(config Configuration, router PageBasedRouter) error {
+	appBytes, err := ReadApp(config, router)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(config.CacheDir+"/app.js", appBytes, 0644)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("✅ %s\n", config.CacheDir+"/app.js")
+	return nil
 }
 
 // TODO: Add support for `appProps`; `appProps` should colocate all page
@@ -56,70 +92,24 @@ func main() {
 		panic(err)
 	}
 
-	// var clock time.Time
-	// var dur time.Duration
-
-	rendered, err := ReadRenderedPages(config, router)
+	err = HandlePageProps(config, router)
+	if err != nil {
+		panic(err)
+	}
+	err = HandleWritePages(config, router)
+	if err != nil {
+		panic(err)
+	}
+	err = HandleApp(config, router)
 	if err != nil {
 		panic(err)
 	}
 
-	// TODO: This can be changed to be concurrent and use an `ErrGroup`.
-	for _, render := range rendered {
-		// clock = time.Now()
-		err := ioutil.WriteFile(config.BuildDir+"/"+render.Page+".html", render.Data, 0644)
-		if err != nil {
-			panic(err)
-		}
-		// dur = time.Since(clock)
-		// fmt.Printf("✅ %s (%0.3fs)\n", config.BuildDir+"/"+render.Name+".html", dur.Seconds())
-		fmt.Printf("✅ %s\n", config.BuildDir+"/"+render.Page+".html")
-	}
-
-	// // Page props (takes precedence)
-	// clock = time.Now()
-	// pagePropsBytes, err := ReadPageProps(config, router)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = ioutil.WriteFile(config.CacheDir+"/pageProps.js", pagePropsBytes, 0644)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// dur = time.Since(clock)
-	// fmt.Printf("✅ %s (%0.3fs)\n", config.CacheDir+"/pageProps.js", dur.Seconds())
-
-	// for _, page := range router {
-	// 	pageBytes, err := ReadPage(config, page)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	fmt.Println(string(pageBytes))
-	// }
-
-	// // Pages
-	// clock = time.Now()
-	// appBytes, err := ReadRenderedPages(config, router)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = ioutil.WriteFile(config.CacheDir+"/app.js", appBytes, 0644)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// dur = time.Since(clock)
-	// fmt.Printf("✅ %s (%0.3fs)\n", config.CacheDir+"/app.js", dur.Seconds())
-
-	// // App
-	// clock = time.Now()
-	// appBytes, err := ReadApp(config, router)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// err = ioutil.WriteFile(config.CacheDir+"/app.js", appBytes, 0644)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// dur = time.Since(clock)
-	// fmt.Printf("✅ %s (%0.3fs)\n", config.CacheDir+"/app.js", dur.Seconds())
+	// Done.
 }
+
+// var clock time.Time
+// var dur time.Duration
+// clock = time.Now()
+// dur = time.Since(clock)
+// fmt.Printf("✅ %s (%0.3fs)\n", config.BuildDir+"/"+render.Page+".html", dur.Seconds())

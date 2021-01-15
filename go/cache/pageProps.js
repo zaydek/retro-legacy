@@ -3,10 +3,10 @@
 // MOVE ALONG.
 
 module.exports = {
-	"/pages/page-a": {
+	"page-a": {
 		"data": "Hello, world! /page-a"
 	},
-	"/pages/page-b": {
+	"page-b": {
 		"data": "Hello, world! /page-b"
 	}
 }

@@ -1,4 +1,3 @@
-
 // THIS FILE IS AUTO-GENERATED.
 // THESE AREN’T THE FILES YOU’RE LOOKING FOR.
 // MOVE ALONG.
@@ -14,8 +13,8 @@ import { Route, Router } from "../Router"
 import App from "../pages/internal/app"
 
 // Pages
-import TODO from "/pages/page-a"
-import TODO from "/pages/page-b"
+import TODO from "page-a"
+import TODO from "page-b"
 
 // FIXME: We need to check whether the user has a component here. As a temporary
 // fix, we can os.Stat and check whether a file exists. We don’t need to check
@@ -28,12 +27,12 @@ export default function RoutedApp() {
 	return (
 		<Router>
 		
-			<Route page="/pages/page-a">
-				<TODO {...pageProps["/pages/page-a"]} />
+			<Route page="page-a">
+				<TODO {...pageProps["page-a"]} />
 			</Route>
 		
-			<Route page="/pages/page-b">
-				<TODO {...pageProps["/pages/page-b"]} />
+			<Route page="page-b">
+				<TODO {...pageProps["page-b"]} />
 			</Route>
 		
 		</Router>
