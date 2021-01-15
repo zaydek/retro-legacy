@@ -1,5 +1,9 @@
 import React from "react"
 
+export function head() {
+	return <title>Hello, world!</title>
+}
+
 // Asynchronously loads props for the page component.
 export async function props() {
 	return new Promise(resolve => {

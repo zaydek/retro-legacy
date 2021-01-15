@@ -1,4 +1,5 @@
 import fs from "fs"
+import { format } from "prettier"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 import { Request } from "./types"
@@ -37,28 +38,28 @@ export async function asyncRun(request: Request) {
 
 	for (const page of request.router) {
 		const promise = new Promise<ResponseItem>(resolve => {
-			const { default: Page, head: Head } = require("../" + request.config.PAGES_DIR + page.page)
+			const { default: Root, head: Head } = require("../" + page.path)
 
 			let document = ""
-			if (Document) {
+			if (Document && typeof Document === "function") {
 				document = ReactDOMServer.renderToStaticMarkup(
 					<Document Head="%%SECRET_INTERNALS__HEAD%%" Root="%%SECRET_INTERNALS__ROOT%%" />,
 				)
 			}
 
 			let head = ""
-			if (head) {
+			if (Head && typeof Head === "function") {
 				head = ReactDOMServer.renderToStaticMarkup(<Head />)
 			}
 
 			let root = ""
-			if (root) {
+			if (Root && typeof Root === "function") {
 				root = ReactDOMServer.renderToString(
 					!App ? (
-						<Page {...pageProps[page.page]} />
+						<Root {...pageProps[page.page]} />
 					) : (
 						<App {...pageProps[page.page]}>
-							<Page {...pageProps[page.page]} />
+							<Root {...pageProps[page.page]} />
 						</App>
 					),
 				)
@@ -70,11 +71,14 @@ export async function asyncRun(request: Request) {
 	}
 
 	const resolved = await Promise.all(chain)
-	const response = resolved.reduce((acc, each) => {
-		acc[each.page] = each
-		return acc
-	}, {} as Response)
-	return response
+	return resolved
+
+	// const resolved = await Promise.all(chain)
+	// const response = resolved.reduce((acc, each) => {
+	// 	acc[each.page] = each
+	// 	return acc
+	// }, {} as Response)
+	// return response
 }
 
 // TODO: Is there a way to inject the current filename?
@@ -85,8 +89,8 @@ export async function asyncRun(request: Request) {
 	}
 	const request: Request = JSON.parse(jsonRequest)
 	const response = await asyncRun(request)
-	// const jsonResponse = JSON.stringify(response, null, "\t")
-	// console.log(jsonResponse)
+	const jsonResponse = JSON.stringify(response, null, "\t")
+	console.log(jsonResponse)
 })()
 
 process.on("uncaughtException", err => {

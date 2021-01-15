@@ -7,9 +7,9 @@ import (
 )
 
 type PageBasedRoute struct {
-	Path      string `json:"path"`      // E.g. a/b/c/page-name.tsx
-	Page      string `json:"page"`      // E.g. /page-name
-	Component string `json:"component"` // E.g. PageName
+	Path      string `json:"path"`      // path/to/component.tsx
+	Page      string `json:"page"`      // /component
+	Component string `json:"component"` // Component
 }
 
 type PageBasedRouter []PageBasedRoute
