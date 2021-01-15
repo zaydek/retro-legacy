@@ -28,7 +28,7 @@ func ReadPageProps(config Configuration, router PageBasedRouter) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
-	// '[ { "path": "pages/page-a.tsx", "pageName": "/pages/page-a", "componentName": "PageA" } ]'
+	// '[ { "path": "pages/page-a.tsx", "page": "/pages/page-a", "component": "PageA" } ]'
 	stdout, stderr, _ := execcmd("yarn", "-s", "ts-node", "-T", "go/services/pageProps.ts", string(b))
 	if stderr != "" { // Takes precedence
 		return nil, errors.New("resolvePageProps.service.ts: " + stderr)

@@ -11,6 +11,22 @@ var (
 	router PageBasedRouter
 )
 
+// TODO: Add support for `appProps`; `appProps` should colocate all page
+// locations to start. We can possibly add support for things like timestamps,
+// etc. so metadata is included (creation date, last updated at, filetype: ...).
+
+// TODO: It would be nice if we can generate starter pages for the user if no
+// pages directory exists and they don’t have a configuration folder. Then we
+// just need to know whether the user intends to use React or TypeScript.
+//
+// Maybe we do something like:
+//
+// - yarn ... --init
+// - yarn ... --init --template=typescript
+//
+// That should be enough information for us. That being said, it would be easier
+// for us to just copy a folder rather than to generate them imperatively.
+//
 func main() {
 	var err error
 	config, err = InitConfiguration("config.json")

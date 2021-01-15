@@ -9,6 +9,7 @@ export async function props() {
 	})
 }
 
+// Responsible for rendering `/page-a`.
 export default function PageA() {
 	return (
 		<div>
