@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 )
 
 func main() {
@@ -15,7 +17,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	b, err := ResolvePageProps(routes)
+	start := time.Now()
+	b, err := PagePropsService(routes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,14 +26,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	// fmt.Printf("stdout=%s stderr=%s err=%s\n", stdout, stderr, err)
-
-	// stdout, stderr, err := execcmd("echo hi")
-	// fmt.Printf("stdout=%s stderr=%s err=%s\n", stdout, stderr, err)
-
-	// for _, route := range routes {
-	// 	fmt.Printf("pageName=%s\n", route.pageName)
-	// }
-	// fmt.Printf("%+v\n", routes)
+	dur := time.Since(start)
+	fmt.Printf("✅ %s (%0.1fs)\n", config.CacheDir+"/pageProps.js", dur.Seconds())
+	// TODO: Write sub-routes below.
+	// TODO: Write sub-routes at the same time or progressively?
 }

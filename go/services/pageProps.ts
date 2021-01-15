@@ -17,16 +17,17 @@ async function asyncRun(payload: Payload) {
 			pageName: string
 			props: any
 		}>(async resolve => {
-			// TODO: Add guards; exported props, props synchronously returns data or
-			// returns an asynchronous promise, etc. If the page dynamic, props should
-			// return do something else? should Maybe should not take longer than x
-			// seconds or that can be handled by Go.
-			const exports = require("./" + each.path)
+			// TODO: Guard `props` synchronously returns data or returns an
+			// asynchronous promise, etc.
+			const exports = require("../" + each.path)
 			let resolvedProps = null
 			if (exports.props) {
 				resolvedProps = await exports.props()
 			}
-			resolve({ pageName: each.pageName, props: resolvedProps })
+			resolve({
+				pageName: each.pageName,
+				props: resolvedProps,
+			})
 		})
 		chain.push(p)
 	}
@@ -47,6 +48,6 @@ async function asyncRun(payload: Payload) {
 })()
 
 process.on("uncaughtException", err => {
-	console.error(err.stack)
+	console.error(err.stack) // TODO: Change to `err`?
 	process.exit(1)
 })
