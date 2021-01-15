@@ -1,5 +1,4 @@
 import fs from "fs"
-import { format } from "prettier"
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 import { Request } from "./types"

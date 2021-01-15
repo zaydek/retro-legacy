@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"io/ioutil"
+)
+
 var (
 	config Configuration
 	router PageBasedRouter
@@ -13,6 +18,12 @@ func WritePages() {}
 
 // Writes ... to disk.
 func WriteApp() {}
+
+// React-rendered page.
+type RenderedPage struct {
+	Page string
+	Data []byte
+}
 
 // TODO: Add support for `appProps`; `appProps` should colocate all page
 // locations to start. We can possibly add support for things like timestamps,
@@ -48,9 +59,21 @@ func main() {
 	// var clock time.Time
 	// var dur time.Duration
 
-	_, err = ReadPages(config, router)
+	rendered, err := ReadRenderedPages(config, router)
 	if err != nil {
 		panic(err)
+	}
+
+	// TODO: This can be changed to be concurrent and use an `ErrGroup`.
+	for _, render := range rendered {
+		// clock = time.Now()
+		err := ioutil.WriteFile(config.BuildDir+"/"+render.Page+".html", render.Data, 0644)
+		if err != nil {
+			panic(err)
+		}
+		// dur = time.Since(clock)
+		// fmt.Printf("✅ %s (%0.3fs)\n", config.BuildDir+"/"+render.Name+".html", dur.Seconds())
+		fmt.Printf("✅ %s\n", config.BuildDir+"/"+render.Page+".html")
 	}
 
 	// // Page props (takes precedence)
@@ -76,7 +99,7 @@ func main() {
 
 	// // Pages
 	// clock = time.Now()
-	// appBytes, err := ReadPages(config, router)
+	// appBytes, err := ReadRenderedPages(config, router)
 	// if err != nil {
 	// 	panic(err)
 	// }
