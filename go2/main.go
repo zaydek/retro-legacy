@@ -1,9 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"path"
-)
+import "os"
 
 func main() {
 	// err := os.MkdirAll("a/hello.go", 0755)
@@ -11,7 +8,11 @@ func main() {
 	// 	panic(err)
 	// }
 
-	fmt.Printf("path=%s\n", path.Dir("a"))
+	_, err := os.Open("side-project/.gitignore")
+	if err != nil {
+		panic(err)
+	}
+
 	// fmt.Printf("path=%s\n", path.Dir("a/b/c"))
 	// fmt.Printf("path=%s\n", path.Base("a/b/c.go"))
 

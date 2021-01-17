@@ -26,14 +26,15 @@ func main() {
 	case "--help":
 		retro.help()
 
+	// $ retro version
+	case "version":
+		fallthrough
+	case "--version":
+		retro.version()
+
 	// $ retro init
 	//
-	// TODO: Add support for:
-	//
-	// $ retro init --no-comment
-	// $ retro init .
-	// $ retro init retro-app
-	//
+	// TODO: Add support for $ retro init --no-comment.
 	case "init":
 		fallthrough
 	case "--init":
