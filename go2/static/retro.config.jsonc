@@ -1,0 +1,37 @@
+{
+	// This directory is for static assets such as index.html, etc.
+	//
+	// public/
+	//   index.html          -> x.com
+	//   images/             -> x.com/public/images
+	//     buffalo.jpg       -> x.com/public/images/buffalo.jpg
+	//     geese.png         -> x.com/public/images/geese.png
+	//
+	"PUBLIC_DIR": "public",
+
+	// This directory is for routes:
+	//
+	// pages/
+	//   index.js            -> x.com
+	//   authors.js          -> x.com/authors
+	//     index.js          -> x.com/authors
+	//     douglas-adams.js  -> x.com/authors/douglas-adams
+	//     eoin-colfer.js    -> x.com/authors/eoin-colfer
+	//     thomas-tidholm.js -> x.com/authors/thomas-tidholm
+	//   books/              -> x.com/books
+	//     [book].js         -> x.com/books/the-hitchhikers-guide-to-the-galaxy
+	//                       -> x.com/books/...
+	//
+	"PAGES_DIR": "pages",
+
+	// This folder may be deleted at any time.
+	"CACHE_DIR": "cache",
+
+	// This folder may be deleted at any time.
+	"BUILD_DIR": "build",
+
+	// Wraps <React.StrictMode>.
+	//
+	// https://reactjs.org/docs/strict-mode.html
+	"ReactStrictMode": false
+}
