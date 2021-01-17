@@ -2,34 +2,21 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/zaydek/retro/static"
+	"path"
 )
 
-// Usage:
-//
-//   # writes retro.config.json and pages directory with starter components
-//   retro init
-//
-//   # watches and rebuilds the development server
-//   retro watch
-//
-//   # builds the production build
-//   retro build
-//
-//   # serves development server or production builds; serves build
-//   retro serve
-//
-// retro help or retro --help
-
 func main() {
-	// config, err := config.LoadOrCreateConfiguration()
+	// err := os.MkdirAll("a/hello.go", 0755)
 	// if err != nil {
 	// 	panic(err)
 	// }
-	// fmt.Printf("%+v\n", config)
 
-	for _, asset := range static.Assets {
-		fmt.Println(asset)
-	}
+	fmt.Printf("path=%s\n", path.Dir("a"))
+	// fmt.Printf("path=%s\n", path.Dir("a/b/c"))
+	// fmt.Printf("path=%s\n", path.Base("a/b/c.go"))
+
+	// err := ioutil.WriteFile("a/b/c", []byte(""), 0644)
+	// if err != nil {
+	// 	panic(err)
+	// }
 }
