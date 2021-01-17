@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-// Response from the page service.
+// PagesResponse describes the response data structure for the pages service.
 type PagesResponse []struct {
 	Page string `json:"Page"`
 
@@ -16,7 +16,7 @@ type PagesResponse []struct {
 	Root     string `json:"root"`
 }
 
-// This service is responsible for resolving bytes for `build/page.html`.
+// ReadRenderedPages is responsible for resolving bytes for `build/page.html`.
 func ReadRenderedPages(config Configuration, router PageBasedRouter) ([]RenderedPage, error) {
 	dot := struct {
 		Config Configuration   `json:"config"`
@@ -65,7 +65,7 @@ func ReadRenderedPages(config Configuration, router PageBasedRouter) ([]Rendered
 </html>
 `
 		// TODO: Parse template eagerly.
-		tmpl := template.Must(template.New("").Parse(tmplStr))
+		tmpl := template.Must(template.New("prerender-page").Parse(tmplStr))
 		err := tmpl.Execute(&buf, each)
 		if err != nil {
 			return nil, err

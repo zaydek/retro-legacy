@@ -2,17 +2,41 @@ package main
 
 import (
 	"bytes"
+	"os"
 	"text/template"
 )
 
-// This service is responsible for resolving bytes for `cache/app.js`.
+// ReadApp is responsible for resolving bytes for `cache/app.js`.
 func ReadApp(config Configuration, router PageBasedRouter) ([]byte, error) {
 	var buf bytes.Buffer
 
+	f1, err := os.Stat(config.PagesDir + "/internal/app.tsx")
+	if err != nil {
+		return nil, err
+	}
+	hasApp := f1 != nil
+
+	f2, err := os.Stat(config.CacheDir + "/pageProps.js")
+	if err != nil {
+		return nil, err
+	}
+	hasPageProps := f2 != nil
+
+	type Flags struct {
+		HasApp       bool
+		HasPageProps bool
+	}
 	dot := struct {
-		Config Configuration   `json:"config"`
-		Router PageBasedRouter `json:"router"`
-	}{Config: config, Router: router}
+		Flags  Flags
+		Config Configuration
+		Router PageBasedRouter
+	}{
+		Flags: Flags{
+			HasApp:       hasApp,
+			HasPageProps: hasPageProps,
+		},
+		Config: config, Router: router,
+	}
 
 	const data = `
 // THIS FILE IS AUTO-GENERATED.
@@ -23,11 +47,8 @@ import React from "react"
 import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
-// FIXME: We need to check whether the user has a component here. As a temporary
-// fix, we can os.Stat and check whether a file exists. We don’t need to check
-// that the file does what it’s supposed to do for now.
-{{if false -}}
 // App
+{{if .Flags.HasApp -}}
 import App from "../{{.Config.PagesDir}}/internal/app"
 {{- else -}}
 // (No <App> component)
@@ -38,15 +59,11 @@ import App from "../{{.Config.PagesDir}}/internal/app"
 	{{if gt $x 0}}{{"\n"}}{{end}}import {{ $each.Component }} from "{{ $each.Page }}"
 {{- end}}
 
-// FIXME: We need to check whether the user has a component here. As a temporary
-// fix, we can os.Stat and check whether a file exists. We don’t need to check
-// that the file does what it’s supposed to do for now.
-{{if true -}}
 // Page props
-// TODO: Add support for 'appProps'
-import pageProps from "./pageProps"
+{{if .Flags.HasPageProps -}}
+import pageProps from "../{{.Config.CacheDir}}/pageProps"
 {{- else -}}
-// (No pageProps.json)
+// (No pageProps.js)
 {{- end}}
 
 export default function RoutedApp() {
@@ -75,7 +92,7 @@ ReactDOM.hydrate(
 )
 {{- end}}
 `
-	tmpl := template.Must(template.New("").Parse(data))
+	tmpl := template.Must(template.New("prerender-app").Parse(data))
 	err := tmpl.Execute(&buf, dot)
 	if err != nil {
 		return nil, err

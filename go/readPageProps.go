@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-// This service is responsible for resolving bytes for `cache/pageProps.js`.
+// ReadPageProps is responsible for resolving bytes for `cache/pageProps.js`.
 //
 // TODO: All service-based functions should use a timeout or a contextual
 // timeout. If a service takes longer than, for example, 10 seconds, we may want

@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 )
 
-// React-rendered page.
+// RenderedPage describes a React-rendered page.
 type RenderedPage struct {
 	Page string
 	Data []byte
@@ -16,7 +16,7 @@ var (
 	router PageBasedRouter
 )
 
-// This service is responsible for resolving bytes for `cache/pageProps.js`.
+// HandlePageProps is responsible for resolving bytes for `cache/pageProps.js`.
 func HandlePageProps(config Configuration, router PageBasedRouter) error {
 	pagePropsBytes, err := ReadPageProps(config, router)
 	if err != nil {
@@ -30,7 +30,7 @@ func HandlePageProps(config Configuration, router PageBasedRouter) error {
 	return nil
 }
 
-// This service is responsible for resolving bytes for `build/*.html`.
+// HandleWritePages is responsible for resolving bytes for `build/*.html`.
 func HandleWritePages(config Configuration, router PageBasedRouter) error {
 	rendered, err := ReadRenderedPages(config, router)
 	if err != nil {
@@ -47,7 +47,7 @@ func HandleWritePages(config Configuration, router PageBasedRouter) error {
 	return err
 }
 
-// This service is responsible for resolving bytes for `cache/app.js`.
+// HandleApp is responsible for resolving bytes for `cache/app.js`.
 func HandleApp(config Configuration, router PageBasedRouter) error {
 	appBytes, err := ReadApp(config, router)
 	if err != nil {
@@ -104,7 +104,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	// Done.
 }
 
