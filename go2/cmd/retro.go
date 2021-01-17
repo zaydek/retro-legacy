@@ -34,15 +34,15 @@ func (r Retro) unknown(cmd string) {
 	fmt.Fprintln(r.stderr, fmt.Sprintf("unknown command %s; try retro help", cmd))
 }
 
-func (r Retro) init() {
+func (r Retro) init(root string) {
 	for _, asset := range static.Assets {
-		dir := path.Dir(asset.Name)
+		dir := path.Join(root, path.Dir(asset.Path))
 		if dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(path.Join(root, dir), 0755); err != nil {
 				log.Fatal("an unexpected error occurred; %w", err)
 			}
 		}
-		if err := ioutil.WriteFile(asset.Name, []byte(asset.Contents), 0644); err != nil {
+		if err := ioutil.WriteFile(path.Join(root, asset.Path), []byte(asset.Contents), 0644); err != nil {
 			log.Fatal("an unexpected error occurred; %w", err)
 		}
 	}

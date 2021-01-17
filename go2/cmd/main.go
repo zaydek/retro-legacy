@@ -37,7 +37,11 @@ func main() {
 	case "init":
 		fallthrough
 	case "--init":
-		retro.init()
+		root := "."
+		if len(os.Args) < 3 {
+			root = os.Args[2]
+		}
+		retro.init(root)
 
 	// $ retro watch
 	//

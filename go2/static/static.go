@@ -3,8 +3,8 @@ package static
 import _ "embed"
 
 type StaticAsset struct {
-	Name     string
-	Contents string
+	Path     string // E.g. path/to/asset
+	Contents string // E.g. Hello, world!
 }
 
 var (
@@ -29,27 +29,27 @@ var (
 
 var Assets = []StaticAsset{
 	{
-		Name:     ".gitignore",
+		Path:     ".gitignore",
 		Contents: gitignore,
 	},
 	{
-		Name:     "README",
+		Path:     "README",
 		Contents: readme,
 	},
 	{
-		Name:     "retro.config.jsonc",
+		Path:     "retro.config.jsonc",
 		Contents: retroconfigjsonc,
 	},
 	{
-		Name:     "public/index.html",
+		Path:     "public/index.html",
 		Contents: indexhtml,
 	},
 	{
-		Name:     "pages/index.js",
+		Path:     "pages/index.js",
 		Contents: pagejs,
 	},
 	{
-		Name:     "pages/nested/index.js",
+		Path:     "pages/nested/index.js",
 		Contents: nestedpage,
 	},
 }
