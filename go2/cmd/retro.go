@@ -3,6 +3,7 @@ package main
 import (
 	_ "embed"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -35,18 +36,17 @@ func (r Retro) unknown(cmd string) {
 }
 
 type MaskedPath struct {
-	mask string
-	path string
+	masked string
+	actual string
 }
 
 func (r Retro) init(rootDir string) {
 	var paths []string
-	err := fs.WalkDir(static.AssetFS, "starter", func(p string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(static.AssetFS, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		// Step-over starter:
-		if p != "starter" {
+		if !d.IsDir() {
 			paths = append(paths, p)
 		}
 		return nil
@@ -57,40 +57,30 @@ func (r Retro) init(rootDir string) {
 
 	// Mask starter:
 	var maskedPaths []MaskedPath
-	for _, p := range paths {
-		maskedPaths = append(maskedPaths, MaskedPath{
-			mask: strings.TrimPrefix(p, "starter/"),
-			path: p,
-		})
+	for _, actual := range paths {
+		masked := strings.TrimPrefix(actual, "starter/")
+		maskedPaths = append(maskedPaths, MaskedPath{masked: masked, actual: actual})
 	}
 
-	// mkdir -p
+	// - Make directories
+	// - Read files from the embedded filesystem
+	// - Write to disk
+	//
 	for _, mp := range maskedPaths {
-		dir := path.Join(rootDir, path.Dir(mp.mask))
-		// NOTE: Compare "." because path.Join(".", ".") returns ".".
-		if dir != "." {
+		if dir := path.Join(rootDir, path.Dir(mp.masked)); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				panic(fmt.Errorf("an unexpected error occurred; %w", err))
 			}
 		}
-		// if err := ioutil.WriteFile(path.Join(root, mp.path), mp.Contents, 0644); err != nil {
-		// 	panic(fmt.Errorf("an unexpected error occurred; %w", err))
-		// }
+		bstr, err := static.AssetFS.ReadFile(mp.actual)
+		if err != nil {
+			panic(fmt.Errorf("an unexpected error occurred; %w", err))
+		}
+		filename := path.Join(rootDir, mp.masked)
+		if err := ioutil.WriteFile(filename, bstr, 0644); err != nil {
+			panic(fmt.Errorf("an unexpected error occurred; %w", err))
+		}
 	}
-
-	// // arr := strings.SplitN("a/b/c/d", "/", 2)
-	// for _, path := range paths {
-	// 	// if arr := strings.SplitN(p, "/", 2); len(arr) > 1 {
-	// 	// 	fmt.Println(arr[1:])
-	// 	// }
-	// 	bstr, err := fsys.ReadFile(path)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-	// 	fmt.Println(string(bstr))
-	// 	ioutil.WriteFile(, bstr, 0644)
-	// }
-
 }
 
 func (r Retro) watch() {
