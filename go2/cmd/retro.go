@@ -30,7 +30,7 @@ func (r Retro) help() {
 }
 
 func (r Retro) unknown(cmd string) {
-	fmt.Fprintln(r.stderr, fmt.Sprintf("unknown command %s; try retro help", cmd))
+	fmt.Fprintln(r.stderr, fmt.Sprintf("🤔 unknown command %s; try retro help", cmd))
 }
 
 type MaskedPath struct {
@@ -41,16 +41,19 @@ type MaskedPath struct {
 func (r Retro) init(rootDir string) {
 	start := time.Now()
 
-	// Get paths not created by the user:
+	// Get paths **not** created by the user:
 	var paths []string
 	err := fs.WalkDir(static.StaticFS, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() {
-			if _, err := os.Stat(path.Join(rootDir, path.Dir(p))); os.IsNotExist(err) {
-				paths = append(paths, p)
+			resolvedPath := path.Join(rootDir, p)
+			if _, err := os.Stat(resolvedPath); !os.IsNotExist(err) {
+				fmt.Fprintf(r.stdout, "😱 found %[1]s; delete %[1]s and rerun retro init or ignore this warning\n", resolvedPath)
+				return nil
 			}
+			paths = append(paths, p)
 		}
 		return nil
 	})
@@ -60,22 +63,22 @@ func (r Retro) init(rootDir string) {
 
 	// Copy from the embedded filesystem to disk:
 	for _, p := range paths {
-		if dir := path.Join(rootDir, path.Dir(p)); dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				panic(fmt.Errorf("an unexpected error occurred; %w", err))
+		if resolvedDir := path.Join(rootDir, path.Dir(p)); resolvedDir != "." {
+			if err := os.MkdirAll(resolvedDir, 0755); err != nil {
+				panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
 			}
 		}
 		in, err := static.StaticFS.Open(p)
 		if err != nil {
-			panic(fmt.Errorf("an unexpected error occurred; %w", err))
+			panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
 		}
 		out, err := os.Create(path.Join(rootDir, p))
 		if err != nil {
-			panic(fmt.Errorf("an unexpected error occurred; %w", err))
+			panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
 		}
 		if _, err := io.Copy(out, in); err != nil {
 			if err != nil {
-				panic(fmt.Errorf("an unexpected error occurred; %w", err))
+				panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
 			}
 		}
 		in.Close()
@@ -87,13 +90,13 @@ func (r Retro) init(rootDir string) {
 }
 
 func (r Retro) watch() {
-	fmt.Fprintln(r.stdout, "! Not yet implemented")
+	fmt.Fprintln(r.stdout, "😡 TODO")
 }
 
 func (r Retro) build() {
-	fmt.Fprintln(r.stdout, "! Not yet implemented")
+	fmt.Fprintln(r.stdout, "😡 TODO")
 }
 
 func (r Retro) serve() {
-	fmt.Fprintln(r.stdout, "! Not yet implemented")
+	fmt.Fprintln(r.stdout, "😡 TODO")
 }
