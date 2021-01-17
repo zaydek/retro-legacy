@@ -2,14 +2,12 @@ package main
 
 import (
 	_ "embed"
-	"io/fs"
-	"io/ioutil"
-	"os"
-	"path"
-	"strings"
-
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
+	"path"
+	"time"
 
 	"github.com/zaydek/retro/static"
 )
@@ -41,13 +39,18 @@ type MaskedPath struct {
 }
 
 func (r Retro) init(rootDir string) {
+	start := time.Now()
+
+	// Get paths not created by the user:
 	var paths []string
-	err := fs.WalkDir(static.AssetFS, ".", func(p string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(static.StaticFS, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !d.IsDir() {
-			paths = append(paths, p)
+			if _, err := os.Stat(path.Join(rootDir, path.Dir(p))); os.IsNotExist(err) {
+				paths = append(paths, p)
+			}
 		}
 		return nil
 	})
@@ -55,32 +58,32 @@ func (r Retro) init(rootDir string) {
 		panic(err)
 	}
 
-	// Mask starter:
-	var maskedPaths []MaskedPath
-	for _, actual := range paths {
-		masked := strings.TrimPrefix(actual, "starter/")
-		maskedPaths = append(maskedPaths, MaskedPath{masked: masked, actual: actual})
-	}
-
-	// - Make directories
-	// - Read files from the embedded filesystem
-	// - Write to disk
-	//
-	for _, mp := range maskedPaths {
-		if dir := path.Join(rootDir, path.Dir(mp.masked)); dir != "." {
+	// Copy from the embedded filesystem to disk:
+	for _, p := range paths {
+		if dir := path.Join(rootDir, path.Dir(p)); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				panic(fmt.Errorf("an unexpected error occurred; %w", err))
 			}
 		}
-		bstr, err := static.AssetFS.ReadFile(mp.actual)
+		in, err := static.StaticFS.Open(p)
 		if err != nil {
 			panic(fmt.Errorf("an unexpected error occurred; %w", err))
 		}
-		filename := path.Join(rootDir, mp.masked)
-		if err := ioutil.WriteFile(filename, bstr, 0644); err != nil {
+		out, err := os.Create(path.Join(rootDir, p))
+		if err != nil {
 			panic(fmt.Errorf("an unexpected error occurred; %w", err))
 		}
+		if _, err := io.Copy(out, in); err != nil {
+			if err != nil {
+				panic(fmt.Errorf("an unexpected error occurred; %w", err))
+			}
+		}
+		in.Close()
+		out.Close()
 	}
+
+	elapsed := time.Since(start)
+	fmt.Fprintf(r.stdout, "⚡️ success! (%0.3f)\n", elapsed.Seconds())
 }
 
 func (r Retro) watch() {
