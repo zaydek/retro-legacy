@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"sync"
 
 	"github.com/evanw/esbuild/pkg/api"
 )
@@ -74,179 +73,24 @@ func resolveMeta(filename string) (ReactMeta, error) {
 	return meta, nil
 }
 
-func main() {
-	filenames := []string{
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-		"retro-app/pages/index.js",
-	}
-
-	var wg sync.WaitGroup
-	for _, filename := range filenames {
-		wg.Add(1)
-		go func(filename string) {
-			defer wg.Done()
-			meta, err := resolveMeta("retro-app/pages/index.js")
-			if err != nil {
-				panic(err)
-			}
-			fmt.Print("loadProps=", meta.LoadProps, "\n")
-			fmt.Print("head=", meta.Head, "\n")
-		}(filename)
-	}
-	wg.Wait()
-}
+// func main() {
+// 	filenames := []string{
+// 		"retro-app/pages/index.js",
+// 		"retro-app/pages/index.js",
+// 	}
+//
+// 	var wg sync.WaitGroup
+// 	for _, filename := range filenames {
+// 		wg.Add(1)
+// 		go func(filename string) {
+// 			defer wg.Done()
+// 			meta, err := resolveMeta("retro-app/pages/index.js")
+// 			if err != nil {
+// 				panic(err)
+// 			}
+// 			fmt.Print("loadProps=", meta.LoadProps, "\n")
+// 			fmt.Print("head=", meta.Head, "\n")
+// 		}(filename)
+// 	}
+// 	wg.Wait()
+// }
