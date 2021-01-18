@@ -1,6 +1,10 @@
 package main
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"time"
+)
 
 // config, err := config.LoadOrCreateConfiguration()
 // if err != nil {
@@ -9,6 +13,8 @@ import "os"
 // fmt.Printf("%+v\n", config)
 
 func main() {
+	t := time.Now()
+
 	var retro Retro
 
 	// $ retro
@@ -19,6 +25,10 @@ func main() {
 
 	switch os.Args[1] {
 	// $ retro help
+	case "usage":
+		fallthrough
+	case "--usage":
+		fallthrough
 	case "help":
 		fallthrough
 	case "--help":
@@ -68,4 +78,6 @@ func main() {
 		retro.unknown(os.Args[1])
 		os.Exit(1)
 	}
+
+	fmt.Printf("⚡️ %0.3fs\n", time.Since(t).Seconds())
 }

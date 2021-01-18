@@ -2,20 +2,17 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
-	"time"
 
+	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/static"
 )
 
 func (r Retro) init(rootDir string) {
-	start := time.Now()
-
 	var paths []string
 	err := fs.WalkDir(static.StaticFS, ".", func(embedPath string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -39,7 +36,7 @@ func (r Retro) init(rootDir string) {
 				return err
 			}
 			if !bytes.Equal(b1, b2) {
-				stderr.Printf("😱 found %[1]s; delete %[1]s and rerun retro init or ignore this warning\n", diskPath)
+				stderr.Printf("found %[1]s; delete %[1]s and rerun retro init or ignore this warning\n", diskPath)
 				return nil
 			}
 			file.Close()
@@ -48,53 +45,44 @@ func (r Retro) init(rootDir string) {
 		return nil
 	})
 	if err != nil {
-		stderr.Fatalf("😅 an unexpected error occurred; %w", err)
+		stderr.Fatalf("an unexpected error occurred; %w", err)
 	}
 
 	for _, p := range paths {
 		if diskDir := path.Join(rootDir, path.Dir(p)); diskDir != "." {
 			if err := os.MkdirAll(diskDir, 0755); err != nil {
-				stderr.Fatalf("😅 an unexpected error occurred; %w", err)
+				stderr.Fatalf("an unexpected error occurred; %w", err)
 			}
 		}
 		in, err := static.StaticFS.Open(p)
 		if err != nil {
-			stderr.Fatalf("😅 an unexpected error occurred; %w", err)
+			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
 		out, err := os.Create(path.Join(rootDir, p))
 		if err != nil {
-			stderr.Fatalf("😅 an unexpected error occurred; %w", err)
+			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
 		if _, err := io.Copy(out, in); err != nil {
 			if err != nil {
-				stderr.Fatalf("😅 an unexpected error occurred; %w", err)
+				stderr.Fatalf("an unexpected error occurred; %w", err)
 			}
 		}
 		in.Close()
 		out.Close()
 	}
 
-	var msg string
-
-	// TODO
-	elapsed := time.Since(start)
 	if rootDir == "." {
-		msg = fmt.Sprintf(`🔥 created a retro app!
+		stdout.Print(`🔥 created a retro app
 
-  → npm or yarn
-  → retro
-
-⚡️ %0.3fs
-`, elapsed.Seconds())
+   npm or yarn
+   retro
+`)
 	} else {
-		msg = fmt.Sprintf(`🔥 created a retro app!
+		stdout.Printf(`🔥 created retro app `+color.BoldTeal("`")+color.Bold(`%[1]s`)+color.BoldTeal("`")+`
 
-  → cd %s
-  → npm or yarn
-  → retro
-
-⚡️ %0.3fs
-`, rootDir, elapsed.Seconds())
+   cd %[1]s
+   npm or yarn
+   retro
+`, rootDir)
 	}
-	fmt.Fprint(os.Stdout, msg)
 }

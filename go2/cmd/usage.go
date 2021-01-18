@@ -36,7 +36,7 @@ var usage = `
 `
 
 func (r Retro) help() {
-	// (Do not use stdout or stderr)
+	// (Do not use stdout)
 	fmt.Println(usage)
 }
 
