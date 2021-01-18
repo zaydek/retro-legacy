@@ -16,7 +16,7 @@ func newRetro(stdout, stderr io.Writer) Retro {
 }
 
 func (r Retro) version() {
-	fmt.Fprintln(r.stdout, "😡 TODO")
+	fmt.Fprintln(r.stdout, "0.0.x")
 }
 
 func (r Retro) watch() {

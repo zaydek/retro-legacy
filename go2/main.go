@@ -1,17 +1,20 @@
 package main
 
-import "os"
+import (
+	"fmt"
+
+	"github.com/zaydek/retro/color"
+)
 
 func main() {
+	defer color.TerminateFormatting()
+
+	fmt.Println(color.BoldWhitef("Hello, world! %s", "haha"))
+
 	// err := os.MkdirAll("a/hello.go", 0755)
 	// if err != nil {
 	// 	panic(err)
 	// }
-
-	_, err := os.Open("side-project/.gitignore")
-	if err != nil {
-		panic(err)
-	}
 
 	// fmt.Printf("path=%s\n", path.Dir("a/b/c"))
 	// fmt.Printf("path=%s\n", path.Base("a/b/c.go"))
