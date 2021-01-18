@@ -1,25 +1,53 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-
-	"github.com/evanw/esbuild/pkg/api"
+	"strings"
 )
 
 var filenames = []string{
 	"./retro-app/pages/index.js",
-	// "./retro-app/pages/nested/index.js",
+	"./retro-app/pages/nested/index.js",
 }
 
-func name(filename string) string {
-	var name string
-	name = filepath.Base(filename)
-	name = name[:len(name)-len(filepath.Ext(name))]
-	return name
+func camelCase(filename string) string {
+	byteIsLetter := func(b byte) bool {
+		ok := ('a' <= b && b <= 'z') ||
+			('A' <= b && b <= 'Z')
+		return ok
+	}
+
+	trim := filename
+	trim = strings.TrimPrefix(trim, "./")           // Remove ./etc
+	trim = trim[:len(trim)-len(filepath.Ext(trim))] // Remove etc.*
+
+	var ret string
+	for x := 0; x < len(trim); x++ {
+		switch trim[x] {
+		case '/':
+			ret += "Slash"
+			x++
+			if x < len(trim) {
+				ret += strings.ToUpper(string(trim[x]))
+			}
+		case '-':
+			x++
+			if x < len(trim) && byteIsLetter(trim[x]) {
+				ret += strings.ToUpper(string(trim[x]))
+			}
+		default:
+			ret += string(trim[x])
+		}
+	}
+
+	return ret
+}
+
+func pageCase(filename string) string {
+	camelCase := camelCase(filename)
+	return "Page" + strings.Split(camelCase, "PagesSlash")[1]
 }
 
 func main() {
@@ -29,7 +57,7 @@ func main() {
 		if x > 0 {
 			sep = "\n"
 		}
-		requires += sep + fmt.Sprintf("const %s = require(%q)", name(filename), filename)
+		requires += sep + fmt.Sprintf("const %s = require(%q)", pageCase(filename), filename)
 	}
 
 	var importsAsArr string
@@ -38,9 +66,9 @@ func main() {
 		if x > 0 {
 			sep = ", "
 		}
-		importsAsArr += sep + fmt.Sprintf("{ name: %[1]q, imports: %[1]s }", name(filename))
+		importsAsArr += sep + fmt.Sprintf("{ name: %[1]q, imports: %[1]s }", pageCase(filename))
 	}
-	importsAsArr = "[" + importsAsArr + "]"
+	importsAsArr = "[" + strings.Join(strings.Split(importsAsArr, "{ "), "\n\t\t{ ") + ",\n\t]"
 
 	js := `import React from "react"
 import ReactDOMServer from "react-dom/server"
@@ -78,16 +106,16 @@ async function asyncRun(imports) {
 		panic(fmt.Errorf("failed to write file: %w", err))
 	}
 
-	result := api.Build(api.BuildOptions{
-		Bundle:      true,
-		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
-		EntryPoints: []string{"app2.js"},
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
-	})
-	if len(result.Errors) > 0 {
-		bstr, _ := json.MarshalIndent(result.Errors, "", "\t")
-		fmt.Println(string(bstr))
-		os.Exit(1)
-	}
-	fmt.Print(string(result.OutputFiles[0].Contents))
+	// result := api.Build(api.BuildOptions{
+	// 	Bundle:      true,
+	// 	Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
+	// 	EntryPoints: []string{"app2.js"},
+	// 	Loader:      map[string]api.Loader{".js": api.LoaderJSX},
+	// })
+	// if len(result.Errors) > 0 {
+	// 	bstr, _ := json.MarshalIndent(result.Errors, "", "\t")
+	// 	fmt.Println(string(bstr))
+	// 	os.Exit(1)
+	// }
+	// fmt.Print(string(result.OutputFiles[0].Contents))
 }

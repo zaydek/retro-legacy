@@ -2,7 +2,8 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Synthetic requires
-const index = require("./retro-app/pages/index.js")
+const PageIndex = require("./retro-app/pages/index.js")
+const PageNestedSlashIndex = require("./retro-app/pages/nested/index.js")
 
 async function asyncRun(imports) {
 	const chain = []
@@ -25,5 +26,8 @@ async function asyncRun(imports) {
 
 ;(async () => {
 	// Synthetic imports array
-	await asyncRun([{ name: "index", imports: index }])
+	await asyncRun([
+		{ name: "PageIndex", imports: PageIndex }, 
+		{ name: "PageNestedSlashIndex", imports: PageNestedSlashIndex },
+	])
 })()
