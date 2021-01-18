@@ -8,16 +8,18 @@ import (
 	"os"
 	"path"
 
-	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/static"
 )
 
-// TODO: Add an error message if rootDir conflicts with a file or directory on
-// disk. Right now we emit a warning of differences are present, but this should
-// be treated as a last resort.
 func (r Retro) init(rootDir string) {
+	_, err := os.Stat(rootDir)
+	if rootDir != "." && !os.IsNotExist(err) {
+		stderr.Fatalf("delete %[1]s and rerun retro init %[1]s\n", rootDir)
+	}
+
 	var paths []string
-	err := fs.WalkDir(static.StaticFS, ".", func(embedPath string, d fs.DirEntry, err error) error {
+	var warnPaths []string
+	err = fs.WalkDir(static.StaticFS, ".", func(embedPath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -30,19 +32,19 @@ func (r Retro) init(rootDir string) {
 			if err != nil {
 				return err
 			}
-			file, err := static.StaticFS.Open(embedPath)
+			f, err := static.StaticFS.Open(embedPath)
 			if err != nil {
 				return err
 			}
-			b2, err := ioutil.ReadAll(file)
+			b2, err := ioutil.ReadAll(f)
 			if err != nil {
 				return err
 			}
 			if !bytes.Equal(b1, b2) {
-				stderr.Printf("found %[1]s; delete %[1]s and rerun retro init or ignore this warning\n", diskPath)
+				warnPaths = append(warnPaths, diskPath)
 				return nil
 			}
-			file.Close()
+			f.Close()
 		}
 		paths = append(paths, embedPath)
 		return nil
@@ -51,27 +53,39 @@ func (r Retro) init(rootDir string) {
 		stderr.Fatalf("an unexpected error occurred; %w", err)
 	}
 
+	if len(warnPaths) > 0 {
+		var msg string
+		for x, warn := range warnPaths {
+			var sep string
+			if x > 0 {
+				sep = "\n"
+			}
+			msg += sep + "- " + warn
+		}
+		stderr.Fatalln("delete and rerun retro init" + "\n\n" + msg)
+	}
+
 	for _, p := range paths {
 		if diskDir := path.Join(rootDir, path.Dir(p)); diskDir != "." {
 			if err := os.MkdirAll(diskDir, 0755); err != nil {
 				stderr.Fatalf("an unexpected error occurred; %w", err)
 			}
 		}
-		in, err := static.StaticFS.Open(p)
+		fileIn, err := static.StaticFS.Open(p)
 		if err != nil {
 			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
-		out, err := os.Create(path.Join(rootDir, p))
+		fileOut, err := os.Create(path.Join(rootDir, p))
 		if err != nil {
 			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
-		if _, err := io.Copy(out, in); err != nil {
+		if _, err := io.Copy(fileOut, fileIn); err != nil {
 			if err != nil {
 				stderr.Fatalf("an unexpected error occurred; %w", err)
 			}
 		}
-		in.Close()
-		out.Close()
+		fileIn.Close()
+		fileOut.Close()
 	}
 
 	if rootDir == "." {
@@ -81,7 +95,7 @@ func (r Retro) init(rootDir string) {
    retro
 `)
 	} else {
-		stdout.Printf(`🔥 created retro app `+color.BoldTeal("`")+color.Bold(`%[1]s`)+color.BoldTeal("`")+`
+		stdout.Printf(`🔥 created retro app %[1]s
 
    cd %[1]s
    npm or yarn
@@ -89,11 +103,3 @@ func (r Retro) init(rootDir string) {
 `, rootDir)
 	}
 }
-
-// // Use color.Bold because colors terminate themselves:
-// stdout.Print(`🔥 created retro app ` + color.BoldTeal("`") + color.Bold(`%[1]s`) + color.BoldTeal("`") + color.Boldf(`
-//
-//    cd %[1]s
-//    npm or yarn
-//    retro
-// `, rootDir))

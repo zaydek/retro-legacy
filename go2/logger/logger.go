@@ -45,19 +45,19 @@ func (l *Logger) Println(args ...interface{}) {
 }
 
 // Fatal performs a transformation, logs, and exits (status code 1).
-func (l *Logger) Fatal(format string, args ...interface{}) {
-	l.Fatal(format, args...)
+func (l *Logger) Fatal(args ...interface{}) {
+	l.Print(args...)
 	os.Exit(1)
 }
 
 // Fatalf performs a transformation, logs, and exits (status code 1).
 func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.Fatalf(format, args...)
+	l.Printf(format, args...)
 	os.Exit(1)
 }
 
 // Fatalln performs a transformation, logs, and exits (status code 1).
 func (l *Logger) Fatalln(args ...interface{}) {
-	l.Fatalln(args...)
+	l.Println(args...)
 	os.Exit(1)
 }

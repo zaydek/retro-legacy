@@ -33,7 +33,7 @@ var stderr = logger.New(os.Stdout, func(msg string) string {
 				arr[x] = spaces + color.BoldRed("error: ") + color.Bold(arr[x])
 				continue
 			}
-			arr[x] = spaces + strings.Repeat(" ", len("error: ")) + arr[x]
+			arr[x] = spaces + spaces + arr[x]
 		}
 	}
 	out := "\n" + strings.Join(arr, "\n") + "\n"
