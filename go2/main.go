@@ -11,14 +11,17 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
-// Renders load.
-func main() {
-	// esbuild retro-app/pages/index.js \
-	//   --bundle \
-	//   --define:process.env.NODE_ENV=\"production\" \
-	//   --loader:.js=jsx
-	//
+type ReactMeta struct {
+	LoadProps map[string]interface{} `json:"loadProps"`
+	Head      string                 `json:"head"`
+}
 
+// esbuild retro-app/pages/index.js \
+//   --bundle \
+//   --define:process.env.NODE_ENV=\"production\" \
+//   --loader:.js=jsx
+
+func main() {
 	t1 := time.Now()
 	result := api.Build(api.BuildOptions{
 		Bundle:      true,
@@ -38,7 +41,7 @@ func main() {
 	cmd := exec.Command("node")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(fmt.Errorf("failed to pipe stdin: %w", err))
 	}
 
 	go func() {
@@ -48,9 +51,16 @@ func main() {
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(fmt.Errorf("failed to run command: %w", err))
 	}
 	fmt.Printf("%0.3fs - node\n", time.Since(t2).Seconds())
 
-	fmt.Print(string(out))
+	var meta ReactMeta
+	err = json.Unmarshal(out, &meta)
+	if err != nil {
+		log.Fatalln(fmt.Errorf("failed to unmarshal: %w", err))
+	}
+
+	fmt.Print("loadProps=", meta.LoadProps, "\n")
+	fmt.Print("head=", meta.Head, "\n")
 }
