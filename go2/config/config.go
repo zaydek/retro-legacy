@@ -34,7 +34,7 @@ var defaultConfig = Configuration{
 	ReactStrictMode: false,
 }
 
-// LoadOrCreateConfiguration loads or creates a retro.config.jsonc file.
+// LoadOrCreateConfiguration loads or creates retro.config.jsonc.
 //
 // TODO: Add support for user overriding configuration fields using
 // environmental variables; environmental variables take precedence over
@@ -49,63 +49,63 @@ func LoadOrCreateConfiguration() (Configuration, error) {
 	if os.IsNotExist(err) {
 		bstr, err := json.MarshalIndent(config, "", "\t")
 		if err != nil {
-			return Configuration{}, fmt.Errorf("💥 cannot write retro.config.jsonc; %w", err)
+			return Configuration{}, fmt.Errorf("cannot write retro.config.jsonc; %w", err)
 		}
 		bstr = append(bstr, '\n')
 		err = ioutil.WriteFile("retro.config.jsonc", bstr, 0644)
 		if err != nil {
-			return Configuration{}, fmt.Errorf("💥 cannot write retro.config.jsonc; %w", err)
+			return Configuration{}, fmt.Errorf("cannot write retro.config.jsonc; %w", err)
 		}
 	}
 
 	// Read retro.config.jsonc:
 	bstr, err := ioutil.ReadFile("retro.config.jsonc")
 	if err != nil {
-		return Configuration{}, fmt.Errorf("💥 cannot read retro.config.jsonc; %w", err)
+		return Configuration{}, fmt.Errorf("cannot read retro.config.jsonc; %w", err)
 	}
 	dec := json.NewDecoder(bytes.NewReader(bstr))
 	dec.DisallowUnknownFields()
 	err = dec.Decode(&config)
 	if err != nil {
-		return Configuration{}, fmt.Errorf("💥 cannot read retro.config.jsonc; %w", err)
+		return Configuration{}, fmt.Errorf("cannot read retro.config.jsonc; %w", err)
 	}
 
 	// Server guards:
 	fi, err := os.Stat(config.PublicDir)
 	if os.IsNotExist(err) {
-		err := os.MkdirAll(config.PublicDir, os.ModeDir)
+		err := os.MkdirAll(config.PublicDir, 0755)
 		if err != nil {
-			return Configuration{}, fmt.Errorf("💥 server guard: cannot create a directory for configuration field PUBLIC_DIR=%q; %w", config.PublicDir, err)
+			return Configuration{}, fmt.Errorf("server guard: cannot create a directory for configuration field PUBLIC_DIR=%q; %w", config.PublicDir, err)
 		}
 	} else if !fi.IsDir() {
-		return Configuration{}, fmt.Errorf("💥 server guard: configuration field PUBLIC_DIR=%q must be a directory", config.PublicDir)
+		return Configuration{}, fmt.Errorf("server guard: configuration field PUBLIC_DIR=%q must be a directory", config.PublicDir)
 	}
 	fi, err = os.Stat(config.PagesDir)
 	if os.IsNotExist(err) {
-		err := os.MkdirAll(config.PagesDir, os.ModeDir)
+		err := os.MkdirAll(config.PagesDir, 0755)
 		if err != nil {
-			return Configuration{}, fmt.Errorf("💥 server guard: cannot create a directory for configuration field PAGES_DIR=%q; %w", config.PagesDir, err)
+			return Configuration{}, fmt.Errorf("server guard: cannot create a directory for configuration field PAGES_DIR=%q; %w", config.PagesDir, err)
 		}
 	} else if !fi.IsDir() {
-		return Configuration{}, fmt.Errorf("💥 server guard: configuration field PAGES_DIR=%q must be a directory", config.PagesDir)
+		return Configuration{}, fmt.Errorf("server guard: configuration field PAGES_DIR=%q must be a directory", config.PagesDir)
 	}
 	fi, err = os.Stat(config.CacheDir)
 	if os.IsNotExist(err) {
-		err := os.MkdirAll(config.CacheDir, os.ModeDir)
+		err := os.MkdirAll(config.CacheDir, 0755)
 		if err != nil {
-			return Configuration{}, fmt.Errorf("💥 server guard: cannot create a directory for configuration field CACHE_DIR=%q; %w", config.CacheDir, err)
+			return Configuration{}, fmt.Errorf("server guard: cannot create a directory for configuration field CACHE_DIR=%q; %w", config.CacheDir, err)
 		}
 	} else if !fi.IsDir() {
-		return Configuration{}, fmt.Errorf("💥 server guard: configuration field CACHE_DIR=%q must be a directory", config.CacheDir)
+		return Configuration{}, fmt.Errorf("server guard: configuration field CACHE_DIR=%q must be a directory", config.CacheDir)
 	}
 	fi, err = os.Stat(config.BuildDir)
 	if os.IsNotExist(err) {
-		err := os.MkdirAll(config.BuildDir, os.ModeDir)
+		err := os.MkdirAll(config.BuildDir, 0755)
 		if err != nil {
-			return Configuration{}, fmt.Errorf("💥 server guard: cannot create a directory for configuration field BUILD_DIR=%q; %w", config.BuildDir, err)
+			return Configuration{}, fmt.Errorf("server guard: cannot create a directory for configuration field BUILD_DIR=%q; %w", config.BuildDir, err)
 		}
 	} else if !fi.IsDir() {
-		return Configuration{}, fmt.Errorf("💥 server guard: configuration field BUILD_DIR=%q must be a directory", config.BuildDir)
+		return Configuration{}, fmt.Errorf("server guard: configuration field BUILD_DIR=%q must be a directory", config.BuildDir)
 	}
 
 	return config, nil

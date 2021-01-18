@@ -11,7 +11,7 @@ import (
 	"github.com/zaydek/retro/static"
 )
 
-func (r Retro) init(rootDir string) {
+func (r Retro) initImpl(rootDir string) {
 	_, err := os.Stat(rootDir)
 	if rootDir != "." && !os.IsNotExist(err) {
 		stderr.Fatalf("delete %[1]s and rerun retro init %[1]s\n", rootDir)

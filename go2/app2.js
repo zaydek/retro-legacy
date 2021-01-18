@@ -1,5 +1,5 @@
-import React from "react"
-import ReactDOMServer from "react-dom/server"
+// import React from "react"
+// import ReactDOMServer from "react-dom/server"
 
 // Synthetic requires
 const PageIndex = require("./retro-app/pages/index.js")
@@ -9,19 +9,18 @@ async function asyncRun(imports) {
 	const chain = []
 	for (const each of imports) {
 		const p = new Promise(async resolve => {
-			const { load, head: Head } = each.imports
+			const { load } = each.imports
 			const loadProps = await load()
-			const head = ReactDOMServer.renderToStaticMarkup(<Head {...loadProps} />)
-			resolve({ name: each.name, loadProps, head })
+			resolve({ name: each.name, loadProps })
 		})
 		chain.push(p)
 	}
 	const resolvedAsArr = await Promise.all(chain)
 	const resolvedAsMap = resolvedAsArr.reduce((acc, each) => {
-		acc[each.name] = { ...each, name: undefined }
+		acc[each.name] = each.loadProps
 		return acc
 	}, {})
-	console.log(JSON.stringify(resolvedAsMap))
+	console.log(JSON.stringify(resolvedAsMap, null, 2))
 }
 
 ;(async () => {

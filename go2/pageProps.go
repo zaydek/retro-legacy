@@ -12,16 +12,7 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
-type ReactMeta struct {
-	LoadProps map[string]interface{} `json:"loadProps"`
-	Head      string                 `json:"head"`
-}
-
-var filenames = []string{
-	"./retro-app/pages/index.js",
-	"./retro-app/pages/nested/index.js",
-}
-
+// TODO: Add tests.
 func camelCase(filename string) string {
 	byteIsLetter := func(b byte) bool {
 		ok := ('a' <= b && b <= 'z') ||
@@ -55,12 +46,14 @@ func camelCase(filename string) string {
 	return ret
 }
 
+// TODO: Add tests.
 func pageCase(filename string) string {
 	camelCase := camelCase(filename)
 	return "Page" + strings.Split(camelCase, "PagesSlash")[1]
 }
 
-func main() {
+// renderPageProps renders cache/pageProps.jsonc contents.
+func renderPageProps(filenames []string) ([]byte, error) {
 	var requires string
 	for x, filename := range filenames {
 		var sep string
@@ -80,8 +73,8 @@ func main() {
 	}
 	importsAsArr = "[" + strings.Join(strings.Split(importsAsArr, "{ "), "\n\t\t{ ") + ",\n\t]"
 
-	js := `import React from "react"
-import ReactDOMServer from "react-dom/server"
+	js := `// import React from "react"
+// import ReactDOMServer from "react-dom/server"
 
 // Synthetic requires
 ` + requires + `
@@ -90,19 +83,18 @@ async function asyncRun(imports) {
 	const chain = []
 	for (const each of imports) {
 		const p = new Promise(async resolve => {
-			const { load, head: Head } = each.imports
+			const { load } = each.imports
 			const loadProps = await load()
-			const head = ReactDOMServer.renderToStaticMarkup(<Head {...loadProps} />)
-			resolve({ name: each.name, loadProps, head })
+			resolve({ name: each.name, loadProps })
 		})
 		chain.push(p)
 	}
 	const resolvedAsArr = await Promise.all(chain)
 	const resolvedAsMap = resolvedAsArr.reduce((acc, each) => {
-		acc[each.name] = { ...each, name: undefined }
+		acc[each.name] = each.loadProps
 		return acc
 	}, {})
-	console.log(JSON.stringify(resolvedAsMap))
+	console.log(JSON.stringify(resolvedAsMap, null, 2))
 }
 
 ;(async () => {
@@ -113,7 +105,7 @@ async function asyncRun(imports) {
 
 	err := ioutil.WriteFile("app2.js", []byte(js), 0644)
 	if err != nil {
-		panic(fmt.Errorf("failed to write file: %w", err))
+		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
 
 	result := api.Build(api.BuildOptions{
@@ -125,16 +117,15 @@ async function asyncRun(imports) {
 	if len(result.Errors) > 0 {
 		bstr, err := json.MarshalIndent(result.Errors, "", "\t")
 		if err != nil {
-			panic(fmt.Errorf("failed to marshal; %w", err))
+			return nil, fmt.Errorf("failed to marshal; %w", err)
 		}
-		panic(errors.New(string(bstr)))
+		return nil, errors.New(string(bstr))
 	}
-	// fmt.Print(string(result.OutputFiles[0].Contents))
 
 	cmd := exec.Command("node")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		panic(fmt.Errorf("failed to pipe stdin: %w", err))
+		return nil, fmt.Errorf("failed to pipe stdin: %w", err)
 	}
 
 	go func() {
@@ -145,16 +136,10 @@ async function asyncRun(imports) {
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		if len(out) != 0 { // stderr takes precedence
-			panic(fmt.Errorf("failed to run command: %s", out))
+			return nil, fmt.Errorf("failed to run command: %s", out)
 		}
-		panic(fmt.Errorf("failed to run command: %w", err))
+		return nil, fmt.Errorf("failed to run command: %w", err)
 	}
 
-	fmt.Print(string(out))
-
-	// var meta ReactMeta
-	// err = json.Unmarshal(out, &meta)
-	// if err != nil {
-	// 	panic(fmt.Errorf("failed to unmarshal: %w", err))
-	// }
+	return out, nil
 }
