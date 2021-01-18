@@ -6,6 +6,9 @@ import "fmt"
 // These functions auto-terminate formatting. Note that programs that panic
 // cannot auto-terminate formatting. Therefore, use defer TerminateFormatting().
 var (
+	Bold         = colorImpl("\033[1m%s\033[0m")
+	Boldf        = colorfImpl("\033[1m%s\033[0m")
+
 	Black        = colorImpl("\033[0;30m%s\033[0m")
 	Red          = colorImpl("\033[0;31m%s\033[0m")
 	Green        = colorImpl("\033[0;32m%s\033[0m")
@@ -14,6 +17,14 @@ var (
 	Magenta      = colorImpl("\033[0;35m%s\033[0m")
 	Teal         = colorImpl("\033[0;36m%s\033[0m")
 	White        = colorImpl("\033[0;37m%s\033[0m")
+	BoldBlack    = colorImpl("\033[1;30m%s\033[0m")
+	BoldRed      = colorImpl("\033[1;31m%s\033[0m")
+	BoldGreen    = colorImpl("\033[1;32m%s\033[0m")
+	BoldYellow   = colorImpl("\033[1;33m%s\033[0m")
+	BoldPurple   = colorImpl("\033[1;34m%s\033[0m")
+	BoldMagenta  = colorImpl("\033[1;35m%s\033[0m")
+	BoldTeal     = colorImpl("\033[1;36m%s\033[0m")
+	BoldWhite    = colorImpl("\033[1;37m%s\033[0m")
 
 	Blackf       = colorfImpl("\033[0;30m%s\033[0m")
 	Redf         = colorfImpl("\033[0;31m%s\033[0m")
@@ -23,16 +34,6 @@ var (
 	Magentaf     = colorfImpl("\033[0;35m%s\033[0m")
 	Tealf        = colorfImpl("\033[0;36m%s\033[0m")
 	Whitef       = colorfImpl("\033[0;37m%s\033[0m")
-
-	BoldBlack    = colorImpl("\033[1;30m%s\033[0m")
-	BoldRed      = colorImpl("\033[1;31m%s\033[0m")
-	BoldGreen    = colorImpl("\033[1;32m%s\033[0m")
-	BoldYellow   = colorImpl("\033[1;33m%s\033[0m")
-	BoldPurple   = colorImpl("\033[1;34m%s\033[0m")
-	BoldMagenta  = colorImpl("\033[1;35m%s\033[0m")
-	BoldTeal     = colorImpl("\033[1;36m%s\033[0m")
-
-	BoldWhite    = colorImpl("\033[1;37m%s\033[0m")
 	BoldBlackf   = colorfImpl("\033[1;30m%s\033[0m")
 	BoldRedf     = colorfImpl("\033[1;31m%s\033[0m")
 	BoldGreenf   = colorfImpl("\033[1;32m%s\033[0m")

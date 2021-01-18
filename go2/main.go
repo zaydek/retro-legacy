@@ -1,15 +1,28 @@
 package main
 
 import (
-	"fmt"
+	"os"
+	"strings"
 
-	"github.com/zaydek/retro/color"
+	"github.com/zaydek/retro/logger"
 )
 
 func main() {
-	defer color.TerminateFormatting()
+	// defer color.TerminateFormatting()
+	// fmt.Println(color.BoldWhitef("Hello, world! %s", "haha"))
 
-	fmt.Println(color.BoldWhitef("Hello, world! %s", "haha"))
+	stdout := logger.New(os.Stdout, func(msg string) string {
+		arr := strings.Split(msg, "\n")
+		for x := range arr {
+			if x+1 < len(arr) {
+				arr[x] = "  " + arr[x]
+			}
+		}
+		transformed := "\n" + strings.Join(arr, "\n") + "\n"
+		return transformed
+	})
+	// stdout.Printf("Hello %s!\n", "Hello, wrold!")
+	stdout.Println("Hello, worl!")
 
 	// err := os.MkdirAll("a/hello.go", 0755)
 	// if err != nil {

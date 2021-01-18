@@ -11,7 +11,7 @@ import (
 // fmt.Printf("%+v\n", config)
 
 func main() {
-	retro := newRetro(os.Stdin, os.Stderr)
+	var retro Retro
 
 	// $ retro
 	if len(os.Args) < 2 {

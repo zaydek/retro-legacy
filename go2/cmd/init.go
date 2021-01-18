@@ -39,7 +39,7 @@ func (r Retro) init(rootDir string) {
 				return err
 			}
 			if !bytes.Equal(b1, b2) {
-				fmt.Fprintf(r.stderr, "😱 found %[1]s; delete %[1]s and rerun retro init OR ignore this warning\n", diskPath)
+				fmt.Fprintf(os.Stderr, "😱 found %[1]s; delete %[1]s and rerun retro init OR ignore this warning\n", diskPath)
 				return nil
 			}
 			file.Close()
@@ -76,6 +76,7 @@ func (r Retro) init(rootDir string) {
 
 	var msg string
 
+	// TODO
 	elapsed := time.Since(start)
 	if rootDir == "." {
 		msg = fmt.Sprintf(`🔥 created a retro app!
@@ -95,5 +96,5 @@ func (r Retro) init(rootDir string) {
 ⚡️ %0.3fs
 `, rootDir, elapsed.Seconds())
 	}
-	fmt.Fprint(r.stdout, msg)
+	fmt.Fprint(os.Stdout, msg)
 }

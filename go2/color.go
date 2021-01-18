@@ -6,6 +6,11 @@ import "fmt"
 // These functions auto-terminate formatting. Note that programs that panic
 // cannot auto-terminate formatting. Therefore, use defer TerminateFormatting().
 var (
+	// Normal    = colorImpl("\033[0m%s\033[0m")
+	Bold         = colorImpl("\033[1m%s\033[0m")
+	// Normalf   = colorfImpl("\033[0m%s\033[0m")
+	Boldf        = colorfImpl("\033[1m%s\033[0m")
+
 	Black        = colorImpl("\033[0;30m%s\033[0m")
 	Red          = colorImpl("\033[0;31m%s\033[0m")
 	Green        = colorImpl("\033[0;32m%s\033[0m")
@@ -22,6 +27,7 @@ var (
 	BoldMagenta  = colorImpl("\033[1;35m%s\033[0m")
 	BoldTeal     = colorImpl("\033[1;36m%s\033[0m")
 	BoldWhite    = colorImpl("\033[1;37m%s\033[0m")
+
 	Blackf       = colorfImpl("\033[0;30m%s\033[0m")
 	Redf         = colorfImpl("\033[0;31m%s\033[0m")
 	Greenf       = colorfImpl("\033[0;32m%s\033[0m")
