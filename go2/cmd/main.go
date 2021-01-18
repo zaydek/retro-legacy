@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/zaydek/retro/color"
 )
 
 // config, err := config.LoadOrCreateConfiguration()
@@ -13,6 +15,7 @@ import (
 // fmt.Printf("%+v\n", config)
 
 func main() {
+	defer color.TerminateFormatting()
 	t := time.Now()
 
 	var retro Retro

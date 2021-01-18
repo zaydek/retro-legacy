@@ -12,6 +12,9 @@ import (
 	"github.com/zaydek/retro/static"
 )
 
+// TODO: Add an error message if rootDir conflicts with a file or directory on
+// disk. Right now we emit a warning of differences are present, but this should
+// be treated as a last resort.
 func (r Retro) init(rootDir string) {
 	var paths []string
 	err := fs.WalkDir(static.StaticFS, ".", func(embedPath string, d fs.DirEntry, err error) error {
@@ -86,3 +89,11 @@ func (r Retro) init(rootDir string) {
 `, rootDir)
 	}
 }
+
+// // Use color.Bold because colors terminate themselves:
+// stdout.Print(`🔥 created retro app ` + color.BoldTeal("`") + color.Bold(`%[1]s`) + color.BoldTeal("`") + color.Boldf(`
+//
+//    cd %[1]s
+//    npm or yarn
+//    retro
+// `, rootDir))
