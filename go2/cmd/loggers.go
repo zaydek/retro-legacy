@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"strings"
-	"time"
 
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/logger"
@@ -11,9 +10,12 @@ import (
 
 var spaces = strings.Repeat(" ", 2)
 
-// TODO: Add support for duration.
+// TODO: Add support for duration; how can a logger know a duration? It would
+// need some kind of mechanism for starting and stopping a timer. Maybe we queue
+// tasks with an ID? This seems over-complicated. Alternatively, this is handled
+// separately from the logging mechanisms.
 var stdout = logger.New(os.Stdout, func(msg string) string {
-	t := time.Now()
+	// t := time.Now()
 
 	arr := strings.Split(msg, "\n")
 	for x := range arr {
@@ -26,7 +28,7 @@ var stdout = logger.New(os.Stdout, func(msg string) string {
 		}
 	}
 
-	dur := time.Since(t) // FIXME
+	// dur := time.Since(t) // FIXME
 	transformed := "\n" +
 		strings.Join(arr, "\n") +
 		// "\n" + fmt.Sprintf("⚡️ %0.3fs", dur.Seconds()) +
@@ -34,9 +36,12 @@ var stdout = logger.New(os.Stdout, func(msg string) string {
 	return transformed
 })
 
-// TODO: Add support for duration.
+// TODO: Add support for duration; how can a logger know a duration? It would
+// need some kind of mechanism for starting and stopping a timer. Maybe we queue
+// tasks with an ID? This seems over-complicated. Alternatively, this is handled
+// separately from the logging mechanisms.
 var stderr = logger.New(os.Stdout, func(msg string) string {
-	t := time.Now()
+	// t := time.Now()
 
 	arr := strings.Split(msg, "\n")
 	for x := range arr {
@@ -49,33 +54,10 @@ var stderr = logger.New(os.Stdout, func(msg string) string {
 		}
 	}
 
-	dur := time.Since(t)
+	// dur := time.Since(t)
 	transformed := "\n" +
 		strings.Join(arr, "\n") +
 		// "\n" + fmt.Sprintf("⚡️ %0.3fs", dur.Seconds()) +
 		"\n"
 	return transformed
 })
-
-func main() {
-	// defer color.TerminateFormatting()
-	// fmt.Println(color.BoldWhitef("Hello, world! %s", "haha"))
-
-	// stdout.Println("Hello, world!")
-	// stderr.Println("Hello, world!\nOops\n\nI’m not sure this a good idea")
-	// stdout.Println("Hello, world!")
-	stderr.Println("Hello, world!")
-
-	// err := os.MkdirAll("a/hello.go", 0755)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// fmt.Printf("path=%s\n", path.Dir("a/b/c"))
-	// fmt.Printf("path=%s\n", path.Base("a/b/c.go"))
-
-	// err := ioutil.WriteFile("a/b/c", []byte(""), 0644)
-	// if err != nil {
-	// 	panic(err)
-	// }
-}

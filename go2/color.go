@@ -6,9 +6,7 @@ import "fmt"
 // These functions auto-terminate formatting. Note that programs that panic
 // cannot auto-terminate formatting. Therefore, use defer TerminateFormatting().
 var (
-	// Normal    = colorImpl("\033[0m%s\033[0m")
 	Bold         = colorImpl("\033[1m%s\033[0m")
-	// Normalf   = colorfImpl("\033[0m%s\033[0m")
 	Boldf        = colorfImpl("\033[1m%s\033[0m")
 
 	Black        = colorImpl("\033[0;30m%s\033[0m")

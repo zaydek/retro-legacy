@@ -39,7 +39,7 @@ func (r Retro) init(rootDir string) {
 				return err
 			}
 			if !bytes.Equal(b1, b2) {
-				fmt.Fprintf(os.Stderr, "😱 found %[1]s; delete %[1]s and rerun retro init OR ignore this warning\n", diskPath)
+				stderr.Printf("😱 found %[1]s; delete %[1]s and rerun retro init or ignore this warning\n", diskPath)
 				return nil
 			}
 			file.Close()
@@ -48,26 +48,26 @@ func (r Retro) init(rootDir string) {
 		return nil
 	})
 	if err != nil {
-		panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
+		stderr.Fatalf("😅 an unexpected error occurred; %w", err)
 	}
 
 	for _, p := range paths {
 		if diskDir := path.Join(rootDir, path.Dir(p)); diskDir != "." {
 			if err := os.MkdirAll(diskDir, 0755); err != nil {
-				panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
+				stderr.Fatalf("😅 an unexpected error occurred; %w", err)
 			}
 		}
 		in, err := static.StaticFS.Open(p)
 		if err != nil {
-			panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
+			stderr.Fatalf("😅 an unexpected error occurred; %w", err)
 		}
 		out, err := os.Create(path.Join(rootDir, p))
 		if err != nil {
-			panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
+			stderr.Fatalf("😅 an unexpected error occurred; %w", err)
 		}
 		if _, err := io.Copy(out, in); err != nil {
 			if err != nil {
-				panic(fmt.Errorf("😅 an unexpected error occurred; %w", err))
+				stderr.Fatalf("😅 an unexpected error occurred; %w", err)
 			}
 		}
 		in.Close()

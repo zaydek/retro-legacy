@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"io"
+	"os"
 	"sync"
 )
 
@@ -33,4 +34,16 @@ func (l *Logger) Println(args ...interface{}) {
 	transformed := l.transform(fmt.Sprintln(args...))
 	fmt.Fprint(l.w, transformed)
 	l.mu.Unlock()
+}
+
+// Fatalf performs a transformation, logs, and exits (status code 1).
+func (l *Logger) Fatalf(format string, args ...interface{}) {
+	l.Fatalf(format, args...)
+	os.Exit(1)
+}
+
+// Fatalln performs a transformation, logs, and exits (status code 1).
+func (l *Logger) Fatalln(args ...interface{}) {
+	l.Fatalln(args...)
+	os.Exit(1)
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 
 	"github.com/zaydek/retro/color"
 )
@@ -35,26 +33,13 @@ var usage = `
 
     # serve
     retro serve              Serves the production-ready build
-
 `
 
 func (r Retro) help() {
-	fmt.Fprintln(os.Stdout, usage)
+	// (Do not use stdout or stderr)
+	fmt.Println(usage)
 }
-
-// var stderr = log.New(os.Stderr, "  "+color.BoldRed("error:")+" ", 0)
-
-type Logger  struct {}
-
-func newLogger(w io.Writer, func(string) string)
-
-func (l *Logger) Log() {
-
-}
-
-
 
 func (r Retro) unknown(cmd string) {
-	stderr.Println(color.Boldf("retro %s", cmd) + "\n  " + color.Bold("try retro help"))
-	// fmt.Fprintln(os.Stderr, "\n  "+color.BoldRed("error:")+" "+color.Boldf("retro %s", cmd)+"\n  "+color.Bold("try retro help")+"\n")
+	stderr.Printf("no such command %q; try retro help\n", cmd)
 }

@@ -1,8 +1,6 @@
 package main
 
-import (
-	"os"
-)
+import "os"
 
 // config, err := config.LoadOrCreateConfiguration()
 // if err != nil {
