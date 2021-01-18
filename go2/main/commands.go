@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/zaydek/retro/config"
@@ -55,13 +56,15 @@ func (r Retro) watch() {
 	if err != nil {
 		stderr.Fatalln(err)
 	}
-	out := `// THIS FILE IS AUTO-GENERATED.
-// THESE AREN’T THE FILES YOU’RE LOOKING FOR.
+
+	filename := path.Join(rc.CacheDir, "pageProps.js")
+	data := []byte(`// THIS FILE IS AUTO-GENERATED.
 // MOVE ALONG.
 
-module.exports = ` + string(bstr)
-
-	fmt.Print(out)
+module.exports = ` + string(bstr))
+	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
+		stderr.Fatalln(err)
+	}
 }
 
 func (r Retro) build() {

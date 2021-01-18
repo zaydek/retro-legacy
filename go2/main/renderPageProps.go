@@ -48,6 +48,12 @@ func camelCase(filename string) string {
 	return ret
 }
 
+// TODO: Add tests.
+func pageShorthand(filename string) string {
+	camelCase := camelCase(filename)
+	return strings.SplitN(camelCase, "pagesSlash", 2)[1]
+}
+
 // renderPageProps renders cache/pageProps.jsonc contents.
 //
 // TODO: Assert for the presence of node. Do we need some version or greater?
@@ -59,7 +65,7 @@ func renderPageProps(rc config.Configuration, filenames []string) ([]byte, error
 			sep = "\n"
 		}
 		requires += sep + fmt.Sprintf("const %s = require(\"../%s\")",
-			camelCase(filename), filename)
+			pageShorthand(filename), filename)
 	}
 
 	var importsAsArr string
@@ -68,7 +74,7 @@ func renderPageProps(rc config.Configuration, filenames []string) ([]byte, error
 		if x > 0 {
 			sep = ", "
 		}
-		importsAsArr += sep + fmt.Sprintf("{ name: %[1]q, imports: %[1]s }", camelCase(filename))
+		importsAsArr += sep + fmt.Sprintf("{ name: %[1]q, imports: %[1]s }", pageShorthand(filename))
 	}
 	importsAsArr = "[" + strings.Join(strings.Split(importsAsArr, "{ "), "\n\t\t{ ") + ",\n\t]"
 
@@ -97,7 +103,7 @@ async function asyncRun(imports) {
 })()
 `
 
-	err := ioutil.WriteFile(path.Join(rc.CacheDir, "pageProps.js"), []byte(js), 0644)
+	err := ioutil.WriteFile(path.Join(rc.CacheDir, "pageProps.esbuild.js"), []byte(js), 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -105,7 +111,7 @@ async function asyncRun(imports) {
 	result := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
-		EntryPoints: []string{path.Join(rc.CacheDir, "pageProps.js")},
+		EntryPoints: []string{path.Join(rc.CacheDir, "pageProps.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(result.Errors) > 0 {
