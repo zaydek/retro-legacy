@@ -14,11 +14,11 @@ import (
 // }
 // fmt.Printf("%+v\n", config)
 
+var retro Retro
+
 func main() {
 	defer color.TerminateFormatting()
 	t := time.Now()
-
-	var retro Retro
 
 	// $ retro
 	if len(os.Args) < 2 {
@@ -58,7 +58,10 @@ func main() {
 	// $ retro watch
 	//
 	// TODO: Add support for env PORT and argument --port.
-	// TODO: Add support for more paths than pages.
+	// TODO: Add support for more paths than pages. Actually, it would be nicer if
+	// Retro restarts the watcher when config.PublicDur or config.PagesDir
+	// changes. In theory we should also restart if there are changes to
+	// retro.config.jsonc.
 	case "watch":
 	case "--watch":
 		retro.watch()
@@ -75,6 +78,7 @@ func main() {
 	case "serve":
 		fallthrough
 	case "--serve":
+		// TODO: Add error for no such build directory x; run retro build && retro serve
 		retro.serve()
 
 	default:
