@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/config"
 )
 
 // TODO: Add tests.
@@ -46,23 +48,18 @@ func camelCase(filename string) string {
 	return ret
 }
 
-// TODO: Add tests.
-func pageCase(filename string) string {
-	camelCase := camelCase(filename)
-	return "Page" + strings.Split(camelCase, "PagesSlash")[1]
-}
-
 // renderPageProps renders cache/pageProps.jsonc contents.
 //
-// TODO: Assert node works.
-func renderPageProps(filenames []string) ([]byte, error) {
+// TODO: Assert for the presence of node. Do we need some version or greater?
+func renderPageProps(rc config.Configuration, filenames []string) ([]byte, error) {
 	var requires string
 	for x, filename := range filenames {
 		var sep string
 		if x > 0 {
 			sep = "\n"
 		}
-		requires += sep + fmt.Sprintf("const %s = require(\"./%s\")", pageCase(filename), filename)
+		requires += sep + fmt.Sprintf("const %s = require(\"../%s\")",
+			camelCase(filename), filename)
 	}
 
 	var importsAsArr string
@@ -71,15 +68,11 @@ func renderPageProps(filenames []string) ([]byte, error) {
 		if x > 0 {
 			sep = ", "
 		}
-		importsAsArr += sep + fmt.Sprintf("{ name: %[1]q, imports: %[1]s }", pageCase(filename))
+		importsAsArr += sep + fmt.Sprintf("{ name: %[1]q, imports: %[1]s }", camelCase(filename))
 	}
 	importsAsArr = "[" + strings.Join(strings.Split(importsAsArr, "{ "), "\n\t\t{ ") + ",\n\t]"
 
-	js := `// import React from "react"
-// import ReactDOMServer from "react-dom/server"
-
-// Synthetic requires
-` + requires + `
+	js := requires + `
 
 async function asyncRun(imports) {
 	const chain = []
@@ -100,12 +93,11 @@ async function asyncRun(imports) {
 }
 
 ;(async () => {
-	// Synthetic imports array
 	await asyncRun(` + importsAsArr + `)
 })()
 `
 
-	err := ioutil.WriteFile("app2.js", []byte(js), 0644)
+	err := ioutil.WriteFile(path.Join(rc.CacheDir, "pageProps.js"), []byte(js), 0644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
@@ -113,7 +105,7 @@ async function asyncRun(imports) {
 	result := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
-		EntryPoints: []string{"app2.js"},
+		EntryPoints: []string{path.Join(rc.CacheDir, "pageProps.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(result.Errors) > 0 {

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/zaydek/retro/config"
 )
 
 // Retro is a namespace for commands.
@@ -18,13 +20,18 @@ func (r Retro) init(rootDir string) {
 }
 
 func (r Retro) watch() {
-	// rc, err := config.LoadOrCreateConfiguration()
-	// if err != nil {
-	// 	stderr.Println(err)
-	// }
+	rc, err := config.InitConfiguration()
+	if err != nil {
+		stderr.Fatalln(err)
+	}
 
+	if err := rc.ServerGuards(); err != nil {
+		stderr.Fatalln(err)
+	}
+
+	// TODO: Extract or attach to rc?
 	srcs := []string{}
-	err := filepath.Walk("retro-app/pages", func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(rc.PagesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -43,7 +50,8 @@ func (r Retro) watch() {
 	if err != nil {
 		stderr.Fatalln(err)
 	}
-	bstr, err := renderPageProps(srcs)
+
+	bstr, err := renderPageProps(rc, srcs)
 	if err != nil {
 		stderr.Fatalln(err)
 	}
@@ -52,6 +60,7 @@ func (r Retro) watch() {
 // MOVE ALONG.
 
 module.exports = ` + string(bstr)
+
 	fmt.Print(out)
 }
 
