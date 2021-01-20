@@ -11,10 +11,10 @@ import (
 	"github.com/zaydek/retro/static"
 )
 
-func (r Retro) cmdNew(rootDir string) {
-	if rootDir != "" {
+func (r Retro) cmdInit(rootDir string) {
+	if rootDir != "." {
 		if _, err := os.Stat(rootDir); !os.IsNotExist(err) {
-			stderr.Fatalf("delete %[1]s and rerun retro new %[1]s\n", rootDir)
+			stderr.Fatalf("delete %[1]s and rerun retro init %[1]s\n", rootDir)
 		}
 	}
 
@@ -65,7 +65,7 @@ func (r Retro) cmdNew(rootDir string) {
 			}
 			msg += sep + "- " + warn
 		}
-		stderr.Fatalf("delete and rerun retro new %s\n\n%s\n", rootDir, msg)
+		stderr.Fatalf("delete and rerun retro init %s\n\n%s\n", rootDir, msg)
 	}
 
 	for _, embeddedPath := range embeddedPaths {

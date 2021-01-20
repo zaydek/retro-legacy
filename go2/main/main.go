@@ -19,16 +19,16 @@ var usage = `
   ` + color.Bold("Usage:") + `
 
     retro version            Prints the current and available versions of Retro
-    retro new [dir]          Creates a new Retro app
+    retro init [dir]         Creates a Retro app at [dir]
     retro watch              Starts a rapid-development server and watches for changes
     retro build              Builds a production-ready build
     retro serve              Serves the production-ready build
 
   ` + color.Bold("Examples:") + `
 
-    # new
-    retro new                Creates a new Retro app
-    retro new retro-app      Creates a new Retro app at retro-app
+    # init
+    retro init .              Creates a Retro app at .
+    retro init retro-app      Creates a Retro app at retro-app
 
     # watch
     retro watch              Starts the dev server
@@ -40,6 +40,12 @@ var usage = `
 
     # serve
     retro serve              Serves the production-ready build
+
+  ` + color.Bold("Documentation:") + `
+    ` + color.Underline("TODO") + `
+
+  ` + color.Bold("Repository:") + `
+    ` + color.Underline("https://github.com/zaydek/retro") + `
 `
 
 func (r Retro) cmdHelp() {
@@ -51,7 +57,7 @@ func (r Retro) cmdVersion() {
 }
 
 func (r Retro) unknown(cmd string) {
-	stderr.Printf("no such command %q\n", cmd)
+	stderr.Println("no such command; try retro help")
 }
 
 func main() {
@@ -73,6 +79,7 @@ func main() {
 		fallthrough
 	case "--help":
 		retro.cmdHelp()
+		return // Eager return
 
 	// $ retro version
 	case "version":
@@ -80,17 +87,16 @@ func main() {
 	case "--version":
 		retro.cmdVersion()
 
-	// $ retro new
+	// $ retro init
 	//
-	// TODO: Add support for $ retro new --no-comment.
-	case "new":
-		fallthrough
-	case "--new":
+	// TODO: Add support for $ retro init --no-comment.
+	case "init":
 		var rootDir string
-		if len(os.Args) > 2 {
-			rootDir = os.Args[2]
+		if len(os.Args) < 3 {
+			stderr.Fatalln("try retro init . or retro init retro-app")
 		}
-		retro.cmdNew(rootDir)
+		rootDir = os.Args[2]
+		retro.cmdInit(rootDir)
 
 	// $ retro watch
 	//
@@ -100,22 +106,17 @@ func main() {
 	// changes. In theory we should also restart if there are changes to
 	// retro.config.jsonc.
 	case "watch":
-	case "--watch":
 		retro.cmdWatch()
 
 	// $ retro build
 	//
 	case "build":
-	case "--build":
 		retro.cmdBuild()
 
 	// $ retro serve
 	//
 	// TODO: Add support for env PORT and argument --port.
 	case "serve":
-		fallthrough
-	case "--serve":
-		// TODO: Add error for no such build directory x; run retro build && retro serve
 		retro.cmdServe()
 
 	default:
