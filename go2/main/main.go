@@ -7,10 +7,9 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
-// Retro is a namespace for commands.
 type Retro struct {
 	config Configuration
-	// TODO: Add page-based routes here?
+	router PageBasedRouter
 }
 
 var retro Retro

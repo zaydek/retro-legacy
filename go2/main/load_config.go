@@ -9,13 +9,13 @@ import (
 	"path"
 	"regexp"
 
-	"github.com/zaydek/retro/static"
+	"github.com/zaydek/retro/embedded"
 )
 
 // Configuration describes global configuration.
 type Configuration struct {
 	// The asset directory.
-	AssetDir string `JSON:"ASSET_DIR"`
+	AssetDir string `json:"ASSET_DIR"`
 
 	// The pages directory.
 	PagesDir string `json:"PAGES_DIR"`
@@ -30,8 +30,8 @@ type Configuration struct {
 	ReactStrictMode bool
 }
 
-// Validates the presence of a directory.
-func validateDirectory(field, dirname string) error {
+// Tests for the presence of a directory.
+func testDirectory(field, dirname string) error {
 	if info, err := os.Stat(dirname); os.IsNotExist(err) {
 		if err := os.MkdirAll(dirname, 0755); err != nil {
 			return fmt.Errorf("server guard: cannot create a directory for configuration field %s=%s; %w", field, dirname, err)
@@ -42,14 +42,14 @@ func validateDirectory(field, dirname string) error {
 	return nil
 }
 
-// Validates the presence of public/index.html.
-func validatePublicIndexHTML(rc Configuration) error {
-	if _, err := os.Stat(rc.PagesDir); os.IsNotExist(err) {
-		src, err := static.StaticFS.Open("static/public/index.html")
+// Tests for the presence of public/index.html.
+func testPublicIndexHTML(config Configuration) error {
+	if _, err := os.Stat(path.Join(config.PagesDir, "index.html")); os.IsNotExist(err) {
+		src, err := embedded.FS.Open("public/index.html")
 		if err != nil {
 			return fmt.Errorf("an unexpected error occurred; %w", err)
 		}
-		dst, err := os.Create(path.Join(rc.AssetDir, "index.html"))
+		dst, err := os.Create(path.Join(config.AssetDir, "index.html"))
 		if err != nil {
 			return fmt.Errorf("an unexpected error occurred; %w", err)
 		}
@@ -62,24 +62,24 @@ func validatePublicIndexHTML(rc Configuration) error {
 	return nil
 }
 
-func validateServerGuards(rc Configuration) error {
+func testServerGuards(config Configuration) error {
 	dirs := []struct {
 		field   string
 		dirname string
 	}{
-		{field: "ASSET_DIR", dirname: rc.AssetDir},
-		{field: "PAGES_DIR", dirname: rc.PagesDir},
-		{field: "CACHE_DIR", dirname: rc.CacheDir},
-		{field: "PAGES_DIR", dirname: rc.PagesDir},
+		{field: "ASSET_DIR", dirname: config.AssetDir},
+		{field: "PAGES_DIR", dirname: config.PagesDir},
+		{field: "CACHE_DIR", dirname: config.CacheDir},
+		{field: "PAGES_DIR", dirname: config.PagesDir},
 	}
-	// Passthrough error:
+	// Passthrough:
 	for _, each := range dirs {
-		if err := validateDirectory(each.field, each.dirname); err != nil {
+		if err := testDirectory(each.field, each.dirname); err != nil {
 			return err
 		}
 	}
-	// Passthrough error:
-	if err := validatePublicIndexHTML(rc); err != nil {
+	// Passthrough:
+	if err := testPublicIndexHTML(config); err != nil {
 		return err
 	}
 	return nil
@@ -132,8 +132,8 @@ func loadConfiguration() (Configuration, error) {
 	if err = json.Unmarshal(bstr, &config); err != nil {
 		return Configuration{}, fmt.Errorf("cannot read retro.config.jsonc; %w", err)
 	}
-	// Passthrough error:
-	if err := validateServerGuards(config); err != nil {
+	// Passthrough:
+	if err := testServerGuards(config); err != nil {
 		return Configuration{}, err
 	}
 	return config, nil

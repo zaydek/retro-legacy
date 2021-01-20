@@ -8,7 +8,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/zaydek/retro/static"
+	"github.com/zaydek/retro/embedded"
 )
 
 func (r Retro) cmdInit(rootDir string) {
@@ -23,7 +23,7 @@ func (r Retro) cmdInit(rootDir string) {
 		corruptedUserPaths []string
 	)
 
-	if err := fs.WalkDir(static.StaticFS, ".", func(embeddedPath string, dirEntry fs.DirEntry, err error) error {
+	if err := fs.WalkDir(embedded.FS, ".", func(embeddedPath string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -36,7 +36,7 @@ func (r Retro) cmdInit(rootDir string) {
 			if err != nil {
 				return err
 			}
-			f, err := static.StaticFS.Open(embeddedPath)
+			f, err := embedded.FS.Open(embeddedPath)
 			if err != nil {
 				return err
 			}
@@ -74,7 +74,7 @@ func (r Retro) cmdInit(rootDir string) {
 				stderr.Fatalf("an unexpected error occurred; %w", err)
 			}
 		}
-		src, err := static.StaticFS.Open(embeddedPath)
+		src, err := embedded.FS.Open(embeddedPath)
 		if err != nil {
 			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
