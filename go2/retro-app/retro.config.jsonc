@@ -24,10 +24,12 @@
 	//
 	"PAGES_DIR": "pages",
 
-	// This folder may be deleted at any time.
+	// This folder may be deleted at any time; cache regenerates on every build.
+	// You probably want to add this folder to your gitignore.
 	"CACHE_DIR": "cache",
 
-	// This folder may be deleted at any time.
+	// This folder may be deleted at any time; build regenerates on every build.
+	// You probably want to add this folder to your gitignore.
 	"BUILD_DIR": "build",
 
 	// Wraps <React.StrictMode>.

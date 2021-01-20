@@ -9,18 +9,7 @@ import (
 	"github.com/zaydek/retro/config"
 )
 
-// Retro is a namespace for commands.
-type Retro struct{}
-
-func (r Retro) version() {
-	stdout.Println("0.0.x")
-}
-
-func (r Retro) init(rootDir string) {
-	r.initImpl(rootDir)
-}
-
-func (r Retro) watch() {
+func (r Retro) watchImpl() {
 	rc, err := config.InitConfiguration()
 	if err != nil {
 		stderr.Fatalln(err)
@@ -65,12 +54,4 @@ module.exports = ` + string(bstr))
 	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
 		stderr.Fatalln(err)
 	}
-}
-
-func (r Retro) build() {
-	stderr.Println("😡 TODO")
-}
-
-func (r Retro) serve() {
-	stderr.Println("😡 TODO")
 }

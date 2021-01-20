@@ -6,6 +6,9 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
+// Retro is a namespace for commands.
+type Retro struct{}
+
 var usage = `
   ` + color.Bold("Usage:") + `
 
@@ -38,6 +41,26 @@ var usage = `
 func (r Retro) help() {
 	// (Do not use stdout)
 	fmt.Println(usage)
+}
+
+func (r Retro) version() {
+	stdout.Println("0.0.x")
+}
+
+func (r Retro) init(rootDir string) {
+	r.initImpl(rootDir)
+}
+
+func (r Retro) watch() {
+	r.watchImpl()
+}
+
+func (r Retro) build() {
+	stderr.Println("😡 TODO")
+}
+
+func (r Retro) serve() {
+	stderr.Println("😡 TODO")
 }
 
 func (r Retro) unknown(cmd string) {
