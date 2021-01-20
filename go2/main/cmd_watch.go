@@ -6,6 +6,8 @@ import (
 )
 
 func (r Retro) cmdWatch() {
+	// port := resolvePort()
+
 	var err error
 	if r.config, err = loadConfiguration(); err != nil {
 		stderr.Fatalln(err)

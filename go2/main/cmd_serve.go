@@ -6,16 +6,8 @@ import (
 	"strconv"
 )
 
-var port = 8000
-
 func (r Retro) cmdServe() {
-	envPort := os.Getenv("PORT")
-	if envPort != "" {
-		var err error
-		if port, err = strconv.Atoi(envPort); err != nil {
-			stderr.Fatalln("bad port; try PORT=<number> retro serve")
-		}
-	}
+	port := resolvePort()
 
 	if _, err := os.Stat("retro.config.jsonc"); os.IsNotExist(err) {
 		stderr.Fatalln("no such retro.config.jsonc; try retro init . && retro build && retro serve")

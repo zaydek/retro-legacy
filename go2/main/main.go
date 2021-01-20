@@ -115,7 +115,7 @@ func main() {
 
 	// $ retro serve
 	//
-	// TODO: Add support for env PORT and argument --port.
+	// TODO: Add support for --port.
 	case "serve":
 		retro.cmdServe()
 
