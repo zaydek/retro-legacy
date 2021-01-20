@@ -1,4 +1,4 @@
-package config
+package main
 
 import (
 	"encoding/json"
@@ -30,6 +30,61 @@ type Configuration struct {
 	ReactStrictMode bool
 }
 
+// Validates the presence of a directory.
+func validateDirectory(field, dirname string) error {
+	if info, err := os.Stat(dirname); os.IsNotExist(err) {
+		if err := os.MkdirAll(dirname, 0755); err != nil {
+			return fmt.Errorf("server guard: cannot create a directory for configuration field %s=%s; %w", field, dirname, err)
+		}
+	} else if !info.IsDir() {
+		return fmt.Errorf("server guard: configuration field %s=%s must be a directory", field, dirname)
+	}
+	return nil
+}
+
+// Validates the presence of public/index.html.
+func validatePublicIndexHTML(rc Configuration) error {
+	if _, err := os.Stat(rc.PagesDir); os.IsNotExist(err) {
+		src, err := static.StaticFS.Open("static/public/index.html")
+		if err != nil {
+			return fmt.Errorf("an unexpected error occurred; %w", err)
+		}
+		dst, err := os.Create(path.Join(rc.AssetDir, "index.html"))
+		if err != nil {
+			return fmt.Errorf("an unexpected error occurred; %w", err)
+		}
+		if _, err := io.Copy(dst, src); err != nil {
+			return fmt.Errorf("an unexpected error occurred; %w", err)
+		}
+		src.Close()
+		dst.Close()
+	}
+	return nil
+}
+
+func validateServerGuards(rc Configuration) error {
+	dirs := []struct {
+		field   string
+		dirname string
+	}{
+		{field: "ASSET_DIR", dirname: rc.AssetDir},
+		{field: "PAGES_DIR", dirname: rc.PagesDir},
+		{field: "CACHE_DIR", dirname: rc.CacheDir},
+		{field: "PAGES_DIR", dirname: rc.PagesDir},
+	}
+	// Passthrough error:
+	for _, each := range dirs {
+		if err := validateDirectory(each.field, each.dirname); err != nil {
+			return err
+		}
+	}
+	// Passthrough error:
+	if err := validatePublicIndexHTML(rc); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Matches comments:
 //
 // - [ \t]*       spaces
@@ -42,13 +97,13 @@ type Configuration struct {
 //
 var commentRe = regexp.MustCompile(`[ \t]*\/\/.*` + `|` + `\/\*(?:\n?.*?)+\*\/`)
 
-// InitConfiguration loads or creates retro.config.jsonc.
+// loadConfiguration loads or creates retro.config.jsonc.
 //
 // TODO: Add support for user overriding configuration fields using
 // environmental variables; environmental variables take precedence over
 // configuration fields.
 // TODO: Add support for JavaScript (or TypeScript-based?) configuration files.
-func InitConfiguration() (Configuration, error) {
+func loadConfiguration() (Configuration, error) {
 	config := Configuration{
 		AssetDir:        "public",
 		PagesDir:        "pages",
@@ -77,59 +132,9 @@ func InitConfiguration() (Configuration, error) {
 	if err = json.Unmarshal(bstr, &config); err != nil {
 		return Configuration{}, fmt.Errorf("cannot read retro.config.jsonc; %w", err)
 	}
+	// Passthrough error:
+	if err := validateServerGuards(config); err != nil {
+		return Configuration{}, err
+	}
 	return config, nil
-}
-
-// Validates the presence of a directory.
-func validateDirectory(desc, dirname string) error {
-	if info, err := os.Stat(dirname); os.IsNotExist(err) {
-		if err := os.MkdirAll(dirname, 0755); err != nil {
-			return fmt.Errorf("server guard: cannot create a directory for configuration field %s=%s; %w", desc, dirname, err)
-		}
-	} else if !info.IsDir() {
-		return fmt.Errorf("server guard: configuration field %s=%s must be a directory", desc, dirname)
-	}
-	return nil
-}
-
-// Validates the presence of public/index.html.
-func validatePublicIndexHTML(rc Configuration) error {
-	if _, err := os.Stat(rc.PagesDir); os.IsNotExist(err) {
-		src, err := static.StaticFS.Open("static/public/index.html")
-		if err != nil {
-			return fmt.Errorf("an unexpected error occurred; %w", err)
-		}
-		dst, err := os.Create(path.Join(rc.AssetDir, "index.html"))
-		if err != nil {
-			return fmt.Errorf("an unexpected error occurred; %w", err)
-		}
-		if _, err := io.Copy(dst, src); err != nil {
-			return fmt.Errorf("an unexpected error occurred; %w", err)
-		}
-		src.Close()
-		dst.Close()
-	}
-	return nil
-}
-
-// ServerGuards guards Retro on the server.
-func (rc Configuration) ServerGuards() error {
-	dirs := []struct {
-		desc    string
-		dirname string
-	}{
-		{desc: "ASSET_DIR", dirname: rc.AssetDir},
-		{desc: "PAGES_DIR", dirname: rc.PagesDir},
-		{desc: "CACHE_DIR", dirname: rc.CacheDir},
-		{desc: "PAGES_DIR", dirname: rc.PagesDir},
-	}
-	for _, each := range dirs {
-		if err := validateDirectory(each.desc, each.dirname); err != nil {
-			return err
-		}
-	}
-	if err := validatePublicIndexHTML(); err != nil {
-
-	}
-	return nil
 }
