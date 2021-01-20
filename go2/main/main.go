@@ -20,12 +20,6 @@ func main() {
 	defer color.TerminateFormatting()
 	t := time.Now()
 
-	// $ retro
-	if len(os.Args) < 2 {
-		retro.watch()
-		return
-	}
-
 	switch os.Args[1] {
 	// $ retro help
 	case "usage":

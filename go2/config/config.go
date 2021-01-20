@@ -3,15 +3,19 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"regexp"
+
+	"github.com/zaydek/retro/static"
 )
 
 // Configuration describes global configuration.
 type Configuration struct {
-	// The public directory.
-	PublicDir string `JSON:"PUBLIC_DIR"`
+	// The asset directory.
+	AssetDir string `JSON:"ASSET_DIR"`
 
 	// The pages directory.
 	PagesDir string `json:"PAGES_DIR"`
@@ -36,7 +40,6 @@ type Configuration struct {
 // - (?:\n?.*?)+  one or more paragraphs (lazy)
 // - \*\/         */
 //
-// TODO: Add tests.
 var commentRe = regexp.MustCompile(`[ \t]*\/\/.*` + `|` + `\/\*(?:\n?.*?)+\*\/`)
 
 // InitConfiguration loads or creates retro.config.jsonc.
@@ -45,10 +48,9 @@ var commentRe = regexp.MustCompile(`[ \t]*\/\/.*` + `|` + `\/\*(?:\n?.*?)+\*\/`)
 // environmental variables; environmental variables take precedence over
 // configuration fields.
 // TODO: Add support for JavaScript (or TypeScript-based?) configuration files.
-// TODO: Remove comments from jsonc before calling unmarshal.
 func InitConfiguration() (Configuration, error) {
 	config := Configuration{
-		PublicDir:       "public",
+		AssetDir:        "public",
 		PagesDir:        "pages",
 		CacheDir:        "cache",
 		BuildDir:        "build",
@@ -78,34 +80,56 @@ func InitConfiguration() (Configuration, error) {
 	return config, nil
 }
 
-// ServerGuards guard for the presence of PagesDir, CacheDir, and BuildDir.
-func (c Configuration) ServerGuards() error {
-	// TODO: Add guards for public/index.html?
-
-	// // PagesDir
-	// if info, err := os.Stat(c.PublicDir); os.IsNotExist(err) {
-	// 	if err := os.MkdirAll(c.PublicDir, 0755); err != nil {
-	// 		return fmt.Errorf("server guard: cannot create a directory for configuration field PAGES_DIR=%q; %w", c.PublicDir, err)
-	// 	}
-	// } else if !info.IsDir() {
-	// 	return fmt.Errorf("server guard: configuration field PAGES_DIR=%q must be a directory", c.PublicDir)
-	// }
-
-	// CacheDir
-	if info, err := os.Stat(c.CacheDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(c.CacheDir, 0755); err != nil {
-			return fmt.Errorf("server guard: cannot create a directory for configuration field CACHE_DIR=%q; %w", c.PublicDir, err)
+// Validates the presence of a directory.
+func validateDirectory(desc, dirname string) error {
+	if info, err := os.Stat(dirname); os.IsNotExist(err) {
+		if err := os.MkdirAll(dirname, 0755); err != nil {
+			return fmt.Errorf("server guard: cannot create a directory for configuration field %s=%s; %w", desc, dirname, err)
 		}
 	} else if !info.IsDir() {
-		return fmt.Errorf("server guard: configuration field CACHE_DIR=%q must be a directory", c.PublicDir)
+		return fmt.Errorf("server guard: configuration field %s=%s must be a directory", desc, dirname)
 	}
-	// BuildDir
-	if info, err := os.Stat(c.BuildDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(c.BuildDir, 0755); err != nil {
-			return fmt.Errorf("server guard: cannot create a directory for configuration field BUILD_DIR=%q; %w", c.PublicDir, err)
+	return nil
+}
+
+// Validates the presence of public/index.html.
+func validatePublicIndexHTML(rc Configuration) error {
+	if _, err := os.Stat(rc.PagesDir); os.IsNotExist(err) {
+		src, err := static.StaticFS.Open("static/public/index.html")
+		if err != nil {
+			return fmt.Errorf("an unexpected error occurred; %w", err)
 		}
-	} else if !info.IsDir() {
-		return fmt.Errorf("server guard: configuration field BUILD_DIR=%q must be a directory", c.PublicDir)
+		dst, err := os.Create(path.Join(rc.AssetDir, "index.html"))
+		if err != nil {
+			return fmt.Errorf("an unexpected error occurred; %w", err)
+		}
+		if _, err := io.Copy(dst, src); err != nil {
+			return fmt.Errorf("an unexpected error occurred; %w", err)
+		}
+		src.Close()
+		dst.Close()
+	}
+	return nil
+}
+
+// ServerGuards guards Retro on the server.
+func (rc Configuration) ServerGuards() error {
+	dirs := []struct {
+		desc    string
+		dirname string
+	}{
+		{desc: "ASSET_DIR", dirname: rc.AssetDir},
+		{desc: "PAGES_DIR", dirname: rc.PagesDir},
+		{desc: "CACHE_DIR", dirname: rc.CacheDir},
+		{desc: "PAGES_DIR", dirname: rc.PagesDir},
+	}
+	for _, each := range dirs {
+		if err := validateDirectory(each.desc, each.dirname); err != nil {
+			return err
+		}
+	}
+	if err := validatePublicIndexHTML(); err != nil {
+
 	}
 	return nil
 }

@@ -25,7 +25,6 @@ var usage = `
     retro init retro-app     Initializes Retro at retro-app
 
     # watch
-    retro                    Starts the dev server
     retro watch              Starts the dev server
     retro watch public       Starts the dev server and watches public
     retro watch --port=8080  Starts the dev server on port 8080
