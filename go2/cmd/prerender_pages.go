@@ -36,28 +36,33 @@ var funcMap = template.FuncMap{
 	},
 }
 
-// resolveIndexHTML synchronously resolves bytes for build/index.html.
-func resolveIndexHTML(retro Retro) ([]byte, error) {
+func prerenderPages(retro Retro) error {
 	bstr, err := ioutil.ReadFile(path.Join(retro.Config.AssetDir, "index.html"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s/index.html; %w", retro.Config.AssetDir, err)
+		return fmt.Errorf("failed to read %s/index.html; %w", retro.Config.AssetDir, err)
 	}
+
 	html := string(bstr)
 	if !strings.Contains(html, `{{ RetroMeta }}`) {
-		return nil, errors.New(`no such {{ RetroMeta }}; add to <head>`)
+		return errors.New(`no such {{ RetroMeta }}; add to <head>`)
 	} else if !strings.Contains(html, `<div id="root"></div>`) {
-		return nil, errors.New(`no such <div id="root"></div>; add to <body> before {{ RetroApp }}`)
+		return errors.New(`no such <div id="root"></div>; add to <body> before {{ RetroApp }}`)
 	} else if !strings.Contains(html, `{{ RetroApp }}`) {
-		return nil, errors.New(`no such {{ RetroApp }}; add to <body> after <div id="root"></div>`)
+		return errors.New(`no such {{ RetroApp }}; add to <body> after <div id="root"></div>`)
 	}
+
 	tmpl, err := template.New(path.Join(retro.Config.AssetDir, "index.html")).Funcs(funcMap).Parse(html)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template %s/index.html; %w", retro.Config.AssetDir, err)
+		return fmt.Errorf("failed to parse template %s/index.html; %w", retro.Config.AssetDir, err)
 	}
+
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, nil); err != nil {
-		return nil, fmt.Errorf("failed to execute template %s/index.html; %w", retro.Config.AssetDir, err)
+		return fmt.Errorf("failed to execute template %s/index.html; %w", retro.Config.AssetDir, err)
 	}
-	contents := buf.Bytes()
-	return contents, nil
+
+	if err := ioutil.WriteFile(path.Join(retro.Config.BuildDir, "index.html"), buf.Bytes(), 0644); err != nil {
+		stderr.Fatalf("failed to write %s/index.html; %w\n", retro.Config.BuildDir, err)
+	}
+	return nil
 }

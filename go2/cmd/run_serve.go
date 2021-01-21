@@ -7,13 +7,12 @@ import (
 )
 
 func (r Retro) serve() {
-	port := resolvePort()
+	// port := resolvePort()
+	port := 8080
 
 	if _, err := os.Stat("retro.config.jsonc"); os.IsNotExist(err) {
 		stderr.Fatalln("no such retro.config.jsonc; try retro init . && retro build && retro serve")
-	}
-
-	if _, err := os.Stat(r.Config.BuildDir); os.IsNotExist(err) {
+	} else if _, err := os.Stat(r.Config.BuildDir); os.IsNotExist(err) {
 		stderr.Fatalln("no such build directory; try retro build && retro serve")
 	}
 

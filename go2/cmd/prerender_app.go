@@ -26,8 +26,7 @@ import (
 // // (No pageProps.js)
 // {{- end}}
 
-// resolveApp synchronously resolves bytes for build/app.js.
-func resolveApp(retro Retro) ([]byte, error) {
+func prerenderApp(retro Retro) error {
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
@@ -67,33 +66,34 @@ ReactDOM.hydrate(
 {{- end}}
 `
 
+	var buf bytes.Buffer
 	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.js")).Parse(rawstr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse template %s/app.js; %w", retro.Config.CacheDir, err)
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, retro); err != nil {
-		return nil, fmt.Errorf("failed to execute template %s/app.js; %w", retro.Config.CacheDir, err)
+		return fmt.Errorf("failed to parse template %s/app.js; %w", retro.Config.CacheDir, err)
+	} else if err := tmpl.Execute(&buf, retro); err != nil {
+		return fmt.Errorf("failed to execute template %s/app.js; %w", retro.Config.CacheDir, err)
 	}
 
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.esbuild.js"), buf.Bytes(), 0644); err != nil {
-		return nil, fmt.Errorf("failed to write %s/app.js; %w", retro.Config.CacheDir, err)
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.artifact.js"), buf.Bytes(), 0644); err != nil {
+		return fmt.Errorf("failed to write %s/app.js; %w", retro.Config.CacheDir, err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
-		EntryPoints: []string{path.Join(retro.Config.CacheDir, "app.esbuild.js")},
+		EntryPoints: []string{path.Join(retro.Config.CacheDir, "app.artifact.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
 		bstr, err := json.MarshalIndent(results.Errors, "", "\t")
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal; %w", err)
+			return fmt.Errorf("failed to marshal; %w", err)
 		}
-		return nil, errors.New(string(bstr))
+		return errors.New(string(bstr))
 	}
 
-	contents := results.OutputFiles[0].Contents
-	return contents, nil
+	if err := ioutil.WriteFile(path.Join(retro.Config.BuildDir, "app.js"), results.OutputFiles[0].Contents, 0644); err != nil {
+		return fmt.Errorf("failed to write %s/app.js; %w", retro.Config.CacheDir, err)
+	}
+	return nil
 }

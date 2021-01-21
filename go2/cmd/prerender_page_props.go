@@ -35,14 +35,12 @@ func buildRequireStatementAsArray(routes []PageBasedRoute) string {
 		requireAsArray += sep + fmt.Sprintf(`{ path: %q, imports: %s }`,
 			each.Path, each.Component)
 	}
-	requireAsArray = "[" + strings.Join(strings.Split(requireAsArray, "{ "), "\n\t\t{ ") + ",\n\t]"
+	requireAsArray = "[" + strings.Join(strings.Split(requireAsArray, "{ "), "\n\t{ ") + ",\n]"
 	return requireAsArray
 }
 
-// resolvePageProps asynchronously resolves bytes for pageProps.js.
-//
 // TODO: Test for the presence of Node.
-func resolvePageProps(retro Retro) ([]byte, error) {
+func prerenderPageProps(retro Retro) error {
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 ` + buildRequireStatement(retro.Routes) + `
@@ -65,45 +63,50 @@ async function asyncRun(imports) {
 	console.log(JSON.stringify(resolvedAsMap, null, 2))
 }
 
-;(async () => {
-	await asyncRun(` + buildRequireStatementAsArray(retro.Routes) + `)
-})()
+asyncRun(` + buildRequireStatementAsArray(retro.Routes) + `)
 `
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return nil, fmt.Errorf("failed to write %s/pageProps.esbuild.js; %w", retro.Config.CacheDir, err)
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.artifact.js"), []byte(rawstr), 0644); err != nil {
+		return fmt.Errorf("failed to write %s/pageProps.artifact.js; %w", retro.Config.CacheDir, err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
-		EntryPoints: []string{path.Join(retro.Config.CacheDir, "pageProps.esbuild.js")},
+		EntryPoints: []string{path.Join(retro.Config.CacheDir, "pageProps.artifact.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
 		bstr, err := json.MarshalIndent(results.Errors, "", "\t")
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal; %w", err)
+			return fmt.Errorf("failed to marshal; %w", err)
 		}
-		return nil, errors.New(string(bstr))
+		return errors.New(string(bstr))
 	}
 
 	cmd := exec.Command("node")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, fmt.Errorf("failed to pipe stdin to node; %w", err)
+		return fmt.Errorf("failed to pipe stdin to node; %w", err)
 	}
+
 	go func() {
 		defer stdin.Close()
 		stdin.Write(results.OutputFiles[0].Contents)
 	}()
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if len(output) != 0 { // stderr takes precedence
-			return nil, fmt.Errorf("failed to pipe node: %s", output)
+			return fmt.Errorf("failed to pipe node: %s", output)
 		}
-		return nil, fmt.Errorf("failed to pipe node; %w", err)
+		return fmt.Errorf("failed to pipe node; %w", err)
 	}
 
-	contents := []byte("// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.\n\nexport default " + string(output))
-	return contents, nil
+	contents := []byte(`// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
+
+export default ` + string(output))
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.js"), contents, 0644); err != nil {
+		return fmt.Errorf("failed to write %s/pageProps.js; %w", retro.Config.CacheDir, err)
+	}
+	return nil
 }
