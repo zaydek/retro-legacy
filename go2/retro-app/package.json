@@ -1,0 +1,14 @@
+{
+	"name": "retro-app",
+	"scripts": {
+		"watch": "retro-react-scripts watch",
+		"build": "retro-react-scripts build",
+		"serve": "retro-react-scripts serve"
+	},
+	"dependencies": {
+		"react": "latest",
+		"react-dom": "latest",
+		"retro-react": "latest",
+		"retro-react-scripts": "latest"
+	}
+}

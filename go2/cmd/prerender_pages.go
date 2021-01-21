@@ -14,7 +14,7 @@ import (
 var re = regexp.MustCompile(`(?m)^\s+`)
 
 var funcMap = template.FuncMap{
-	"Head": func() string {
+	"Meta": func() string {
 		str := `
 			<title>Hello, world!</title>
 			<meta name="title" content="Hello, world!" />
@@ -42,8 +42,8 @@ func prerenderPages(retro Retro) error {
 	}
 
 	html := string(bstr)
-	if !strings.Contains(html, `{{ Head }}`) {
-		return errors.New(`no such {{ Head }}; add to <head>`)
+	if !strings.Contains(html, `{{ Meta }}`) {
+		return errors.New(`no such {{ Meta }}; add to <head>`)
 	} else if !strings.Contains(html, `<div id="root"></div>`) {
 		return errors.New(`no such <div id="root"></div>; add to <body> before {{ App }}`)
 	} else if !strings.Contains(html, `{{ App }}`) {
