@@ -15,7 +15,7 @@ import (
 //
 // TODO: Test for the presence of Node.
 func resolvePageProps(retro Retro) ([]byte, error) {
-	requires, imports := buildRequiresAndImports(retro)
+	requires, imports := resolveRequireAndImportStrings(retro)
 
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 ` + requires + `
@@ -43,14 +43,14 @@ async function asyncRun(imports) {
 })()
 `
 
-	if err := ioutil.WriteFile(path.Join(retro.config.CacheDir, "pageProps.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return nil, fmt.Errorf("failed to write %s/pageProps.esbuild.js: %w", retro.config.CacheDir, err)
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write %s/pageProps.esbuild.js: %w", retro.Config.CacheDir, err)
 	}
 
 	res := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
-		EntryPoints: []string{path.Join(retro.config.CacheDir, "pageProps.esbuild.js")},
+		EntryPoints: []string{path.Join(retro.Config.CacheDir, "pageProps.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(res.Errors) > 0 {

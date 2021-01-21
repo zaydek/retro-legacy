@@ -7,13 +7,12 @@ import (
 	"strings"
 )
 
+// PageBasedRoute describes a page-based route from pages/*.
 type PageBasedRoute struct {
 	Path      string `json:"path"`      // path/to/component.js
 	Page      string `json:"page"`      // /component
 	Component string `json:"component"` // Component
 }
-
-type PageBasedRouter []PageBasedRoute
 
 var allowedFileTypes = []string{
 	".js",  // JavaScript
@@ -89,9 +88,9 @@ func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 	return route
 }
 
-// loadRouter loads a page-based router.
-func loadRouter(config Configuration) (PageBasedRouter, error) {
-	var router PageBasedRouter
+// loadRoutes loads page-based routes.
+func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
+	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -100,11 +99,11 @@ func loadRouter(config Configuration) (PageBasedRouter, error) {
 			return filepath.SkipDir
 		}
 		if isAllowedFileType(path) {
-			router = append(router, newPageBasedRoute(config, path))
+			routes = append(routes, newPageBasedRoute(config, path))
 		}
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("failed to read page-based routes; %w", err)
+		return nil, fmt.Errorf("failed to read routes; %w", err)
 	}
-	return router, nil
+	return routes, nil
 }

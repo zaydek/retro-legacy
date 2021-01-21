@@ -7,9 +7,10 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
+// Retro describes the user’s configuration and page-based routes.
 type Retro struct {
-	config Configuration
-	router PageBasedRouter
+	Config Configuration
+	Routes []PageBasedRoute
 }
 
 var retro Retro

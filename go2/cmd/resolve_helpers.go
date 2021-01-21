@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-func buildRequiresAndImports(retro Retro) (requires string, imports string) {
+func resolveRequireAndImportStrings(retro Retro) (requires string, imports string) {
 	// Build an array for require(x):
-	for x, each := range retro.router {
+	for x, each := range retro.Routes {
 		var sep string
 		if x > 0 {
 			sep = "\n"
@@ -15,9 +15,8 @@ func buildRequiresAndImports(retro Retro) (requires string, imports string) {
 		requires += sep + fmt.Sprintf("const %s = require(\"../%s\")",
 			each.Component, each.Path)
 	}
-
 	// Build an array for import { x as y } from "z":
-	for x, each := range retro.router {
+	for x, each := range retro.Routes {
 		var sep string
 		if x > 0 {
 			sep = ", "
@@ -26,6 +25,5 @@ func buildRequiresAndImports(retro Retro) (requires string, imports string) {
 			each.Component)
 	}
 	imports = "[" + strings.Join(strings.Split(imports, "{ "), "\n\t\t{ ") + ",\n\t]"
-
 	return requires, imports
 }
