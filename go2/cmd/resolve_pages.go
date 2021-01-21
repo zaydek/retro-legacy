@@ -40,7 +40,7 @@ var funcMap = template.FuncMap{
 func resolveIndexHTML(retro Retro) ([]byte, error) {
 	bstr, err := ioutil.ReadFile(path.Join(retro.Config.AssetDir, "index.html"))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s/public.html; %w", retro.Config.AssetDir, err)
+		return nil, fmt.Errorf("failed to read %s/index.html; %w", retro.Config.AssetDir, err)
 	}
 	html := string(bstr)
 	if !strings.Contains(html, `{{ RetroMeta }}`) {
@@ -50,13 +50,13 @@ func resolveIndexHTML(retro Retro) ([]byte, error) {
 	} else if !strings.Contains(html, `{{ RetroApp }}`) {
 		return nil, errors.New(`no such {{ RetroApp }}; add to <body> after <div id="root"></div>`)
 	}
-	tmpl, err := template.New("index.html").Funcs(funcMap).Parse(html)
+	tmpl, err := template.New(path.Join(retro.Config.AssetDir, "index.html")).Funcs(funcMap).Parse(html)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse %s/public.html; %w", retro.Config.AssetDir, err)
+		return nil, fmt.Errorf("failed to parse template %s/index.html; %w", retro.Config.AssetDir, err)
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, nil); err != nil {
-		return nil, fmt.Errorf("failed to parse %s/public.html; %w", retro.Config.AssetDir, err)
+		return nil, fmt.Errorf("failed to execute template %s/index.html; %w", retro.Config.AssetDir, err)
 	}
 	contents := buf.Bytes()
 	return contents, nil

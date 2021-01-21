@@ -9,8 +9,8 @@ import (
 
 // PageBasedRoute describes a page-based route from pages/*.
 type PageBasedRoute struct {
-	Path      string `json:"path"`      // path/to/component.js
-	Page      string `json:"page"`      // /component
+	FSPath    string `json:"fsPath"`    // pages/path/to/component.js
+	Path      string `json:"path"`      // path/to/component
 	Component string `json:"component"` // Component
 }
 
@@ -33,10 +33,10 @@ func isAllowedFileType(path string) bool {
 	return false
 }
 
-// toPageCase returns the page case for a path.
+// toPathCase returns the page case for a path.
 //
 // TODO: Add tests.
-func toPageCase(config Configuration, path string) string {
+func toPathCase(config Configuration, path string) string {
 	path = strings.TrimPrefix(path, config.PagesDir)
 	path = path[:len(path)-len(filepath.Ext(path))]
 
@@ -52,12 +52,12 @@ func toComponentCase(config Configuration, path string) string {
 	path = strings.TrimPrefix(path, config.PagesDir+"/") // Add "/"
 	path = path[:len(path)-len(filepath.Ext(path))]
 
-	str := "Page"
+	var str string
 	for x := 0; x < len(path); x++ {
-		if x == 0 {
-			str += strings.ToUpper(path[0:1])
-			continue
-		}
+		// if x == 0 {
+		// 	str += strings.ToUpper(path[0:1])
+		// 	continue
+		// }
 		switch path[x] {
 		case '/':
 			str += "__"
@@ -75,14 +75,16 @@ func toComponentCase(config Configuration, path string) string {
 			str += string(path[x])
 		}
 	}
+
+	str = strings.ToUpper(str[0:1]) + str[1:]
 	return str
 }
 
 // Creates a new page-based route from a route.
 func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 	route := PageBasedRoute{
-		Path:      path,
-		Page:      toPageCase(config, path),
+		FSPath:    path,
+		Path:      toPathCase(config, path),
 		Component: toComponentCase(config, path),
 	}
 	return route

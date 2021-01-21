@@ -13,8 +13,6 @@ type Retro struct {
 	Routes []PageBasedRoute
 }
 
-var retro Retro
-
 var usage = `
   ` + color.Bold("Usage:") + `
 
@@ -61,8 +59,12 @@ func (r Retro) unknown(cmd string) {
 }
 
 func main() {
+	var (
+		now   = time.Now()
+		retro Retro
+	)
+
 	defer color.TerminateFormatting(os.Stdout)
-	t := time.Now()
 
 	if len(os.Args) < 2 {
 		retro.help()
@@ -124,5 +126,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	raw.Printf("⚡️ %0.3fs\n", time.Since(t).Seconds())
+	raw.Printf("⚡️ %0.3fs\n", time.Since(now).Seconds())
 }

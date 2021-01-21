@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"path"
 	"text/template"
 )
 
@@ -22,8 +23,6 @@ import (
 
 // resolveApp synchronously resolves bytes for build/app.js.
 func resolveApp(retro Retro) ([]byte, error) {
-	// requires, imports := resolveRequireAndImportStrings(retro)
-
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
@@ -31,22 +30,17 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
 // Pages
-{{ range $x, $each := .Router -}}
-	{{- if gt $x 0 -}}
-		{{- "\n" -}}
-	{{- end -}}
-import {{ $each.Component }} from "{{ $each.Page }}"
-{{- end }}
+` + buildRequireStatement(retro.Routes) + `
 
 // Page props
-import pageProps from "../{{.Config.CacheDir}}/pageProps"
+const pageProps = require("../{{.Config.CacheDir}}/pageProps.js")
 
 export default function RoutedApp() {
 	return (
 		<Router>
 		{{ range $each := .Routes }}
-			<Route page="/{{ $each.Page }}">
-				<{{ $each.Component }} {...pageProps["{{ $each.Page }}"]} />
+			<Route path="{{ $each.Path }}">
+				<{{ $each.Component }} {...pageProps["{{ $each.Path }}"]} />
 			</Route>
 		{{ end }}
 		</Router>
@@ -67,13 +61,13 @@ ReactDOM.hydrate(
 )
 {{- end}}
 `
-	tmpl, err := template.New("app.js").Parse(rawstr)
+	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.js")).Parse(rawstr)
 	if err != nil {
-		return nil, fmt.Errorf("TODO: %w", err)
+		return nil, fmt.Errorf("failed to parse template %s/app.js; %w", retro.Config.CacheDir, err)
 	}
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, retro); err != nil {
-		return nil, fmt.Errorf("TODO: %w", err)
+		return nil, fmt.Errorf("failed to execute template %s/app.js; %w", retro.Config.CacheDir, err)
 	}
 	contents := buf.Bytes()
 	return contents, nil

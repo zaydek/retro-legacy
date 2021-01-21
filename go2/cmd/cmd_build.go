@@ -1,37 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 )
-
-// prerenderPageProps prerenders cache/pageProps.js.
-func prerenderPageProps(retro Retro) error {
-	// Passthrough:
-	contents, err := resolvePageProps(retro)
-	if err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.js"), contents, 0644); err != nil {
-		return fmt.Errorf("failed to write %s/pageProps.js; %w", retro.Config.CacheDir, err)
-	}
-	return nil
-}
-
-// prerenderPages prerenders build/*.html.
-func prerenderPages(retro Retro) error {
-	// Passthrough:
-	contents, err := resolveIndexHTML(retro)
-	if err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(path.Join(retro.Config.BuildDir, "index.html"), contents, 0644); err != nil {
-		return fmt.Errorf("failed to write %s/index.html; %w", retro.Config.BuildDir, err)
-	}
-	return nil
-}
 
 func (r Retro) build() {
 	// port := resolvePort() TODO
@@ -45,19 +18,38 @@ func (r Retro) build() {
 	} else if r.Routes, err = loadRoutes(r.Config); err != nil {
 		stderr.Fatalln(err)
 	}
-	fmt.Printf("%+v\n", retro.Routes)
 
-	// output, err := resolveApp(retro)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Print(string(output))
+	{
+		// Passthrough:
+		contents, err := resolvePageProps(r)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+		if err := ioutil.WriteFile(path.Join(r.Config.CacheDir, "pageProps.js"), contents, 0644); err != nil {
+			stderr.Fatalf("failed to write %s/pageProps.js; %w\n", r.Config.CacheDir, err)
+		}
+	}
 
-	// if err := prerenderPageProps(r); err != nil {
-	// 	stderr.Fatalln(err)
-	// } else if err := prerenderPages(r); err != nil {
-	// 	stderr.Fatalln(err)
-	// } else if err := prerenderApp(r); err != nil {
-	// 	stderr.Fatalln(err)
-	// }
+	{
+		// Passthrough:
+		contents, err := resolveApp(r)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+		// TODO
+		if err := ioutil.WriteFile(path.Join(r.Config.CacheDir, "app.js"), contents, 0644); err != nil {
+			stderr.Fatalf("failed to write %s/app.js; %w\n", r.Config.CacheDir, err)
+		}
+	}
+
+	{
+		// Passthrough:
+		contents, err := resolveIndexHTML(r)
+		if err != nil {
+			stderr.Fatalln(err)
+		}
+		if err := ioutil.WriteFile(path.Join(r.Config.BuildDir, "index.html"), contents, 0644); err != nil {
+			stderr.Fatalf("failed to write %s/index.html; %w\n", r.Config.BuildDir, err)
+		}
+	}
 }
