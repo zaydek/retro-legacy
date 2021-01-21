@@ -1,6 +1,6 @@
 import React from "react"
 
-// This is a nested page and will appear at domain.extension/nested.
+// This is a nested page and will appear at domain.ext/nested.
 //
 // You can use the load function to synchronously or asynchronously load data.
 // Loaded data is forwarded to meta and the Page component. This means you can

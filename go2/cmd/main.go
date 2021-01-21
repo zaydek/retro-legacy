@@ -46,7 +46,7 @@ var usage = `
     ` + color.Underline("https://github.com/zaydek/retro") + `
 `
 
-func (r Retro) help() {
+func (r Retro) usage() {
 	raw.Println(usage)
 }
 
@@ -66,32 +66,36 @@ func main() {
 
 	defer color.TerminateFormatting(os.Stdout)
 
+	// $ retro help
 	if len(os.Args) < 2 {
-		retro.help()
+		retro.usage()
 		return
 	}
 
 	switch os.Args[1] {
-	// $ retro help
+
+	// $ retro usage
 	case "usage":
 		fallthrough
 	case "--usage":
-		fallthrough
+		retro.usage()
+		return // Eager return
+
+	// $ retro help
 	case "help":
 		fallthrough
 	case "--help":
-		retro.help()
-		return // Eager return
+		retro.usage()
 
 	// $ retro version
 	case "version":
 		fallthrough
 	case "--version":
+		fallthrough
+	case "-v":
 		retro.version()
 
 	// $ retro init
-	//
-	// TODO: Add support for $ retro init --no-comment.
 	case "init":
 		var rootDir string
 		if len(os.Args) < 3 {
@@ -111,13 +115,10 @@ func main() {
 		retro.watch()
 
 	// $ retro build
-	//
 	case "build":
 		retro.build()
 
 	// $ retro serve
-	//
-	// TODO: Add support for --port.
 	case "serve":
 		retro.serve()
 

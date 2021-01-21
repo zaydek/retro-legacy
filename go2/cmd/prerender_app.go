@@ -80,7 +80,7 @@ ReactDOM.hydrate(
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
-		Define:      map[string]string{"process.env.NODE_ENV": "\"production\""},
+		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
 		EntryPoints: []string{path.Join(retro.Config.CacheDir, "app.artifact.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})

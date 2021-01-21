@@ -14,7 +14,7 @@ import (
 var re = regexp.MustCompile(`(?m)^\s+`)
 
 var funcMap = template.FuncMap{
-	"RetroMeta": func() string {
+	"Head": func() string {
 		str := `
 			<title>Hello, world!</title>
 			<meta name="title" content="Hello, world!" />
@@ -25,8 +25,7 @@ var funcMap = template.FuncMap{
 		str = re.ReplaceAllString(str, "\t\t")
 		return str
 	},
-	// TODO: Add support for live reload here.
-	"RetroApp": func() string {
+	"App": func() string {
 		str := `
 			<script src="/app.js"></script>
 		`
@@ -43,12 +42,12 @@ func prerenderPages(retro Retro) error {
 	}
 
 	html := string(bstr)
-	if !strings.Contains(html, `{{ RetroMeta }}`) {
-		return errors.New(`no such {{ RetroMeta }}; add to <head>`)
+	if !strings.Contains(html, `{{ Head }}`) {
+		return errors.New(`no such {{ Head }}; add to <head>`)
 	} else if !strings.Contains(html, `<div id="root"></div>`) {
-		return errors.New(`no such <div id="root"></div>; add to <body> before {{ RetroApp }}`)
-	} else if !strings.Contains(html, `{{ RetroApp }}`) {
-		return errors.New(`no such {{ RetroApp }}; add to <body> after <div id="root"></div>`)
+		return errors.New(`no such <div id="root"></div>; add to <body> before {{ App }}`)
+	} else if !strings.Contains(html, `{{ App }}`) {
+		return errors.New(`no such {{ App }}; add to <body> after <div id="root"></div>`)
 	}
 
 	tmpl, err := template.New(path.Join(retro.Config.AssetDir, "index.html")).Funcs(funcMap).Parse(html)

@@ -81,10 +81,6 @@ func serverGuards(config Configuration) error {
 }
 
 // loadConfiguration loads or creates retro.config.jsonc.
-//
-// TODO: Add support for user overriding configuration fields using
-// environmental variables; environmental variables take precedence over
-// configuration fields.
 func loadConfiguration() (Configuration, error) {
 	config := Configuration{AssetDir: "public", PagesDir: "pages", CacheDir: "cache", BuildDir: "build", ReactStrictMode: false}
 	if err := serverGuards(config); err != nil {

@@ -8,9 +8,8 @@ func must(err error) {
 	stderr.Fatalln(err)
 }
 
+// TODO: Should copy public to build.
 func (r Retro) build() {
-	// port := resolvePort() TODO
-
 	var err error
 	if r.Config, err = loadConfiguration(); err != nil {
 		stderr.Fatalln(err)

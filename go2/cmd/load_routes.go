@@ -80,7 +80,6 @@ func toComponentCase(config Configuration, path string) string {
 	return str
 }
 
-// Creates a new page-based route from a route.
 func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 	route := PageBasedRoute{
 		FSPath:    path,

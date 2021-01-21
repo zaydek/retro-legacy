@@ -33,7 +33,7 @@ var stderr = logger.New(os.Stdout, func(msg string) string {
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = spaces + color.BoldRed("stderr:") + " " + arr[x]
+				arr[x] = spaces + color.BoldRed("error:") + " " + arr[x]
 				continue
 			}
 			arr[x] = spaces + spaces + arr[x]
