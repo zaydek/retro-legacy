@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func (r Retro) cmdServe() {
+func (r Retro) serve() {
 	port := resolvePort()
 
 	if _, err := os.Stat("retro.config.jsonc"); os.IsNotExist(err) {

@@ -47,11 +47,11 @@ var usage = `
     ` + color.Underline("https://github.com/zaydek/retro") + `
 `
 
-func (r Retro) cmdHelp() {
+func (r Retro) help() {
 	raw.Println(usage)
 }
 
-func (r Retro) cmdVersion() {
+func (r Retro) version() {
 	stdout.Println("0.0.x")
 }
 
@@ -64,7 +64,7 @@ func main() {
 	t := time.Now()
 
 	if len(os.Args) < 2 {
-		retro.cmdHelp()
+		retro.help()
 		return
 	}
 
@@ -77,14 +77,14 @@ func main() {
 	case "help":
 		fallthrough
 	case "--help":
-		retro.cmdHelp()
+		retro.help()
 		return // Eager return
 
 	// $ retro version
 	case "version":
 		fallthrough
 	case "--version":
-		retro.cmdVersion()
+		retro.version()
 
 	// $ retro init
 	//
@@ -95,7 +95,7 @@ func main() {
 			stderr.Fatalln("try retro init . or retro init retro-app")
 		}
 		rootDir = os.Args[2]
-		retro.cmdInit(rootDir)
+		retro.init(rootDir)
 
 	// $ retro watch
 	//
@@ -105,18 +105,18 @@ func main() {
 	// changes. In theory we should also restart if there are changes to
 	// retro.config.jsonc.
 	case "watch":
-		retro.cmdWatch()
+		retro.watch()
 
 	// $ retro build
 	//
 	case "build":
-		retro.cmdBuild()
+		retro.build()
 
 	// $ retro serve
 	//
 	// TODO: Add support for --port.
 	case "serve":
-		retro.cmdServe()
+		retro.serve()
 
 	default:
 		retro.unknown(os.Args[1])

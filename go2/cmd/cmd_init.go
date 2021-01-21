@@ -12,7 +12,7 @@ import (
 	"github.com/zaydek/retro/embedded"
 )
 
-func (r Retro) cmdInit(rootDir string) {
+func (r Retro) init(rootDir string) {
 	if rootDir != "." {
 		if _, err := os.Stat(rootDir); !os.IsNotExist(err) {
 			stderr.Fatalf("delete %[1]s and rerun retro init %[1]s\n", rootDir)

@@ -33,9 +33,8 @@ func prerenderIndexHTML(retro Retro) error {
 	return nil
 }
 
-func (r Retro) cmdWatch() {
+func (r Retro) build() {
 	// port := resolvePort() TODO
-
 	if _, err := os.Stat("retro.config.jsonc"); os.IsNotExist(err) {
 		stderr.Fatalln("no such retro.config.jsonc; try retro init .")
 	}
@@ -49,8 +48,7 @@ func (r Retro) cmdWatch() {
 
 	if err := prerenderIndexHTML(r); err != nil {
 		stderr.Fatalln(err)
-	}
-	if err := prerenderPageProps(r); err != nil {
+	} else if err := prerenderPageProps(r); err != nil {
 		stderr.Fatalln(err)
 	}
 }

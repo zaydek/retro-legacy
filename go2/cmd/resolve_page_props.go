@@ -43,8 +43,7 @@ async function asyncRun(imports) {
 })()
 `
 
-	err := ioutil.WriteFile(path.Join(retro.config.CacheDir, "pageProps.esbuild.js"), []byte(rawstr), 0644)
-	if err != nil {
+	if err := ioutil.WriteFile(path.Join(retro.config.CacheDir, "pageProps.esbuild.js"), []byte(rawstr), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write %s/pageProps.esbuild.js: %w", retro.config.CacheDir, err)
 	}
 
@@ -73,14 +72,14 @@ async function asyncRun(imports) {
 		stdin.Write(res.OutputFiles[0].Contents)
 	}()
 
-	out, err := cmd.CombinedOutput()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		if len(out) != 0 { // stderr takes precedence
-			return nil, fmt.Errorf("failed to run node: %s", out)
+		if len(output) != 0 { // stderr takes precedence
+			return nil, fmt.Errorf("failed to run node: %s", output)
 		}
 		return nil, fmt.Errorf("failed to run node: %w", err)
 	}
 
-	contents := []byte("// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.\n\nmodule.exports = " + string(out))
+	contents := []byte("// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.\n\nmodule.exports = " + string(output))
 	return contents, nil
 }
