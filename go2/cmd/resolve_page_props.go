@@ -12,7 +12,6 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
-// NOTE: Use of require is more reliable than import.
 func buildRequireStatement(routes []PageBasedRoute) string {
 	var requires string
 	for x, each := range routes {
@@ -44,8 +43,6 @@ func buildRequireStatementAsArray(routes []PageBasedRoute) string {
 //
 // TODO: Test for the presence of Node.
 func resolvePageProps(retro Retro) ([]byte, error) {
-	// requires, imports := resolveRequireAndImportStrings(retro)
-
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 ` + buildRequireStatement(retro.Routes) + `
@@ -72,7 +69,6 @@ async function asyncRun(imports) {
 	await asyncRun(` + buildRequireStatementAsArray(retro.Routes) + `)
 })()
 `
-
 	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.esbuild.js"), []byte(rawstr), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write %s/pageProps.esbuild.js; %w", retro.Config.CacheDir, err)
 	}
@@ -96,12 +92,10 @@ async function asyncRun(imports) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to pipe stdin to node; %w", err)
 	}
-
 	go func() {
 		defer stdin.Close()
 		stdin.Write(results.OutputFiles[0].Contents)
 	}()
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if len(output) != 0 { // stderr takes precedence

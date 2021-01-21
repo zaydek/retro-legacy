@@ -29,7 +29,6 @@ func (r Retro) build() {
 			stderr.Fatalf("failed to write %s/pageProps.js; %w\n", r.Config.CacheDir, err)
 		}
 	}
-
 	{
 		// Passthrough:
 		contents, err := resolveApp(r)
@@ -37,11 +36,10 @@ func (r Retro) build() {
 			stderr.Fatalln(err)
 		}
 		// TODO
-		if err := ioutil.WriteFile(path.Join(r.Config.CacheDir, "app.js"), contents, 0644); err != nil {
+		if err := ioutil.WriteFile(path.Join(r.Config.BuildDir, "app.js"), contents, 0644); err != nil {
 			stderr.Fatalf("failed to write %s/app.js; %w\n", r.Config.CacheDir, err)
 		}
 	}
-
 	{
 		// Passthrough:
 		contents, err := resolveIndexHTML(r)
