@@ -1,15 +1,13 @@
 import React from "react"
 
-// This is a page and will appear at domain.ext.
+// You can optionally export load and meta. Use load to synchronously or
+// asynchronously page props on the server. Page props are forwarded to meta and
+// your page component.
 //
-// You can use the load function to synchronously or asynchronously load data.
-// Loaded data is forwarded to meta and the Page component. This means you can
-// dynamically generate head and page props on the server.
-//
-// Because of tree shaking, load and head are automatically from your production
-// build unless you use load or head.
+// Note that load and meta are tree shaken from your development and production
+// builds unless you directly use load or meta, which you probably shouldn’t.
 
-export async function load() {
+export function load() {
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve({
@@ -20,21 +18,21 @@ export async function load() {
 	})
 }
 
-export function head(loadProps) {
+export function meta(pageProps) {
 	return (
 		<>
-			<title>{loadProps.title}</title>
-			<meta name="title" content={loadProps.title} />
-			<meta name="description" content={loadProps.description} />
+			<title>{pageProps.title}</title>
+			<meta name="title" content={pageProps.title} />
+			<meta name="description" content={pageProps.description} />
 		</>
 	)
 }
 
-export default function Page(loadProps) {
+export default function Page(pageProps) {
 	return (
 		<div>
 			<h1>Hello world!</h1>
-			<pre>{JSON.stringify(loadProps)}</pre>
+			<pre>{JSON.stringify(pageProps)}</pre>
 		</div>
 	)
 }

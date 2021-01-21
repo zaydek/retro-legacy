@@ -54,10 +54,6 @@ func toComponentCase(config Configuration, path string) string {
 
 	var str string
 	for x := 0; x < len(path); x++ {
-		// if x == 0 {
-		// 	str += strings.ToUpper(path[0:1])
-		// 	continue
-		// }
 		switch path[x] {
 		case '/':
 			str += "__"
@@ -75,17 +71,12 @@ func toComponentCase(config Configuration, path string) string {
 			str += string(path[x])
 		}
 	}
-
 	str = strings.ToUpper(str[0:1]) + str[1:]
 	return str
 }
 
 func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
-	route := PageBasedRoute{
-		FSPath:    path,
-		Path:      toPathCase(config, path),
-		Component: toComponentCase(config, path),
-	}
+	route := PageBasedRoute{FSPath: path, Path: toPathCase(config, path), Component: toComponentCase(config, path)}
 	return route
 }
 
@@ -104,7 +95,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("failed to read routes; %w", err)
+		return nil, fmt.Errorf("failed to read pages; %w", err)
 	}
 	return routes, nil
 }

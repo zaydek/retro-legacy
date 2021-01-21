@@ -24,7 +24,5 @@
 
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true
-	},
-	// TODO: Does this make any difference performance-wise?
-	"exclude": ["**/node_modules/*"]
+	}
 }

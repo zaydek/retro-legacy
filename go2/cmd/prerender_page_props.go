@@ -7,43 +7,15 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path"
-	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
 )
-
-func buildRequireStatement(routes []PageBasedRoute) string {
-	var requires string
-	for x, each := range routes {
-		var sep string
-		if x > 0 {
-			sep = "\n"
-		}
-		requires += sep + fmt.Sprintf(`const %s = require("../%s")`,
-			each.Component, each.FSPath)
-	}
-	return requires
-}
-
-func buildRequireStatementAsArray(routes []PageBasedRoute) string {
-	var requireAsArray string
-	for x, each := range routes {
-		var sep string
-		if x > 0 {
-			sep = ", "
-		}
-		requireAsArray += sep + fmt.Sprintf(`{ path: %q, imports: %s }`,
-			each.Path, each.Component)
-	}
-	requireAsArray = "[" + strings.Join(strings.Split(requireAsArray, "{ "), "\n\t{ ") + ",\n]"
-	return requireAsArray
-}
 
 // TODO: Test for the presence of Node.
 func prerenderPageProps(retro Retro) error {
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
-` + buildRequireStatement(retro.Routes) + `
+` + buildRequireStmt(retro.Routes) + `
 
 async function asyncRun(imports) {
 	const chain = []
@@ -63,7 +35,7 @@ async function asyncRun(imports) {
 	console.log(JSON.stringify(resolvedAsMap, null, 2))
 }
 
-asyncRun(` + buildRequireStatementAsArray(retro.Routes) + `)
+asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 `
 	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.artifact.js"), []byte(rawstr), 0644); err != nil {
 		return fmt.Errorf("failed to write %s/pageProps.artifact.js; %w", retro.Config.CacheDir, err)

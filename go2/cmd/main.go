@@ -13,36 +13,48 @@ type Retro struct {
 	Routes []PageBasedRoute
 }
 
+// var usage = `
+//   ` + color.Bold("Usage:") + `
+//
+//     retro version            Prints the current and available versions of Retro
+//     retro init [dir]         Creates a Retro app at [dir]
+//     retro watch              Starts a rapid-development server and watches for changes
+//     retro build              Builds a production-ready build
+//     retro serve              Serves the production-ready build
+//
+//   ` + color.Bold("Examples:") + `
+//
+//     # init
+//     retro init .             Creates a Retro app at .
+//     retro init retro-app     Creates a Retro app at retro-app
+//
+//     # watch
+//     retro watch              Starts the dev server
+//     retro watch --port=8080  Starts the dev server on port 8080
+//     PORT=8080 retro watch    Starts the dev server on port 8080
+//
+//     # build
+//     retro build              Builds a production-ready build
+//
+//     # serve
+//     retro serve              Serves the production-ready build
+//
+//   ` + color.Bold("Documentation:") + `
+//     ` + color.Underline("TODO") + `
+//
+//   ` + color.Bold("Repository:") + `
+//     ` + color.Underline("https://github.com/zaydek/retro") + `
+// `
+
 var usage = `
-  ` + color.Bold("Usage:") + `
+  ` + color.Bold("usage:") + `
 
-    retro version            Prints the current and available versions of Retro
-    retro init [dir]         Creates a Retro app at [dir]
-    retro watch              Starts a rapid-development server and watches for changes
-    retro build              Builds a production-ready build
-    retro serve              Serves the production-ready build
+    retro init [dir]  create a retro app at [dir]
+    retro watch       start a development server and watch for changes
+    retro build       build a production-ready build
+    retro serve       serve build
 
-  ` + color.Bold("Examples:") + `
-
-    # init
-    retro init .             Creates a Retro app at .
-    retro init retro-app     Creates a Retro app at retro-app
-
-    # watch
-    retro watch              Starts the dev server
-    retro watch --port=8080  Starts the dev server on port 8080
-    PORT=8080 retro watch    Starts the dev server on port 8080
-
-    # build
-    retro build              Builds a production-ready build
-
-    # serve
-    retro serve              Serves the production-ready build
-
-  ` + color.Bold("Documentation:") + `
-    ` + color.Underline("TODO") + `
-
-  ` + color.Bold("Repository:") + `
+  ` + color.Bold("repo:") + `
     ` + color.Underline("https://github.com/zaydek/retro") + `
 `
 
@@ -55,7 +67,8 @@ func (r Retro) version() {
 }
 
 func (r Retro) unknown(cmd string) {
-	stderr.Println("unknown command; try retro help")
+	// stderr.Println("try retro help")
+	r.usage()
 }
 
 func main() {
@@ -97,12 +110,12 @@ func main() {
 
 	// $ retro init
 	case "init":
-		var rootDir string
+		var dirname string
 		if len(os.Args) < 3 {
 			stderr.Fatalln("try retro init . or retro init retro-app")
 		}
-		rootDir = os.Args[2]
-		retro.init(rootDir)
+		dirname = os.Args[2]
+		retro.init(dirname)
 
 	// $ retro watch
 	//

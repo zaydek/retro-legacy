@@ -2,84 +2,93 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
-	"path"
+	pathpkg "path"
 
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
 )
 
-func (r Retro) init(rootDir string) {
-	if rootDir != "." {
-		if _, err := os.Stat(rootDir); !os.IsNotExist(err) {
-			stderr.Fatalf("delete %[1]s and rerun retro init %[1]s\n", rootDir)
+// TODO: Change to npx create-retro-app?
+func (r Retro) init(dirname string) {
+	if dirname != "." {
+		if _, err := os.Stat(dirname); !os.IsNotExist(err) {
+			stderr.Fatalf("try rm -r %[1]s && retro init %[1]s\n", dirname)
 		}
+
+		if err := os.MkdirAll(dirname, 0755); err != nil {
+			stderr.Fatalf("failed to mkdir -p %s; %w\n", dirname, err)
+		} else if err := os.Chdir(dirname); err != nil {
+			stderr.Fatalf("failed to cd %s; %w\n", dirname, err)
+		}
+		defer os.Chdir("..")
 	}
 
 	var (
-		embeddedPaths      []string
-		corruptedUserPaths []string
+		paths    []string
+		badPaths []string
 	)
 
-	if err := fs.WalkDir(embedded.FS, ".", func(embeddedPath string, dirEntry fs.DirEntry, err error) error {
+	if err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
+
 		if dirEntry.IsDir() {
 			return nil
 		}
-		userPath := path.Join(rootDir, embeddedPath)
-		if _, err := os.Stat(userPath); !os.IsNotExist(err) {
-			userBytes, err := ioutil.ReadFile(userPath)
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			embed, err := embedded.FS.Open(path)
 			if err != nil {
 				return err
 			}
-			f, err := embedded.FS.Open(embeddedPath)
+			src, err := ioutil.ReadAll(embed)
 			if err != nil {
 				return err
 			}
-			embeddedBytes, err := ioutil.ReadAll(f)
+			dst, err := ioutil.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			if !bytes.Equal(userBytes, embeddedBytes) {
-				corruptedUserPaths = append(corruptedUserPaths, userPath)
+			if !bytes.Equal(src, dst) {
+				badPaths = append(badPaths, path)
 				return nil
 			}
-			f.Close()
+			embed.Close()
 		}
-		embeddedPaths = append(embeddedPaths, embeddedPath)
+		paths = append(paths, path)
 		return nil
 	}); err != nil {
 		stderr.Fatalf("an unexpected error occurred; %w", err)
 	}
 
-	if len(corruptedUserPaths) > 0 {
+	if len(badPaths) > 0 {
 		var msg string
-		for x, warn := range corruptedUserPaths {
+		for x, each := range badPaths {
 			var sep string
 			if x > 0 {
 				sep = "\n"
 			}
-			msg += sep + "- " + warn
+			msg += sep + "- " + each
 		}
-		stderr.Fatalf("delete and rerun retro init %s\n\n%s\n", rootDir, msg)
+		stderr.Fatalf("rm ... && retro init %s\n\n%s\n", dirname, msg)
 	}
 
-	for _, embeddedPath := range embeddedPaths {
-		if userDir := path.Join(rootDir, path.Dir(embeddedPath)); userDir != "." {
-			if err := os.MkdirAll(userDir, 0755); err != nil {
-				stderr.Fatalf("an unexpected error occurred; %w", err)
+	for _, path := range paths {
+		if dir := pathpkg.Dir(path); dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				stderr.Fatalf("failed to mkdir -p %s; %w", dir, err)
 			}
 		}
-		src, err := embedded.FS.Open(embeddedPath)
+		src, err := embedded.FS.Open(path)
 		if err != nil {
 			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
-		dst, err := os.Create(path.Join(rootDir, embeddedPath))
+		dst, err := os.Create(path)
 		if err != nil {
 			stderr.Fatalf("an unexpected error occurred; %w", err)
 		}
@@ -92,7 +101,38 @@ func (r Retro) init(rootDir string) {
 		dst.Close()
 	}
 
-	if rootDir == "." {
+	name := dirname
+	if name == "." {
+		name = "retro-app"
+	}
+
+	pkg := `{
+	"name": ` + fmt.Sprintf("%q", name) + `,
+	"scripts": {
+		"watch": "retro-react-scripts watch",
+		"build": "retro-react-scripts build",
+		"serve": "retro-react-scripts serve"
+	},
+	"dependencies": {
+		"react": "latest",
+		"react-dom": "latest",
+		"retro-react": "latest",
+		"retro-react-scripts": "latest"
+	}
+}
+`
+
+	if _, err := os.Stat("package.json"); os.IsNotExist(err) {
+		if err := ioutil.WriteFile("package.json", []byte(pkg), 0644); err != nil {
+			if dirname == "." {
+				stderr.Fatalf("failed to write package.json; %w\n", err)
+			} else {
+				stderr.Fatalf("failed to write %s/package.json; %w\n", dirname, err)
+			}
+		}
+	}
+
+	if dirname == "." {
 		stdout.Print(color.Bold("created a retro app") + `
 
 # npm
@@ -104,7 +144,7 @@ yarn
 yarn watch
 `)
 	} else {
-		stdout.Printf(color.Boldf("created retro app %s", rootDir)+`
+		stdout.Printf(color.Boldf("created retro app %s", dirname)+`
 
 # npm
 cd %[1]s
@@ -115,6 +155,6 @@ npm run watch
 cd %[1]s
 yarn
 yarn watch
-`, rootDir)
+`, dirname)
 	}
 }

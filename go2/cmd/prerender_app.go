@@ -34,7 +34,7 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
 // Pages
-` + buildRequireStatement(retro.Routes) + `
+` + buildRequireStmt(retro.Routes) + `
 
 // Page props
 const pageProps = require("../{{.Config.CacheDir}}/pageProps.js")
