@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type PageBasedRoute struct {
@@ -33,13 +34,57 @@ func isAllowedFileType(path string) bool {
 	return false
 }
 
+// toPageCase returns the page case for a path.
+//
+// TODO: Add tests.
+func toPageCase(config Configuration, path string) string {
+	path = strings.TrimPrefix(path, config.PagesDir)
+	path = path[:len(path)-len(filepath.Ext(path))]
+
+	// TODO: What about /nested/?
+	str := strings.TrimSuffix(path, "index")
+	return str
+}
+
+// toComponentCase returns the component case for a path.
+//
+// TODO: Add tests.
+func toComponentCase(config Configuration, path string) string {
+	path = strings.TrimPrefix(path, config.PagesDir+"/") // Add "/"
+	path = path[:len(path)-len(filepath.Ext(path))]
+
+	str := "Page"
+	for x := 0; x < len(path); x++ {
+		if x == 0 {
+			str += strings.ToUpper(path[0:1])
+			continue
+		}
+		switch path[x] {
+		case '/':
+			str += "__"
+			x++
+			if x < len(path) {
+				str += strings.ToUpper(string(path[x]))
+			}
+		case '-':
+			str += "_"
+			x++
+			if x < len(path) {
+				str += strings.ToUpper(string(path[x]))
+			}
+		default:
+			str += string(path[x])
+		}
+	}
+	return str
+}
+
+// Creates a new page-based route from a route.
 func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
-	pg1 := len(config.PagesDir + "/")
-	pg2 := len(path) - len(filepath.Ext(path)) // FIXME: This seems wrong
 	route := PageBasedRoute{
 		Path:      path,
-		Page:      path[pg1:pg2],
-		Component: "TODO",
+		Page:      toPageCase(config, path),
+		Component: toComponentCase(config, path),
 	}
 	return route
 }
@@ -54,13 +99,12 @@ func loadRouter(config Configuration) (PageBasedRouter, error) {
 		if info.IsDir() && info.Name() == "internal" {
 			return filepath.SkipDir
 		}
-		// TODO: Remove config.PagesDir from path.
 		if isAllowedFileType(path) {
 			router = append(router, newPageBasedRoute(config, path))
 		}
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("cannot read pages; %w", err)
+		return nil, fmt.Errorf("failed to read page-based routes; %w", err)
 	}
 	return router, nil
 }

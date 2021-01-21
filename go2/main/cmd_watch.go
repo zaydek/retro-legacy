@@ -2,8 +2,36 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path"
 )
+
+// prerenderPageProps prerenders cache/pageProps.js.
+func prerenderPageProps(retro Retro) error {
+	// Passthrough:
+	contents, err := resolvePageProps(retro)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(retro.config.CacheDir, "pageProps.js"), contents, 0644); err != nil {
+		return fmt.Errorf("failed to write %s/pageProps.js; %w", retro.config.CacheDir, err)
+	}
+	return nil
+}
+
+// prerenderIndexHTML prerenders build/index.html.
+func prerenderIndexHTML(retro Retro) error {
+	// Passthrough:
+	contents, err := resolveIndexHTML(retro)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(path.Join(retro.config.BuildDir, "index.html"), contents, 0644); err != nil {
+		return fmt.Errorf("failed to write %s/index.html; %w", retro.config.BuildDir, err)
+	}
+	return nil
+}
 
 func (r Retro) cmdWatch() {
 	// port := resolvePort() TODO
@@ -15,26 +43,14 @@ func (r Retro) cmdWatch() {
 	var err error
 	if r.config, err = loadConfiguration(); err != nil {
 		stderr.Fatalln(err)
-	}
-
-	if r.router, err = loadRouter(r.config); err != nil {
+	} else if r.router, err = loadRouter(r.config); err != nil {
 		stderr.Fatalln(err)
 	}
 
-	fmt.Printf("%+v\n", r.router)
-
+	if err := prerenderIndexHTML(r); err != nil {
+		stderr.Fatalln(err)
+	}
+	if err := prerenderPageProps(r); err != nil {
+		stderr.Fatalln(err)
+	}
 }
-
-//	bstr, err := renderPageProps(r.config, srcs)
-//	if err != nil {
-//		stderr.Fatalln(err)
-//	}
-//
-//	filename := path.Join(r.config.CacheDir, "pageProps.js")
-//	data := []byte(`// THIS FILE IS AUTO-GENERATED.
-//// MOVE ALONG.
-//
-//module.exports = ` + string(bstr))
-//	if err := ioutil.WriteFile(filename, data, 0644); err != nil {
-//		stderr.Fatalln(err)
-//	}

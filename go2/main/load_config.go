@@ -31,13 +31,13 @@ type Configuration struct {
 }
 
 // Tests for the presence of a directory.
-func testDirectory(field, dirname string) error {
-	if info, err := os.Stat(dirname); os.IsNotExist(err) {
-		if err := os.MkdirAll(dirname, 0755); err != nil {
-			return fmt.Errorf("server guard: cannot create a directory for configuration field %s=%s; %w", field, dirname, err)
+func testDir(field, dir string) error {
+	if info, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("server guard: failed to create directory for configuration field %s=%s; %w", field, dir, err)
 		}
 	} else if !info.IsDir() {
-		return fmt.Errorf("server guard: configuration field %s=%s must be a directory", field, dirname)
+		return fmt.Errorf("server guard: configuration field %s=%s must be a directory", field, dir)
 	}
 	return nil
 }
@@ -47,14 +47,14 @@ func testPublicIndexHTML(config Configuration) error {
 	if _, err := os.Stat(path.Join(config.PagesDir, "index.html")); os.IsNotExist(err) {
 		src, err := embedded.FS.Open("public/index.html")
 		if err != nil {
-			return fmt.Errorf("an unexpected error occurred; %w", err)
+			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
 		}
 		dst, err := os.Create(path.Join(config.AssetDir, "index.html"))
 		if err != nil {
-			return fmt.Errorf("an unexpected error occurred; %w", err)
+			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			return fmt.Errorf("an unexpected error occurred; %w", err)
+			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
 		}
 		src.Close()
 		dst.Close()
@@ -62,19 +62,21 @@ func testPublicIndexHTML(config Configuration) error {
 	return nil
 }
 
-func testServerGuards(config Configuration) error {
+// Runs server guards. Server guards guarantee the presence of directories and
+// public/index.html.
+func runServerGuards(config Configuration) error {
 	dirs := []struct {
-		field   string
-		dirname string
+		field string
+		dir   string
 	}{
-		{field: "ASSET_DIR", dirname: config.AssetDir},
-		{field: "PAGES_DIR", dirname: config.PagesDir},
-		{field: "CACHE_DIR", dirname: config.CacheDir},
-		{field: "PAGES_DIR", dirname: config.PagesDir},
+		{field: "ASSET_DIR", dir: config.AssetDir},
+		{field: "PAGES_DIR", dir: config.PagesDir},
+		{field: "CACHE_DIR", dir: config.CacheDir},
+		{field: "BUILD_DIR", dir: config.BuildDir},
 	}
 	// Passthrough:
 	for _, each := range dirs {
-		if err := testDirectory(each.field, each.dirname); err != nil {
+		if err := testDir(each.field, each.dir); err != nil {
 			return err
 		}
 	}
@@ -111,29 +113,31 @@ func loadConfiguration() (Configuration, error) {
 		BuildDir:        "build",
 		ReactStrictMode: false,
 	}
+
 	// Stat or create retro.config.jsonc:
 	if _, err := os.Stat("retro.config.jsonc"); os.IsNotExist(err) {
 		bstr, err := json.MarshalIndent(config, "", "\t")
 		if err != nil {
-			return Configuration{}, fmt.Errorf("cannot write retro.config.jsonc; %w", err)
+			return Configuration{}, fmt.Errorf("failed to write retro.config.jsonc; %w", err)
 		}
 		bstr = append(bstr, '\n') // EOF
 		if err := ioutil.WriteFile("retro.config.jsonc", bstr, 0644); err != nil {
-			return Configuration{}, fmt.Errorf("cannot write retro.config.jsonc; %w", err)
+			return Configuration{}, fmt.Errorf("failed to write retro.config.jsonc; %w", err)
 		}
 	}
-	// Read retro.config.jsonc:
+
+	// Read and unmarshal retro.config.jsonc:
 	bstr, err := ioutil.ReadFile("retro.config.jsonc")
 	if err != nil {
-		return Configuration{}, fmt.Errorf("cannot read retro.config.jsonc; %w", err)
+		return Configuration{}, fmt.Errorf("failed to read retro.config.jsonc; %w", err)
 	}
-	// Remove comments:
 	bstr = commentRe.ReplaceAll(bstr, []byte(""))
 	if err = json.Unmarshal(bstr, &config); err != nil {
-		return Configuration{}, fmt.Errorf("cannot read retro.config.jsonc; %w", err)
+		return Configuration{}, fmt.Errorf("failed to read retro.config.jsonc; %w", err)
 	}
+
 	// Passthrough:
-	if err := testServerGuards(config); err != nil {
+	if err := runServerGuards(config); err != nil {
 		return Configuration{}, err
 	}
 	return config, nil

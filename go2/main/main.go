@@ -26,8 +26,8 @@ var usage = `
   ` + color.Bold("Examples:") + `
 
     # init
-    retro init .              Creates a Retro app at .
-    retro init retro-app      Creates a Retro app at retro-app
+    retro init .             Creates a Retro app at .
+    retro init retro-app     Creates a Retro app at retro-app
 
     # watch
     retro watch              Starts the dev server
@@ -56,7 +56,7 @@ func (r Retro) cmdVersion() {
 }
 
 func (r Retro) unknown(cmd string) {
-	stderr.Println("no such command; try retro help")
+	stderr.Println("unknown command; try retro help")
 }
 
 func main() {

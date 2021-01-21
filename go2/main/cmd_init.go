@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
 )
 
@@ -92,7 +93,7 @@ func (r Retro) cmdInit(rootDir string) {
 	}
 
 	if rootDir == "." {
-		stdout.Print(`created a retro app
+		stdout.Print(color.Bold("created a retro app") + `
 
 # npm
 npm
@@ -103,7 +104,7 @@ yarn
 yarn watch
 `)
 	} else {
-		stdout.Printf(`created retro app %[1]s
+		stdout.Printf(color.Boldf("created retro app %s", rootDir)+`
 
 # npm
 cd %[1]s

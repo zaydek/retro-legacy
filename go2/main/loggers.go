@@ -19,7 +19,8 @@ var stdout = logger.New(os.Stdout, func(msg string) string {
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = spaces + color.BoldGreen("stdout:") + " " + arr[x]
+				// arr[x] = spaces + color.BoldGreen("stdout:") + " " + arr[x]
+				arr[x] = spaces + arr[x]
 				continue
 			}
 			arr[x] = spaces + arr[x]
