@@ -1,38 +1,48 @@
 import React from "react"
 
-// You can optionally export load and meta. Use load to synchronously or
-// asynchronously page props on the server. Page props are forwarded to meta and
-// your page component.
-//
-// Note that load and meta are tree shaken from your development and production
-// builds unless you directly use load or meta, which you probably shouldn’t.
+// Note that functions load, meta, and pages are tree shaken from your
+// development and production builds unless you directly use them, which you
+// probably shouldn’t.
 
-export function load() {
+// Synchronously or asynchronously resolves props on the server. Props are
+// forwarded to Head and PageComponent.
+export async function load() {
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve({
-				title: "Nested hello, world!",
+				title: "Hello, world!",
 				description: "This page was made using Retro.",
 			})
 		}, 1e3)
 	})
 }
 
-export function meta(pageProps) {
+// For pages that use [manifest] syntax. Use { path: "..." } for the page URL.
+// { props: ... } are forwarded to Head and PageComponent.
+export function manifest(props) {
+	return [
+		{ path: "xyz", props },
+		{ path: "xyz", props },
+		{ path: "xyz", props },
+	]
+}
+
+// Head resolves page metadata on the server.
+export function Head(props) {
 	return (
 		<>
-			<title>{pageProps.title}</title>
-			<meta name="title" content={pageProps.title} />
-			<meta name="description" content={pageProps.description} />
+			<title>{props.title}</title>
+			<meta name="title" content={props.title} />
+			<meta name="description" content={props.description} />
 		</>
 	)
 }
 
-export default function Page(pageProps) {
+export default function PageComponent(props) {
 	return (
 		<div>
-			<h1>Nested hello world!</h1>
-			<pre>{JSON.stringify(pageProps)}</pre>
+			<h1>Hello world!</h1>
+			<pre>{JSON.stringify(props)}</pre>
 		</div>
 	)
 }
