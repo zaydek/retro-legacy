@@ -36,15 +36,15 @@ import { Route, Router } from "../Router"
 // Pages
 ` + buildRequireStmt(retro.Routes) + `
 
-// Page props
-const pageProps = require("../{{ .Config.CacheDir }}/pageProps.js")
+// Props
+const props = require("../{{ .Config.CacheDir }}/props.js").default
 
 export default function RoutedApp() {
 	return (
 		<Router>
 		{{ range $each := .Routes }}
 			<Route path="{{ $each.Path }}">
-				<{{ $each.Component }} {...pageProps["{{ $each.Path }}"]} />
+				<{{ $each.Component }} {...props["{{ $each.Path }}"]} />
 			</Route>
 		{{ end }}
 		</Router>
@@ -67,21 +67,21 @@ ReactDOM.hydrate(
 `
 
 	var buf bytes.Buffer
-	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.artifact.js")).Parse(rawstr)
+	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.esbuild.js")).Parse(rawstr)
 	if err != nil {
-		return fmt.Errorf("failed to parse template %s/app.artifact.js; %w", retro.Config.CacheDir, err)
+		return fmt.Errorf("failed to parse template %s/app.esbuild.js; %w", retro.Config.CacheDir, err)
 	} else if err := tmpl.Execute(&buf, retro); err != nil {
-		return fmt.Errorf("failed to execute template %s/app.artifact.js; %w", retro.Config.CacheDir, err)
+		return fmt.Errorf("failed to execute template %s/app.esbuild.js; %w", retro.Config.CacheDir, err)
 	}
 
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.artifact.js"), buf.Bytes(), 0644); err != nil {
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.esbuild.js"), buf.Bytes(), 0644); err != nil {
 		return fmt.Errorf("failed to write %s/app.js; %w", retro.Config.CacheDir, err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
-		EntryPoints: []string{path.Join(retro.Config.CacheDir, "app.artifact.js")},
+		EntryPoints: []string{path.Join(retro.Config.CacheDir, "app.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {

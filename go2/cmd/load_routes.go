@@ -9,7 +9,7 @@ import (
 
 // PageBasedRoute describes a page-based route from pages/*.
 type PageBasedRoute struct {
-	FSPath    string `json:"fsPath"`    // pages/path/to/component.js
+	FSPath    string `json:"fs_path"`   // pages/path/to/component.js
 	Path      string `json:"path"`      // path/to/component
 	Component string `json:"component"` // Component
 }

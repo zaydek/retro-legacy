@@ -11,17 +11,17 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 )
 
-// TODO: Test for the presence of Node.
-func prerenderPageProps(retro Retro) error {
+func prerenderProps(retro Retro) error {
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
+// Pages
 ` + buildRequireStmt(retro.Routes) + `
 
 async function asyncRun(requireStmtAsArray) {
 	const chain = []
 	for (const { path, exports } of requireStmtAsArray) {
 		const promise = new Promise(async resolve => {
-			const { load } = exports
+			const load = exports.load
 			let props = {}
 			if (load) {
 				props = await load()
@@ -40,14 +40,14 @@ async function asyncRun(requireStmtAsArray) {
 
 asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 `
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.artifact.js"), []byte(rawstr), 0644); err != nil {
-		return fmt.Errorf("failed to write %s/pageProps.artifact.js; %w", retro.Config.CacheDir, err)
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return fmt.Errorf("failed to write %s/props.esbuild.js; %w", retro.Config.CacheDir, err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
-		EntryPoints: []string{path.Join(retro.Config.CacheDir, "pageProps.artifact.js")},
+		EntryPoints: []string{path.Join(retro.Config.CacheDir, "props.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -80,8 +80,8 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 	contents := []byte(`// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 export default ` + string(output))
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "pageProps.js"), contents, 0644); err != nil {
-		return fmt.Errorf("failed to write %s/pageProps.js; %w", retro.Config.CacheDir, err)
+	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "props.js"), contents, 0644); err != nil {
+		return fmt.Errorf("failed to write %s/props.js; %w", retro.Config.CacheDir, err)
 	}
 	return nil
 }
