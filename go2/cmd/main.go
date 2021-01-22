@@ -47,14 +47,15 @@ type Retro struct {
 // `
 
 var usage = `
-  ` + color.Bold("usage:") + `
+  ` + color.Bold("Usage:") + `
 
-    retro init [dir]  create a retro app at [dir]
-    retro watch       start a development server and watch for changes
-    retro build       build a production-ready build
-    retro serve       serve build
+    retro init [dir]  Creates a new Retro app at directory [dir]
+    retro watch       Starts the development server and watches for changes
+    retro build       Build the production-ready build
+    retro serve       Serves the production-ready build
 
-  ` + color.Bold("repo:") + `
+  ` + color.Bold("Repo:") + `
+
     ` + color.Underline("https://github.com/zaydek/retro") + `
 `
 
@@ -112,7 +113,10 @@ func main() {
 	case "init":
 		var dirname string
 		if len(os.Args) < 3 {
-			stderr.Fatalln("try retro init . or retro init retro-app")
+			stderr.Fatalln("It looks like you’re trying to run retro init in the current directory. In that case, use '.' explicitly:\n\n" +
+				"retro init .\n\n" +
+				"Or\n\n" +
+				"retro init retro-app")
 		}
 		dirname = os.Args[2]
 		retro.init(dirname)

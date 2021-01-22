@@ -14,9 +14,39 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/errs"
 )
 
 // var re = regexp.MustCompile(`(?m)^\s+`)
+
+// TODO: Check for the presence of Node.
+func execNode(stdin []byte) (bytes.Buffer, error) {
+	var (
+		stdoutBuf bytes.Buffer
+		stderrBuf bytes.Buffer
+	)
+
+	cmd := exec.Command("node")
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil {
+		return bytes.Buffer{}, errs.PipeStdinToNode(err)
+	}
+
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	go func() {
+		defer stdinPipe.Close()
+		stdinPipe.Write(stdin)
+	}()
+
+	if err := cmd.Run(); err != nil {
+		return bytes.Buffer{}, errs.ExecNode(err)
+	} else if stderr := stderrBuf.String(); stderr != "" {
+		return bytes.Buffer{}, errs.ExecNode(errors.New(stderr))
+	}
+	return stdoutBuf, nil
+}
 
 func prerenderPages(retro Retro) error {
 	bstr, err := ioutil.ReadFile(path.Join(retro.Config.AssetDir, "index.html"))
@@ -89,29 +119,9 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 		return errors.New(string(bstr))
 	}
 
-	var (
-		stdoutBuf bytes.Buffer
-		stderrBuf bytes.Buffer
-	)
-
-	cmd := exec.Command("node")
-	stdin, err := cmd.StdinPipe()
+	stdoutBuf, err := execNode(results.OutputFiles[0].Contents)
 	if err != nil {
-		return fmt.Errorf("failed to pipe stdin to node; %w", err)
-	}
-
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
-	go func() {
-		defer stdin.Close()
-		stdin.Write(results.OutputFiles[0].Contents)
-	}()
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to pipe node; %w", err)
-	} else if stderr := stderrBuf.String(); stderr != "" {
-		return fmt.Errorf("failed to pipe node; %w", errors.New(stderr))
+		return err
 	}
 
 	var pages []struct {

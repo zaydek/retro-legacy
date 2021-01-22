@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/errs"
 )
 
 func prerenderProps(retro Retro) error {
@@ -41,7 +42,7 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 `
 	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return fmt.Errorf("failed to write %s/props.esbuild.js; %w", retro.Config.CacheDir, err)
+		return errs.WriteFile(path.Join(retro.Config.CacheDir, "props.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -53,7 +54,8 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 	if len(results.Errors) > 0 {
 		bstr, err := json.MarshalIndent(results.Errors, "", "\t")
 		if err != nil {
-			return fmt.Errorf("failed to marshal; %w", err)
+			return fmt.Errorf("Failed to marshal data structure.\n\n"+
+				"Original error message: %w", err)
 		}
 		return errors.New(string(bstr))
 	}
@@ -61,7 +63,8 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 	cmd := exec.Command("node")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("failed to pipe stdin to node; %w", err)
+		return fmt.Errorf("Failed to pipe stdin to Node.\n\n"+
+			"Original error message: %w", err)
 	}
 
 	go func() {
@@ -69,19 +72,22 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 		stdin.Write(results.OutputFiles[0].Contents)
 	}()
 
+	// TODO: Refactor.
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if len(output) != 0 { // stderr takes precedence
-			return fmt.Errorf("failed to pipe node: %s", output)
+			return fmt.Errorf("Failed to pipe Node.\n\n"+
+				"Original error message: %s", output)
 		}
-		return fmt.Errorf("failed to pipe node; %w", err)
+		return fmt.Errorf("Failed to pipe Node.\n\n"+
+			"Original error message: %w", err)
 	}
 
 	contents := []byte(`// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 export default ` + string(output))
 	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "props.js"), contents, 0644); err != nil {
-		return fmt.Errorf("failed to write %s/props.js; %w", retro.Config.CacheDir, err)
+		return errs.WriteFile(path.Join(retro.Config.CacheDir, "props.js"), err)
 	}
 	return nil
 }

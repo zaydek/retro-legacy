@@ -17,6 +17,10 @@ import (
 // TODO: Change to npx create-retro-app?
 func (r Retro) init(rootdir string) {
 	if rootdir != "." {
+		// if _, err := os.Stat(rootdir); !os.IsNotExist(err) {
+		// 	stderr.Fatalf("Aborted. Stat '%s'.\n", rootdir)
+		// }
+
 		if err := os.MkdirAll(rootdir, 0755); err != nil {
 			stderr.Fatalln(errs.MkdirAll(rootdir, err))
 		} else if err := os.Chdir(rootdir); err != nil {
@@ -30,7 +34,7 @@ func (r Retro) init(rootdir string) {
 		badPaths []string
 	)
 
-	err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
+	if err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -59,9 +63,8 @@ func (r Retro) init(rootdir string) {
 		}
 		paths = append(paths, path)
 		return nil
-	})
-	if err != nil {
-		stderr.Fatalln(errs.Walkdir("<embedded>", err))
+	}); err != nil {
+		stderr.Fatalln(errs.Walk("<embedded>", err))
 	}
 
 	if len(badPaths) > 0 {
@@ -74,7 +77,7 @@ func (r Retro) init(rootdir string) {
 			ul += sep + "- " + each
 		}
 		stderr.Fatalf("Aborted. "+
-			"Try rm -r [path] or sudo rm -r [path] and retry retro init %[1]s.\n\n"+
+			"Try rm -r [path] or sudo rm -r [path] and rerun retro init %s.\n\n"+
 			"%s\n", rootdir, ul,
 		)
 	}
@@ -136,25 +139,25 @@ func (r Retro) init(rootdir string) {
 	}
 
 	if rootdir == "." {
-		stdout.Print(color.Bold("created a retro app") + `
+		stdout.Print(color.Bold("Created Retro app! 🥳") + `
 
-# npm
+` + color.BoldBlack("# npm") + `
 npm
 npm run watch
 
-# yarn
+` + color.BoldBlack("# yarn") + `
 yarn
 yarn watch
 `)
 	} else {
-		stdout.Printf(color.Boldf("created retro app %s", rootdir)+`
+		stdout.Printf(color.Boldf("Created '%s'! 🥳", rootdir)+`
 
-# npm
+`+color.BoldBlack("# npm")+`
 cd %[1]s
 npm
 npm run watch
 
-# yarn
+`+color.BoldBlack("# yarn")+`
 cd %[1]s
 yarn
 yarn watch
