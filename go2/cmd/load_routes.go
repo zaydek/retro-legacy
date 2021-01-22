@@ -25,8 +25,8 @@ var allowedFileTypes = []string{
 
 func isAllowedFileType(path string) bool {
 	ext := filepath.Ext(path)
-	for _, fileType := range allowedFileTypes {
-		if ext == fileType {
+	for _, each := range allowedFileTypes {
+		if each == ext {
 			return true
 		}
 	}

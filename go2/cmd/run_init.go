@@ -82,17 +82,17 @@ func (r Retro) init(rootdir string) {
 		)
 	}
 
-	for _, path := range paths {
-		if dir := pathpkg.Dir(path); dir != "." {
+	for _, each := range paths {
+		if dir := pathpkg.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				stderr.Fatalln(errs.MkdirAll(dir, err))
 			}
 		}
-		src, err := embedded.FS.Open(path)
+		src, err := embedded.FS.Open(each)
 		if err != nil {
 			stderr.Fatalln(errs.Unexpected(err))
 		}
-		dst, err := os.Create(path)
+		dst, err := os.Create(each)
 		if err != nil {
 			stderr.Fatalln(errs.Unexpected(err))
 		}
