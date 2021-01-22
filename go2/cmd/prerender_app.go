@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"path"
+	pathpkg "path"
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
@@ -43,7 +43,7 @@ export default function RoutedApp() {
 	return (
 		<Router>
 		{{ range $each := .Routes }}
-			<Route path="{{ $each.Path }}">
+			<Route pathpkg="{{ $each.Path }}">
 				<{{ $each.Component }} {...props["{{ $each.Path }}"]} />
 			</Route>
 		{{ end }}
@@ -67,21 +67,21 @@ ReactDOM.hydrate(
 `
 
 	var buf bytes.Buffer
-	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.esbuild.js")).Parse(rawstr)
+	tmpl, err := template.New(pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js")).Parse(rawstr)
 	if err != nil {
-		return errs.ParseTemplate(path.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
+		return errs.ParseTemplate(pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
 	} else if err := tmpl.Execute(&buf, retro); err != nil {
-		return errs.ExecuteTemplate(path.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
+		return errs.ExecuteTemplate(pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
 	}
 
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.esbuild.js"), buf.Bytes(), 0644); err != nil {
-		return errs.WriteFile(path.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js"), buf.Bytes(), 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
-		EntryPoints: []string{path.Join(retro.Config.CacheDir, "app.esbuild.js")},
+		EntryPoints: []string{pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -92,8 +92,8 @@ ReactDOM.hydrate(
 		return errors.New(string(bstr))
 	}
 
-	if err := ioutil.WriteFile(path.Join(retro.Config.BuildDir, "app.js"), results.OutputFiles[0].Contents, 0644); err != nil {
-		return errs.WriteFile(path.Join(retro.Config.BuildDir, "app.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.BuildDir, "app.js"), results.OutputFiles[0].Contents, 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(retro.Config.BuildDir, "app.js"), err)
 	}
 	return nil
 }

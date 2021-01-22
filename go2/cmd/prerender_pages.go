@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	pathpkg "path"
 	"strings"
 	"text/template"
@@ -25,21 +24,21 @@ type PrerenderedPage struct {
 }
 
 func prerenderPages(retro Retro) error {
-	bstr, err := ioutil.ReadFile(path.Join(retro.Config.AssetDir, "index.html"))
+	bstr, err := ioutil.ReadFile(pathpkg.Join(retro.Config.AssetDir, "index.html"))
 	if err != nil {
-		return fmt.Errorf("failed to read %s/index.html; %w", retro.Config.AssetDir, err)
+		return errs.ReadFile(pathpkg.Join(retro.Config.AssetDir, "index.html"), err)
 	}
 
 	text := string(bstr)
 	if !strings.Contains(text, `{{ .Head }}`) {
-		return errors.New(`no such {{ .Head }}; add to <head>`)
+		return errors.New("Expected the presence of '{{ .Head }}'. Add '{{ .Head }}' to '<head>'.")
 	} else if !strings.Contains(text, `{{ .Page }}`) {
-		return errors.New(`no such {{ .Page }}; add to <body>`)
+		return errors.New("Expected the presence of '{{ .Page }}'. Add '{{ .Page }}' to '<body>'.")
 	}
 
-	tmpl, err := template.New(path.Join(retro.Config.AssetDir, "index.html")).Parse(text)
+	tmpl, err := template.New(pathpkg.Join(retro.Config.AssetDir, "index.html")).Parse(text)
 	if err != nil {
-		return fmt.Errorf("failed to parse template %s/index.html; %w", retro.Config.AssetDir, err)
+		return errs.ParseTemplate(pathpkg.Join(retro.Config.AssetDir, "index.html"), err)
 	}
 
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
@@ -78,7 +77,7 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 `
 
 	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "pages.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return fmt.Errorf("failed to write %s/pages.esbuild.js; %w", retro.Config.CacheDir, err)
+		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "pages.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{

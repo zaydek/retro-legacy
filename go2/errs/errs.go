@@ -24,9 +24,15 @@ func Walk(dir string, err error) error {
 		"Original error message: %w", dir, err)
 }
 
+// ReadFile decorates ioutil.ReadFile errors.
+func ReadFile(path string, err error) error {
+	return fmt.Errorf("Failed to read file %[1]s.\n\n"+
+		"Original error message: %w", path, err)
+}
+
 // WriteFile decorates ioutil.WriteFile errors.
 func WriteFile(path string, err error) error {
-	return fmt.Errorf("Failed to write file %[1]s to disk.\n\n"+
+	return fmt.Errorf("Failed to write file %[1]s.\n\n"+
 		"Original error message: %w", path, err)
 }
 

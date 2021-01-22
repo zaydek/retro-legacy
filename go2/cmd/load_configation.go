@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	pathpkg "path"
 
 	"github.com/zaydek/retro/embedded"
 )
@@ -41,12 +41,12 @@ func checkDir(field, dir string) error {
 }
 
 func checkPublicIndexHTML(config Configuration) error {
-	if _, err := os.Stat(path.Join(config.PagesDir, "index.html")); os.IsNotExist(err) {
+	if _, err := os.Stat(pathpkg.Join(config.PagesDir, "index.html")); os.IsNotExist(err) {
 		src, err := embedded.FS.Open("public/index.html")
 		if err != nil {
 			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
 		}
-		dst, err := os.Create(path.Join(config.AssetDir, "index.html"))
+		dst, err := os.Create(pathpkg.Join(config.AssetDir, "index.html"))
 		if err != nil {
 			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
 		}

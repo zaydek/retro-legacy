@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"path"
+	pathpkg "path"
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/errs"
@@ -40,14 +40,14 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 `
 
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return errs.WriteFile(path.Join(retro.Config.CacheDir, "props.esbuild.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle:      true,
 		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
-		EntryPoints: []string{path.Join(retro.Config.CacheDir, "props.esbuild.js")},
+		EntryPoints: []string{pathpkg.Join(retro.Config.CacheDir, "props.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -67,8 +67,8 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 
 export default ` + stdoutBuf.String())
 
-	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "props.js"), contents, 0644); err != nil {
-		return errs.WriteFile(path.Join(retro.Config.CacheDir, "props.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.js"), contents, 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.js"), err)
 	}
 	return nil
 }
