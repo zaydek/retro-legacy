@@ -11,19 +11,16 @@ import (
 
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
+	"github.com/zaydek/retro/errs"
 )
 
 // TODO: Change to npx create-retro-app?
-func (r Retro) init(dirname string) {
-	if dirname != "." {
-		// if _, err := os.Stat(dirname); !os.IsNotExist(err) {
-		// 	stderr.Fatalf("try rm -r %[1]s && retro init %[1]s\n", dirname)
-		// }
-
-		if err := os.MkdirAll(dirname, 0755); err != nil {
-			stderr.Fatalf("failed to mkdir -p %s; %w\n", dirname, err)
-		} else if err := os.Chdir(dirname); err != nil {
-			stderr.Fatalf("failed to cd %s; %w\n", dirname, err)
+func (r Retro) init(rootdir string) {
+	if rootdir != "." {
+		if err := os.MkdirAll(rootdir, 0755); err != nil {
+			stderr.Fatalln(errs.MkdirAll(rootdir, err))
+		} else if err := os.Chdir(rootdir); err != nil {
+			stderr.Fatalln(errs.Chdir(rootdir, err))
 		}
 		defer os.Chdir("..")
 	}
@@ -33,7 +30,7 @@ func (r Retro) init(dirname string) {
 		badPaths []string
 	)
 
-	if err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
+	err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -46,15 +43,15 @@ func (r Retro) init(dirname string) {
 			if err != nil {
 				return err
 			}
-			src, err := ioutil.ReadAll(embed)
+			srcbstr, err := ioutil.ReadAll(embed)
 			if err != nil {
 				return err
 			}
-			dst, err := ioutil.ReadFile(path)
+			dstbstr, err := ioutil.ReadFile(path)
 			if err != nil {
 				return err
 			}
-			if !bytes.Equal(src, dst) {
+			if !bytes.Equal(srcbstr, dstbstr) {
 				badPaths = append(badPaths, path)
 				return nil
 			}
@@ -62,46 +59,50 @@ func (r Retro) init(dirname string) {
 		}
 		paths = append(paths, path)
 		return nil
-	}); err != nil {
-		stderr.Fatalf("an unexpected error occurred; %w", err)
+	})
+	if err != nil {
+		stderr.Fatalln(errs.Walkdir("<embedded>", err))
 	}
 
 	if len(badPaths) > 0 {
-		var msg string
+		var ul string
 		for x, each := range badPaths {
 			var sep string
 			if x > 0 {
 				sep = "\n"
 			}
-			msg += sep + "- " + each
+			ul += sep + "- " + each
 		}
-		stderr.Fatalf("rm ... && retro init %s\n\n%s\n", dirname, msg)
+		stderr.Fatalf("Aborted. "+
+			"Try rm -r [path] or sudo rm -r [path] and retry retro init %[1]s.\n\n"+
+			"%s\n", rootdir, ul,
+		)
 	}
 
 	for _, path := range paths {
 		if dir := pathpkg.Dir(path); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				stderr.Fatalf("failed to mkdir -p %s; %w", dir, err)
+				stderr.Fatalln(errs.MkdirAll(dir, err))
 			}
 		}
 		src, err := embedded.FS.Open(path)
 		if err != nil {
-			stderr.Fatalf("an unexpected error occurred; %w", err)
+			stderr.Fatalln(errs.Unexpected(err))
 		}
 		dst, err := os.Create(path)
 		if err != nil {
-			stderr.Fatalf("an unexpected error occurred; %w", err)
+			stderr.Fatalln(errs.Unexpected(err))
 		}
 		if _, err := io.Copy(dst, src); err != nil {
 			if err != nil {
-				stderr.Fatalf("an unexpected error occurred; %w", err)
+				stderr.Fatalln(errs.Unexpected(err))
 			}
 		}
 		src.Close()
 		dst.Close()
 	}
 
-	name := dirname
+	name := rootdir
 	if name == "." {
 		name = "retro-app"
 	}
@@ -124,15 +125,17 @@ func (r Retro) init(dirname string) {
 
 	if _, err := os.Stat("package.json"); os.IsNotExist(err) {
 		if err := ioutil.WriteFile("package.json", []byte(pkg), 0644); err != nil {
-			if dirname == "." {
-				stderr.Fatalf("failed to write package.json; %w\n", err)
+			var path string
+			if rootdir == "." {
+				path = "package.json"
 			} else {
-				stderr.Fatalf("failed to write %s/package.json; %w\n", dirname, err)
+				path = pathpkg.Join(rootdir, "package.json")
 			}
+			stderr.Fatalln(errs.WriteFile(path, err))
 		}
 	}
 
-	if dirname == "." {
+	if rootdir == "." {
 		stdout.Print(color.Bold("created a retro app") + `
 
 # npm
@@ -144,7 +147,7 @@ yarn
 yarn watch
 `)
 	} else {
-		stdout.Printf(color.Boldf("created retro app %s", dirname)+`
+		stdout.Printf(color.Boldf("created retro app %s", rootdir)+`
 
 # npm
 cd %[1]s
@@ -155,6 +158,6 @@ npm run watch
 cd %[1]s
 yarn
 yarn watch
-`, dirname)
+`, rootdir)
 	}
 }

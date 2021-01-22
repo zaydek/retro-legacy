@@ -133,7 +133,7 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 		path = pathpkg.Join(retro.Config.BuildDir, path)         // page.html -> build/page.html
 		if dir := pathpkg.Dir(path); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				return fmt.Errorf("failed to mkdir -p %s; %w", dir, err)
+				return fmt.Errorf("failed to make directories recursively %s; %w", dir, err)
 			}
 		}
 		var buf bytes.Buffer

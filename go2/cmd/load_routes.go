@@ -87,6 +87,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		if err != nil {
 			return err
 		}
+		// Step over:
 		if info.IsDir() && info.Name() == "internal" {
 			return filepath.SkipDir
 		}
@@ -95,7 +96,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("failed to read pages; %w", err)
+		return nil, fmt.Errorf("failed to read %s; %w", config.PagesDir, err)
 	}
 	return routes, nil
 }
