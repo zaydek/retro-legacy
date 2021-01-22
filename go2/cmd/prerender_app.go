@@ -37,7 +37,7 @@ import { Route, Router } from "../Router"
 ` + buildRequireStmt(retro.Routes) + `
 
 // Page props
-const pageProps = require("../{{.Config.CacheDir}}/pageProps.js")
+const pageProps = require("../{{ .Config.CacheDir }}/pageProps.js")
 
 export default function RoutedApp() {
 	return (
@@ -51,7 +51,7 @@ export default function RoutedApp() {
 	)
 }
 
-{{if not .Config.ReactStrictMode -}}
+{{ if not .Config.ReactStrictMode -}}
 ReactDOM.hydrate(
 	<RoutedApp />,
 	document.getElementById("root"),
@@ -63,15 +63,15 @@ ReactDOM.hydrate(
 	</React.StrictMode>,
 	document.getElementById("root"),
 )
-{{- end}}
+{{- end }}
 `
 
 	var buf bytes.Buffer
-	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.js")).Parse(rawstr)
+	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.artifact.js")).Parse(rawstr)
 	if err != nil {
-		return fmt.Errorf("failed to parse template %s/app.js; %w", retro.Config.CacheDir, err)
+		return fmt.Errorf("failed to parse template %s/app.artifact.js; %w", retro.Config.CacheDir, err)
 	} else if err := tmpl.Execute(&buf, retro); err != nil {
-		return fmt.Errorf("failed to execute template %s/app.js; %w", retro.Config.CacheDir, err)
+		return fmt.Errorf("failed to execute template %s/app.artifact.js; %w", retro.Config.CacheDir, err)
 	}
 
 	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.artifact.js"), buf.Bytes(), 0644); err != nil {

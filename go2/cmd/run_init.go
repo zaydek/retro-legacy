@@ -16,9 +16,9 @@ import (
 // TODO: Change to npx create-retro-app?
 func (r Retro) init(dirname string) {
 	if dirname != "." {
-		if _, err := os.Stat(dirname); !os.IsNotExist(err) {
-			stderr.Fatalf("try rm -r %[1]s && retro init %[1]s\n", dirname)
-		}
+		// if _, err := os.Stat(dirname); !os.IsNotExist(err) {
+		// 	stderr.Fatalf("try rm -r %[1]s && retro init %[1]s\n", dirname)
+		// }
 
 		if err := os.MkdirAll(dirname, 0755); err != nil {
 			stderr.Fatalf("failed to mkdir -p %s; %w\n", dirname, err)

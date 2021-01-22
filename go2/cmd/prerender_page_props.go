@@ -17,19 +17,22 @@ func prerenderPageProps(retro Retro) error {
 
 ` + buildRequireStmt(retro.Routes) + `
 
-async function asyncRun(imports) {
+async function asyncRun(requireStmtAsArray) {
 	const chain = []
-	for (const each of imports) {
-		const p = new Promise(async resolve => {
-			const { load } = each.imports
-			const loadProps = await load()
-			resolve({ path: each.path, loadProps })
+	for (const { path, exports } of requireStmtAsArray) {
+		const promise = new Promise(async resolve => {
+			const { load } = exports
+			let props = {}
+			if (load) {
+				props = await load()
+			}
+			resolve({ path, props })
 		})
-		chain.push(p)
+		chain.push(promise)
 	}
 	const resolvedAsArr = await Promise.all(chain)
 	const resolvedAsMap = resolvedAsArr.reduce((acc, each) => {
-		acc[each.path] = each.loadProps
+		acc[each.path] = each.props
 		return acc
 	}, {})
 	console.log(JSON.stringify(resolvedAsMap, null, 2))

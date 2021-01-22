@@ -18,7 +18,7 @@ func buildRequireStmt(routes []PageBasedRoute) string {
 func buildRequireStmtAsArray(routes []PageBasedRoute) string {
 	var requireStmtAsArray string
 	for _, each := range routes {
-		requireStmtAsArray += "\n\t" + fmt.Sprintf(`{ path: %q, imports: %s },`,
+		requireStmtAsArray += "\n\t" + fmt.Sprintf(`{ path: %q, exports: %s },`,
 			each.Path, each.Component)
 	}
 	requireStmtAsArray = "[" + requireStmtAsArray + "\n]"

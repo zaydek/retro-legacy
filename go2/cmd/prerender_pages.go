@@ -14,7 +14,7 @@ import (
 var re = regexp.MustCompile(`(?m)^\s+`)
 
 var funcMap = template.FuncMap{
-	"Meta": func() string {
+	"Head": func() string {
 		str := `
 			<title>Hello, world!</title>
 			<meta name="title" content="Hello, world!" />
@@ -42,8 +42,8 @@ func prerenderPages(retro Retro) error {
 	}
 
 	html := string(bstr)
-	if !strings.Contains(html, `{{ Meta }}`) {
-		return errors.New(`no such {{ Meta }}; add to <head>`)
+	if !strings.Contains(html, `{{ Head }}`) {
+		return errors.New(`no such {{ Head }}; add to <head>`)
 	} else if !strings.Contains(html, `<div id="root"></div>`) {
 		return errors.New(`no such <div id="root"></div>; add to <body> before {{ App }}`)
 	} else if !strings.Contains(html, `{{ App }}`) {
@@ -61,7 +61,7 @@ func prerenderPages(retro Retro) error {
 	}
 
 	if err := ioutil.WriteFile(path.Join(retro.Config.BuildDir, "index.html"), buf.Bytes(), 0644); err != nil {
-		stderr.Fatalf("failed to write %s/index.html; %w\n", retro.Config.BuildDir, err)
+		return fmt.Errorf("failed to write %s/index.html; %w", retro.Config.BuildDir, err)
 	}
 	return nil
 }
