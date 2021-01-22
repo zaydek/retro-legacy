@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	pathpkg "path"
 	"strings"
@@ -17,35 +16,12 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-// var re = regexp.MustCompile(`(?m)^\s+`)
-
-// TODO: Check for the presence of Node.
-func execNode(stdin []byte) (bytes.Buffer, error) {
-	var (
-		stdoutBuf bytes.Buffer
-		stderrBuf bytes.Buffer
-	)
-
-	cmd := exec.Command("node")
-	stdinPipe, err := cmd.StdinPipe()
-	if err != nil {
-		return bytes.Buffer{}, errs.PipeStdinToNode(err)
-	}
-
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-
-	go func() {
-		defer stdinPipe.Close()
-		stdinPipe.Write(stdin)
-	}()
-
-	if err := cmd.Run(); err != nil {
-		return bytes.Buffer{}, errs.ExecNode(err)
-	} else if stderr := stderrBuf.String(); stderr != "" {
-		return bytes.Buffer{}, errs.ExecNode(errors.New(stderr))
-	}
-	return stdoutBuf, nil
+// PrerenderedPage describes a response for a page prerendered by Node.
+type PrerenderedPage struct {
+	FSPath string `json:"fs_path"`
+	Path   string `json:"path"`
+	Head   string `json:"head"`
+	Page   string `json:"page"`
 }
 
 func prerenderPages(retro Retro) error {
@@ -114,7 +90,7 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 	if len(results.Errors) > 0 {
 		bstr, err := json.MarshalIndent(results.Errors, "", "\t")
 		if err != nil {
-			return fmt.Errorf("failed to marshal; %w", err)
+			return errs.Unexpected(err)
 		}
 		return errors.New(string(bstr))
 	}
@@ -124,13 +100,7 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 		return err
 	}
 
-	var pages []struct {
-		FSPath string `json:"fs_path"`
-		Path   string `json:"path"`
-
-		Head string `json:"head"`
-		Page string `json:"page"`
-	}
+	var pages []PrerenderedPage
 	if err := json.Unmarshal(stdoutBuf.Bytes(), &pages); err != nil {
 		return fmt.Errorf("failed to unmarshal; %w", err)
 	}
@@ -143,15 +113,15 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 		path = pathpkg.Join(retro.Config.BuildDir, path)         // page.html -> build/page.html
 		if dir := pathpkg.Dir(path); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				return fmt.Errorf("failed to make directories recursively %s; %w", dir, err)
+				return errs.MkdirAll(dir, err)
 			}
 		}
 		var buf bytes.Buffer
 		if err := tmpl.Execute(&buf, each); err != nil {
-			return fmt.Errorf("failed to execute template %s; %w", path, err)
+			return errs.ExecuteTemplate(path, err)
 		}
 		if err := ioutil.WriteFile(path, buf.Bytes(), 0644); err != nil {
-			return fmt.Errorf("failed to write %s; %w", path, err)
+			return errs.WriteFile(path, err)
 		}
 	}
 	return nil

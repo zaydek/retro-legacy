@@ -42,6 +42,18 @@ func ExecNode(err error) error {
 		"Original error message: %w", err)
 }
 
+// ParseTemplate decorates tmpl.Parse errors.
+func ParseTemplate(path string, err error) error {
+	return fmt.Errorf("Failed to parse template %s.\n\n"+
+		"Original error message: %w", path, err)
+}
+
+// ExecuteTemplate decorates tmpl.Execute errors.
+func ExecuteTemplate(path string, err error) error {
+	return fmt.Errorf("Failed to execute template %s.\n\n"+
+		"Original error message: %w", path, err)
+}
+
 // Unexpected decorates unexpected errors.
 func Unexpected(err error) error {
 	return fmt.Errorf("This is not supposed to happen. "+

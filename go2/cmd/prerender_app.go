@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"path"
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/errs"
 )
 
 // // App
@@ -69,13 +69,13 @@ ReactDOM.hydrate(
 	var buf bytes.Buffer
 	tmpl, err := template.New(path.Join(retro.Config.CacheDir, "app.esbuild.js")).Parse(rawstr)
 	if err != nil {
-		return fmt.Errorf("failed to parse template %s/app.esbuild.js; %w", retro.Config.CacheDir, err)
+		return errs.ParseTemplate(path.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
 	} else if err := tmpl.Execute(&buf, retro); err != nil {
-		return fmt.Errorf("failed to execute template %s/app.esbuild.js; %w", retro.Config.CacheDir, err)
+		return errs.ExecuteTemplate(path.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
 	}
 
 	if err := ioutil.WriteFile(path.Join(retro.Config.CacheDir, "app.esbuild.js"), buf.Bytes(), 0644); err != nil {
-		return fmt.Errorf("failed to write %s/app.js; %w", retro.Config.CacheDir, err)
+		return errs.WriteFile(path.Join(retro.Config.CacheDir, "app.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -87,13 +87,13 @@ ReactDOM.hydrate(
 	if len(results.Errors) > 0 {
 		bstr, err := json.MarshalIndent(results.Errors, "", "\t")
 		if err != nil {
-			return fmt.Errorf("failed to marshal; %w", err)
+			return errs.Unexpected(err)
 		}
 		return errors.New(string(bstr))
 	}
 
 	if err := ioutil.WriteFile(path.Join(retro.Config.BuildDir, "app.js"), results.OutputFiles[0].Contents, 0644); err != nil {
-		return fmt.Errorf("failed to write %s/app.js; %w", retro.Config.CacheDir, err)
+		return errs.WriteFile(path.Join(retro.Config.BuildDir, "app.js"), err)
 	}
 	return nil
 }
