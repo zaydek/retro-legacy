@@ -60,14 +60,22 @@ async function asyncRun(requireStmtAsArray) {
 	for (const { fs_path, path, exports } of requireStmtAsArray) {
 		const promise = new Promise(async resolve => {
 			const { Head, default: Page } = exports
+
+			// Resolve <Head {...props}>:
 			let head = ""
 			if (Head) {
  				head = ReactDOMServer.renderToStaticMarkup(<Head {...props[path]} />)
 			}
+			head = head.replace(/></g, ">\n\t\t<")
+			head = head.replace(/\/>/g, " />")
+
+			// Resolve <Page {...props}>:
 			let page = '<div id="root"></div>'
 			if (Page) {
 				page = ReactDOMServer.renderToString(<div id="root"><Page {...props[path]} /></div>)
 			}
+			page += '\n\t\t<script src="/app.js"></script>'
+
 			resolve({ fs_path, path, head, page })
 		})
 		chain.push(promise)
