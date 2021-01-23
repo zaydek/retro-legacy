@@ -18,7 +18,7 @@ func Chdir(dir string, err error) error {
 		"Original error message: %w", dir, err)
 }
 
-// Walk decorates filepath.Walk or fs.WalkDir errors.
+// Walk decorates filepath.Walk and fs.WalkDir errors.
 func Walk(dir string, err error) error {
 	return fmt.Errorf("Failed to walk directory %s.\n\n"+
 		"Original error message: %w", dir, err)
@@ -36,25 +36,25 @@ func WriteFile(path string, err error) error {
 		"Original error message: %w", path, err)
 }
 
-// PipeStdinToNode decorates cmd.StdinPipe errors.
+// PipeStdinToNode decorates (*exec.Cmd).StdinPipe errors.
 func PipeStdinToNode(err error) error {
 	return fmt.Errorf("Failed to pipe stdin to Node.\n\n"+
 		"Original error message: %w", err)
 }
 
-// ExecNode decorates cmd.Run() errors.
-func ExecNode(err error) error {
-	return fmt.Errorf("Failed to execute Node.\n\n"+
+// PipeNode decorates (*exec.Cmd).Run errors.
+func PipeNode(err error) error {
+	return fmt.Errorf("Failed to pipe Node.\n\n"+
 		"Original error message: %w", err)
 }
 
-// ParseTemplate decorates tmpl.Parse errors.
+// ParseTemplate decorates (*template.Template).Parse errors.
 func ParseTemplate(path string, err error) error {
 	return fmt.Errorf("Failed to parse template %s.\n\n"+
 		"Original error message: %w", path, err)
 }
 
-// ExecuteTemplate decorates tmpl.Execute errors.
+// ExecuteTemplate decorates (*template.Template).Execute errors.
 func ExecuteTemplate(path string, err error) error {
 	return fmt.Errorf("Failed to execute template %s.\n\n"+
 		"Original error message: %w", path, err)

@@ -8,8 +8,7 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-// TODO: Check for the presence of Node.
-func execNode(stdin []byte) (bytes.Buffer, error) {
+func pipeNode(stdin []byte) (bytes.Buffer, error) {
 	var (
 		stdoutBuf bytes.Buffer
 		stderrBuf bytes.Buffer
@@ -30,9 +29,9 @@ func execNode(stdin []byte) (bytes.Buffer, error) {
 	}()
 
 	if err := cmd.Run(); err != nil {
-		return bytes.Buffer{}, errs.ExecNode(err)
+		return bytes.Buffer{}, errs.PipeNode(err)
 	} else if stderr := stderrBuf.String(); stderr != "" {
-		return bytes.Buffer{}, errs.ExecNode(errors.New(stderr))
+		return bytes.Buffer{}, errs.PipeNode(errors.New(stderr))
 	}
 	return stdoutBuf, nil
 }

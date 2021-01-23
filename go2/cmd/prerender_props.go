@@ -58,9 +58,9 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 		return errors.New(string(bstr))
 	}
 
-	stdoutBuf, err := execNode(results.OutputFiles[0].Contents)
+	stdoutBuf, err := pipeNode(results.OutputFiles[0].Contents)
 	if err != nil {
-		return errs.ExecNode(err)
+		return errs.PipeNode(err)
 	}
 
 	contents := []byte(`// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.

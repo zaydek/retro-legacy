@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/zaydek/retro/errs"
 )
 
 // PageBasedRoute describes a page-based route from pages/*.
@@ -87,7 +88,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		if err != nil {
 			return err
 		}
-		// Step over:
+
 		if info.IsDir() && info.Name() == "internal" {
 			return filepath.SkipDir
 		}
@@ -96,7 +97,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, fmt.Errorf("failed to read %s; %w", config.PagesDir, err)
+		return nil, errs.Walk(config.PagesDir, err)
 	}
 	return routes, nil
 }
