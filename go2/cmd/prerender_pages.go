@@ -30,9 +30,9 @@ func prerenderPages(retro Retro) error {
 	}
 
 	text := string(bstr)
-	if !strings.Contains(text, `{{ .Head }}`) {
+	if !strings.Contains(text, "{{ .Head }}") {
 		return errors.New("Expected the presence of '{{ .Head }}'. Add '{{ .Head }}' to '<head>'.")
-	} else if !strings.Contains(text, `{{ .Page }}`) {
+	} else if !strings.Contains(text, "{{ .Page }}") {
 		return errors.New("Expected the presence of '{{ .Page }}'. Add '{{ .Page }}' to '<body>'.")
 	}
 
