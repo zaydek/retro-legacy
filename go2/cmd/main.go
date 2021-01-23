@@ -54,7 +54,7 @@ var usage = `
     retro build       Build the production-ready build
     retro serve       Serves the production-ready build
 
-  ` + color.Bold("Repo:") + `
+  ` + color.Bold("Repository:") + `
 
     ` + color.Underline("https://github.com/zaydek/retro") + `
 `
@@ -113,7 +113,8 @@ func main() {
 	case "init":
 		var dirname string
 		if len(os.Args) < 3 {
-			stderr.Fatalln("It looks like you’re trying to run retro init in the current directory. In that case, use '.' explicitly:\n\n" +
+			stderr.Fatalln("It looks like you’re trying to run 'retro init' in the current directory. " +
+				"In that case, use '.' explicitly:\n\n" +
 				"retro init .\n\n" +
 				"Or\n\n" +
 				"retro init retro-app")

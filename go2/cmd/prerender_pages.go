@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	pathpkg "path"
@@ -31,9 +30,13 @@ func prerenderPages(retro Retro) error {
 
 	text := string(bstr)
 	if !strings.Contains(text, "{{ .Head }}") {
-		return errors.New("Expected the presence of '{{ .Head }}'. Add '{{ .Head }}' to '<head>'.")
+		return errors.New("No such template tag '{{ .Head }}'. " +
+			"This is the entry point for the '<Head>' component in your page components. " +
+			"Add '{{ .Head }}' to '<head>'.")
 	} else if !strings.Contains(text, "{{ .Page }}") {
-		return errors.New("Expected the presence of '{{ .Page }}'. Add '{{ .Page }}' to '<body>'.")
+		return errors.New("No such template tag '{{ .Page }}'. " +
+			"This is the entry point for the '<Page>' component in your page components. " +
+			"Add '{{ .Page }}' to '<body>'.")
 	}
 
 	tmpl, err := template.New(pathpkg.Join(retro.Config.AssetDir, "index.html")).Parse(text)
@@ -101,7 +104,7 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 
 	var pages []PrerenderedPage
 	if err := json.Unmarshal(stdoutBuf.Bytes(), &pages); err != nil {
-		return fmt.Errorf("failed to unmarshal; %w", err)
+		return errs.Unexpected(err)
 	}
 
 	// TODO: Change to sync.WaitGroup or errgroup?

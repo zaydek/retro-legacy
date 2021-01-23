@@ -15,7 +15,7 @@ type PageBasedRoute struct {
 	Component string `json:"component"` // Component
 }
 
-var allowedFileTypes = []string{
+var allowedRouteFileTypes = []string{
 	".js",  // JavaScript
 	".jsx", // React JavaScript
 	".ts",  // TypeScript           // TODO
@@ -24,9 +24,9 @@ var allowedFileTypes = []string{
 	".mdx", // MDX (React Markdown) // TODO
 }
 
-func isAllowedFileType(path string) bool {
+func isAllowedRouteFileType(path string) bool {
 	ext := filepath.Ext(path)
-	for _, each := range allowedFileTypes {
+	for _, each := range allowedRouteFileTypes {
 		if each == ext {
 			return true
 		}
@@ -81,7 +81,6 @@ func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 	return route
 }
 
-// loadRoutes loads page-based routes.
 func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
@@ -92,7 +91,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		if info.IsDir() && info.Name() == "internal" {
 			return filepath.SkipDir
 		}
-		if isAllowedFileType(path) {
+		if isAllowedRouteFileType(path) {
 			routes = append(routes, newPageBasedRoute(config, path))
 		}
 		return nil

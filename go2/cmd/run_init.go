@@ -77,7 +77,7 @@ func (r Retro) init(rootdir string) {
 			ul += sep + "- " + each
 		}
 		stderr.Fatalf("Aborted. "+
-			"Try rm -r [path] or sudo rm -r [path] and rerun retro init %s.\n\n"+
+			"Try 'rm -r [path]' or 'sudo rm -r [path]' if that doesn’t work and rerun 'retro init %s'.\n\n"+
 			"%s\n", rootdir, ul,
 		)
 	}

@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	pathpkg "path"
 
 	"github.com/zaydek/retro/embedded"
+	"github.com/zaydek/retro/errs"
 )
 
 // Configuration describes user configuration.
@@ -29,29 +29,27 @@ type Configuration struct {
 	ReactStrictMode bool
 }
 
-func checkDir(field, dir string) error {
-	if info, err := os.Stat(dir); os.IsNotExist(err) {
+func statOrCreateDir(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("server guard: failed to create directory for configuration field %s=%s; %w", field, dir, err)
+			return errs.MkdirAll(dir, err)
 		}
-	} else if !info.IsDir() {
-		return fmt.Errorf("server guard: configuration field %s=%s must be a directory", field, dir)
 	}
 	return nil
 }
 
-func checkPublicIndexHTML(config Configuration) error {
+func statOrCreateEntryPoint(config Configuration) error {
 	if _, err := os.Stat(pathpkg.Join(config.PagesDir, "index.html")); os.IsNotExist(err) {
 		src, err := embedded.FS.Open("public/index.html")
 		if err != nil {
-			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
+			return errs.Unexpected(err)
 		}
 		dst, err := os.Create(pathpkg.Join(config.AssetDir, "index.html"))
 		if err != nil {
-			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
+			return errs.Unexpected(err)
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			return fmt.Errorf("failed to write %s/index.html; %w", config.AssetDir, err)
+			return errs.Unexpected(err)
 		}
 		src.Close()
 		dst.Close()
@@ -60,27 +58,18 @@ func checkPublicIndexHTML(config Configuration) error {
 }
 
 func serverGuards(config Configuration) error {
-	dirs := []struct {
-		field string
-		dir   string
-	}{
-		{field: "ASSET_DIR", dir: config.AssetDir},
-		{field: "PAGES_DIR", dir: config.PagesDir},
-		{field: "CACHE_DIR", dir: config.CacheDir},
-		{field: "BUILD_DIR", dir: config.BuildDir},
-	}
+	dirs := []string{config.AssetDir, config.PagesDir, config.CacheDir, config.BuildDir}
 	for _, each := range dirs {
-		if err := checkDir(each.field, each.dir); err != nil {
+		if err := statOrCreateDir(each); err != nil {
 			return err
 		}
 	}
-	if err := checkPublicIndexHTML(config); err != nil {
+	if err := statOrCreateEntryPoint(config); err != nil {
 		return err
 	}
 	return nil
 }
 
-// loadConfiguration loads or creates retro.config.jsonc.
 func loadConfiguration() (Configuration, error) {
 	config := Configuration{AssetDir: "public", PagesDir: "pages", CacheDir: "cache", BuildDir: "build", ReactStrictMode: false}
 	if err := serverGuards(config); err != nil {

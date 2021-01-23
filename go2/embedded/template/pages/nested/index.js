@@ -5,7 +5,7 @@ import React from "react"
 // probably shouldn’t.
 
 // Synchronously or asynchronously resolves props on the server. Props are
-// forwarded to Head and PageComponent.
+// forwarded as <Head {...props}> and <Page {...props}>.
 export async function load() {
 	return new Promise(resolve => {
 		setTimeout(() => {
@@ -18,7 +18,7 @@ export async function load() {
 }
 
 // For pages that use [manifest] syntax. Use { path: "..." } for the page URL.
-// { props: ... } are forwarded to Head and PageComponent.
+// { props: ... } are forwarded as <Head {...props}> and <Page {...props}>.
 export function manifest(props) {
 	return [
 		{ path: "xyz", props },
@@ -38,7 +38,7 @@ export function Head(props) {
 	)
 }
 
-export default function PageComponent(props) {
+export default function Page(props) {
 	return (
 		<div>
 			<h1>Hello world!</h1>
