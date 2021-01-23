@@ -17,9 +17,18 @@ import (
 // TODO: Change to npx create-retro-app?
 func (r Retro) init(rootdir string) {
 	if rootdir != "." {
-		// if _, err := os.Stat(rootdir); !os.IsNotExist(err) {
-		// 	stderr.Fatalf("Aborted. Stat '%s'.\n", rootdir)
-		// }
+		if info, err := os.Stat(rootdir); !os.IsNotExist(err) {
+			var typ string
+			if info.IsDir() {
+				typ = "file"
+			} else {
+				typ = "directory"
+			}
+			stderr.Fatalf("Aborted. A %s named '%[2]s' already exists.\n\n"+
+				"- Try 'retro init [dir]' where '[dir]' is not '%[2]s'\n\n"+
+				"Or\n\n"+
+				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro init %[2]s'\n", typ, rootdir)
+		}
 
 		if err := os.MkdirAll(rootdir, 0755); err != nil {
 			stderr.Fatalln(errs.MkdirAll(rootdir, err))

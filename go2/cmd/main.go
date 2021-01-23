@@ -68,8 +68,8 @@ func (r Retro) version() {
 }
 
 func (r Retro) unknown(cmd string) {
-	// stderr.Println("try retro help")
-	r.usage()
+	stderr.Fatalf("Unrecognized command 'retro %s'. "+
+		"Try 'retro usage'.\n", cmd)
 }
 
 func main() {
@@ -115,9 +115,9 @@ func main() {
 		if len(os.Args) < 3 {
 			stderr.Fatalln("It looks like you’re trying to run 'retro init' in the current directory. " +
 				"In that case, use '.' explicitly:\n\n" +
-				"retro init .\n\n" +
+				"- retro init .\n\n" +
 				"Or\n\n" +
-				"retro init retro-app")
+				"- retro init retro-app")
 		}
 		dirname = os.Args[2]
 		retro.init(dirname)
