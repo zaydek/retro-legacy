@@ -77,7 +77,11 @@ func toComponentCase(config Configuration, path string) string {
 }
 
 func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
-	route := PageBasedRoute{FSPath: path, Path: toPathCase(config, path), Component: toComponentCase(config, path)}
+	route := PageBasedRoute{
+		FSPath:    path,
+		Path:      toPathCase(config, path),
+		Component: toComponentCase(config, path),
+	}
 	return route
 }
 
