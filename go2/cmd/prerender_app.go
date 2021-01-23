@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	pathpkg "path"
 	"text/template"
@@ -17,13 +18,6 @@ import (
 // import App from "../{{.Config.PagesDir}}/internal/app"
 // {{- else -}}
 // // (No <App> component)
-// {{- end}}
-
-// // Page props
-// {{if .Flags.HasPageProps -}}
-// import pageProps from "../{{.Config.CacheDir}}/pageProps"
-// {{- else -}}
-// // (No pageProps.js)
 // {{- end}}
 
 func prerenderApp(retro Retro) error {
@@ -79,8 +73,11 @@ ReactDOM.hydrate(
 	}
 
 	results := api.Build(api.BuildOptions{
-		Bundle:      true,
-		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
+		Bundle: true,
+		Define: map[string]string{
+			"__DEV__":              fmt.Sprintf("%t", retro.Config.Env == "development"),
+			"process.env.NODE_ENV": fmt.Sprintf("%q", retro.Config.Env),
+		},
 		EntryPoints: []string{pathpkg.Join(retro.Config.CacheDir, "app.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})

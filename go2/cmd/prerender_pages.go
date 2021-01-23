@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	pathpkg "path"
@@ -92,8 +93,11 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 	}
 
 	results := api.Build(api.BuildOptions{
-		Bundle:      true,
-		Define:      map[string]string{"process.env.NODE_ENV": "\"development\""},
+		Bundle: true,
+		Define: map[string]string{
+			"__DEV__":              fmt.Sprintf("%t", retro.Config.Env == "development"),
+			"process.env.NODE_ENV": fmt.Sprintf("%q", retro.Config.Env),
+		},
 		EntryPoints: []string{pathpkg.Join(retro.Config.CacheDir, "pages.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
