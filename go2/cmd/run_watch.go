@@ -88,12 +88,12 @@ type RetroApp2 struct {
 	ServePort      int
 }
 
-func repeat(str string, repeat int) string {
-	if repeat <= 0 {
-		return ""
-	}
-	return strings.Repeat(str, repeat)
-}
+// func repeat(str string, repeat int) string {
+// 	if repeat <= 0 {
+// 		return ""
+// 	}
+// 	return strings.Repeat(str, repeat)
+// }
 
 func (a *RetroApp2) WarningString() string {
 	msg := a.esbuildWarnings[0]
@@ -104,8 +104,8 @@ func (a *RetroApp2) WarningString() string {
 
     ` + fmt.Sprintf("// ./%s", msg.Location.File) + `
     ` + fmt.Sprintf("%-*d | %s", gap, msg.Location.Line+0, msg.Location.LineText) + `
-    ` + fmt.Sprintf("%-*d | %s^", gap, msg.Location.Line+1, repeat(" ", msg.Location.Column-gap-1)) + `
-    ` + fmt.Sprintf("%-*d | %s%s", gap, msg.Location.Line+2, repeat(" ", msg.Location.Column-gap-1), msg.Text) + `
+    ` + fmt.Sprintf("%-*d | %s^", gap, msg.Location.Line+1, strings.Repeat(" ", msg.Location.Column)) + `
+    ` + fmt.Sprintf("%-*d | %s%s", gap, msg.Location.Line+2, strings.Repeat(" ", msg.Location.Column), msg.Text) + `
 `
 }
 
@@ -118,8 +118,8 @@ func (a *RetroApp2) ErrorString() string {
 
     ` + fmt.Sprintf("// ./%s", msg.Location.File) + `
     ` + fmt.Sprintf("%-*d | %s", gap, msg.Location.Line+0, msg.Location.LineText) + `
-    ` + fmt.Sprintf("%-*d | %s^", gap, msg.Location.Line+1, repeat(" ", msg.Location.Column-gap-1)) + `
-    ` + fmt.Sprintf("%-*d | %s%s", gap, msg.Location.Line+2, repeat(" ", msg.Location.Column-gap-1), msg.Text) + `
+    ` + fmt.Sprintf("%-*d | %s^", gap, msg.Location.Line+1, strings.Repeat(" ", msg.Location.Column)) + `
+    ` + fmt.Sprintf("%-*d | %s%s", gap, msg.Location.Line+2, strings.Repeat(" ", msg.Location.Column), msg.Text) + `
 `
 }
 

@@ -4,18 +4,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/color"
 )
-
-type RetroApp struct {
-	esbuildResult   api.BuildResult
-	esbuildWarnings []api.Message
-	esbuildErrors   []api.Message
-
-	Configuration   Configuration
-	PageBasedRouter []PageBasedRoute
-}
 
 // var usage = `
 //   ` + color.Bold("Usage:") + `
@@ -50,17 +40,59 @@ type RetroApp struct {
 //     ` + color.Underline("https://github.com/zaydek/retro") + `
 // `
 
+// var usage = `
+//   ` + color.Bold("Usage:") + `
+//
+//     retro init [dir]  Creates a new Retro app at directory [dir]
+//     retro watch       Starts the development server and watches for changes
+//     retro build       Build the production-ready build
+//     retro serve       Serves the production-ready build
+//
+//   ` + color.Bold("Repository:") + `
+//
+//     ` + color.Underline("https://github.com/zaydek/retro") + `
+// `
+
 var usage = `
-  ` + color.Bold("Usage:") + `
+	Retro is a friendly development server and static-site generator (SSG) for React apps.
 
-    retro init [dir]  Creates a new Retro app at directory [dir]
-    retro watch       Starts the development server and watches for changes
-    retro build       Build the production-ready build
-    retro serve       Serves the production-ready build
 
-  ` + color.Bold("Repository:") + `
+	Usage:
 
-    ` + color.Underline("https://github.com/zaydek/retro") + `
+		retro create [dir]      // Creates a new Retro app at directory 'dir'
+		retro watch [...dirs]   // Starts the development server and watches 'dirs' for changes
+		retro build             // Builds the production-ready build
+		retro serve             // Serves the production-ready build
+
+	retro create [dir]
+
+		'retro create' creates a new Retro app at directory 'dir'
+
+			--language=[js | ts]  // Programming language (default 'js')
+
+	retro watch [...dirs]
+
+		'retro watch' starts a development server and watches directories 'dirs' for
+		changes (default 'components pages')
+
+			--poll=<duration>     // Poll duration (default '250ms')
+			--port=<number>       // Port number (default '8000')
+
+	retro build
+
+		'retro build' builds the production-ready build
+
+			--cached              // Use cached props for faster builds (disabled by default)
+
+	retro serve
+
+		'retro serve' serves the production-ready build
+
+			--port=<number>       // Port number (default '8000')
+
+	Repository:
+
+		https://github.com/zaydek/retro
 `
 
 func (app *RetroApp) usage() {
