@@ -17,6 +17,11 @@ import (
 
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
 func (r Runtime) Create() {
+	languageFS := embedded.JavaScriptFS
+	if r.CreateCommand.Language == "ts" {
+		languageFS = embedded.TypeScriptFS
+	}
+
 	if r.CreateCommand.Directory != "." {
 		if info, err := os.Stat(r.CreateCommand.Directory); !os.IsNotExist(err) {
 			var typ string
@@ -26,9 +31,9 @@ func (r Runtime) Create() {
 				typ = "directory"
 			}
 			loggers.Stderr.Printf("Aborted. A %s named '%[2]s' already exists.\n\n"+
-				"- Try 'retro init [dir]' where '[dir]' is not '%[2]s'\n\n"+
+				"- Try 'retro create [dir]' where '[dir]' is not '%[2]s'\n\n"+
 				"Or\n\n"+
-				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro init %[2]s'\n", typ, r.CreateCommand.Directory)
+				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro create %[2]s'\n", typ, r.CreateCommand.Directory)
 			os.Exit(1)
 		}
 
@@ -47,8 +52,7 @@ func (r Runtime) Create() {
 		badPaths []string
 	)
 
-	// TODO
-	if err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
+	if err := fs.WalkDir(languageFS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -57,7 +61,7 @@ func (r Runtime) Create() {
 			return nil
 		}
 		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			embed, err := embedded.FS.Open(path)
+			embed, err := languageFS.Open(path)
 			if err != nil {
 				return err
 			}
@@ -78,8 +82,7 @@ func (r Runtime) Create() {
 		paths = append(paths, path)
 		return nil
 	}); err != nil {
-		// TODO?
-		loggers.Stderr.Println(errs.Walk("<embedded>", err))
+		loggers.Stderr.Println(errs.Walk(fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language), err))
 		os.Exit(1)
 	}
 
@@ -93,7 +96,7 @@ func (r Runtime) Create() {
 			ul += sep + "- " + each
 		}
 		loggers.Stderr.Printf("Aborted. "+
-			"Try 'rm -r [path]' or 'sudo rm -r [path]' if that doesn’t work and rerun 'retro init %s'.\n\n"+
+			"Try 'rm -r [path]' or 'sudo rm -r [path]' if that doesn’t work and rerun 'retro create %s'.\n\n"+
 			"%s\n", r.CreateCommand.Directory, ul)
 		os.Exit(1)
 	}
@@ -105,7 +108,7 @@ func (r Runtime) Create() {
 				os.Exit(1)
 			}
 		}
-		src, err := embedded.FS.Open(each)
+		src, err := languageFS.Open(each)
 		if err != nil {
 			loggers.Stderr.Println(errs.Unexpected(err))
 			os.Exit(1)

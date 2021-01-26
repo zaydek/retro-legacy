@@ -38,11 +38,11 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 		os.Exit(2)
 	}
 	if len(cmd.Args()) == 0 {
-		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("'retro init'") + " in the current directory. " +
+		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("'retro create'") + " in the current directory. " +
 			"In that case, use " + color.Bold("'.'") + " explicitly:\n\n" +
-			"- retro init .\n\n" +
+			"- retro create .\n\n" +
 			"Or\n\n" +
-			"- retro init retro-app")
+			"- retro create retro-app")
 		os.Exit(2)
 	}
 	flags.Directory = cmd.Args()[0]
@@ -144,7 +144,7 @@ func ParseCLIArguments() Commands {
 		version()
 		os.Exit(0)
 
-	// $ retro init
+	// $ retro create
 	case "init":
 		cmds.CreateCommand = parseCreateCommandFlags(os.Args[2:])
 
