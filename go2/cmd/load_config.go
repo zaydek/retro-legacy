@@ -24,7 +24,7 @@ func statOrCreateDir(dir string) error {
 //
 // NOTE: embedded.JavaScriptFS.Open("public/index.html") and
 // embedded.TypeScriptFS.Open("public/index.html") should be equivalent.
-func statOrCreateEntryPoint(config Configuration) error {
+func statOrCreateEntryPoint(config DirConfiguration) error {
 	if _, err := os.Stat(pathpkg.Join(config.PagesDirectory, "index.html")); os.IsNotExist(err) {
 		src, err := embedded.JavaScriptFS.Open("public/index.html")
 		if err != nil {
@@ -44,7 +44,7 @@ func statOrCreateEntryPoint(config Configuration) error {
 }
 
 // runServerGuards runs server guards on the configuration.
-func runServerGuards(config Configuration) error {
+func runServerGuards(config DirConfiguration) error {
 	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.CacheDirectory, config.BuildDirectory}
 	for _, each := range dirs {
 		if err := statOrCreateDir(each); err != nil {
@@ -57,16 +57,16 @@ func runServerGuards(config Configuration) error {
 	return nil
 }
 
-// loadConfig loads the configuration.
-func loadConfig() (Configuration, error) {
-	config := Configuration{
+// loadConfig loads directory configuration.
+func loadConfig() (DirConfiguration, error) {
+	config := DirConfiguration{
 		AssetDirectory: "public",
 		PagesDirectory: "pages",
 		CacheDirectory: "cache",
 		BuildDirectory: "build",
 	}
 	if err := runServerGuards(config); err != nil {
-		return Configuration{}, err
+		return DirConfiguration{}, err
 	}
 	return config, nil
 }

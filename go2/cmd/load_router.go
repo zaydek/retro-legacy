@@ -30,7 +30,7 @@ func isAllowedRouteFileType(path string) bool {
 // toPathCase returns the page case for a path.
 //
 // TODO: Add tests.
-func toPathCase(config Configuration, path string) string {
+func toPathCase(config DirConfiguration, path string) string {
 	path = strings.TrimPrefix(path, config.PagesDirectory)
 	path = path[:len(path)-len(filepath.Ext(path))]
 
@@ -42,7 +42,7 @@ func toPathCase(config Configuration, path string) string {
 // toComponentCase returns the component case for a path.
 //
 // TODO: Add tests.
-func toComponentCase(config Configuration, path string) string {
+func toComponentCase(config DirConfiguration, path string) string {
 	path = strings.TrimPrefix(path, config.PagesDirectory+"/") // Add "/"
 	path = path[:len(path)-len(filepath.Ext(path))]
 
@@ -67,7 +67,7 @@ func toComponentCase(config Configuration, path string) string {
 	return str
 }
 
-func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
+func newPageBasedRoute(config DirConfiguration, path string) PageBasedRoute {
 	route := PageBasedRoute{
 		FSPath:    path,
 		Path:      toPathCase(config, path),
@@ -77,7 +77,7 @@ func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 }
 
 // loadRouter loads the page-based router.
-func loadRouter(config Configuration) ([]PageBasedRoute, error) {
+func loadRouter(config DirConfiguration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

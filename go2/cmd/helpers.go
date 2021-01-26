@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	pathpkg "path"
 	"path/filepath"
@@ -13,11 +12,25 @@ import (
 	"github.com/zaydek/retro/loggers"
 )
 
+// getCmd gets the current command.
+func (r Runtime) getCmd() string {
+	if r.CreateCommand != nil {
+		return "create"
+	} else if r.WatchCommand != nil {
+		return "watch"
+	} else if r.BuildCommand != nil {
+		return "build"
+	} else if r.ServeCommand != nil {
+		return "serve"
+	}
+	return ""
+}
+
 // getPort gets the current port.
 func (r Runtime) getPort() int {
-	if r.WatchCommand != nil {
+	if cmd := r.getCmd(); cmd == "watch" {
 		return r.WatchCommand.Port
-	} else if r.ServeCommand != nil {
+	} else if cmd == "serve" {
 		return r.ServeCommand.Port
 	}
 	return 0
@@ -30,13 +43,15 @@ func loadRuntime() Runtime {
 
 	var runtime Runtime
 	runtime.Commands = cli.ParseCLIArguments()
-	if runtime.Config, err = loadConfig(); err != nil {
-		loggers.Stderr.Println(err)
-		os.Exit(1)
-	}
-	if runtime.Router, err = loadRouter(runtime.Config); err != nil {
-		loggers.Stderr.Println(err)
-		os.Exit(1)
+	if cmd := runtime.getCmd(); cmd != "create" {
+		if runtime.Config, err = loadConfig(); err != nil {
+			loggers.Stderr.Println(err)
+			os.Exit(1)
+		}
+		if runtime.Router, err = loadRouter(runtime.Config); err != nil {
+			loggers.Stderr.Println(err)
+			os.Exit(1)
+		}
 	}
 	return runtime
 }
@@ -67,60 +82,15 @@ func buildRequireStmtAsArray(routes []PageBasedRoute) string {
 	return requireStmtAsArray
 }
 
-// copyPath describes a copy path for copyFSToDirectory and
-// copyAssetDirectoryToBuildDirectory.
+// copyPath describes a copy path for copyAssetDirectoryToBuildDirectory.
 type copyPath struct {
 	src string
 	dst string
 }
 
-// copyFSToDirectory recursively copies a filesystem to a directory. The
-// directory must be created but empty.
-func copyFSToDirectory(f fs.FS, namespace, dir string) error {
-	var paths []copyPath
-	if err := fs.WalkDir(f, ".", func(path string, dirEntry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if !dirEntry.IsDir() {
-			src := path
-			dst := pathpkg.Join(dir, path)
-			paths = append(paths, copyPath{src: src, dst: dst})
-		}
-		return nil
-	}); err != nil {
-		return errs.Walk(namespace, err)
-	}
-
-	for _, each := range paths {
-		if dir := pathpkg.Dir(each.dst); dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				return errs.MkdirAll(dir, err)
-			}
-		}
-	}
-
-	for _, each := range paths {
-		src, err := os.Open(each.src)
-		if err != nil {
-			return errs.Unexpected(err)
-		}
-		dst, err := os.Create(each.dst)
-		if err != nil {
-			return errs.Unexpected(err)
-		}
-		if _, err := io.Copy(src, dst); err != nil {
-			return errs.Unexpected(err)
-		}
-		src.Close()
-		dst.Close()
-	}
-	return nil
-}
-
 // copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
 // the build directory.
-func copyAssetDirectoryToBuildDirectory(config Configuration) error {
+func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 	var paths []copyPath
 	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

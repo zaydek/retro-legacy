@@ -13,8 +13,8 @@ var languageTypeScript embed.FS
 
 var (
 	// JavaScriptFS mounts the JavaScript template as an embedded filesystem.
-	JavaScriptFS, _ = fs.Sub(languageJavaScript, "language_javascript/*")
+	JavaScriptFS, _ = fs.Sub(languageJavaScript, "language_javascript")
 
 	// TypeScriptFS mounts the TypeScript template as an embedded filesystem.
-	TypeScriptFS, _ = fs.Sub(languageTypeScript, "language_typescript/*")
+	TypeScriptFS, _ = fs.Sub(languageTypeScript, "language_typescript")
 )

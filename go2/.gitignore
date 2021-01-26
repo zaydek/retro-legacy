@@ -1,6 +1,0 @@
-.DS_Store
-
-bin/
-node_modules/
-
-installer.js

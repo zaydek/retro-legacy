@@ -32,16 +32,17 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	}
 	if flags.Language != "js" && flags.Language != "ts" {
 		loggers.Stderr.Println(color.Bold("'--language'") + " must be " + color.Bold("'js'") + " for JavaScript or " + color.Bold("'ts'") + " for TypeScript.\n\n" +
-			"- Try " + color.Bold("'retro create --language=js [dir]'") + " for JavaScript\n" +
-			"- Try " + color.Bold("'retro create --language=ts [dir]'") + " for TypeScript")
+			"- " + color.Bold("retro create --language=js [dir]") + "\n\n" +
+			"Or\n\n" +
+			"- " + color.Bold("retro create --language=ts [dir]") + "")
 		os.Exit(2)
 	}
 	if len(cmd.Args()) == 0 {
 		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("'retro create'") + " in the current directory. " +
 			"In that case, use " + color.Bold("'.'") + " explicitly:\n\n" +
-			"- retro create .\n\n" +
+			"- " + color.Bold("retro create .") + "\n\n" +
 			"Or\n\n" +
-			"- retro create retro-app")
+			"- " + color.Bold("retro create [dir]"))
 		os.Exit(2)
 	}
 	flags.Directory = cmd.Args()[0]

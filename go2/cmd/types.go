@@ -13,8 +13,8 @@ type PageBasedRoute struct {
 	Component string `json:"component"` // Component
 }
 
-// Configuration describes persistent directory configuration.
-type Configuration struct {
+// DirConfiguration describes persistent directory configuration.
+type DirConfiguration struct {
 	AssetDirectory string
 	PagesDirectory string
 	CacheDirectory string
@@ -27,7 +27,7 @@ type Runtime struct {
 	esbuildErrors   []api.Message
 
 	cli.Commands
-	Config Configuration
+	Config DirConfiguration
 	Router []PageBasedRoute
 }
 

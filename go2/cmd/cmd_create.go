@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	pathpkg "path"
 
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
@@ -21,23 +23,23 @@ var (
 
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
 func (r Runtime) Create() {
-	languageFS := embedded.JavaScriptFS
+	fsys := embedded.JavaScriptFS
 	if r.CreateCommand.Language == "ts" {
-		languageFS = embedded.TypeScriptFS
+		fsys = embedded.TypeScriptFS
 	}
 
 	if r.CreateCommand.Directory != "." {
 		if info, err := os.Stat(r.CreateCommand.Directory); !os.IsNotExist(err) {
 			var typ string
-			if info.IsDir() {
+			if !info.IsDir() {
 				typ = "file"
 			} else {
 				typ = "directory"
 			}
 			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Boldf("'%s'", r.CreateCommand.Directory) + " already exists.\n\n" +
-				"- Try " + color.Bold("'retro create [dir]'") + "\n\n" +
+				"- " + color.Bold("retro create [dir]") + "\n\n" +
 				"Or\n\n" +
-				"- Try " + color.Boldf("'rm -r %[1]s && retro create %[1]s'", r.CreateCommand.Directory))
+				"- " + color.Boldf("rm -r %[1]s && retro create %[1]s", r.CreateCommand.Directory))
 			os.Exit(1)
 		}
 
@@ -51,10 +53,39 @@ func (r Runtime) Create() {
 		defer os.Chdir("..")
 	}
 
-	namespace := fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language)
-	if err := copyFSToDirectory(languageFS, namespace, r.CreateCommand.Directory); err != nil {
-		loggers.Stderr.Println(err)
+	var paths []string
+	if err := fs.WalkDir(fsys, ".", func(path string, dirEntry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !dirEntry.IsDir() {
+			paths = append(paths, path)
+		}
+		return nil
+	}); err != nil {
+		loggers.Stderr.Println(errs.Walk(fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language), err))
 		os.Exit(1)
+	}
+
+	for _, each := range paths {
+		if dir := pathpkg.Dir(each); dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				loggers.Stderr.Println(errs.MkdirAll(dir, err))
+				os.Exit(1)
+			}
+		}
+	}
+
+	for _, each := range paths {
+		bstr, err := fs.ReadFile(fsys, each)
+		if err != nil {
+			loggers.Stderr.Println(errs.Unexpected(err))
+			os.Exit(1)
+		}
+		if err := ioutil.WriteFile(each, bstr, 0644); err != nil {
+			loggers.Stderr.Println(errs.Unexpected(err))
+			os.Exit(1)
+		}
 	}
 
 	repoName := r.CreateCommand.Directory
@@ -82,29 +113,33 @@ func (r Runtime) Create() {
 	}
 
 	if r.CreateCommand.Directory == "." {
-		loggers.Stdout.Println(color.Bold("Successfully created a new Retro app.") + `
+		loggers.Stdout.Println(`Successfully created a new Retro app.
 
-` + color.BoldBlack("# npm") + `
-npm
-npm run watch
+` + color.Bold("# npm") + `
 
-` + color.BoldBlack("# yarn") + `
-yarn
-yarn watch
+	1. npm
+	2. npm run watch
+
+` + color.Bold("# yarn") + `
+
+	1. yarn
+	2. yarn watch
 
 Happy hacking!`)
 	} else {
-		loggers.Stdout.Println(color.Bold("Successfully created a new Retro app.") + `
+		loggers.Stdout.Println(`Successfully created a new Retro app.
 
-` + color.BoldBlack("# npm") + `
-cd ` + r.CreateCommand.Directory + `
-npm
-npm run watch
+` + color.Bold("# npm") + `
 
-` + color.BoldBlack("# yarn") + `
-cd ` + r.CreateCommand.Directory + `
-yarn
-yarn watch
+	1. cd ` + r.CreateCommand.Directory + `
+	2. npm
+	3. npm run watch
+
+` + color.Bold("# yarn") + `
+
+	1. cd ` + r.CreateCommand.Directory + `
+	2. yarn
+	3. yarn watch
 
 Happy hacking!`)
 	}
