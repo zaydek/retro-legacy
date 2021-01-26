@@ -109,7 +109,7 @@ asyncRun(` + buildRequireStmtAsArray(app.PageBasedRouter) + `)
 		return errors.New(string(bstr))
 	}
 
-	stdoutBuf, err := pipeNode(results.OutputFiles[0].Contents)
+	stdoutBuf, err := pipeToNode(results.OutputFiles[0].Contents)
 	if err != nil {
 		return err
 	}

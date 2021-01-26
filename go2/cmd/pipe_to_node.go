@@ -8,7 +8,7 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-func pipeNode(stdin []byte) (bytes.Buffer, error) {
+func pipeToNode(stdin []byte) (bytes.Buffer, error) {
 	var (
 		stdoutBuf bytes.Buffer
 		stderrBuf bytes.Buffer
