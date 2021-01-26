@@ -9,14 +9,15 @@ import (
 )
 
 func startRuntime() Runtime {
-	runtime := Runtime{
-		AssetDirectory: "public",
-		PagesDirectory: "pages",
-		CacheDirectory: "cache",
-		BuildDirectory: "build",
-	}
+	var err error
+
+	var runtime Runtime
 	runtime.Commands = cli.ParseCLIArguments()
-	if err := runServerGuards(runtime); err != nil {
+	if runtime.Config, err = loadConfig(); err != nil {
+		loggers.Stderr.Println(err)
+		os.Exit(1)
+	}
+	if runtime.Router, err = loadRouter(runtime.Config); err != nil {
 		loggers.Stderr.Println(err)
 		os.Exit(1)
 	}

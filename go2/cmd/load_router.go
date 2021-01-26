@@ -8,13 +8,6 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-// PageBasedRoute describes a page-based route from pages/*.
-type PageBasedRoute struct {
-	FSPath    string `json:"fs_path"`   // pages/path/to/component.js
-	Path      string `json:"path"`      // path/to/component
-	Component string `json:"component"` // Component
-}
-
 var allowedRouteFileTypes = []string{
 	".js",  // JavaScript
 	".jsx", // React JavaScript
@@ -57,13 +50,11 @@ func toComponentCase(config Configuration, path string) string {
 	for x := 0; x < len(path); x++ {
 		switch path[x] {
 		case '/':
-			str += "__"
 			x++
 			if x < len(path) {
 				str += strings.ToUpper(string(path[x]))
 			}
 		case '-':
-			str += "_"
 			x++
 			if x < len(path) {
 				str += strings.ToUpper(string(path[x]))
@@ -85,7 +76,8 @@ func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 	return route
 }
 
-func initPageBasedRouter(config Configuration) ([]PageBasedRoute, error) {
+// loadRouter loads the page-based router.
+func loadRouter(config Configuration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
