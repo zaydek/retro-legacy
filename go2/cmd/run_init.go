@@ -15,25 +15,28 @@ import (
 )
 
 // TODO: Change to npx create-retro-app?
-func (r Retro) init(rootdir string) {
-	if rootdir != "." {
-		if info, err := os.Stat(rootdir); !os.IsNotExist(err) {
+func (app *RetroApp) init(rootDirectory string) {
+	if rootDirectory != "." {
+		if info, err := os.Stat(rootDirectory); !os.IsNotExist(err) {
 			var typ string
 			if info.IsDir() {
 				typ = "file"
 			} else {
 				typ = "directory"
 			}
-			stderr.Fatalf("Aborted. A %s named '%[2]s' already exists.\n\n"+
+			stderr.Printf("Aborted. A %s named '%[2]s' already exists.\n\n"+
 				"- Try 'retro init [dir]' where '[dir]' is not '%[2]s'\n\n"+
 				"Or\n\n"+
-				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro init %[2]s'\n", typ, rootdir)
+				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro init %[2]s'\n", typ, rootDirectory)
+			os.Exit(1)
 		}
 
-		if err := os.MkdirAll(rootdir, 0755); err != nil {
-			stderr.Fatalln(errs.MkdirAll(rootdir, err))
-		} else if err := os.Chdir(rootdir); err != nil {
-			stderr.Fatalln(errs.Chdir(rootdir, err))
+		if err := os.MkdirAll(rootDirectory, 0755); err != nil {
+			stderr.Println(errs.MkdirAll(rootDirectory, err))
+			os.Exit(1)
+		} else if err := os.Chdir(rootDirectory); err != nil {
+			stderr.Println(errs.Chdir(rootDirectory, err))
+			os.Exit(1)
 		}
 		defer os.Chdir("..")
 	}
@@ -73,7 +76,8 @@ func (r Retro) init(rootdir string) {
 		paths = append(paths, path)
 		return nil
 	}); err != nil {
-		stderr.Fatalln(errs.Walk("<embedded>", err))
+		stderr.Println(errs.Walk("<embedded>", err))
+		os.Exit(1)
 	}
 
 	if len(badPaths) > 0 {
@@ -85,36 +89,38 @@ func (r Retro) init(rootdir string) {
 			}
 			ul += sep + "- " + each
 		}
-		stderr.Fatalf("Aborted. "+
+		stderr.Printf("Aborted. "+
 			"Try 'rm -r [path]' or 'sudo rm -r [path]' if that doesn’t work and rerun 'retro init %s'.\n\n"+
-			"%s\n", rootdir, ul,
-		)
+			"%s\n", rootDirectory, ul)
+		os.Exit(1)
 	}
 
 	for _, each := range paths {
 		if dir := pathpkg.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				stderr.Fatalln(errs.MkdirAll(dir, err))
+				stderr.Println(errs.MkdirAll(dir, err))
+				os.Exit(1)
 			}
 		}
 		src, err := embedded.FS.Open(each)
 		if err != nil {
-			stderr.Fatalln(errs.Unexpected(err))
+			stderr.Println(errs.Unexpected(err))
+			os.Exit(1)
 		}
 		dst, err := os.Create(each)
 		if err != nil {
-			stderr.Fatalln(errs.Unexpected(err))
+			stderr.Println(errs.Unexpected(err))
+			os.Exit(1)
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			if err != nil {
-				stderr.Fatalln(errs.Unexpected(err))
-			}
+			stderr.Println(errs.Unexpected(err))
+			os.Exit(1)
 		}
 		src.Close()
 		dst.Close()
 	}
 
-	name := rootdir
+	name := rootDirectory
 	if name == "." {
 		name = "retro-app"
 	}
@@ -138,17 +144,18 @@ func (r Retro) init(rootdir string) {
 	if _, err := os.Stat("package.json"); os.IsNotExist(err) {
 		if err := ioutil.WriteFile("package.json", []byte(pkg), 0644); err != nil {
 			var path string
-			if rootdir == "." {
+			if rootDirectory == "." {
 				path = "package.json"
 			} else {
-				path = pathpkg.Join(rootdir, "package.json")
+				path = pathpkg.Join(rootDirectory, "package.json")
 			}
-			stderr.Fatalln(errs.WriteFile(path, err))
+			stderr.Println(errs.WriteFile(path, err))
+			os.Exit(1)
 		}
 	}
 
-	if rootdir == "." {
-		stdout.Print(color.Bold("Created Retro app! 🥳") + `
+	if rootDirectory == "." {
+		stdout.Print(color.Bold("Created a Retro app!") + `
 
 ` + color.BoldBlack("# npm") + `
 npm
@@ -157,9 +164,11 @@ npm run watch
 ` + color.BoldBlack("# yarn") + `
 yarn
 yarn watch
+
+Happy hacking.
 `)
 	} else {
-		stdout.Printf(color.Boldf("Created '%s'! 🥳", rootdir)+`
+		stdout.Printf(color.Boldf("Created '%s'!", rootDirectory)+`
 
 `+color.BoldBlack("# npm")+`
 cd %[1]s
@@ -170,6 +179,8 @@ npm run watch
 cd %[1]s
 yarn
 yarn watch
-`, rootdir)
+
+Happy hacking.
+`, rootDirectory)
 	}
 }

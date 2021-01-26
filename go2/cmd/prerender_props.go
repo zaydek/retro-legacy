@@ -11,11 +11,11 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-func prerenderProps(retro Retro) error {
+func prerenderProps(app *RetroApp) error {
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 // Pages
-` + buildRequireStmt(retro.Routes) + `
+` + buildRequireStmt(app.PageBasedRouter) + `
 
 async function asyncRun(requireStmtAsArray) {
 	const chain = []
@@ -38,20 +38,20 @@ async function asyncRun(requireStmtAsArray) {
 	console.log(JSON.stringify(resolvedAsMap, null, 2))
 }
 
-asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
+asyncRun(` + buildRequireStmtAsArray(app.PageBasedRouter) + `)
 `
 
-	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.esbuild.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(app.Configuration.CacheDirectory, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(app.Configuration.CacheDirectory, "props.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle: true,
 		Define: map[string]string{
-			"__DEV__":              fmt.Sprintf("%t", retro.Config.Env == "development"),
-			"process.env.NODE_ENV": fmt.Sprintf("%q", retro.Config.Env),
+			"__DEV__":              fmt.Sprintf("%t", app.Configuration.Env == "development"),
+			"process.env.NODE_ENV": fmt.Sprintf("%q", app.Configuration.Env),
 		},
-		EntryPoints: []string{pathpkg.Join(retro.Config.CacheDir, "props.esbuild.js")},
+		EntryPoints: []string{pathpkg.Join(app.Configuration.CacheDirectory, "props.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -71,8 +71,8 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 
 export default ` + stdoutBuf.String())
 
-	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.js"), contents, 0644); err != nil {
-		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "props.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(app.Configuration.CacheDirectory, "props.js"), contents, 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(app.Configuration.CacheDirectory, "props.js"), err)
 	}
 	return nil
 }

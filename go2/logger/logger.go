@@ -3,7 +3,6 @@ package logger
 import (
 	"fmt"
 	"io"
-	"os"
 	"sync"
 )
 
@@ -44,20 +43,20 @@ func (l *Logger) Println(args ...interface{}) {
 	fmt.Fprint(l.w, transformed)
 }
 
-// Fatal performs a transformation, logs, and exits (exit code 1).
-func (l *Logger) Fatal(args ...interface{}) {
-	l.Print(args...)
-	os.Exit(1)
-}
-
-// Fatalf performs a transformation, logs, and exits (exit code 1).
-func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.Printf(format, args...)
-	os.Exit(1)
-}
-
-// Fatalln performs a transformation, logs, and exits (exit code 1).
-func (l *Logger) Fatalln(args ...interface{}) {
-	l.Println(args...)
-	os.Exit(1)
-}
+// // Fatal performs a transformation, logs, and exits (exit code 1).
+// func (l *Logger) Fatal(args ...interface{}) {
+// 	l.Print(args...)
+// 	os.Exit(1)
+// }
+//
+// // Fatalf performs a transformation, logs, and exits (exit code 1).
+// func (l *Logger) Fatalf(format string, args ...interface{}) {
+// 	l.Printf(format, args...)
+// 	os.Exit(1)
+// }
+//
+// // Fatalln performs a transformation, logs, and exits (exit code 1).
+// func (l *Logger) Fatalln(args ...interface{}) {
+// 	l.Println(args...)
+// 	os.Exit(1)
+// }

@@ -5,20 +5,35 @@ import (
 	"os"
 	pathpkg "path"
 	"strconv"
+	"time"
 
 	"github.com/zaydek/retro/embedded"
 	"github.com/zaydek/retro/errs"
 )
 
+// type RetroApp2 struct {
+// 	esbuildResult   api.BuildResult
+// 	esbuildWarnings []api.Message
+// 	esbuildErrors   []api.Message
+//
+// 	WatchPoll      time.Duration
+// 	WatchDirectory string
+// 	BuildDirectory string
+// 	ServePort      int
+// }
+
 // Configuration describes user configuration.
 type Configuration struct {
-	Env             string // The development or production flag
-	Port            int    // The development or production port
-	AssetDir        string // The asset directory
-	PagesDir        string // The pages directory
-	CacheDir        string // The cache directory
-	BuildDir        string // The build directory
-	ReactStrictMode bool   // Wrap <React.StrictMode>
+	Env  string // The development or production flag
+	Port int    // The development or production port
+
+	WatchPoll        time.Duration // The poll duration for the watch command
+	WatchDirectories []string
+	AssetDirectory   string // The asset directory
+	PagesDirectory   string // The pages directory
+	CacheDirectory   string // The cache directory
+	BuildDirectory   string // The build directory
+	ReactStrictMode  bool   // Wrap <React.StrictMode>
 }
 
 func statOrCreateDir(dir string) error {
@@ -31,12 +46,12 @@ func statOrCreateDir(dir string) error {
 }
 
 func statOrCreateEntryPoint(config Configuration) error {
-	if _, err := os.Stat(pathpkg.Join(config.PagesDir, "index.html")); os.IsNotExist(err) {
+	if _, err := os.Stat(pathpkg.Join(config.PagesDirectory, "index.html")); os.IsNotExist(err) {
 		src, err := embedded.FS.Open("public/index.html")
 		if err != nil {
 			return errs.Unexpected(err)
 		}
-		dst, err := os.Create(pathpkg.Join(config.AssetDir, "index.html"))
+		dst, err := os.Create(pathpkg.Join(config.AssetDirectory, "index.html"))
 		if err != nil {
 			return errs.Unexpected(err)
 		}
@@ -50,7 +65,7 @@ func statOrCreateEntryPoint(config Configuration) error {
 }
 
 func runServerGuards(config Configuration) error {
-	dirs := []string{config.AssetDir, config.PagesDir, config.CacheDir, config.BuildDir}
+	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.CacheDirectory, config.BuildDirectory}
 	for _, each := range dirs {
 		if err := statOrCreateDir(each); err != nil {
 			return err
@@ -62,7 +77,7 @@ func runServerGuards(config Configuration) error {
 	return nil
 }
 
-func loadConfiguration() (Configuration, error) {
+func initConfiguration() (Configuration, error) {
 	var (
 		env             string
 		port            int
@@ -102,10 +117,10 @@ func loadConfiguration() (Configuration, error) {
 	config := Configuration{
 		Env:             env,
 		Port:            port,
-		AssetDir:        assetDir,
-		PagesDir:        pagesDir,
-		CacheDir:        cacheDir,
-		BuildDir:        buildDir,
+		AssetDirectory:  assetDir,
+		PagesDirectory:  pagesDir,
+		CacheDirectory:  cacheDir,
+		BuildDirectory:  buildDir,
 		ReactStrictMode: reactStrictMode,
 	}
 

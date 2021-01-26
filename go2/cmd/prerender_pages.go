@@ -23,10 +23,10 @@ type PrerenderedPage struct {
 	Page   string `json:"page"`
 }
 
-func prerenderPages(retro Retro) error {
-	bstr, err := ioutil.ReadFile(pathpkg.Join(retro.Config.AssetDir, "index.html"))
+func prerenderPages(app *RetroApp) error {
+	bstr, err := ioutil.ReadFile(pathpkg.Join(app.Configuration.AssetDirectory, "index.html"))
 	if err != nil {
-		return errs.ReadFile(pathpkg.Join(retro.Config.AssetDir, "index.html"), err)
+		return errs.ReadFile(pathpkg.Join(app.Configuration.AssetDirectory, "index.html"), err)
 	}
 
 	text := string(bstr)
@@ -40,9 +40,9 @@ func prerenderPages(retro Retro) error {
 			"Add '{{ .Page }}' to '<body>'.")
 	}
 
-	tmpl, err := template.New(pathpkg.Join(retro.Config.AssetDir, "index.html")).Parse(text)
+	tmpl, err := template.New(pathpkg.Join(app.Configuration.AssetDirectory, "index.html")).Parse(text)
 	if err != nil {
-		return errs.ParseTemplate(pathpkg.Join(retro.Config.AssetDir, "index.html"), err)
+		return errs.ParseTemplate(pathpkg.Join(app.Configuration.AssetDirectory, "index.html"), err)
 	}
 
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
@@ -51,10 +51,10 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Pages
-` + buildRequireStmt(retro.Routes) + `
+` + buildRequireStmt(app.PageBasedRouter) + `
 
 // Props
-const props = require("../` + retro.Config.CacheDir + `/props.js").default
+const props = require("../` + app.Configuration.CacheDirectory + `/props.js").default
 
 async function asyncRun(requireStmtAsArray) {
 	const chain = []
@@ -85,20 +85,20 @@ async function asyncRun(requireStmtAsArray) {
 	console.log(JSON.stringify(resolvedAsArr, null, 2))
 }
 
-asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
+asyncRun(` + buildRequireStmtAsArray(app.PageBasedRouter) + `)
 `
 
-	if err := ioutil.WriteFile(pathpkg.Join(retro.Config.CacheDir, "pages.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return errs.WriteFile(pathpkg.Join(retro.Config.CacheDir, "pages.esbuild.js"), err)
+	if err := ioutil.WriteFile(pathpkg.Join(app.Configuration.CacheDirectory, "pages.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return errs.WriteFile(pathpkg.Join(app.Configuration.CacheDirectory, "pages.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
 		Bundle: true,
 		Define: map[string]string{
-			"__DEV__":              fmt.Sprintf("%t", retro.Config.Env == "development"),
-			"process.env.NODE_ENV": fmt.Sprintf("%q", retro.Config.Env),
+			"__DEV__":              fmt.Sprintf("%t", app.Configuration.Env == "development"),
+			"process.env.NODE_ENV": fmt.Sprintf("%q", app.Configuration.Env),
 		},
-		EntryPoints: []string{pathpkg.Join(retro.Config.CacheDir, "pages.esbuild.js")},
+		EntryPoints: []string{pathpkg.Join(app.Configuration.CacheDirectory, "pages.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -122,9 +122,9 @@ asyncRun(` + buildRequireStmtAsArray(retro.Routes) + `)
 	// TODO: Change to sync.WaitGroup or errgroup?
 	for _, each := range pages {
 		var path string
-		path = each.FSPath[len(retro.Config.PagesDir):]          // pages/page.js -> page.js
-		path = path[:len(path)-len(pathpkg.Ext(path))] + ".html" // page.js -> page.html
-		path = pathpkg.Join(retro.Config.BuildDir, path)         // page.html -> build/page.html
+		path = each.FSPath[len(app.Configuration.PagesDirectory):]  // pages/page.js -> page.js
+		path = path[:len(path)-len(pathpkg.Ext(path))] + ".html"    // page.js -> page.html
+		path = pathpkg.Join(app.Configuration.BuildDirectory, path) // page.html -> build/page.html
 		if dir := pathpkg.Dir(path); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				return errs.MkdirAll(dir, err)

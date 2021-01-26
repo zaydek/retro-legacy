@@ -38,7 +38,7 @@ func isAllowedRouteFileType(path string) bool {
 //
 // TODO: Add tests.
 func toPathCase(config Configuration, path string) string {
-	path = strings.TrimPrefix(path, config.PagesDir)
+	path = strings.TrimPrefix(path, config.PagesDirectory)
 	path = path[:len(path)-len(filepath.Ext(path))]
 
 	// TODO: What about /nested/?
@@ -50,7 +50,7 @@ func toPathCase(config Configuration, path string) string {
 //
 // TODO: Add tests.
 func toComponentCase(config Configuration, path string) string {
-	path = strings.TrimPrefix(path, config.PagesDir+"/") // Add "/"
+	path = strings.TrimPrefix(path, config.PagesDirectory+"/") // Add "/"
 	path = path[:len(path)-len(filepath.Ext(path))]
 
 	var str string
@@ -85,9 +85,9 @@ func newPageBasedRoute(config Configuration, path string) PageBasedRoute {
 	return route
 }
 
-func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
+func initPageBasedRouter(config Configuration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
-	if err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func loadRoutes(config Configuration) ([]PageBasedRoute, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, errs.Walk(config.PagesDir, err)
+		return nil, errs.Walk(config.PagesDirectory, err)
 	}
 	return routes, nil
 }

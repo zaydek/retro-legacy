@@ -4,13 +4,17 @@ import (
 	"os"
 	"time"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/color"
 )
 
-// Retro describes the user’s configuration and page-based routes.
-type Retro struct {
-	Config Configuration
-	Routes []PageBasedRoute
+type RetroApp struct {
+	esbuildResult   api.BuildResult
+	esbuildWarnings []api.Message
+	esbuildErrors   []api.Message
+
+	Configuration   Configuration
+	PageBasedRouter []PageBasedRoute
 }
 
 // var usage = `
@@ -59,30 +63,31 @@ var usage = `
     ` + color.Underline("https://github.com/zaydek/retro") + `
 `
 
-func (r Retro) usage() {
+func (app *RetroApp) usage() {
 	raw.Println(usage)
 }
 
-func (r Retro) version() {
+func (app *RetroApp) version() {
 	stdout.Println("0.0.x")
 }
 
-func (r Retro) unknown(cmd string) {
-	stderr.Fatalf("Unrecognized command 'retro %s'. "+
+func (app *RetroApp) unknown(cmd string) {
+	stderr.Printf("Unrecognized command 'retro %s'. "+
 		"Try 'retro usage'.\n", cmd)
+	os.Exit(1)
 }
 
 func main() {
 	var (
-		now   = time.Now()
-		retro Retro
+		now = time.Now()
+		app = &RetroApp{} // TODO: We should have an initializer for this
 	)
 
 	defer color.TerminateFormatting(os.Stdout)
 
 	// $ retro help
 	if len(os.Args) < 2 {
-		retro.usage()
+		app.usage()
 		return
 	}
 
@@ -92,14 +97,14 @@ func main() {
 	case "usage":
 		fallthrough
 	case "--usage":
-		retro.usage()
+		app.usage()
 		return // Eager return
 
 	// $ retro help
 	case "help":
 		fallthrough
 	case "--help":
-		retro.usage()
+		app.usage()
 
 	// $ retro version
 	case "version":
@@ -107,42 +112,43 @@ func main() {
 	case "--version":
 		fallthrough
 	case "-v":
-		retro.version()
+		app.version()
 
 	// $ retro init
 	case "init":
 		var dirname string
 		if len(os.Args) < 3 {
-			stderr.Fatalln("It looks like you’re trying to run 'retro init' in the current directory. " +
+			stderr.Println("It looks like you’re trying to run 'retro init' in the current directory. " +
 				"In that case, use '.' explicitly:\n\n" +
 				"- retro init .\n\n" +
 				"Or\n\n" +
 				"- retro init retro-app")
+			os.Exit(1)
 		}
 		dirname = os.Args[2]
-		retro.init(dirname)
+		app.init(dirname)
 
 	// $ retro watch
 	//
 	// TODO: Add support for env PORT and argument --port.
 	// TODO: Add support for more paths than pages. Actually, it would be nicer if
-	// Retro restarts the watcher when config.PublicDur or config.PagesDir
+	// RetroApp restarts the watcher when config.PublicDur or config.PagesDir
 	// changes. In theory we should also restart if there are changes to
-	// retro.config.jsonc.
+	// app.config.jsonc.
 	case "watch":
-		retro.watch()
+		app.watch()
 
 	// $ retro build
 	case "build":
-		retro.build()
+		app.build()
 
 	// $ retro serve
 	case "serve":
-		retro.serve()
+		app.serve()
 
 	default:
-		retro.unknown(os.Args[1])
-		os.Exit(1)
+		app.unknown(os.Args[1])
+		// (NOTE: unknown uses os.Exit(1))
 	}
 
 	raw.Printf("⚡️ %0.3fs\n", time.Since(now).Seconds())

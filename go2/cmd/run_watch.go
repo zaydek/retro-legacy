@@ -202,9 +202,9 @@ func (a *RetroApp2) Rebuild() {
 // )
 
 // TODO: Should copy public to build.
-func (r Retro) watch() {
+func (app *RetroApp) watch() {
 	var (
-		app              = newRetroApp()
+		// app              = newRetroApp()
 		serverSentEvents = make(chan sse.Event, 8)
 	)
 

@@ -9,25 +9,25 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-func copyAssetToBuildDir(retro Retro) error {
+func copyAssetDirectoryToBuildDirectory(app *RetroApp) error {
 	var paths []struct {
 		src string
 		dst string
 	}
 
-	if err := filepath.Walk(retro.Config.AssetDir, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(app.Configuration.AssetDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() && info.Name() != "index.html" {
 			src := path
-			dst := pathpkg.Join(retro.Config.BuildDir, path)
+			dst := pathpkg.Join(app.Configuration.BuildDirectory, path)
 			paths = append(paths, struct{ src, dst string }{src: src, dst: dst})
 		}
 		return nil
 	}); err != nil {
-		return errs.Walk(retro.Config.AssetDir, err)
+		return errs.Walk(app.Configuration.AssetDirectory, err)
 	}
 
 	for _, each := range paths {
@@ -53,16 +53,18 @@ func copyAssetToBuildDir(retro Retro) error {
 	return nil
 }
 
-func (r Retro) build() {
+func (app *RetroApp) build() {
 	var err error
-	if r.Config, err = loadConfiguration(); err != nil {
-		stderr.Fatalln(err)
-	} else if r.Routes, err = loadRoutes(r.Config); err != nil {
-		stderr.Fatalln(err)
+	if app.Configuration, err = initConfiguration(); err != nil {
+		stderr.Println(err)
+		os.Exit(1)
+	} else if app.PageBasedRouter, err = initPageBasedRouter(app.Configuration); err != nil {
+		stderr.Println(err)
+		os.Exit(1)
 	}
 
-	must(copyAssetToBuildDir(r))
-	must(prerenderProps(r))
-	must(prerenderApp(r))
-	must(prerenderPages(r))
+	must(copyAssetDirectoryToBuildDirectory(app))
+	must(prerenderProps(app))
+	must(prerenderApp(app))
+	must(prerenderPages(app))
 }
