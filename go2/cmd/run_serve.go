@@ -16,5 +16,5 @@ func (r Retro) serve() {
 	http.Handle("/", http.FileServer(http.Dir(r.Config.BuildDir)))
 	raw.Printf("✅ https://localhost:%d\n", r.Config.Port)
 
-	must(http.ListenAndServe(":"+strconv.Itoa(r.Config.Port), nil))
+	must(http.ListenAndServe(":"+strconv.Itoa(int(r.Config.Port)), nil))
 }
