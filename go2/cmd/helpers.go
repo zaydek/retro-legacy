@@ -41,13 +41,17 @@ func (r Runtime) getPort() int {
 func loadRuntime() Runtime {
 	var err error
 
-	var runtime Runtime
+	runtime := Runtime{
+		Config: DirConfiguration{
+			AssetDirectory: "public",
+			PagesDirectory: "pages",
+			CacheDirectory: "cache",
+			BuildDirectory: "build",
+		},
+	}
+
 	runtime.Commands = cli.ParseCLIArguments()
-	if cmd := runtime.getCmd(); cmd != "create" {
-		if runtime.Config, err = loadConfig(); err != nil {
-			loggers.Stderr.Println(err)
-			os.Exit(1)
-		}
+	if cmd := runtime.getCmd(); cmd == "watch" || cmd == "build" {
 		if runtime.Router, err = loadRouter(runtime.Config); err != nil {
 			loggers.Stderr.Println(err)
 			os.Exit(1)

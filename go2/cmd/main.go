@@ -28,8 +28,10 @@ func main() {
 	case "create":
 		runtime.Create()
 	case "watch":
+		must(runServerGuards(runtime.Config))
 		// runtime.Watch()
 	case "build":
+		must(runServerGuards(runtime.Config))
 		// runtime.Build()
 	case "serve":
 		runtime.Serve()
