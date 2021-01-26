@@ -1,7 +1,7 @@
 # macOS
 .DS_Store
 
-# Node / Yarn
+# NPM / Yarn
 /.env
 /*.log*
 /node_modules

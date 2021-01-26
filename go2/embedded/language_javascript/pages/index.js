@@ -1,9 +1,5 @@
 import React from "react"
 
-// Note that functions load, meta, and pages are tree shaken from your
-// development and production builds unless you directly use them, which you
-// probably shouldn’t.
-
 // Synchronously or asynchronously resolves props on the server. Props are
 // forwarded as <Head {...props}> and <Page {...props}>.
 export async function load() {
@@ -28,12 +24,12 @@ export function manifest(props) {
 }
 
 // Head resolves page metadata on the server.
-export function Head(props) {
+export function Head({ title, description }) {
 	return (
 		<>
-			<title>{props.title}</title>
-			<meta name="title" content={props.title} />
-			<meta name="description" content={props.description} />
+			<title>{title}</title>
+			<meta name="title" content={title} />
+			<meta name="description" content={description} />
 		</>
 	)
 }

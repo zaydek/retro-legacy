@@ -1,12 +1,15 @@
 import React from "react"
 
-// Note that functions load, meta, and pages are tree shaken from your
-// development and production builds unless you directly use them, which you
-// probably shouldn’t.
+interface LoadProps {
+	title: string
+	description: string
+}
+
+type Manifest = Array<{ path: string; props: LoadProps }>
 
 // Synchronously or asynchronously resolves props on the server. Props are
 // forwarded as <Head {...props}> and <Page {...props}>.
-export async function load() {
+export async function load(): Promise<LoadProps> {
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve({
@@ -19,7 +22,7 @@ export async function load() {
 
 // For pages that use [manifest] syntax. Use { path: "..." } for the page URL.
 // { props: ... } are forwarded as <Head {...props}> and <Page {...props}>.
-export function manifest(props) {
+export function manifest(props: LoadProps): Manifest {
 	return [
 		{ path: "xyz", props },
 		{ path: "xyz", props },
@@ -28,17 +31,17 @@ export function manifest(props) {
 }
 
 // Head resolves page metadata on the server.
-export function Head(props) {
+export function Head({ title, description }: LoadProps): JSX.Element {
 	return (
 		<>
-			<title>{props.title}</title>
-			<meta name="title" content={props.title} />
-			<meta name="description" content={props.description} />
+			<title>{title}</title>
+			<meta name="title" content={title} />
+			<meta name="description" content={description} />
 		</>
 	)
 }
 
-export default function Page(props) {
+export default function Page(props: LoadProps): JSX.Element {
 	return (
 		<div>
 			<h1>Hello world!</h1>
