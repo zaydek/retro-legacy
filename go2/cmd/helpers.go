@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
+	pathpkg "path"
+	"path/filepath"
 
 	"github.com/zaydek/retro/cli"
+	"github.com/zaydek/retro/errs"
 	"github.com/zaydek/retro/loggers"
 )
 
@@ -60,4 +64,52 @@ func buildRequireStmtAsArray(routes []PageBasedRoute) string {
 	}
 	requireStmtAsArray = "[" + requireStmtAsArray + "\n]"
 	return requireStmtAsArray
+}
+
+// copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
+// the build directory.
+func copyAssetDirectoryToBuildDirectory(config Configuration) error {
+	type copyPath struct {
+		src string
+		dst string
+	}
+
+	var paths []copyPath
+	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Do not copy directory paths or index.html:
+		if !info.IsDir() && info.Name() != "index.html" {
+			src := path
+			dst := pathpkg.Join(config.BuildDirectory, path)
+			paths = append(paths, copyPath{src: src, dst: dst})
+		}
+		return nil
+	}); err != nil {
+		return errs.Walk(config.AssetDirectory, err)
+	}
+
+	for _, each := range paths {
+		if dir := pathpkg.Dir(each.dst); dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return errs.MkdirAll(dir, err)
+			}
+		}
+		src, err := os.Open(each.src)
+		if err != nil {
+			return errs.Unexpected(err)
+		}
+		dst, err := os.Create(each.dst)
+		if err != nil {
+			return errs.Unexpected(err)
+		}
+		if _, err := io.Copy(src, dst); err != nil {
+			return errs.Unexpected(err)
+		}
+		src.Close()
+		dst.Close()
+	}
+	return nil
 }
