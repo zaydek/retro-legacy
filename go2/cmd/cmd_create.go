@@ -3,16 +3,20 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"io/fs"
 	"io/ioutil"
 	"os"
-	pathpkg "path"
 
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
 	"github.com/zaydek/retro/errs"
 	"github.com/zaydek/retro/loggers"
+)
+
+var (
+	reactVersion        = "latest"
+	reactDOMVersion     = "latest"
+	retroVersion        = "latest"
+	retroScriptsVersion = "latest"
 )
 
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
@@ -30,10 +34,10 @@ func (r Runtime) Create() {
 			} else {
 				typ = "directory"
 			}
-			loggers.Stderr.Printf("Aborted. A %s named '%[2]s' already exists.\n\n"+
-				"- Try 'retro create [dir]' where '[dir]' is not '%[2]s'\n\n"+
-				"Or\n\n"+
-				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro create %[2]s'\n", typ, r.CreateCommand.Directory)
+			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Boldf("'%s'", r.CreateCommand.Directory) + " already exists.\n\n" +
+				"- Try " + color.Bold("'retro create [dir]'") + "\n\n" +
+				"Or\n\n" +
+				"- Try " + color.Boldf("'rm -r %[1]s && retro create %[1]s'", r.CreateCommand.Directory))
 			os.Exit(1)
 		}
 
@@ -47,122 +51,38 @@ func (r Runtime) Create() {
 		defer os.Chdir("..")
 	}
 
-	var (
-		paths    []string
-		badPaths []string
-	)
-
-	if err := fs.WalkDir(languageFS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if dirEntry.IsDir() {
-			return nil
-		}
-		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			embed, err := languageFS.Open(path)
-			if err != nil {
-				return err
-			}
-			srcbstr, err := ioutil.ReadAll(embed)
-			if err != nil {
-				return err
-			}
-			dstbstr, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			if !bytes.Equal(srcbstr, dstbstr) {
-				badPaths = append(badPaths, path)
-				return nil
-			}
-			embed.Close()
-		}
-		paths = append(paths, path)
-		return nil
-	}); err != nil {
-		loggers.Stderr.Println(errs.Walk(fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language), err))
+	namespace := fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language)
+	if err := copyFSToDirectory(languageFS, namespace, r.CreateCommand.Directory); err != nil {
+		loggers.Stderr.Println(err)
 		os.Exit(1)
 	}
 
-	if len(badPaths) > 0 {
-		var ul string
-		for x, each := range badPaths {
-			var sep string
-			if x > 0 {
-				sep = "\n"
-			}
-			ul += sep + "- " + each
-		}
-		loggers.Stderr.Printf("Aborted. "+
-			"Try 'rm -r [path]' or 'sudo rm -r [path]' if that doesn’t work and rerun 'retro create %s'.\n\n"+
-			"%s\n", r.CreateCommand.Directory, ul)
+	repoName := r.CreateCommand.Directory
+	if repoName == "." {
+		repoName = "retro-app"
+	}
+
+	dot := embedded.PkgStruct{
+		RepoName:            repoName,
+		ReactVersion:        reactVersion,
+		ReactDOMVersion:     reactDOMVersion,
+		RetroVersion:        retroVersion,
+		RetroScriptsVersion: retroScriptsVersion,
+	}
+
+	var buf bytes.Buffer
+	if err := embedded.PkgTemplate.Execute(&buf, dot); err != nil {
+		loggers.Stderr.Println(errs.ExecuteTemplate("package.json", err))
 		os.Exit(1)
 	}
 
-	for _, each := range paths {
-		if dir := pathpkg.Dir(each); dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
-				loggers.Stderr.Println(errs.MkdirAll(dir, err))
-				os.Exit(1)
-			}
-		}
-		src, err := languageFS.Open(each)
-		if err != nil {
-			loggers.Stderr.Println(errs.Unexpected(err))
-			os.Exit(1)
-		}
-		dst, err := os.Create(each)
-		if err != nil {
-			loggers.Stderr.Println(errs.Unexpected(err))
-			os.Exit(1)
-		}
-		if _, err := io.Copy(dst, src); err != nil {
-			loggers.Stderr.Println(errs.Unexpected(err))
-			os.Exit(1)
-		}
-		src.Close()
-		dst.Close()
-	}
-
-	repo := r.CreateCommand.Directory
-	if repo == "." {
-		repo = "retro-app"
-	}
-
-	// TODO
-	pkg := `{
-	"name": ` + fmt.Sprintf("%q", repo) + `,
-	"scripts": {
-		"watch": "retro-react-scripts watch",
-		"build": "retro-react-scripts build",
-		"serve": "retro-react-scripts serve"
-	},
-	"dependencies": {
-		"react": "latest",
-		"react-dom": "latest",
-		"retro-react": "latest",
-		"retro-react-scripts": "latest"
-	}
-}
-`
-
-	if _, err := os.Stat("package.json"); os.IsNotExist(err) {
-		if err := ioutil.WriteFile("package.json", []byte(pkg), 0644); err != nil {
-			var path string
-			if r.CreateCommand.Directory == "." {
-				path = "package.json"
-			} else {
-				path = pathpkg.Join(r.CreateCommand.Directory, "package.json")
-			}
-			loggers.Stderr.Println(errs.WriteFile(path, err))
-			os.Exit(1)
-		}
+	if err := ioutil.WriteFile("package.json", buf.Bytes(), 0644); err != nil {
+		loggers.Stderr.Println(errs.WriteFile("package.json", err))
+		os.Exit(1)
 	}
 
 	if r.CreateCommand.Directory == "." {
-		loggers.Stdout.Print(color.Bold("Created a Retro app!") + `
+		loggers.Stdout.Println(color.Bold("Successfully created a new Retro app.") + `
 
 ` + color.BoldBlack("# npm") + `
 npm
@@ -172,22 +92,20 @@ npm run watch
 yarn
 yarn watch
 
-Happy hacking!
-`)
+Happy hacking!`)
 	} else {
-		loggers.Stdout.Printf(color.Boldf("Created '%s'!", r.CreateCommand.Directory)+`
+		loggers.Stdout.Println(color.Bold("Successfully created a new Retro app.") + `
 
-`+color.BoldBlack("# npm")+`
-cd %[1]s
+` + color.BoldBlack("# npm") + `
+cd ` + r.CreateCommand.Directory + `
 npm
 npm run watch
 
-`+color.BoldBlack("# yarn")+`
-cd %[1]s
+` + color.BoldBlack("# yarn") + `
+cd ` + r.CreateCommand.Directory + `
 yarn
 yarn watch
 
-Happy hacking!
-`, r.CreateCommand.Directory)
+Happy hacking!`)
 	}
 }

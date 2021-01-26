@@ -2,9 +2,9 @@ package embedded
 
 import "text/template"
 
-// PackageStruct describes the struct used to execute PackageTemplate.
-type PackageStruct struct {
-	CreateDirectory     string
+// PkgStruct describes the struct used to execute PkgTemplate.
+type PkgStruct struct {
+	RepoName            string
 	ReactVersion        string
 	ReactDOMVersion     string
 	RetroVersion        string
@@ -14,4 +14,4 @@ type PackageStruct struct {
 //go:embed pkg.json
 var pkg string
 
-var PackageTemplate = template.Must(template.New("package.json").Parse(pkg))
+var PkgTemplate = template.Must(template.New("package.json").Parse(pkg))

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	pathpkg "path"
 	"path/filepath"
@@ -66,29 +67,29 @@ func buildRequireStmtAsArray(routes []PageBasedRoute) string {
 	return requireStmtAsArray
 }
 
-// copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
-// the build directory.
-func copyAssetDirectoryToBuildDirectory(config Configuration) error {
-	type copyPath struct {
-		src string
-		dst string
-	}
+// copyPath describes a copy path for copyFSToDirectory and
+// copyAssetDirectoryToBuildDirectory.
+type copyPath struct {
+	src string
+	dst string
+}
 
+// copyFSToDirectory recursively copies a filesystem to a directory. The
+// directory must be created but empty.
+func copyFSToDirectory(f fs.FS, namespace, dir string) error {
 	var paths []copyPath
-	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
+	if err := fs.WalkDir(f, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-
-		// Do not copy directory paths or index.html:
-		if !info.IsDir() && info.Name() != "index.html" {
+		if !dirEntry.IsDir() {
 			src := path
-			dst := pathpkg.Join(config.BuildDirectory, path)
+			dst := pathpkg.Join(dir, path)
 			paths = append(paths, copyPath{src: src, dst: dst})
 		}
 		return nil
 	}); err != nil {
-		return errs.Walk(config.AssetDirectory, err)
+		return errs.Walk(namespace, err)
 	}
 
 	for _, each := range paths {
@@ -97,6 +98,56 @@ func copyAssetDirectoryToBuildDirectory(config Configuration) error {
 				return errs.MkdirAll(dir, err)
 			}
 		}
+	}
+
+	for _, each := range paths {
+		src, err := os.Open(each.src)
+		if err != nil {
+			return errs.Unexpected(err)
+		}
+		dst, err := os.Create(each.dst)
+		if err != nil {
+			return errs.Unexpected(err)
+		}
+		if _, err := io.Copy(src, dst); err != nil {
+			return errs.Unexpected(err)
+		}
+		src.Close()
+		dst.Close()
+	}
+	return nil
+}
+
+// copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
+// the build directory.
+func copyAssetDirectoryToBuildDirectory(config Configuration) error {
+	var paths []copyPath
+	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			if info.Name() != "index.html" {
+				return nil
+			}
+			src := path
+			dst := pathpkg.Join(config.BuildDirectory, path)
+			paths = append(paths, copyPath{src: src, dst: dst})
+		}
+		return nil
+	}); err != nil {
+		errs.Walk(config.AssetDirectory, err)
+	}
+
+	for _, each := range paths {
+		if dir := pathpkg.Dir(each.dst); dir != "." {
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return errs.MkdirAll(dir, err)
+			}
+		}
+	}
+
+	for _, each := range paths {
 		src, err := os.Open(each.src)
 		if err != nil {
 			return errs.Unexpected(err)
