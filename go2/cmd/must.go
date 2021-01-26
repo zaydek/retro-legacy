@@ -1,12 +1,16 @@
 package main
 
-import "os"
+import (
+	"os"
+
+	"github.com/zaydek/retro/loggers"
+)
 
 func must(err error) {
 	if err == nil {
 		// No-op
 		return
 	}
-	stderr.Println(err)
+	loggers.Stderr.Println(err)
 	os.Exit(1)
 }

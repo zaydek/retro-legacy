@@ -12,6 +12,14 @@ import (
 	"github.com/zaydek/retro/loggers"
 )
 
+func version() {
+	fmt.Println("TODO")
+}
+
+func usage() {
+	fmt.Println(usageStr)
+}
+
 func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	cmd := flag.NewFlagSet("create", flag.ContinueOnError)
 	cmd.SetOutput(ioutil.Discard)
@@ -93,81 +101,69 @@ func parseServeCommandFlags(args []string) *ServeCommandFlags {
 	return flags
 }
 
-var usageStr = `
-	` + color.BoldWhite("Usage:") + `
-
-		retro create [dir]      ` + color.Underline("Creates") + ` a new Retro app at directory 'dir'
-		retro watch [...dirs]   Starts the development server and ` + color.Underline("watches") + ` 'dirs' for changes
-		retro build             ` + color.Underline("Builds") + ` the production-ready build
-		retro serve             ` + color.Underline("Serves") + ` the production-ready build
-
-	` + color.BoldWhite("retro create [dir]") + `
-
-		'retro create' creates a new Retro app at directory 'dir'
-
-			--language=[js | ts]  Programming language (default 'js')
-
-	` + color.BoldWhite("retro watch [...dirs]") + `
-
-		'retro watch' starts a development server and watches directories 'dirs' for
-		changes (default 'components pages')
-
-			--poll=<duration>     Poll duration (default '250ms')
-			--port=<number>       Port number (default '8000')
-
-	` + color.BoldWhite("retro build") + `
-
-		'retro build' builds the production-ready build
-
-			--cached              Use cached props for faster builds (disabled by default)
-
-	` + color.BoldWhite("retro serve") + `
-
-		'retro serve' serves the production-ready build
-
-			--port=<number>       Port number (default '8000')
-
-	` + color.BoldWhite("Repository:") + `
-
-		` + color.Underline("https://github.com/zaydek/retro") + `
-`
-
-func version() {
-	fmt.Println("TODO")
-}
-
-func usage() {
-	fmt.Println(usageStr)
-}
-
 func ParseCLIArguments() Commands {
+	var cmds Commands
+
+	// $ retro
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(0)
 	}
-	// Guard extraneous commands:
-	cmd := os.Args[1]
-	if cmd == "version" || cmd == "--version" {
+
+	switch os.Args[1] {
+
+	// $ retro usage
+	case "usage":
+		fallthrough
+	case "--usage":
+		usage()
+		os.Exit(0)
+
+	// $ retro help
+	case "help":
+		fallthrough
+	case "--help":
+		usage()
+		os.Exit(0)
+
+	// $ retro version
+	case "version":
+		fallthrough
+	case "--version":
+		fallthrough
+	case "-v":
 		version()
 		os.Exit(0)
-	} else if cmd == "usage" || cmd == "--usage" || cmd == "help" || cmd == "--help" {
-		usage()
-		os.Exit(0)
-	}
-	// Guard commands:
-	if cmd != "create" && cmd != "watch" && cmd != "build" && cmd != "serve" {
-		usage()
-		os.Exit(0)
-	}
-	var cmds Commands
-	if cmd == "create" {
+
+	// $ retro init
+	case "init":
+		// var dirname string
+		// if len(os.Args) < 3 {
+		// 	stderr.Println("It looks like you’re trying to run 'retro init' in the current directory. " +
+		// 		"In that case, use '.' explicitly:\n\n" +
+		// 		"- retro init .\n\n" +
+		// 		"Or\n\n" +
+		// 		"- retro init retro-app")
+		// 	os.Exit(2)
+		// }
+		// dirname = os.Args[2]
 		cmds.CreateCommand = parseCreateCommandFlags(os.Args[2:])
-	} else if cmd == "watch" {
+
+	// $ retro watch
+	case "watch":
 		cmds.WatchCommand = parseWatchCommandFlags(os.Args[2:])
-	} else if cmd == "build" {
+
+	// $ retro build
+	case "build":
 		cmds.BuildCommand = parseBuildCommandFlags(os.Args[2:])
-	} else if cmd == "serve" {
+
+	// $ retro serve
+	case "serve":
 		cmds.ServeCommand = parseServeCommandFlags(os.Args[2:])
+
+	default:
+		usage()
+		os.Exit(2)
 	}
 	return cmds
 }

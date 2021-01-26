@@ -7,11 +7,6 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
-var (
-	RawStdout = New(os.Stdout, NoopTransform)
-	RawStderr = New(os.Stderr, NoopTransform)
-)
-
 var spaces = strings.Repeat(" ", 2)
 
 var Stdout = New(os.Stdout, func(msg string) string {
