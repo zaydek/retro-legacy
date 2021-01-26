@@ -1,0 +1,41 @@
+Reactor is a page-based router and compiler for React
+
+the idea is to create a compiler for react. it's not actually a framework because it doesn't have
+many opinions, at least not yet. the idea is that you would use this to generate your project based
+on your requirements which are optionally documented in your configuration file. from your pages
+directory and several small conventions, the compiler can infer how you want your resulting project
+to look like and generate internals for you so you can stay declarative in react and still benefit
+from static-site generation. in the future, this architecture will be likely extended to support
+client-side rendered / server-generated / server-rendered routes based on a filename convention.
+
+so specifically, you can imagine:
+
+/pages
+	page-a.js
+	page-b.js
+	app.csr.js // highly dynamic and interactive page
+	app.ssr.js // highly dynamic and seo optimized page
+
+	// ssr is ideal is most circumstances except for when react.suspense and other experimental apis
+	// are not supported. that's why it's important to focus on the ssg and csr story first. ssr is
+	// highly coupled with business value and therefore leveraged if ssg and csr are not enough.
+	//
+	// you should only use ssr if you plan on a) shipping a prepackaged server -- not the traditional
+	// stateless html, css, and js assets, and b) you don't plan on using experimental apis that are
+	// not supported on the server (ssr means your app is literally prerendered / cached on the server
+	// and therefore needs to leverage isomorphic server logic, which is complicated and annoying.
+
+note that the default type is server-generated, which means your pages are always hydrated unless
+otherwise specified.
+
+you can also provide meta-components that wrap your app or markdown files. if you want your entire
+app to share some view, you can include an internal/app.js file which is responsible for rendering
+a shared view between all routes.
+
+if you want to customized how markdown is processed, which components are substituted, etc., you
+can use add a internal/mdx.js too
+
+finally, if you need to customize the outermost level of your app, that is, the document and not
+what's actually rendered inside of the <div id="root"> tag, you can also add a internal/document.js.
+this would be where you add custom fonts, etc. note that effects won't work in this top-most level
+because only your app is conditionally rendered or hydrated.
