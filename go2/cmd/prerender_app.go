@@ -13,13 +13,6 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-// // App
-// {{if .Flags.HasApp -}}
-// import App from "../{{.Configuration.PagesDir}}/internal/app"
-// {{- else -}}
-// // (No <App> component)
-// {{- end}}
-
 func prerenderApp(app *RetroApp) error {
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
