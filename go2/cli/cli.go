@@ -33,10 +33,19 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	}
 	if flags.Language != "js" && flags.Language != "ts" {
 		loggers.Stderr.Println(color.Bold("'--language'") + " must be " + color.Bold("'js'") + " for JavaScript or " + color.Bold("'ts'") + " for TypeScript.\n\n" +
-			"- Try " + color.Bold("'retro create --language=js ...'") + " for JavaScript\n" +
-			"- Try " + color.Bold("'retro create --language=ts ...'") + " for TypeScript")
+			"- Try " + color.Bold("'retro create --language=js [dir]'") + " for JavaScript\n" +
+			"- Try " + color.Bold("'retro create --language=ts [dir]'") + " for TypeScript")
 		os.Exit(2)
 	}
+	if len(cmd.Args()) == 0 {
+		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("'retro init'") + " in the current directory. " +
+			"In that case, use " + color.Bold("'.'") + " explicitly:\n\n" +
+			"- retro init .\n\n" +
+			"Or\n\n" +
+			"- retro init retro-app")
+		os.Exit(2)
+	}
+	flags.Directory = cmd.Args()[0]
 	return flags
 }
 
@@ -137,16 +146,6 @@ func ParseCLIArguments() Commands {
 
 	// $ retro init
 	case "init":
-		// var dirname string
-		// if len(os.Args) < 3 {
-		// 	stderr.Println("It looks like you’re trying to run 'retro init' in the current directory. " +
-		// 		"In that case, use '.' explicitly:\n\n" +
-		// 		"- retro init .\n\n" +
-		// 		"Or\n\n" +
-		// 		"- retro init retro-app")
-		// 	os.Exit(2)
-		// }
-		// dirname = os.Args[2]
 		cmds.CreateCommand = parseCreateCommandFlags(os.Args[2:])
 
 	// $ retro watch

@@ -12,30 +12,31 @@ import (
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
 	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/loggers"
 )
 
-// TODO: Change to npx create-retro-app?
-func (app *RetroApp) init(rootDirectory string) {
-	if rootDirectory != "." {
-		if info, err := os.Stat(rootDirectory); !os.IsNotExist(err) {
+// TODO: npx create-retro-app is functionally equivalent to retro create [dir].
+func (r Runtime) Create() {
+	if r.CreateCommand.Directory != "." {
+		if info, err := os.Stat(r.CreateCommand.Directory); !os.IsNotExist(err) {
 			var typ string
 			if info.IsDir() {
 				typ = "file"
 			} else {
 				typ = "directory"
 			}
-			stderr.Printf("Aborted. A %s named '%[2]s' already exists.\n\n"+
+			loggers.Stderr.Printf("Aborted. A %s named '%[2]s' already exists.\n\n"+
 				"- Try 'retro init [dir]' where '[dir]' is not '%[2]s'\n\n"+
 				"Or\n\n"+
-				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro init %[2]s'\n", typ, rootDirectory)
+				"- Try 'rm %[2]s' or 'sudo rm -r %[2]s' if that doesn’t work and rerun 'retro init %[2]s'\n", typ, r.CreateCommand.Directory)
 			os.Exit(1)
 		}
 
-		if err := os.MkdirAll(rootDirectory, 0755); err != nil {
-			stderr.Println(errs.MkdirAll(rootDirectory, err))
+		if err := os.MkdirAll(r.CreateCommand.Directory, 0755); err != nil {
+			loggers.Stderr.Println(errs.MkdirAll(r.CreateCommand.Directory, err))
 			os.Exit(1)
-		} else if err := os.Chdir(rootDirectory); err != nil {
-			stderr.Println(errs.Chdir(rootDirectory, err))
+		} else if err := os.Chdir(r.CreateCommand.Directory); err != nil {
+			loggers.Stderr.Println(errs.Chdir(r.CreateCommand.Directory, err))
 			os.Exit(1)
 		}
 		defer os.Chdir("..")
@@ -46,6 +47,7 @@ func (app *RetroApp) init(rootDirectory string) {
 		badPaths []string
 	)
 
+	// TODO
 	if err := fs.WalkDir(embedded.FS, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -76,7 +78,8 @@ func (app *RetroApp) init(rootDirectory string) {
 		paths = append(paths, path)
 		return nil
 	}); err != nil {
-		stderr.Println(errs.Walk("<embedded>", err))
+		// TODO?
+		loggers.Stderr.Println(errs.Walk("<embedded>", err))
 		os.Exit(1)
 	}
 
@@ -89,44 +92,45 @@ func (app *RetroApp) init(rootDirectory string) {
 			}
 			ul += sep + "- " + each
 		}
-		stderr.Printf("Aborted. "+
+		loggers.Stderr.Printf("Aborted. "+
 			"Try 'rm -r [path]' or 'sudo rm -r [path]' if that doesn’t work and rerun 'retro init %s'.\n\n"+
-			"%s\n", rootDirectory, ul)
+			"%s\n", r.CreateCommand.Directory, ul)
 		os.Exit(1)
 	}
 
 	for _, each := range paths {
 		if dir := pathpkg.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
-				stderr.Println(errs.MkdirAll(dir, err))
+				loggers.Stderr.Println(errs.MkdirAll(dir, err))
 				os.Exit(1)
 			}
 		}
 		src, err := embedded.FS.Open(each)
 		if err != nil {
-			stderr.Println(errs.Unexpected(err))
+			loggers.Stderr.Println(errs.Unexpected(err))
 			os.Exit(1)
 		}
 		dst, err := os.Create(each)
 		if err != nil {
-			stderr.Println(errs.Unexpected(err))
+			loggers.Stderr.Println(errs.Unexpected(err))
 			os.Exit(1)
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			stderr.Println(errs.Unexpected(err))
+			loggers.Stderr.Println(errs.Unexpected(err))
 			os.Exit(1)
 		}
 		src.Close()
 		dst.Close()
 	}
 
-	name := rootDirectory
-	if name == "." {
-		name = "retro-app"
+	repo := r.CreateCommand.Directory
+	if repo == "." {
+		repo = "retro-app"
 	}
 
+	// TODO
 	pkg := `{
-	"name": ` + fmt.Sprintf("%q", name) + `,
+	"name": ` + fmt.Sprintf("%q", repo) + `,
 	"scripts": {
 		"watch": "retro-react-scripts watch",
 		"build": "retro-react-scripts build",
@@ -144,18 +148,18 @@ func (app *RetroApp) init(rootDirectory string) {
 	if _, err := os.Stat("package.json"); os.IsNotExist(err) {
 		if err := ioutil.WriteFile("package.json", []byte(pkg), 0644); err != nil {
 			var path string
-			if rootDirectory == "." {
+			if r.CreateCommand.Directory == "." {
 				path = "package.json"
 			} else {
-				path = pathpkg.Join(rootDirectory, "package.json")
+				path = pathpkg.Join(r.CreateCommand.Directory, "package.json")
 			}
-			stderr.Println(errs.WriteFile(path, err))
+			loggers.Stderr.Println(errs.WriteFile(path, err))
 			os.Exit(1)
 		}
 	}
 
-	if rootDirectory == "." {
-		stdout.Print(color.Bold("Created a Retro app!") + `
+	if r.CreateCommand.Directory == "." {
+		loggers.Stdout.Print(color.Bold("Created a Retro app!") + `
 
 ` + color.BoldBlack("# npm") + `
 npm
@@ -165,10 +169,10 @@ npm run watch
 yarn
 yarn watch
 
-Happy hacking.
+Happy hacking!
 `)
 	} else {
-		stdout.Printf(color.Boldf("Created '%s'!", rootDirectory)+`
+		loggers.Stdout.Printf(color.Boldf("Created '%s'!", r.CreateCommand.Directory)+`
 
 `+color.BoldBlack("# npm")+`
 cd %[1]s
@@ -180,7 +184,7 @@ cd %[1]s
 yarn
 yarn watch
 
-Happy hacking.
-`, rootDirectory)
+Happy hacking!
+`, r.CreateCommand.Directory)
 	}
 }
