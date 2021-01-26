@@ -1,5 +1,5 @@
 {
-	"name": {{ .CreateDirectory }},
+	"name": "{{ .Directory }}",
 	"scripts": {
 		"watch": "retro-react-scripts watch",
 		"build": "retro-react-scripts build",
@@ -8,7 +8,7 @@
 	"dependencies": {
 		"react": "{{ .ReactVersion }}",
 		"react-dom": "{{ .ReactDOMVersion }}",
-		"retro-react": "{{ .RetroReactVersion }}",
-		"retro-react-scripts": "{{ .RetroReactScriptsVersion }}"
+		"retro-react": "{{ .RetroVersion }}",
+		"retro-react-scripts": "{{ .RetroScriptsVersion }}"
 	}
 }

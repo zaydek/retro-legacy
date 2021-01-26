@@ -39,7 +39,7 @@ import (
 //   ` + color.Bold("Repository:") + `
 //     ` + color.Underline("https://github.com/zaydek/retro") + `
 // `
-
+//
 // var usage = `
 //   ` + color.Bold("Usage:") + `
 //
@@ -55,7 +55,6 @@ import (
 
 var usage = `
 	Retro is a friendly development server and static-site generator (SSG) for React apps.
-
 
 	Usage:
 
