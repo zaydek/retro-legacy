@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/zaydek/retro/color"
@@ -17,7 +16,7 @@ func version() {
 }
 
 func usage() {
-	fmt.Println(usageStr)
+	fmt.Println(manpages)
 }
 
 func parseCreateCommandFlags(args []string) *CreateCommandFlags {
@@ -26,8 +25,8 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 
 	flags := &CreateCommandFlags{}
 	cmd.StringVar(&flags.Language, "language", "js", "")
-	if err := cmd.Parse(args); err != nil || len(cmd.Args()) > 0 {
-		loggers.Stderr.Println(color.Boldf("'retro %s'", strings.Join(os.Args[1:], " ")) + " uses unknown flags and or arguments. " +
+	if err := cmd.Parse(args); err != nil {
+		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("'retro help'") + " for help.")
 		os.Exit(2)
 	}
@@ -56,8 +55,8 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 	flags := &WatchCommandFlags{}
 	cmd.DurationVar(&flags.Poll, "poll", 250*time.Millisecond, "")
 	cmd.IntVar(&flags.Port, "port", 8000, "")
-	if err := cmd.Parse(args); err != nil || len(cmd.Args()) > 0 {
-		loggers.Stderr.Println(color.Boldf("'retro %s'", strings.Join(os.Args[1:], " ")) + " uses unknown flags and or arguments. " +
+	if err := cmd.Parse(args); err != nil {
+		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("'retro help'") + " for help.")
 		os.Exit(2)
 	}
@@ -84,8 +83,8 @@ func parseBuildCommandFlags(args []string) *BuildCommandFlags {
 
 	flags := &BuildCommandFlags{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
-	if err := cmd.Parse(args); err != nil || len(cmd.Args()) > 0 {
-		loggers.Stderr.Println(color.Boldf("'retro %s'", strings.Join(os.Args[1:], " ")) + " uses unknown flags and or arguments. " +
+	if err := cmd.Parse(args); err != nil {
+		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("'retro help'") + " for help.")
 		os.Exit(2)
 	}
@@ -98,8 +97,8 @@ func parseServeCommandFlags(args []string) *ServeCommandFlags {
 
 	flags := &ServeCommandFlags{}
 	cmd.IntVar(&flags.Port, "port", 8000, "")
-	if err := cmd.Parse(args); err != nil || len(cmd.Args()) > 0 {
-		loggers.Stderr.Println(color.Boldf("'retro %s'", strings.Join(os.Args[1:], " ")) + " uses unknown flags and or arguments. " +
+	if err := cmd.Parse(args); err != nil {
+		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("'retro help'") + " for help.")
 		os.Exit(2)
 	}
@@ -145,7 +144,7 @@ func ParseCLIArguments() Commands {
 		os.Exit(0)
 
 	// $ retro create
-	case "init":
+	case "create":
 		cmds.CreateCommand = parseCreateCommandFlags(os.Args[2:])
 
 	// $ retro watch
@@ -161,7 +160,9 @@ func ParseCLIArguments() Commands {
 		cmds.ServeCommand = parseServeCommandFlags(os.Args[2:])
 
 	default:
-		usage()
+		loggers.Stderr.Println("Unrecognized command. " +
+			"Try " + color.Bold("'retro help'") + " for help.\n\n" +
+			usageOnly)
 		os.Exit(2)
 	}
 	return cmds

@@ -1,6 +1,10 @@
 package embedded
 
-import "text/template"
+import (
+	_ "embed"
+
+	"text/template"
+)
 
 // PkgStruct describes the struct used to execute PkgTemplate.
 type PkgStruct struct {

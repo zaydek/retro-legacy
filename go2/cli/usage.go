@@ -1,8 +1,21 @@
 package cli
 
-import "github.com/zaydek/retro/color"
+import (
+	"strings"
 
-var usageStr = `
+	"github.com/zaydek/retro/color"
+)
+
+// NOTE: Uses two spaces.
+var usageOnly = strings.TrimSpace(`
+retro create [dir]     ` + color.Underline("Creates") + ` a new Retro app at directory 'dir'
+retro watch [...dirs]  Starts the development server and ` + color.Underline("watches") + ` 'dirs' for changes
+retro build            ` + color.Underline("Builds") + ` the production-ready build
+retro serve            ` + color.Underline("Serves") + ` the production-ready build
+`)
+
+// NOTE: Uses two spaces (see --language=[js | ts]).
+var manpages = `
 	` + color.BoldWhite("Usage:") + `
 
 		retro create [dir]      ` + color.Underline("Creates") + ` a new Retro app at directory 'dir'
