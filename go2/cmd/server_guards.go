@@ -1,11 +1,8 @@
 package main
 
 import (
-	"io"
 	"os"
-	pathpkg "path"
 
-	"github.com/zaydek/retro/embedded"
 	"github.com/zaydek/retro/errs"
 )
 
@@ -19,29 +16,29 @@ func statOrCreateDir(dir string) error {
 	return nil
 }
 
-// statOrCreateEntryPoint stats for the presence of a the index.html entry point
-// or creates one.
-//
-// NOTE: embedded.JavaScriptFS.Open("public/index.html") and
-// embedded.TypeScriptFS.Open("public/index.html") should be equivalent.
-func statOrCreateEntryPoint(config DirConfiguration) error {
-	if _, err := os.Stat(pathpkg.Join(config.PagesDirectory, "index.html")); os.IsNotExist(err) {
-		src, err := embedded.JavaScriptFS.Open("public/index.html")
-		if err != nil {
-			return errs.Unexpected(err)
-		}
-		dst, err := os.Create(pathpkg.Join(config.AssetDirectory, "index.html"))
-		if err != nil {
-			return errs.Unexpected(err)
-		}
-		if _, err := io.Copy(dst, src); err != nil {
-			return errs.Unexpected(err)
-		}
-		src.Close()
-		dst.Close()
-	}
-	return nil
-}
+// // statOrCreateEntryPoint stats for the presence of a the index.html entry point
+// // or creates one.
+// //
+// // NOTE: embedded.JavaScriptFS.Open("public/index.html") and
+// // embedded.TypeScriptFS.Open("public/index.html") should be equivalent.
+// func statOrCreateEntryPoint(config DirConfiguration) error {
+// 	if _, err := os.Stat(pathpkg.Join(config.PagesDirectory, "index.html")); os.IsNotExist(err) {
+// 		src, err := embedded.JavaScriptFS.Open("public/index.html")
+// 		if err != nil {
+// 			return errs.Unexpected(err)
+// 		}
+// 		dst, err := os.Create(pathpkg.Join(config.AssetDirectory, "index.html"))
+// 		if err != nil {
+// 			return errs.Unexpected(err)
+// 		}
+// 		if _, err := io.Copy(dst, src); err != nil {
+// 			return errs.Unexpected(err)
+// 		}
+// 		src.Close()
+// 		dst.Close()
+// 	}
+// 	return nil
+// }
 
 // runServerGuards runs server guards on the configuration.
 func runServerGuards(config DirConfiguration) error {
@@ -51,8 +48,8 @@ func runServerGuards(config DirConfiguration) error {
 			return err
 		}
 	}
-	if err := statOrCreateEntryPoint(config); err != nil {
-		return err
-	}
+	// if err := statOrCreateEntryPoint(config); err != nil {
+	// 	return err
+	// }
 	return nil
 }
