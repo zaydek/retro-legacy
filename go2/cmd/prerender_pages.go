@@ -23,26 +23,35 @@ type prerenderedPage struct {
 	Page   string `json:"page"`
 }
 
-func (r Runtime) prerenderPages() error {
-	bstr, err := ioutil.ReadFile(p.Join(r.Config.AssetDirectory, "index.html"))
+// parseRootHTMLTemplate parses public/index.html as a text/template.
+func parseRootHTMLTemplate(config DirConfiguration) (*template.Template, error) {
+	bstr, err := ioutil.ReadFile(p.Join(config.AssetDirectory, "index.html"))
 	if err != nil {
-		return errs.ReadFile(p.Join(r.Config.AssetDirectory, "index.html"), err)
+		return nil, errs.ReadFile(p.Join(config.AssetDirectory, "index.html"), err)
 	}
 
 	text := string(bstr)
 	if !strings.Contains(text, "{{ .Head }}") {
-		return errors.New("No such template tag " + color.Bold("{{ .Head }}") + ". " +
+		return nil, errors.New("No such template tag " + color.Bold("{{ .Head }}") + ". " +
 			"This is the entry point for the " + color.Bold("<Head>") + " component in your page components. " +
 			"Add " + color.Bold("{{ .Head }}") + " to " + color.Bold("<head>") + ".")
 	} else if !strings.Contains(text, "{{ .Page }}") {
-		return errors.New("No such template tag " + color.Bold("{{ .Page }}") + ". " +
+		return nil, errors.New("No such template tag " + color.Bold("{{ .Page }}") + ". " +
 			"This is the entry point for the " + color.Bold("<Page>") + " component in your page components. " +
 			"Add " + color.Bold("{{ .Page }}") + " to " + color.Bold("<body>") + ".")
 	}
 
-	tmpl, err := template.New(p.Join(r.Config.AssetDirectory, "index.html")).Parse(text)
+	tmpl, err := template.New(p.Join(config.AssetDirectory, "index.html")).Parse(text)
 	if err != nil {
-		return errs.ParseTemplate(p.Join(r.Config.AssetDirectory, "index.html"), err)
+		return nil, errs.ParseTemplate(p.Join(config.AssetDirectory, "index.html"), err)
+	}
+	return tmpl, nil
+}
+
+func (r Runtime) prerenderPages() error {
+	tmpl, err := parseRootHTMLTemplate(r.Config)
+	if err != nil {
+		return err
 	}
 
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
@@ -80,6 +89,18 @@ async function asyncRun(requireStmtAsArray) {
 				)
 			}
 			page += '\n\t\t<script src="/app.js"></script>'
+
+			// page += "		<script src="/app.js"></script>" +
+			// page += "		<script>" +
+			// page += "			const source = new EventSource("/sse")" +
+			// page += "			source.addEventListener("reload", e => {" +
+			// page += "				window.location.reload()" +
+			// page += "			})" +
+			// page += "			source.addEventListener("warning", e => {" +
+			// page += "				console.warn(JSON.parse(e.data))" +
+			// page += "			})" +
+			// page += "		</script>"
+			// page += "		"
 
 			resolve({ fs_path, path, head, page })
 		})

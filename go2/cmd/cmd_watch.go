@@ -17,9 +17,14 @@ import (
 
 func (r *Runtime) esbuildBuild() {
 	results := api.Build(api.BuildOptions{
-		Bundle:      true,
+		Bundle: true,
+		Define: map[string]string{
+			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
+			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
+		},
 		EntryPoints: []string{path.Join(r.WatchCommand.Directory, "index.js")},
 		Incremental: true,
+		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 		Outfile:     path.Join(r.Config.BuildDirectory, "app.js"),
 		Write:       true,
 	})
@@ -37,7 +42,16 @@ func (r *Runtime) esbuildRebuild() {
 	// fmt.Printf("⚡️ %0.3fs\n", time.Since(start).Seconds())
 }
 
+// prerenderServeOrBuild
+
 func (r Runtime) Watch() {
+	// TODO: Add --cached to watch and build.
+
+	// tmpl, err := parseRootHTMLTemplate(r.Config)
+	// if err != nil {
+	// 	// loggers.Stderr
+	// }
+
 	serverSentEvents := make(chan sse.Event, 8)
 
 	must(copyAssetDirectoryToBuildDirectory(r.Config))
@@ -54,6 +68,7 @@ func (r Runtime) Watch() {
 
 	go func() {
 		for range watcher.New(r.WatchCommand.Directory, r.WatchCommand.Poll) {
+			fmt.Println("hello")
 			r.esbuildRebuild()
 			serverSentEvents <- sse.Event{Event: "reload"}
 		}
@@ -103,7 +118,7 @@ func (r Runtime) Watch() {
 		}
 	})
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", r.WatchCommand.Port), nil); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", r.getPort()), nil); err != nil {
 		loggers.Stderr.Println(err)
 		os.Exit(1)
 	}

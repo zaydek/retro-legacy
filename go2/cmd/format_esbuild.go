@@ -14,26 +14,26 @@ func formatEsbuildMessagesAsTermString(msgs []api.Message) string {
 	msg := msgs[0] // TODO
 
 	gutter := len(strconv.Itoa(msg.Location.Line))
-	gap := strings.Repeat(" ", msg.Location.Column+1)
+	gap := strings.Repeat(" ", msg.Location.Column)
 
 	return fmt.Sprintf("%s:%d:%d: %s", msg.Location.File, msg.Location.Line, msg.Location.Column, msg.Text) + `
 
 ` + color.Boldf("%-*d | %s", gutter, msg.Location.Line+0, msg.Location.LineText) + `
 ` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap) + `
-` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, color.BoldRed(msg.Text))
+` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, msg.Text)
 }
 
 func formatEsbuildMessagesAsHTMLString(msgs []api.Message) string {
 	msg := msgs[0] // TODO
 
 	gutter := len(strconv.Itoa(msg.Location.Line))
-	gap := strings.Repeat(" ", msg.Location.Column+1)
+	gap := strings.Repeat(" ", msg.Location.Column)
 
 	return fmt.Sprintf("%s:%d:%d: %s", msg.Location.File, msg.Location.Line, msg.Location.Column, msg.Text) + `
 
 ` + fmt.Sprintf("<strong>%-*d | %s</strong>", gutter, msg.Location.Line+0, msg.Location.LineText) + `
 ` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap) + `
-` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, fmt.Sprintf("<strong>%s</strong>", msg.Text))
+` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, msg.Text)
 }
 
 func esbuildMessagesAsHTMLDocument(msgs []api.Message) string {

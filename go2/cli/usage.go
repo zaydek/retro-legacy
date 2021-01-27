@@ -6,50 +6,48 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
-// NOTE: Uses two spaces.
 var usageOnly = strings.TrimSpace(`
-retro create [dir]     ` + color.Underline("Creates") + ` a new Retro app at directory 'dir'
-retro watch [...dirs]  Starts the development server and ` + color.Underline("watches") + ` 'dirs' for changes
-retro build            ` + color.Underline("Builds") + ` the production-ready build
-retro serve            ` + color.Underline("Serves") + ` the production-ready build
+retro create [dir]      Creates a new Retro app at directory dir
+retro watch [...paths]  Starts the dev server and watches paths for changes
+retro build             Builds the production-ready build
+retro serve             Serves the production-ready build
 `)
 
-// NOTE: Uses two spaces (see --language=[js | ts]).
 var manpages = `
-	` + color.BoldWhite("Usage:") + `
+  ` + color.BoldWhite("Usage:") + `
 
-		retro create [dir]      ` + color.Underline("Creates") + ` a new Retro app at directory 'dir'
-		retro watch [...dirs]   Starts the development server and ` + color.Underline("watches") + ` 'dirs' for changes
-		retro build             ` + color.Underline("Builds") + ` the production-ready build
-		retro serve             ` + color.Underline("Serves") + ` the production-ready build
+    retro create [dir]      Creates a new Retro app at directory dir
+    retro watch [...paths]  Starts the dev server and watches paths for changes
+    retro build             Builds the production-ready build
+    retro serve             Serves the production-ready build
 
-	` + color.BoldWhite("retro create [dir]") + `
+  ` + color.BoldWhite("retro create [dir]") + `
 
-		'retro create' creates a new Retro app at directory 'dir'
+    Creates a new Retro app at directory dir
 
-			--language=[js | ts]  Programming language (default 'js')
+      --language=[js|ts]    Programming language (default js)
 
-	` + color.BoldWhite("retro watch [...dirs]") + `
+  ` + color.BoldWhite("retro watch [...dirs]") + `
 
-		'retro watch' starts a development server and watches directories 'dirs' for
-		changes (default 'components pages')
+    Starts a dev server and watches directories dirs for changes (default pages)
 
-			--poll=<duration>     Poll duration (default '250ms')
-			--port=<number>       Port number (default '8000')
+      --cached              Reuse cached props (disabled by default)
+      --poll=<duration>     Poll duration (default 250ms)
+      --port=<number>       Port number (default 8000)
 
-	` + color.BoldWhite("retro build") + `
+  ` + color.BoldWhite("retro build") + `
 
-		'retro build' builds the production-ready build
+    Builds the production-ready build
 
-			--cached              Use cached props for faster builds (disabled by default)
+      --cached              Reuse cached props (disabled by default)
 
-	` + color.BoldWhite("retro serve") + `
+  ` + color.BoldWhite("retro serve") + `
 
-		'retro serve' serves the production-ready build
+    Serves the production-ready build
 
-			--port=<number>       Port number (default '8000')
+      --port=<number>       Port number (default 8000)
 
-	` + color.BoldWhite("Repository:") + `
+  ` + color.BoldWhite("Repository:") + `
 
-		` + color.Underline("https://github.com/zaydek/retro") + `
+    ` + color.Underline("https://github.com/zaydek/retro") + `
 `

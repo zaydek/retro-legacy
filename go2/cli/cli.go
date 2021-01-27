@@ -77,10 +77,11 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 	// }
 	// flags.Directories = cmd.Args()
 
+	// TODO
 	flags.Directory = "pages"
-	if len(cmd.Args()) > 0 {
-		flags.Directory = cmd.Args()[0]
-	}
+	// if len(cmd.Args()) > 0 {
+	// 	flags.Directory = cmd.Args()[0]
+	// }
 	return flags
 }
 
