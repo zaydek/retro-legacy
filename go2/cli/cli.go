@@ -27,19 +27,19 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	cmd.StringVar(&flags.Language, "language", "js", "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
-			"Try " + color.Bold("`retro help`") + " for help.")
+			"Try " + color.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
 	if flags.Language != "js" && flags.Language != "ts" {
-		loggers.Stderr.Println(color.Bold("`--language`") + " must be " + color.Bold("`js`") + " for JavaScript or " + color.Bold("`ts`") + " for TypeScript.\n\n" +
+		loggers.Stderr.Println(color.Bold("--language") + " must be " + color.Bold("js") + " for JavaScript or " + color.Bold("ts") + " for TypeScript.\n\n" +
 			"- " + color.Bold("retro create --language=js [dir]") + "\n\n" +
 			"Or\n\n" +
 			"- " + color.Bold("retro create --language=ts [dir]") + "")
 		os.Exit(2)
 	}
 	if len(cmd.Args()) == 0 {
-		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("`retro create`") + " in the current directory. " +
-			"In that case, use " + color.Bold("`.`") + " explicitly.\n\n" +
+		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("retro create") + " in the current directory. " +
+			"In that case, use " + color.Bold(".") + " explicitly.\n\n" +
 			"- " + color.Bold("retro create .") + "\n\n" +
 			"Or\n\n" +
 			"- " + color.Bold("retro create [dir]"))
@@ -58,19 +58,19 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 	cmd.IntVar(&flags.Port, "port", 8000, "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
-			"Try " + color.Bold("`retro help`") + " for help.")
+			"Try " + color.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
 	if flags.Poll < (100*time.Millisecond) && flags.Poll >= (10*time.Second) {
-		loggers.Stderr.Println(color.Bold("`--poll`") + " must be between " + color.Bold("`100ms`") + " and " + color.Bold("`10s`") + ".")
+		loggers.Stderr.Println(color.Bold("--poll") + " must be between " + color.Bold("100ms") + " and " + color.Bold("10s") + ".")
 		os.Exit(2)
 	} else if (flags.Port < 3e3 || flags.Port >= 4e3) && (flags.Port < 5e3 || flags.Port >= 6e3) && (flags.Port < 8e3 || flags.Port >= 9e3) {
-		loggers.Stderr.Println(color.Bold("`--port`") + " must be be " + color.Bold("`3XXX`") + " or " + color.Bold("`5XXX`") + " or " + color.Bold("`8XXX`") + ".")
+		loggers.Stderr.Println(color.Bold("--port") + " must be be " + color.Bold("3XXX") + " or " + color.Bold("5XXX") + " or " + color.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
 	for _, each := range cmd.Args() {
 		if _, err := os.Stat(each); os.IsNotExist(err) {
-			loggers.Stderr.Println("Failed to stat file or directory " + color.Boldf("`%s`", each) + ".")
+			loggers.Stderr.Println("Failed to stat file or directory " + color.Bold(each) + ".")
 			os.Exit(2)
 		}
 	}
@@ -86,7 +86,7 @@ func parseBuildCommandFlags(args []string) *BuildCommandFlags {
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
-			"Try " + color.Bold("`retro help`") + " for help.")
+			"Try " + color.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
 	return flags
@@ -100,11 +100,11 @@ func parseServeCommandFlags(args []string) *ServeCommandFlags {
 	cmd.IntVar(&flags.Port, "port", 8000, "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
-			"Try " + color.Bold("`retro help`") + " for help.")
+			"Try " + color.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
 	if (flags.Port < 3e3 || flags.Port >= 4e3) && (flags.Port < 5e3 || flags.Port >= 6e3) && (flags.Port < 8e3 || flags.Port >= 9e3) {
-		loggers.Stderr.Println(color.Bold("`--port`") + " must be be " + color.Bold("`3XXX`") + " or " + color.Bold("`5XXX`") + " or " + color.Bold("`8XXX`") + ".")
+		loggers.Stderr.Println(color.Bold("--port") + " must be be " + color.Bold("3XXX") + " or " + color.Bold("5XXX") + " or " + color.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
 	return flags
@@ -166,7 +166,7 @@ func ParseCLIArguments() Commands {
 
 	default:
 		loggers.Stderr.Println("Unrecognized command. " +
-			"Try " + color.Bold("`retro help`") + " for help.\n\n" +
+			"Try " + color.Bold("retro help") + " for help.\n\n" +
 			usageOnly)
 		os.Exit(2)
 	}

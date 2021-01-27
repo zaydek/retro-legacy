@@ -8,45 +8,45 @@ import (
 
 // MkdirAll decorates os.MkdirAll errors.
 func MkdirAll(dir string, err error) error {
-	return fmt.Errorf("Failed to make directory "+color.Boldf("`%s`", dir)+". "+
+	return fmt.Errorf("Failed to make directory "+color.Bold(dir)+". "+
 		"This is likely due to a permissions error. "+
-		"Try "+color.Boldf("`rm -r %s`", dir)+" or "+color.Boldf("`sudo rm -r %s`", dir)+" if that doesn’t work.\n\n"+
+		"Try "+color.Boldf("rm -r %s", dir)+" or "+color.Boldf("sudo rm -r %s", dir)+" if that doesn’t work.\n\n"+
 		"Original error: %w", err)
 }
 
 // Walk decorates filepath.Walk and fs.WalkDir errors.
 func Walk(dir string, err error) error {
-	return fmt.Errorf("Failed to walk directory "+color.Boldf("`%s`", dir)+".\n\n"+
+	return fmt.Errorf("Failed to walk directory "+color.Bold(dir)+".\n\n"+
 		"Original error: %w", err)
 }
 
 // ReadFile decorates ioutil.ReadFile errors.
 func ReadFile(path string, err error) error {
-	return fmt.Errorf("Failed to read file "+color.Boldf("`%s`", path)+".\n\n"+
+	return fmt.Errorf("Failed to read file "+color.Bold(path)+".\n\n"+
 		"Original error: %w", err)
 }
 
 // WriteFile decorates ioutil.WriteFile errors.
 func WriteFile(path string, err error) error {
-	return fmt.Errorf("Failed to write file "+color.Boldf("`%s`")+".\n\n"+
+	return fmt.Errorf("Failed to write file "+color.Bold(path)+".\n\n"+
 		"Original error: %w", err)
 }
 
 // RunNode decorates (*exec.Cmd).Run errors.
 func RunNode(err error) error {
-	return fmt.Errorf("Failed to run Node as a subprocess.\n\n"+
+	return fmt.Errorf("Failed to run Node.js.\n\n"+
 		"Original error: %w", err)
 }
 
 // ParseTemplate decorates (*template.Template).Parse errors.
-func ParseTemplate(path string, err error) error {
-	return fmt.Errorf("Failed to parse template "+color.Boldf("`%s`", path)+".\n\n"+
+func ParseTemplate(name string, err error) error {
+	return fmt.Errorf("Failed to parse template "+color.Bold(name)+".\n\n"+
 		"Original error: %w", err)
 }
 
 // ExecuteTemplate decorates (*template.Template).Execute errors.
-func ExecuteTemplate(path string, err error) error {
-	return fmt.Errorf("Failed to execute template "+color.Boldf("`%s`")+".\n\n"+
+func ExecuteTemplate(name string, err error) error {
+	return fmt.Errorf("Failed to execute template "+color.Bold(name)+".\n\n"+
 		"Original error: %w", err)
 }
 

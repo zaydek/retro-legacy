@@ -12,9 +12,9 @@ import (
 
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.Config.BuildDirectory); os.IsNotExist(err) {
-		loggers.Stderr.Println("Failed to stat directory " + color.Boldf("`%s`", r.Config.BuildDirectory) + ". " +
-			"It looks like haven’t run " + color.Boldf("`retro build`") + " yet. " +
-			"Try " + color.Bold("`retro build && retro serve`") + ".")
+		loggers.Stderr.Println("Failed to stat directory " + color.Bold(r.Config.BuildDirectory) + ". " +
+			"It looks like haven’t run " + color.Bold("retro build") + " yet. " +
+			"Try " + color.Bold("retro build && retro serve") + ".")
 		os.Exit(1)
 	}
 

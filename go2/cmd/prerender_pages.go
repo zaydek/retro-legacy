@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/errs"
 )
 
@@ -30,13 +31,13 @@ func (r Runtime) prerenderPages() error {
 
 	text := string(bstr)
 	if !strings.Contains(text, "{{ .Head }}") {
-		return errors.New("No such template tag '{{ .Head }}'. " +
-			"This is the entry point for the '<Head>' component in your page components. " +
-			"Add '{{ .Head }}' to '<head>'.")
+		return errors.New("No such template tag " + color.Bold("{{ .Head }}") + ". " +
+			"This is the entry point for the " + color.Bold("<Head>") + " component in your page components. " +
+			"Add " + color.Bold("{{ .Head }}") + " to " + color.Bold("<head>") + ".")
 	} else if !strings.Contains(text, "{{ .Page }}") {
-		return errors.New("No such template tag '{{ .Page }}'. " +
-			"This is the entry point for the '<Page>' component in your page components. " +
-			"Add '{{ .Page }}' to '<body>'.")
+		return errors.New("No such template tag " + color.Bold("{{ .Page }}") + ". " +
+			"This is the entry point for the " + color.Bold("<Page>") + " component in your page components. " +
+			"Add " + color.Bold("{{ .Page }}") + " to " + color.Bold("<body>") + ".")
 	}
 
 	tmpl, err := template.New(pathpkg.Join(r.Config.AssetDirectory, "index.html")).Parse(text)
@@ -105,7 +106,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
-		return errors.New(FormatTerminalString(results.Errors))
+		return errors.New(FormatMessageAsTermString(results.Errors))
 	}
 
 	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)

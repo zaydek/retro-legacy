@@ -36,7 +36,7 @@ func (r Runtime) Create() {
 			} else {
 				typ = "directory"
 			}
-			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Boldf("'%s'", r.CreateCommand.Directory) + " already exists.\n\n" +
+			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Bold(r.CreateCommand.Directory) + " already exists.\n\n" +
 				"- " + color.Bold("retro create [dir]") + "\n\n" +
 				"Or\n\n" +
 				"- " + color.Boldf("rm -r %[1]s && retro create %[1]s", r.CreateCommand.Directory))

@@ -55,7 +55,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
-		return errors.New(FormatTerminalString(results.Errors))
+		return errors.New(FormatMessageAsTermString(results.Errors))
 	}
 
 	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
