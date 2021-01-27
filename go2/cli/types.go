@@ -18,7 +18,8 @@ type WatchCommandFlags struct {
 	Port int
 
 	// Arguments
-	Directories []string
+	// Directories []string
+	Directory string
 }
 
 // BuildCommandFlags describes retro build flags and arguments.

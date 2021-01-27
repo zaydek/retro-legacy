@@ -18,8 +18,8 @@ func (r Runtime) Serve() {
 		os.Exit(1)
 	}
 
-	http.Handle("/", http.FileServer(http.Dir(r.Config.BuildDirectory)))
-	fmt.Printf("👾 https://localhost:%d\n", r.getPort())
+	fmt.Printf("👾 http://localhost:%d\n", r.getPort())
 
+	http.Handle("/", http.FileServer(http.Dir(r.Config.BuildDirectory)))
 	must(http.ListenAndServe(":"+strconv.Itoa(int(r.getPort())), nil))
 }

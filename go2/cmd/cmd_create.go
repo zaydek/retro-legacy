@@ -113,7 +113,7 @@ func (r Runtime) Create() {
 	}
 
 	if r.CreateCommand.Directory == "." {
-		loggers.Stdout.Println(`Successfully created a new Retro app.
+		fmt.Println(`Successfully created a new Retro app.
 
 ` + color.Bold("# npm") + `
 
@@ -127,7 +127,7 @@ func (r Runtime) Create() {
 
 Happy hacking!`)
 	} else {
-		loggers.Stdout.Println(`Successfully created a new Retro app.
+		fmt.Println(`Successfully created a new Retro app.
 
 ` + color.Bold("# npm") + `
 

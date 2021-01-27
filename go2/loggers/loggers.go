@@ -7,32 +7,15 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
-var spaces = strings.Repeat(" ", 2)
-
-var Stdout = New(os.Stdout, func(msg string) string {
-	arr := strings.Split(msg, "\n")
-	for x := range arr {
-		if arr[x] != "" {
-			if x == 0 {
-				arr[x] = spaces + arr[x]
-				continue
-			}
-			arr[x] = spaces + arr[x]
-		}
-	}
-	transformed := "\n" + strings.Join(arr, "\n") + "\n"
-	return transformed
-})
-
 var Stderr = New(os.Stdout, func(msg string) string {
 	arr := strings.Split(msg, "\n")
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = spaces + color.BoldRed("error:") + " " + arr[x]
+				arr[x] = strings.Repeat(" ", 2) + color.BoldRed("error:") + " " + arr[x]
 				continue
 			}
-			arr[x] = spaces + spaces + arr[x]
+			arr[x] = strings.Repeat(" ", 4) + arr[x]
 		}
 	}
 	transformed := "\n" + strings.Join(arr, "\n") + "\n"

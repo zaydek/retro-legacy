@@ -68,13 +68,19 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 		loggers.Stderr.Println(color.Bold("--port") + " must be be " + color.Bold("3XXX") + " or " + color.Bold("5XXX") + " or " + color.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
-	for _, each := range cmd.Args() {
-		if _, err := os.Stat(each); os.IsNotExist(err) {
-			loggers.Stderr.Println("Failed to stat file or directory " + color.Bold(each) + ".")
-			os.Exit(2)
-		}
+
+	// for _, each := range cmd.Args() {
+	// 	if _, err := os.Stat(each); os.IsNotExist(err) {
+	// 		loggers.Stderr.Println("Failed to stat file or directory " + color.Bold(each) + ".")
+	// 		os.Exit(2)
+	// 	}
+	// }
+	// flags.Directories = cmd.Args()
+
+	flags.Directory = "pages"
+	if len(cmd.Args()) > 0 {
+		flags.Directory = cmd.Args()[0]
 	}
-	flags.Directories = cmd.Args()
 	return flags
 }
 

@@ -66,7 +66,7 @@ ReactDOM.hydrate(
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
-		return errors.New(FormatMessageAsTermString(results.Errors))
+		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
 	if err := ioutil.WriteFile(p.Join(r.Config.BuildDirectory, "app.js"), results.OutputFiles[0].Contents, 0644); err != nil {
