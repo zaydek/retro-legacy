@@ -46,29 +46,28 @@ func (r Runtime) Create() {
 		if err := os.MkdirAll(r.CreateCommand.Directory, 0755); err != nil {
 			loggers.Stderr.Println(errs.MkdirAll(r.CreateCommand.Directory, err))
 			os.Exit(1)
-		} else if err := os.Chdir(r.CreateCommand.Directory); err != nil {
-			loggers.Stderr.Println(errs.Chdir(r.CreateCommand.Directory, err))
-			os.Exit(1)
 		}
-		defer os.Chdir("..")
 	}
 
-	var paths []string
+	var paths []copyPath
 	if err := fs.WalkDir(fsys, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if !dirEntry.IsDir() {
-			paths = append(paths, path)
+			src := path
+			dst := pathpkg.Join(r.CreateCommand.Directory, path)
+			paths = append(paths, copyPath{src: src, dst: dst})
 		}
 		return nil
 	}); err != nil {
-		loggers.Stderr.Println(errs.Walk(fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language), err))
+		entry := fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language)
+		loggers.Stderr.Println(errs.Walk(entry, err))
 		os.Exit(1)
 	}
 
 	for _, each := range paths {
-		if dir := pathpkg.Dir(each); dir != "." {
+		if dir := pathpkg.Dir(each.dst); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				loggers.Stderr.Println(errs.MkdirAll(dir, err))
 				os.Exit(1)
@@ -77,13 +76,14 @@ func (r Runtime) Create() {
 	}
 
 	for _, each := range paths {
-		bstr, err := fs.ReadFile(fsys, each)
+		bstr, err := fs.ReadFile(fsys, each.src)
 		if err != nil {
-			loggers.Stderr.Println(errs.Unexpected(err))
+			entry := fmt.Sprintf("<embedded:%s>", each)
+			loggers.Stderr.Println(errs.ReadFile(entry, err))
 			os.Exit(1)
 		}
-		if err := ioutil.WriteFile(each, bstr, 0644); err != nil {
-			loggers.Stderr.Println(errs.Unexpected(err))
+		if err := ioutil.WriteFile(each.dst, bstr, 0644); err != nil {
+			loggers.Stderr.Println(errs.WriteFile(each.dst, err))
 			os.Exit(1)
 		}
 	}

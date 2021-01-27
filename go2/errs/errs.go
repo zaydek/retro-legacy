@@ -14,13 +14,13 @@ func MkdirAll(dir string, err error) error {
 		"Original error: %w", err)
 }
 
-// Chdir decorates os.Chdir errors.
-func Chdir(dir string, err error) error {
-	return fmt.Errorf("Failed to open directory "+color.Boldf("`%s`", dir)+". "+
-		"This is likely due to a permissions error. "+
-		"Try "+color.Boldf("`rm -r %s`", dir)+" or "+color.Boldf("`sudo rm -r %s`", dir)+" if that doesn’t work.\n\n"+
-		"Original error: %w", err)
-}
+// // Chdir decorates os.Chdir errors.
+// func Chdir(dir string, err error) error {
+// 	return fmt.Errorf("Failed to open directory "+color.Boldf("`%s`", dir)+". "+
+// 		"This is likely due to a permissions error. "+
+// 		"Try "+color.Boldf("`rm -r %s`", dir)+" or "+color.Boldf("`sudo rm -r %s`", dir)+" if that doesn’t work.\n\n"+
+// 		"Original error: %w", err)
+// }
 
 // Walk decorates filepath.Walk and fs.WalkDir errors.
 func Walk(dir string, err error) error {

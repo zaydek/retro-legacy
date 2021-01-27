@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io"
+	"io/ioutil"
 	"os"
 	pathpkg "path"
 	"path/filepath"
@@ -75,7 +75,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 			return err
 		}
 		if !info.IsDir() {
-			if info.Name() != "index.html" {
+			if info.Name() == "index.html" {
 				return nil
 			}
 			src := path
@@ -96,19 +96,13 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 	}
 
 	for _, each := range paths {
-		src, err := os.Open(each.src)
+		bstr, err := os.ReadFile(each.src)
 		if err != nil {
-			return errs.Unexpected(err)
+			return errs.ReadFile(each.src, err)
 		}
-		dst, err := os.Create(each.dst)
-		if err != nil {
-			return errs.Unexpected(err)
+		if err := ioutil.WriteFile(each.dst, bstr, 0644); err != nil {
+			return errs.ReadFile(each.dst, err)
 		}
-		if _, err := io.Copy(src, dst); err != nil {
-			return errs.Unexpected(err)
-		}
-		src.Close()
-		dst.Close()
 	}
 	return nil
 }
