@@ -39,7 +39,7 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	}
 	if len(cmd.Args()) == 0 {
 		loggers.Stderr.Println("It looks like you’re trying to run " + color.Bold("`retro create`") + " in the current directory. " +
-			"In that case, use " + color.Bold("`.`") + " explicitly:\n\n" +
+			"In that case, use " + color.Bold("`.`") + " explicitly.\n\n" +
 			"- " + color.Bold("retro create .") + "\n\n" +
 			"Or\n\n" +
 			"- " + color.Bold("retro create [dir]"))
@@ -146,18 +146,22 @@ func ParseCLIArguments() Commands {
 
 	// $ retro create
 	case "create":
+		os.Setenv("NODE_ENV", "development")
 		cmds.CreateCommand = parseCreateCommandFlags(os.Args[2:])
 
 	// $ retro watch
 	case "watch":
+		os.Setenv("NODE_ENV", "development")
 		cmds.WatchCommand = parseWatchCommandFlags(os.Args[2:])
 
 	// $ retro build
 	case "build":
+		os.Setenv("NODE_ENV", "production")
 		cmds.BuildCommand = parseBuildCommandFlags(os.Args[2:])
 
 	// $ retro serve
 	case "serve":
+		os.Setenv("NODE_ENV", "production")
 		cmds.ServeCommand = parseServeCommandFlags(os.Args[2:])
 
 	default:

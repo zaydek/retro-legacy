@@ -7,9 +7,7 @@ import (
 	pathpkg "path"
 	"path/filepath"
 
-	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/errs"
-	"github.com/zaydek/retro/loggers"
 )
 
 // getCmd gets the current command.
@@ -34,30 +32,6 @@ func (r Runtime) getPort() int {
 		return r.ServeCommand.Port
 	}
 	return 0
-}
-
-// loadRuntime loads the runtime; parses CLI arguments, configuration, and the
-// page-based routes.
-func loadRuntime() Runtime {
-	var err error
-
-	runtime := Runtime{
-		Config: DirConfiguration{
-			AssetDirectory: "public",
-			PagesDirectory: "pages",
-			CacheDirectory: "cache",
-			BuildDirectory: "build",
-		},
-	}
-
-	runtime.Commands = cli.ParseCLIArguments()
-	if cmd := runtime.getCmd(); cmd == "watch" || cmd == "build" {
-		if runtime.Router, err = loadRouter(runtime.Config); err != nil {
-			loggers.Stderr.Println(err)
-			os.Exit(1)
-		}
-	}
-	return runtime
 }
 
 // buildRequireStmt builds a require statement for Node processes.

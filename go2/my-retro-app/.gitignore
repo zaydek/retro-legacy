@@ -1,0 +1,10 @@
+# macOS
+.DS_Store
+
+# NPM / Yarn
+/.env
+/*.log*
+/node_modules
+
+/build
+/cache
