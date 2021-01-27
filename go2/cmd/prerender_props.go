@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	pathpkg "path"
+	p "path"
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/errs"
@@ -41,8 +41,8 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 `
 
-	if err := ioutil.WriteFile(pathpkg.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return errs.WriteFile(pathpkg.Join(r.Config.CacheDirectory, "props.esbuild.js"), err)
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -51,7 +51,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{pathpkg.Join(r.Config.CacheDirectory, "props.esbuild.js")},
+		EntryPoints: []string{p.Join(r.Config.CacheDirectory, "props.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -67,8 +67,8 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 
 export default ` + stdoutBuf.String())
 
-	if err := ioutil.WriteFile(pathpkg.Join(r.Config.CacheDirectory, "props.js"), contents, 0644); err != nil {
-		return errs.WriteFile(pathpkg.Join(r.Config.CacheDirectory, "props.js"), err)
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), contents, 0644); err != nil {
+		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), err)
 	}
 	return nil
 }

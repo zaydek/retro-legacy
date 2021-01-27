@@ -6,7 +6,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"os"
-	pathpkg "path"
+	p "path"
 
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embedded"
@@ -56,7 +56,7 @@ func (r Runtime) Create() {
 		}
 		if !dirEntry.IsDir() {
 			src := path
-			dst := pathpkg.Join(r.CreateCommand.Directory, path)
+			dst := p.Join(r.CreateCommand.Directory, path)
 			paths = append(paths, copyPath{src: src, dst: dst})
 		}
 		return nil
@@ -67,7 +67,7 @@ func (r Runtime) Create() {
 	}
 
 	for _, each := range paths {
-		if dir := pathpkg.Dir(each.dst); dir != "." {
+		if dir := p.Dir(each.dst); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				loggers.Stderr.Println(errs.MkdirAll(dir, err))
 				os.Exit(1)

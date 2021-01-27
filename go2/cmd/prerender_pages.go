@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	pathpkg "path"
+	p "path"
 	"strings"
 	"text/template"
 
@@ -24,9 +24,9 @@ type prerenderedPage struct {
 }
 
 func (r Runtime) prerenderPages() error {
-	bstr, err := ioutil.ReadFile(pathpkg.Join(r.Config.AssetDirectory, "index.html"))
+	bstr, err := ioutil.ReadFile(p.Join(r.Config.AssetDirectory, "index.html"))
 	if err != nil {
-		return errs.ReadFile(pathpkg.Join(r.Config.AssetDirectory, "index.html"), err)
+		return errs.ReadFile(p.Join(r.Config.AssetDirectory, "index.html"), err)
 	}
 
 	text := string(bstr)
@@ -40,9 +40,9 @@ func (r Runtime) prerenderPages() error {
 			"Add " + color.Bold("{{ .Page }}") + " to " + color.Bold("<body>") + ".")
 	}
 
-	tmpl, err := template.New(pathpkg.Join(r.Config.AssetDirectory, "index.html")).Parse(text)
+	tmpl, err := template.New(p.Join(r.Config.AssetDirectory, "index.html")).Parse(text)
 	if err != nil {
-		return errs.ParseTemplate(pathpkg.Join(r.Config.AssetDirectory, "index.html"), err)
+		return errs.ParseTemplate(p.Join(r.Config.AssetDirectory, "index.html"), err)
 	}
 
 	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
@@ -92,8 +92,8 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 `
 
-	if err := ioutil.WriteFile(pathpkg.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(rawstr), 0644); err != nil {
-		return errs.WriteFile(pathpkg.Join(r.Config.CacheDirectory, "pages.esbuild.js"), err)
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(rawstr), 0644); err != nil {
+		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -102,7 +102,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{pathpkg.Join(r.Config.CacheDirectory, "pages.esbuild.js")},
+		EntryPoints: []string{p.Join(r.Config.CacheDirectory, "pages.esbuild.js")},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 	})
 	if len(results.Errors) > 0 {
@@ -121,10 +121,10 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 
 	for _, each := range pages {
 		var path string
-		path = each.FSPath[len(r.Config.PagesDirectory):]        // pages/page.js -> page.js
-		path = path[:len(path)-len(pathpkg.Ext(path))] + ".html" // page.js -> page.html
-		path = pathpkg.Join(r.Config.BuildDirectory, path)       // page.html -> build/page.html
-		if dir := pathpkg.Dir(path); dir != "." {
+		path = each.FSPath[len(r.Config.PagesDirectory):]  // pages/page.js -> page.js
+		path = path[:len(path)-len(p.Ext(path))] + ".html" // page.js -> page.html
+		path = p.Join(r.Config.BuildDirectory, path)       // page.html -> build/page.html
+		if dir := p.Dir(path); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				return errs.MkdirAll(dir, err)
 			}

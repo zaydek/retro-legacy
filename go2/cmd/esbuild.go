@@ -9,7 +9,7 @@ import (
 	"github.com/zaydek/retro/color"
 )
 
-func FormatTerminalString(msgs []api.Message) string {
+func FormatMessageAsTermString(msgs []api.Message) string {
 	msg := msgs[0] // TODO
 	// cwd, _ := os.Getwd()
 

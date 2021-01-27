@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	pathpkg "path"
+	p "path"
 	"path/filepath"
 
 	"github.com/zaydek/retro/errs"
@@ -79,7 +79,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 				return nil
 			}
 			src := path
-			dst := pathpkg.Join(config.BuildDirectory, path)
+			dst := p.Join(config.BuildDirectory, path)
 			paths = append(paths, copyPath{src: src, dst: dst})
 		}
 		return nil
@@ -88,7 +88,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 	}
 
 	for _, each := range paths {
-		if dir := pathpkg.Dir(each.dst); dir != "." {
+		if dir := p.Dir(each.dst); dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				return errs.MkdirAll(dir, err)
 			}

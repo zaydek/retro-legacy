@@ -6,7 +6,7 @@ package main
 // 	"net/http"
 // 	"os"
 // 	"path"
-// 	pathpkg "path"
+// 	p "path"
 // 	"strconv"
 // 	"strings"
 // 	"time"
@@ -246,7 +246,7 @@ package main
 // 				return
 // 			}
 // 		}
-// 		http.ServeFile(w, r, pathpkg.Join(string(app.BuildDirectory), r.URL.Path))
+// 		http.ServeFile(w, r, p.Join(string(app.BuildDirectory), r.URL.Path))
 // 	})
 //
 // 	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {
