@@ -7,9 +7,13 @@ import (
 
 // PageBasedRoute describes a page-based route from pages/* or src/pages/*.
 type PageBasedRoute struct {
-	FSPath    string `json:"fs_path"`   // pages/path/to/component.js
-	Path      string `json:"path"`      // path/to/component
-	Component string `json:"component"` // Component
+	FSPath string `json:"fs_path"` // pages/path/to/component.js
+
+	// TODO
+	DiskPathSrc string `json:"diskPathSrc"`
+	DiskPathDst string `json:"diskPathDst"`
+	Path        string `json:"path"`      // path/to/component
+	Component   string `json:"component"` // Component
 }
 
 // DirConfiguration describes persistent directory configuration.

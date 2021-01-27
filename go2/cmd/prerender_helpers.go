@@ -1,31 +1,31 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	p "path"
 	"strings"
 	"text/template"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/errs"
 )
 
-// var reload = `
-// 		<script src="/app.js"></script>
-// 		<script>
-// 			const source = new EventSource("/sse")
-// 			source.addEventListener("reload", e => { window.location.reload() })
-// 			source.addEventListener("warning", e => { console.warn(JSON.parse(e.data)) })
-// 		</script>
-// `
-
+// TODO: Can we embed PageBasedRoute here and simply add Head and Page?
 type prerenderedPage struct {
 	FSPath string `json:"fs_path"`
-	Path   string `json:"path"`
-	Head   string `json:"head"`
-	Page   string `json:"page"`
+
+	// TODO
+	DiskPathSrc string `json:"diskPathSrc"`
+	DiskPathDst string `json:"diskPathDst"`
+	Path        string `json:"path"`
+	Head        string `json:"head"`
+	Page        string `json:"page"`
 }
 
 // buildRequireStmt builds a require statement for Node processes.
@@ -79,28 +79,34 @@ func (r Runtime) parseBaseHTMLTemplate() (*template.Template, error) {
 	return base, nil
 }
 
-func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) (rendered string, err error) {
+func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) error {
+	if _, err := os.Stat(p.Join(r.Config.CacheDirectory, "props.js")); os.IsNotExist(err) {
+		return errors.New("It looks like your loaders have not been resolved yet. " +
+			"Remove " + color.Bold("--cached") + " and try again.")
+	}
+
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
-` + fmt.Sprintf(`const %s = require("../%s).default`, route.Component, route.FSPath) + `
+` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.FSPath) + `
 const props = require("../` + r.Config.CacheDirectory + `/props.js").default
 
-function run({ fs_path, path, exports }) {
-	const { Head, default: Page } = exports
-
-	// Resolve <Head {...props}>:
+function run({ path, Head, Page, ...etc }, { watchMode }) {
+	// Resolve <Head {...props}> on the server:
 	let head = ""
 	if (Head) {
-		head = ReactDOMServer.renderToStaticMarkup(<Head {...props[path]} />)
+		head = ReactDOMServer.renderToStaticMarkup(
+			<Head {...props[path]} />
+		)
 	}
-	head = head.replace(/></g, ">\n\t\t<")
-	head = head.replace(/\/>/g, " />")
+	head = head
+		.replace(/></g, ">\n\t\t<")
+		.replace(/\/>/g, " />")
 
-	// Resolve <Page {...props}>:
-	let page = '<div id="root" data-reactroot=""></div>'
+	// Resolve <Page {...props}> on the server:
+	let page = '<div id="root"></div>'
 	if (Page) {
 		page = ReactDOMServer.renderToString(
 			<div id="root">
@@ -109,12 +115,69 @@ function run({ fs_path, path, exports }) {
 		)
 	}
 
-	resolve({ fs_path, path, head, page })
-})
+	page += '\n'
+	page += '		<script src="/app.js"></script>\n'
+	if (watchMode) {
+		page += '		<script>\n'
+		page += '			const __retro_sse__ = new EventSource("/sse")\n'
+		page += '			__retro_sse__.addEventListener("reload", e => window.location.reload())\n'
+		page += '			__retro_sse__.addEventListener("warning", e => console.warn(JSON.parse(e.data)))\n'
+		page += '		</script>\n'
+	}
+	page = page.trimEnd()
 
-run(` + fmt.Sprintf(`{ fs_path: %q, path: %q, exports: %s }`,
-		route.FSPath, route.Path, route.Component) + `)
+	console.log(JSON.stringify({ ...etc, head, page }))
+}
+
+run(
+	` + fmt.Sprintf(`{ diskPathSrc: %q, diskPathDst: %q, path: %q, Head: %[4]s.Head, Page: %[4]s.default }`,
+		route.DiskPathSrc, route.DiskPathDst, route.Path, route.Component) + `,
+	{ watchMode: true },
+)
 `
-	fmt.Print(text)
-	return "", nil
+
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), []byte(text), 0644); err != nil {
+		return errs.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), err)
+	}
+
+	results := api.Build(api.BuildOptions{
+		Bundle: true,
+		Define: map[string]string{
+			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
+			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
+		},
+		EntryPoints: []string{p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))},
+		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
+	})
+
+	// TODO
+	if len(results.Warnings) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+	}
+	if len(results.Errors) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+	}
+
+	// TODO: It would also be nice if we can automatically unmarshal the return of
+	// Node since we’re only using Node for IPC processes.
+	var page prerenderedPage
+	stdoutBuf, err := execNode(results.OutputFiles[0].Contents)
+	if err != nil {
+		return err
+	} else if err := json.Unmarshal(stdoutBuf.Bytes(), &page); err != nil {
+		return errs.Unexpected(err)
+	}
+
+	var buf bytes.Buffer
+	if err := base.Execute(&buf, page); err != nil {
+		return errs.ExecuteTemplate(fmt.Sprintf("<%s:%s>", base.Name(), route.Component), err)
+	}
+
+	// TODO: Can we combine these functions?
+	if err := os.MkdirAll(p.Dir(page.DiskPathDst), 0755); err != nil {
+		return errs.MkdirAll(p.Dir(page.DiskPathDst), err)
+	} else if err := ioutil.WriteFile(page.DiskPathDst, buf.Bytes(), 0644); err != nil {
+		return errs.WriteFile(page.DiskPathDst, err)
+	}
+	return nil
 }

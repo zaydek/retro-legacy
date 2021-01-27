@@ -32,9 +32,9 @@ func WriteFile(path string, err error) error {
 		"Original error: %w", err)
 }
 
-// RunNode decorates (*exec.Cmd).Run errors.
-func RunNode(err error) error {
-	return fmt.Errorf("Failed to run Node.js.\n\n"+
+// ExecNode decorates (*exec.Cmd).Run errors.
+func ExecNode(err error) error {
+	return fmt.Errorf("Failed to execute Node.\n\n"+
 		"Original error: %w", err)
 }
 

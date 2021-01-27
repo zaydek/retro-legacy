@@ -45,12 +45,20 @@ func (r *Runtime) esbuildRebuild() {
 // TODO: Add --cached to watch and build.
 
 func (r Runtime) Watch() {
+	// // if r.WatchCommand.Cached
+	if err := r.prerenderProps(); err != nil {
+		loggers.Stderr.Println(err)
+		os.Exit(1)
+	}
 	base, err := r.parseBaseHTMLTemplate()
 	if err != nil {
 		loggers.Stderr.Println(err)
 		os.Exit(1)
 	}
-	r.prerenderPage(base, r.Router[0])
+	if err := r.prerenderPage(base, r.Router[0]); err != nil {
+		loggers.Stderr.Println(err)
+		os.Exit(1)
+	}
 	return
 
 	serverSentEvents := make(chan sse.Event, 8)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	p "path"
 	"path/filepath"
 	"strings"
 
@@ -63,15 +64,25 @@ func toComponentCase(config DirConfiguration, path string) string {
 			str += string(path[x])
 		}
 	}
-	str = strings.ToUpper(str[0:1]) + str[1:]
+
+	str = "Page" + strings.ToUpper(str[0:1]) + str[1:]
 	return str
 }
 
-func newPageBasedRoute(config DirConfiguration, path string) PageBasedRoute {
+func newPageBasedRoute(config DirConfiguration, src string) PageBasedRoute {
+	var dst string
+	dst = src[len(config.PagesDirectory):]         // pages/page.js -> page.js
+	dst = dst[:len(dst)-len(p.Ext(dst))] + ".html" // page.js -> page.html
+	dst = p.Join(config.BuildDirectory, dst)       // page.html -> build/page.html
+
 	route := PageBasedRoute{
-		FSPath:    path,
-		Path:      toPathCase(config, path),
-		Component: toComponentCase(config, path),
+		FSPath: src,
+
+		// TODO
+		DiskPathSrc: src,
+		DiskPathDst: dst,
+		Path:        toPathCase(config, src),
+		Component:   toComponentCase(config, src),
 	}
 	return route
 }

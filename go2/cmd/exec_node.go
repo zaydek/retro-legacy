@@ -8,7 +8,7 @@ import (
 	"github.com/zaydek/retro/errs"
 )
 
-func runNode(stdin []byte) (bytes.Buffer, error) {
+func execNode(stdin []byte) (bytes.Buffer, error) {
 	var (
 		stdoutBuf bytes.Buffer
 		stderrBuf bytes.Buffer
@@ -17,7 +17,7 @@ func runNode(stdin []byte) (bytes.Buffer, error) {
 	cmd := exec.Command("node")
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
-		return bytes.Buffer{}, errs.RunNode(err)
+		return bytes.Buffer{}, errs.ExecNode(err)
 	}
 
 	cmd.Stdout = &stdoutBuf
@@ -29,9 +29,9 @@ func runNode(stdin []byte) (bytes.Buffer, error) {
 	}()
 
 	if err := cmd.Run(); err != nil {
-		return bytes.Buffer{}, errs.RunNode(err)
+		return bytes.Buffer{}, errs.ExecNode(err)
 	} else if stderr := stderrBuf.String(); stderr != "" {
-		return bytes.Buffer{}, errs.RunNode(errors.New(stderr))
+		return bytes.Buffer{}, errs.ExecNode(errors.New(stderr))
 	}
 	return stdoutBuf, nil
 }
