@@ -12,7 +12,7 @@ import (
 )
 
 func (r Runtime) prerenderProps() error {
-	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
+	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 // Pages
 ` + buildRequireStmt(r.Router) + `
@@ -41,7 +41,7 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(rawstr), 0644); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(text), 0644); err != nil {
 		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), err)
 	}
 

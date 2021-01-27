@@ -6,7 +6,6 @@ import (
 )
 
 // PageBasedRoute describes a page-based route from pages/* or src/pages/*.
-// NOTE: Uses struct tags for Node processes.
 type PageBasedRoute struct {
 	FSPath    string `json:"fs_path"`   // pages/path/to/component.js
 	Path      string `json:"path"`      // path/to/component

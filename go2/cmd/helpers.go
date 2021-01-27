@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	p "path"
@@ -34,33 +33,6 @@ func (r Runtime) getPort() int {
 	return 0
 }
 
-// buildRequireStmt builds a require statement for Node processes.
-func buildRequireStmt(routes []PageBasedRoute) string {
-	var requireStmt string
-	for x, each := range routes {
-		var sep string
-		if x > 0 {
-			sep = "\n"
-		}
-		requireStmt += sep + fmt.Sprintf(`const %s = require("../%s")`,
-			each.Component, each.FSPath)
-	}
-	return requireStmt
-}
-
-// buildRequireStmtAsArray builds a require statement as an array for Node
-// processes.
-func buildRequireStmtAsArray(routes []PageBasedRoute) string {
-	var requireStmtAsArray string
-	for _, each := range routes {
-		requireStmtAsArray += "\n\t" + fmt.Sprintf(`{ fs_path: %q, path: %q, exports: %s },`,
-			each.FSPath, each.Path, each.Component)
-	}
-	requireStmtAsArray = "[" + requireStmtAsArray + "\n]"
-	return requireStmtAsArray
-}
-
-// copyPath describes a copy path for copyAssetDirectoryToBuildDirectory.
 type copyPath struct {
 	src string
 	dst string
@@ -69,6 +41,7 @@ type copyPath struct {
 // copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
 // the build directory.
 func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
+
 	var paths []copyPath
 	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

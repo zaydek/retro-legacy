@@ -14,7 +14,7 @@ import (
 )
 
 func (r Runtime) prerenderApp() error {
-	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
+	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
 import ReactDOM from "react-dom"
@@ -45,7 +45,7 @@ ReactDOM.hydrate(
 `
 
 	var buf bytes.Buffer
-	tmpl, err := template.New(p.Join(r.Config.CacheDirectory, "app.esbuild.js")).Parse(rawstr)
+	tmpl, err := template.New(p.Join(r.Config.CacheDirectory, "app.esbuild.js")).Parse(text)
 	if err != nil {
 		return errs.ParseTemplate(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), err)
 	} else if err := tmpl.Execute(&buf, r); err != nil {

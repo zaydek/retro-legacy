@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	p "path"
 	"time"
 
@@ -22,10 +21,10 @@ func (r *Runtime) esbuildBuild() {
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{path.Join(r.WatchCommand.Directory, "index.js")},
+		EntryPoints: []string{p.Join(r.WatchCommand.Directory, "index.js")},
 		Incremental: true,
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
-		Outfile:     path.Join(r.Config.BuildDirectory, "app.js"),
+		Outfile:     p.Join(r.Config.BuildDirectory, "app.js"),
 		Write:       true,
 	})
 	r.esbuildResult = results
@@ -42,15 +41,17 @@ func (r *Runtime) esbuildRebuild() {
 	// fmt.Printf("⚡️ %0.3fs\n", time.Since(start).Seconds())
 }
 
-// prerenderServeOrBuild
+// TODO: prerenderServeOrBuild
+// TODO: Add --cached to watch and build.
 
 func (r Runtime) Watch() {
-	// TODO: Add --cached to watch and build.
-
-	// tmpl, err := parseRootHTMLTemplate(r.Config)
-	// if err != nil {
-	// 	// loggers.Stderr
-	// }
+	base, err := r.parseBaseHTMLTemplate()
+	if err != nil {
+		loggers.Stderr.Println(err)
+		os.Exit(1)
+	}
+	r.prerenderPage(base, r.Router[0])
+	return
 
 	serverSentEvents := make(chan sse.Event, 8)
 
@@ -75,7 +76,7 @@ func (r Runtime) Watch() {
 	}()
 
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
-		if ext := path.Ext(req.URL.Path); ext == "" {
+		if ext := p.Ext(req.URL.Path); ext == "" {
 			r.esbuildRebuild()
 			if len(r.esbuildWarnings) > 0 {
 				// TODO

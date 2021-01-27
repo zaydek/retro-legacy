@@ -14,12 +14,12 @@ import (
 )
 
 func (r Runtime) prerenderPages() error {
-	tmpl, err := parseRootHTMLTemplate(r.Config)
+	base, err := r.parseBaseHTMLTemplate()
 	if err != nil {
 		return err
 	}
 
-	rawstr := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
+	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
 import ReactDOMServer from "react-dom/server"
@@ -78,7 +78,7 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(rawstr), 0644); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(text), 0644); err != nil {
 		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), err)
 	}
 
@@ -116,7 +116,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 			}
 		}
 		var buf bytes.Buffer
-		if err := tmpl.Execute(&buf, each); err != nil {
+		if err := base.Execute(&buf, each); err != nil {
 			return errs.ExecuteTemplate(path, err)
 		}
 		if err := ioutil.WriteFile(path, buf.Bytes(), 0644); err != nil {
