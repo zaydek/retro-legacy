@@ -61,7 +61,7 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 			"Try " + color.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
-	if flags.Poll < (100*time.Millisecond) && flags.Poll >= (10*time.Second) {
+	if flags.Poll < (100*time.Millisecond) || flags.Poll >= (10*time.Second) {
 		loggers.Stderr.Println(color.Bold("--poll") + " must be between " + color.Bold("100ms") + " and " + color.Bold("10s") + ".")
 		os.Exit(2)
 	} else if (flags.Port < 3e3 || flags.Port >= 4e3) && (flags.Port < 5e3 || flags.Port >= 6e3) && (flags.Port < 8e3 || flags.Port >= 9e3) {

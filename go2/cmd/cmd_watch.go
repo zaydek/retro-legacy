@@ -72,7 +72,6 @@ func (r Runtime) Watch() {
 
 	go func() {
 		for range watcher.New(r.WatchCommand.Directory, r.WatchCommand.Poll) {
-			fmt.Println("hello")
 			r.esbuildRebuild()
 			serverSentEvents <- sse.Event{Event: "reload"}
 		}
@@ -88,7 +87,7 @@ func (r Runtime) Watch() {
 			loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
 			data, _ := json.Marshal(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
 			defer func() {
-				// Pause 100ms so the server-sent event does not drop on refresh:
+				// Pause so the server-sent event does not drop on refresh:
 				time.Sleep(100 * time.Millisecond)
 				serverSentEvents <- sse.Event{Event: "warning", Data: string(data)}
 			}()
@@ -98,6 +97,9 @@ func (r Runtime) Watch() {
 			fmt.Fprintln(wr, esbuildMessagesAsHTMLDocument(r.esbuildErrors))
 			return
 		}
+		// TODO: Add some caching layer here.
+		// TODO: Add some kind of r.Router.getRouteForPath(req.URL.Path). Non-
+		// matches should defer to ServeFile logic.
 		bstr, err := r.prerenderPage(base, r.Router[0])
 		if err != nil {
 			// TODO

@@ -24,6 +24,8 @@ type DirConfiguration struct {
 	BuildDirectory string
 }
 
+// TODO: We need a way of preventing the same error from logging twice. May want
+// some kind of fingerprint for warnings and errors.
 type Runtime struct {
 	esbuildResult   api.BuildResult
 	esbuildWarnings []api.Message
