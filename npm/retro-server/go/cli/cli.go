@@ -54,6 +54,7 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 	cmd.SetOutput(ioutil.Discard)
 
 	flags := &WatchCommandFlags{}
+	cmd.BoolVar(&flags.Cached, "cached", false, "")
 	cmd.DurationVar(&flags.Poll, "poll", 250*time.Millisecond, "")
 	cmd.IntVar(&flags.Port, "port", 8000, "")
 	if err := cmd.Parse(args); err != nil {

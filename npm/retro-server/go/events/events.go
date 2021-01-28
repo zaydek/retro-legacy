@@ -1,14 +1,14 @@
-package sse
+package events
 
 import (
 	"fmt"
 	"io"
 )
 
-// Event describes a server-sent event (SSE).
-type Event struct {
-	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#fields
-
+// SSE describes a server-sent event (SSE).
+//
+// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#fields
+type SSE struct {
 	// A string identifying the type of event described. If this is specified, an
 	// event will be dispatched on the browser to the listener for the specified
 	// event name; the website source code should use addEventListener() to listen
@@ -30,7 +30,7 @@ type Event struct {
 	Retry int
 }
 
-func (e Event) Write(w io.Writer) {
+func (e SSE) Write(w io.Writer) {
 	if e.Event != "" { fmt.Fprintf(w, "event: %v\n", e.Event) }
 	if e.Data != ""  { fmt.Fprintf(w, "data: %v\n", e.Data) }
 	if e.ID != ""    { fmt.Fprintf(w, "id: %v\n", e.ID) }

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/events"
 	"github.com/zaydek/retro/loggers"
-	"github.com/zaydek/retro/sse"
 	"github.com/zaydek/retro/watcher"
 )
 
@@ -56,7 +56,7 @@ func (r Runtime) Watch() {
 		os.Exit(1)
 	}
 
-	serverSentEvents := make(chan sse.Event, 8)
+	serverSentEvents := make(chan events.SSE, 8)
 
 	must(copyAssetDirectoryToBuildDirectory(r.Config))
 	r.esbuildBuild()
@@ -73,7 +73,7 @@ func (r Runtime) Watch() {
 	go func() {
 		for range watcher.New(r.WatchCommand.Directory, r.WatchCommand.Poll) {
 			r.esbuildRebuild()
-			serverSentEvents <- sse.Event{Event: "reload"}
+			serverSentEvents <- events.SSE{Event: "reload"}
 		}
 	}()
 
@@ -89,7 +89,7 @@ func (r Runtime) Watch() {
 			defer func() {
 				// Pause so the server-sent event does not drop on refresh:
 				time.Sleep(100 * time.Millisecond)
-				serverSentEvents <- sse.Event{Event: "warning", Data: string(data)}
+				serverSentEvents <- events.SSE{Event: "warning", Data: string(data)}
 			}()
 		}
 		if len(r.esbuildErrors) > 0 {

@@ -4,7 +4,6 @@ import "time"
 
 // CreateCommandFlags describes retro create flags and arguments.
 type CreateCommandFlags struct {
-	// Flags
 	Language string
 
 	// Arguments
@@ -13,24 +12,23 @@ type CreateCommandFlags struct {
 
 // WatchCommandFlags describes retro watch flags and arguments.
 type WatchCommandFlags struct {
-	// Flags
-	Poll time.Duration
-	Port int
+	Cached bool
+	Poll   time.Duration
+	Port   int
 
 	// Arguments
-	// Directories []string
+	//
+	// TODO: Change to directories.
 	Directory string
 }
 
 // BuildCommandFlags describes retro build flags and arguments.
 type BuildCommandFlags struct {
-	// Flags
 	Cached bool
 }
 
 // ServeCommandFlags describes retro serve flags and arguments.
 type ServeCommandFlags struct {
-	// Flags
 	Port int
 }
 
