@@ -79,9 +79,9 @@ func (r Runtime) parseBaseHTMLTemplate() (*template.Template, error) {
 	return base, nil
 }
 
-func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) error {
+func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) ([]byte, error) {
 	if _, err := os.Stat(p.Join(r.Config.CacheDirectory, "props.js")); os.IsNotExist(err) {
-		return errors.New("It looks like your loaders have not been resolved yet. " +
+		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + color.Bold("--cached") + " and try again.")
 	}
 
@@ -93,8 +93,7 @@ import ReactDOMServer from "react-dom/server"
 ` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.FSPath) + `
 const props = require("../` + r.Config.CacheDirectory + `/props.js").default
 
-function run({ path, Head, Page, ...etc }, { watchMode }) {
-	// Resolve <Head {...props}> on the server:
+function run({ path, Head, Page, ...etc }) {
 	let head = ""
 	if (Head) {
 		head = ReactDOMServer.renderToStaticMarkup(
@@ -105,7 +104,6 @@ function run({ path, Head, Page, ...etc }, { watchMode }) {
 		.replace(/></g, ">\n\t\t<")
 		.replace(/\/>/g, " />")
 
-	// Resolve <Page {...props}> on the server:
 	let page = '<div id="root"></div>'
 	if (Page) {
 		page = ReactDOMServer.renderToString(
@@ -117,27 +115,26 @@ function run({ path, Head, Page, ...etc }, { watchMode }) {
 
 	page += '\n'
 	page += '		<script src="/app.js"></script>\n'
-	if (watchMode) {
-		page += '		<script>\n'
-		page += '			const __retro_sse__ = new EventSource("/sse")\n'
-		page += '			__retro_sse__.addEventListener("reload", e => window.location.reload())\n'
-		page += '			__retro_sse__.addEventListener("warning", e => console.warn(JSON.parse(e.data)))\n'
-		page += '		</script>\n'
-	}
-	page = page.trimEnd()
+	page += '		<script>\n'
+	page += '			const __retro_sse__ = new EventSource("/sse")\n'
+	page += '			__retro_sse__.addEventListener("reload", e => window.location.reload())\n'
+	page += '			__retro_sse__.addEventListener("warning", e => console.warn(JSON.parse(e.data)))\n'
+	page += '		</script>'
 
 	console.log(JSON.stringify({ ...etc, head, page }))
 }
 
-run(
-	` + fmt.Sprintf(`{ diskPathSrc: %q, diskPathDst: %q, path: %q, Head: %[4]s.Head, Page: %[4]s.default }`,
-		route.DiskPathSrc, route.DiskPathDst, route.Path, route.Component) + `,
-	{ watchMode: true },
-)
+run(` + fmt.Sprintf(`{
+	diskPathSrc: %q,
+	diskPathDst: %q,
+	path: %q,
+	Head: %[4]s.Head,
+	Page: %[4]s.default,
+}`, route.DiskPathSrc, route.DiskPathDst, route.Path, route.Component) + `)
 `
 
 	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), []byte(text), 0644); err != nil {
-		return errs.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), err)
+		return nil, errs.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -152,32 +149,36 @@ run(
 
 	// TODO
 	if len(results.Warnings) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
 	}
 	if len(results.Errors) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	// TODO: It would also be nice if we can automatically unmarshal the return of
+	// TODO: It would also be nice if we can automatically unmarshal the return nil, of
 	// Node since we’re only using Node for IPC processes.
 	var page prerenderedPage
 	stdoutBuf, err := execNode(results.OutputFiles[0].Contents)
 	if err != nil {
-		return err
-	} else if err := json.Unmarshal(stdoutBuf.Bytes(), &page); err != nil {
-		return errs.Unexpected(err)
+		return nil, err
+	}
+
+	if err := json.Unmarshal(stdoutBuf.Bytes(), &page); err != nil {
+		return nil, errs.Unexpected(err)
 	}
 
 	var buf bytes.Buffer
 	if err := base.Execute(&buf, page); err != nil {
-		return errs.ExecuteTemplate(fmt.Sprintf("<%s:%s>", base.Name(), route.Component), err)
+		return nil, errs.ExecuteTemplate(fmt.Sprintf("<%s:%s>", base.Name(), route.Component), err)
 	}
 
-	// TODO: Can we combine these functions?
-	if err := os.MkdirAll(p.Dir(page.DiskPathDst), 0755); err != nil {
-		return errs.MkdirAll(p.Dir(page.DiskPathDst), err)
-	} else if err := ioutil.WriteFile(page.DiskPathDst, buf.Bytes(), 0644); err != nil {
-		return errs.WriteFile(page.DiskPathDst, err)
-	}
-	return nil
+	return buf.Bytes(), nil
+
+	// // TODO: Can we combine these functions?
+	// if err := os.MkdirAll(p.Dir(page.DiskPathDst), 0755); err != nil {
+	// 	return errs.MkdirAll(p.Dir(page.DiskPathDst), err)
+	// } else if err := ioutil.WriteFile(page.DiskPathDst, buf.Bytes(), 0644); err != nil {
+	// 	return errs.WriteFile(page.DiskPathDst, err)
+	// }
+	// return nil
 }

@@ -21,7 +21,7 @@ func (r *Runtime) esbuildBuild() {
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{p.Join(r.WatchCommand.Directory, "index.js")},
+		EntryPoints: []string{p.Join(r.Config.PagesDirectory, "index.js")},
 		Incremental: true,
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
 		Outfile:     p.Join(r.Config.BuildDirectory, "app.js"),
@@ -55,11 +55,6 @@ func (r Runtime) Watch() {
 		loggers.Stderr.Println(err)
 		os.Exit(1)
 	}
-	if err := r.prerenderPage(base, r.Router[0]); err != nil {
-		loggers.Stderr.Println(err)
-		os.Exit(1)
-	}
-	return
 
 	serverSentEvents := make(chan sse.Event, 8)
 
@@ -84,25 +79,46 @@ func (r Runtime) Watch() {
 	}()
 
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
-		if ext := p.Ext(req.URL.Path); ext == "" {
-			r.esbuildRebuild()
-			if len(r.esbuildWarnings) > 0 {
-				// TODO
-				loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
-				data, _ := json.Marshal(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
-				defer func() {
-					// Pause 100ms so the server-sent event does not drop on refresh:
-					time.Sleep(100 * time.Millisecond)
-					serverSentEvents <- sse.Event{Event: "warning", Data: string(data)}
-				}()
-			}
-			if len(r.esbuildErrors) > 0 {
-				loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
-				fmt.Fprintln(wr, esbuildMessagesAsHTMLDocument(r.esbuildErrors))
-				return
-			}
+		if ext := p.Ext(req.URL.Path); ext != "" {
+			http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
 		}
-		http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
+		r.esbuildRebuild()
+		if len(r.esbuildWarnings) > 0 {
+			// TODO
+			loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
+			data, _ := json.Marshal(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
+			defer func() {
+				// Pause 100ms so the server-sent event does not drop on refresh:
+				time.Sleep(100 * time.Millisecond)
+				serverSentEvents <- sse.Event{Event: "warning", Data: string(data)}
+			}()
+		}
+		if len(r.esbuildErrors) > 0 {
+			loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
+			fmt.Fprintln(wr, esbuildMessagesAsHTMLDocument(r.esbuildErrors))
+			return
+		}
+		bstr, err := r.prerenderPage(base, r.Router[0])
+		if err != nil {
+			// TODO
+			loggers.Stderr.Println(err)
+			os.Exit(1)
+		}
+		wr.Write(bstr)
+
+		// 		wr.Write([]byte(`<!DOCTYPE html>
+		// <html>
+		// 	<head></head>
+		// 	<body>
+		// 		<h1>Hello, world!</h1>
+		// 	</body>
+		// </html>
+		// `))
+
+		// fmt.Fprint(wr, string(bstr))
+		// return
+
+		// http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
 	})
 
 	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {
