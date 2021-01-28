@@ -1,0 +1,14 @@
+{
+	"name": "{{ .RepoName }}",
+	"scripts": {
+		"watch": "retro-server watch",
+		"build": "retro-server build",
+		"serve": "retro-server serve"
+	},
+	"dependencies": {
+		"react": "{{ .ReactVersion }}",
+		"react-dom": "{{ .ReactDOMVersion }}",
+		"retro-client": "{{ .RetroClientVersion }}",
+		"retro-server": "{{ .RetroServerVersion }}"
+	}
+}

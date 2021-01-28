@@ -94,17 +94,17 @@ func (r Runtime) Create() {
 		repoName = "retro-app"
 	}
 
-	dot := embedded.PkgStruct{
-		RepoName:            repoName,
-		ReactVersion:        reactVersion,
-		ReactDOMVersion:     reactDOMVersion,
-		RetroVersion:        retroVersion,
-		RetroScriptsVersion: retroScriptsVersion,
+	dot := embedded.PackageDot{
+		RepoName:           repoName,
+		ReactVersion:       os.Getenv("REACT_VERSION"),
+		ReactDOMVersion:    os.Getenv("REACT_DOM_VERSION"),
+		RetroClientVersion: os.Getenv("RETRO_CLIENT_VERSION"),
+		RetroServerVersion: os.Getenv("RETRO_SERVER_VERSION"),
 	}
 
 	var buf bytes.Buffer
-	if err := embedded.PkgTemplate.Execute(&buf, dot); err != nil {
-		loggers.Stderr.Println(errs.ExecuteTemplate("package.json", err))
+	if err := embedded.PackageTemplate.Execute(&buf, dot); err != nil {
+		loggers.Stderr.Println(errs.ExecuteTemplate(embedded.PackageTemplate.Name(), err))
 		os.Exit(1)
 	}
 

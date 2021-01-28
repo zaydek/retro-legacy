@@ -1,6 +1,6 @@
-+-------------------------------+
-| RETRO_CLIENT_VERSION | latest |
-| RETRO_SERVER_VERSION | latest |
-| REACT_VERSION        | latest |
-| REACT_DOM_VERSION    | latest |
-+-------------------------------+
++--------------------------------+
+| REACT_VERSION        | v17.0.1 |
+| REACT_DOM_VERSION    | v17.0.1 |
+| RETRO_CLIENT_VERSION | v0.1.0  |
+| RETRO_SERVER_VERSION | v0.1.0  |
++--------------------------------+
