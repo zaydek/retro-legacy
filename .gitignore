@@ -1,13 +1,10 @@
-# Generated
-out.*
-
 # macOS
 .DS_Store
 
-# Node / Yarn
-/.env
-/*.log*
-/node_modules
+# NPM / Yarn
+.env
+*.log*
+node_modules
 
 # Production
 /build

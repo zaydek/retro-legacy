@@ -1,0 +1,39 @@
+{
+	"name": "page-based-router",
+	"version": "1.0.0",
+	"main": "index.js",
+	"license": "MIT",
+	"scripts": {
+		"prerender-pageProps": "ts-node -T commands/prerender-pageProps.ts",
+		"prerender-pages": "ts-node -T commands/prerender-pages.tsx",
+		"prerender-app": "ts-node -T commands/prerender-app.ts",
+		"test": "jest",
+		"purge": "yarn rimraf cache build",
+		"start": "yarn concurrently --raw 'nodemon --exec \"yarn concurrently --raw \\\"yarn prerender-pages\\\" \\\"yarn prerender-app\\\"\" --watch pages --watch src' 'yarn serve'",
+		"build": "yarn rimraf build && NODE_ENV=production yarn prerender-pageProps && yarn concurrently --raw 'NODE_ENV=production yarn prerender-pages' 'NODE_ENV=production yarn prerender-app'",
+		"serve": "PORT=8080 http-server build --proxy http://127.0.0.1:8080? --silent"
+	},
+	"devDependencies": {
+		"@mdx-js/mdx": "^1.6.22",
+		"@mdx-js/react": "^1.6.22",
+		"@types/react": "^17.0.0",
+		"@types/react-dom": "^17.0.0",
+		"@types/react-test-renderer": "^17.0.0",
+		"concurrently": "^5.3.0",
+		"esbuild": "^0.8.31",
+		"express": "^4.17.1",
+		"history": "^5.0.0",
+		"http-server": "^0.12.3",
+		"jest": "^26.6.3",
+		"nodemon": "^2.0.7",
+		"prettier": "^2.2.1",
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1",
+		"react-test-renderer": "^17.0.1",
+		"rimraf": "^3.0.2",
+		"sass": "^1.32.2",
+		"ts-jest": "^26.4.4",
+		"ts-node": "^9.1.1",
+		"typescript": "^4.1.3"
+	}
+}

@@ -1,0 +1,58 @@
+solved problems:
+
+- shallow page-based router
+- dynamic imports (in general)
+- chunking react / react dom as external depedencies (window)
+
+unsolved problems:
+
+- does not work for folders / nested routing (solvable)
+- not designed for rapid development (improvable)
+- no cache invalidation for out.js or dependency out.js files (solvable)
+  - netlify basically cache invalidates for us, but also prevents persisted caching?
+  - it looks like netlify doesn't make cache headers per file easy (https://codewithhugo.com/enable-cdn-netlify/#cache-rules-breakdown)
+- no automatic dependency chunking (see https://github.com/evanw/esbuild/issues/490#issuecomment-757181451)
+- does not link sass / css per page (see https://gist.github.com/pngwn/670bfbf279431866a1194ebcc14faf21#routing)
+
+# react router approach:
+
+## upsides
+
+- routing is faster (basically instant because react is responsible for rerendering)
+- page transitions are theoretically possible (we are page-aware at that point)
+- because esbuild provides tree-shaking we don't need to worry about lazy-loading for a while
+  - tree-shaking removes unused code. with our previous naive chunking attempt
+    can't levereage automatic code chunking or tree-shaking
+  - code-splitting / lazy-loading seem to be solutions for when tree-shaking /
+    bundle sizes get to be too big, so let's not worry about this right now
+- implementation doesn't appear to be heavy handed
+  - we simply use router and the path libraries to create a custom react api for
+    talking to the top-level router component
+  - history api triggers a rerender, rerender triggers remounting page-level
+    components, page-level components grab data from hooks
+
+what about ssg / ssr concerns? we need to know routes statically (in-advance) in
+order to generate them. what that looks like in practice is doing something like
+leveraging a page-based router api and using a dynamic router to bundle to a
+single file.
+
+the benefits of this approach are long-term maintainability (since routes are
+intuitable), static-site generation, and a single tree-shaken js file. the
+problem with this approach is caching, because our singly emitted js file does
+not provide a caching mechanism between builds. webpack extracts vendor chunks
+for this purpose, but possibly invalidates them anyway between subsequent
+builds?
+
+page-based routing solves the static routes problem (doesn't yet solve the
+dynamic route problem) and dynmaic routing solves the single
+
+during development it's not essential that we compile all pages. we simply need
+to prerender props and then we can point to the dynamic router (in theory)
+
+## downsides
+
+- at some point we may need to implement lazy-loading (https://reactjs.org/docs/code-splitting.html#reactlazy)
+  - this is because even with code splitting (handled by esbuild, there are limits to how much code we want to ship to the user)
+  - by leveraging react.lazy or isomorphic apis, we lazily load JS when needed versus eagerly
+  - because esbuild does code splitting for us, this isn't worth worrying about immediately
+  - react.lazy does not appear to be server-friendly (see warning at https://reactjs.org/docs/code-splitting.html#reactlazy)
