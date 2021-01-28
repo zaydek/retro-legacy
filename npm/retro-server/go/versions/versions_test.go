@@ -1,6 +1,8 @@
 package versions
 
 import (
+	_ "embed"
+
 	"os"
 	"testing"
 )
@@ -10,7 +12,25 @@ type TestStruct struct {
 	V   string
 }
 
-func TestExact(t *testing.T) {
+func TestEmbed(t *testing.T) {
+	//go:embed versions.txt
+	var text string
+	SetPackageVars(text)
+
+	tests := []TestStruct{
+		{Pkg: "REACT_VERSION", V: "v17.0.1"},
+		{Pkg: "REACT_DOM_VERSION", V: "v17.0.1"},
+		{Pkg: "RETRO_CLIENT_VERSION", V: "v0.1.0"},
+		{Pkg: "RETRO_SERVER_VERSION", V: "v0.1.0"},
+	}
+	for _, test := range tests {
+		if got := os.Getenv(test.Pkg); got != test.V {
+			t.Fatalf("got %s want %s", got, test.V)
+		}
+	}
+}
+
+func Test17(t *testing.T) {
 	text := `
 +--------------------------------+
 | REACT_VERSION        | v17.0.1 |
