@@ -14,6 +14,7 @@ import (
 	"github.com/zaydek/retro/loggers"
 )
 
+// TODO: Reference versions from versions.txt; use os.Getenv.
 var (
 	reactVersion        = "latest"
 	reactDOMVersion     = "latest"
