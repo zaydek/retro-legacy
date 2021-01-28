@@ -12,9 +12,10 @@ type CreateCommandFlags struct {
 
 // WatchCommandFlags describes retro watch flags and arguments.
 type WatchCommandFlags struct {
-	Cached bool
-	Poll   time.Duration
-	Port   int
+	Cached    bool
+	Poll      time.Duration
+	Port      int
+	SourceMap bool
 
 	// Arguments
 	//
@@ -24,7 +25,8 @@ type WatchCommandFlags struct {
 
 // BuildCommandFlags describes retro build flags and arguments.
 type BuildCommandFlags struct {
-	Cached bool
+	Cached    bool
+	SourceMap bool
 }
 
 // ServeCommandFlags describes retro serve flags and arguments.

@@ -34,12 +34,14 @@ var manpages = `
       --cached              Reuse cached props (disabled by default)
       --poll=<duration>     Poll duration (default 250ms)
       --port=<number>       Port number (default 8000)
+      --source-map          Add source maps (disabled by default)
 
   ` + color.BoldWhite("retro build") + `
 
     Builds the production-ready build
 
       --cached              Reuse cached props (disabled by default)
+      --source-map          Add source maps (disabled by default)
 
   ` + color.BoldWhite("retro serve") + `
 

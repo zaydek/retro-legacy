@@ -57,6 +57,7 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
 	cmd.DurationVar(&flags.Poll, "poll", 250*time.Millisecond, "")
 	cmd.IntVar(&flags.Port, "port", 8000, "")
+	cmd.BoolVar(&flags.SourceMap, "source-map", false, "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("retro help") + " for help.")
@@ -92,6 +93,7 @@ func parseBuildCommandFlags(args []string) *BuildCommandFlags {
 
 	flags := &BuildCommandFlags{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
+	cmd.BoolVar(&flags.SourceMap, "source-map", false, "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("retro help") + " for help.")

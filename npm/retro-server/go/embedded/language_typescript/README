@@ -24,12 +24,14 @@ Retro is a friendly development server and static-site generator (SSG) for React
       --cached              Reuse cached props (disabled by default)
       --poll=<duration>     Poll duration (default 250ms)
       --port=<number>       Port number (default 8000)
+      --source-map          Add source maps (disabled by default)
 
   retro build
 
     Builds the production-ready build
 
       --cached              Reuse cached props (disabled by default)
+      --source-map          Add source maps (disabled by default)
 
   retro serve
 
