@@ -5,16 +5,16 @@ import (
 	"io/fs"
 )
 
-//go:embed language_javascript/*
-var languageJavaScript embed.FS
+//go:embed javascript/*
+var jsFS embed.FS
 
-//go:embed language_typescript/*
-var languageTypeScript embed.FS
+//go:embed typescript/*
+var tsFS embed.FS
 
 var (
 	// JavaScriptFS mounts the JavaScript template as an embedded filesystem.
-	JavaScriptFS, _ = fs.Sub(languageJavaScript, "language_javascript")
+	JavaScriptFS, _ = fs.Sub(jsFS, "javascript")
 
 	// TypeScriptFS mounts the TypeScript template as an embedded filesystem.
-	TypeScriptFS, _ = fs.Sub(languageTypeScript, "language_typescript")
+	TypeScriptFS, _ = fs.Sub(tsFS, "typescript")
 )

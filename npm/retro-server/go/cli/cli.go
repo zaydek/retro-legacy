@@ -24,13 +24,13 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	cmd.SetOutput(ioutil.Discard)
 
 	flags := &CreateCommandFlags{}
-	cmd.StringVar(&flags.Language, "language", "js", "")
+	cmd.StringVar(&flags.Template, "template", "js", "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
 			"Try " + color.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
-	if flags.Language != "js" && flags.Language != "ts" {
+	if flags.Template != "js" && flags.Template != "ts" {
 		loggers.Stderr.Println(color.Bold("--language") + " must be " + color.Bold("js") + " for JavaScript or " + color.Bold("ts") + " for TypeScript.\n\n" +
 			"- " + color.Bold("retro create --language=js [dir]") + "\n\n" +
 			"Or\n\n" +

@@ -25,7 +25,7 @@ var (
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
 func (r Runtime) Create() {
 	fsys := embedded.JavaScriptFS
-	if r.CreateCommand.Language == "ts" {
+	if r.CreateCommand.Template == "ts" {
 		fsys = embedded.TypeScriptFS
 	}
 
@@ -62,7 +62,7 @@ func (r Runtime) Create() {
 		}
 		return nil
 	}); err != nil {
-		entry := fmt.Sprintf("<embedded:%s>", r.CreateCommand.Language)
+		entry := fmt.Sprintf("<embedded:%s>", r.CreateCommand.Template)
 		loggers.Stderr.Println(errs.Walk(entry, err))
 		os.Exit(1)
 	}

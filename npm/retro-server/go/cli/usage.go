@@ -25,7 +25,7 @@ var manpages = `
 
     Creates a new Retro app at directory dir
 
-      --language=[js|ts]    Programming language (default js)
+      --template=[js|ts]    Starter template (default js)
 
   ` + color.BoldWhite("retro watch [...dirs]") + `
 

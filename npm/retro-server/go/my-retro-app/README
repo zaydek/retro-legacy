@@ -4,41 +4,43 @@ Retro is a friendly development server and static-site generator (SSG) for React
 
 ```
 
-	Usage:
+  Usage:
 
-		retro create [dir]      Creates a new Retro app at directory 'dir'
-		retro watch [...dirs]   Starts the development server and watches 'dirs' for changes
-		retro build             Builds the production-ready build
-		retro serve             Serves the production-ready build
+    retro create [dir]      Creates a new Retro app at directory dir
+    retro watch [...paths]  Starts the dev server and watches paths for changes
+    retro build             Builds the production-ready build
+    retro serve             Serves the production-ready build
 
-	retro create [dir]
+  retro create [dir]
 
-		'retro create' creates a new Retro app at directory 'dir'
+    Creates a new Retro app at directory dir
 
-			--language=[js | ts]  Programming language (default 'js')
+      --template=[js|ts]    Starter template (default js)
 
-	retro watch [...dirs]
+  retro watch [...dirs]
 
-		'retro watch' starts a development server and watches directories 'dirs' for
-		changes (default 'components pages')
+    Starts a dev server and watches directories dirs for changes (default pages)
 
-			--poll=<duration>     Poll duration (default '250ms')
-			--port=<number>       Port number (default '8000')
+      --cached              Reuse cached props (disabled by default)
+      --poll=<duration>     Poll duration (default 250ms)
+      --port=<number>       Port number (default 8000)
+      --source-map          Add source maps (disabled by default)
 
-	retro build
+  retro build
 
-		'retro build' builds the production-ready build
+    Builds the production-ready build
 
-			--cached              Use cached props for faster builds (disabled by default)
+      --cached              Reuse cached props (disabled by default)
+      --source-map          Add source maps (disabled by default)
 
-	retro serve
+  retro serve
 
-		'retro serve' serves the production-ready build
+    Serves the production-ready build
 
-			--port=<number>       Port number (default '8000')
+      --port=<number>       Port number (default 8000)
 
-	Repository:
+  Repository:
 
-		https://github.com/zaydek/retro
+    https://github.com/zaydek/retro
 
 ```

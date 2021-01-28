@@ -15,7 +15,7 @@ Retro is a friendly development server and static-site generator (SSG) for React
 
     Creates a new Retro app at directory dir
 
-      --language=[js|ts]    Programming language (default js)
+      --template=[js|ts]    Starter template (default js)
 
   retro watch [...dirs]
 

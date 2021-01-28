@@ -4,7 +4,7 @@ import "time"
 
 // CreateCommandFlags describes retro create flags and arguments.
 type CreateCommandFlags struct {
-	Language string
+	Template string
 
 	// Arguments
 	Directory string
