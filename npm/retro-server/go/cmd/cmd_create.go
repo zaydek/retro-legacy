@@ -9,7 +9,7 @@ import (
 	p "path"
 
 	"github.com/zaydek/retro/color"
-	"github.com/zaydek/retro/embedded"
+	"github.com/zaydek/retro/embeds"
 	"github.com/zaydek/retro/errs"
 	"github.com/zaydek/retro/loggers"
 )
@@ -24,9 +24,9 @@ var (
 
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
 func (r Runtime) Create() {
-	fsys := embedded.JavaScriptFS
+	fsys := embeds.JavaScriptFS
 	if r.CreateCommand.Template == "ts" {
-		fsys = embedded.TypeScriptFS
+		fsys = embeds.TypeScriptFS
 	}
 
 	if r.CreateCommand.Directory != "." {
@@ -62,7 +62,7 @@ func (r Runtime) Create() {
 		}
 		return nil
 	}); err != nil {
-		entry := fmt.Sprintf("<embedded:%s>", r.CreateCommand.Template)
+		entry := fmt.Sprintf("<embeds:%s>", r.CreateCommand.Template)
 		loggers.Stderr.Println(errs.Walk(entry, err))
 		os.Exit(1)
 	}
@@ -79,7 +79,7 @@ func (r Runtime) Create() {
 	for _, each := range paths {
 		bstr, err := fs.ReadFile(fsys, each.src)
 		if err != nil {
-			entry := fmt.Sprintf("<embedded:%s>", each)
+			entry := fmt.Sprintf("<embeds:%s>", each)
 			loggers.Stderr.Println(errs.ReadFile(entry, err))
 			os.Exit(1)
 		}
@@ -94,7 +94,7 @@ func (r Runtime) Create() {
 		repoName = "retro-app"
 	}
 
-	dot := embedded.PackageDot{
+	dot := embeds.PackageDot{
 		RepoName:           repoName,
 		ReactVersion:       os.Getenv("REACT_VERSION"),
 		ReactDOMVersion:    os.Getenv("REACT_DOM_VERSION"),
@@ -103,8 +103,8 @@ func (r Runtime) Create() {
 	}
 
 	var buf bytes.Buffer
-	if err := embedded.PackageTemplate.Execute(&buf, dot); err != nil {
-		loggers.Stderr.Println(errs.ExecuteTemplate(embedded.PackageTemplate.Name(), err))
+	if err := embeds.PackageTemplate.Execute(&buf, dot); err != nil {
+		loggers.Stderr.Println(errs.ExecuteTemplate(embeds.PackageTemplate.Name(), err))
 		os.Exit(1)
 	}
 
