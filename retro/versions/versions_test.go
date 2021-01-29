@@ -10,15 +10,15 @@ import (
 type Test struct{ got, want string }
 
 func TestEmbed(t *testing.T) {
-	//go:embed versions.txt
+	//go:embed versions_test.txt
 	var text string
 	SetPackageVars(text)
 
 	tests := []Test{
+		{got: os.Getenv("RETRO_VERSION"), want: "v0.0.1"},
+		{got: os.Getenv("RETRO_ROUTER_VERSION"), want: "v0.0.1"},
 		{got: os.Getenv("REACT_VERSION"), want: "v17.0.1"},
 		{got: os.Getenv("REACT_DOM_VERSION"), want: "v17.0.1"},
-		{got: os.Getenv("RETRO_CLIENT_VERSION"), want: "v0.1.0"},
-		{got: os.Getenv("RETRO_SERVER_VERSION"), want: "v0.1.0"},
 	}
 	for _, test := range tests {
 		if test.got != test.want {
@@ -30,20 +30,20 @@ func TestEmbed(t *testing.T) {
 func Test17(t *testing.T) {
 	text := `
 +--------------------------------+
+| RETRO_VERSION        |  v0.0.1 |
+| RETRO_ROUTER_VERSION |  v0.0.1 |
 | REACT_VERSION        | v17.0.1 |
 | REACT_DOM_VERSION    | v17.0.1 |
-| RETRO_CLIENT_VERSION | v0.1.0  |
-| RETRO_SERVER_VERSION | v0.1.0  |
 +--------------------------------+
 `
 
 	SetPackageVars(text)
 
 	tests := []Test{
+		{got: os.Getenv("RETRO_VERSION"), want: "v0.0.1"},
+		{got: os.Getenv("RETRO_ROUTER_VERSION"), want: "v0.0.1"},
 		{got: os.Getenv("REACT_VERSION"), want: "v17.0.1"},
 		{got: os.Getenv("REACT_DOM_VERSION"), want: "v17.0.1"},
-		{got: os.Getenv("RETRO_CLIENT_VERSION"), want: "v0.1.0"},
-		{got: os.Getenv("RETRO_SERVER_VERSION"), want: "v0.1.0"},
 	}
 	for _, test := range tests {
 		if test.got != test.want {
@@ -54,21 +54,21 @@ func Test17(t *testing.T) {
 
 func TestLatest(t *testing.T) {
 	text := `
-+-------------------------------+
-| REACT_VERSION        | latest |
-| REACT_DOM_VERSION    | latest |
-| RETRO_CLIENT_VERSION | latest |
-| RETRO_SERVER_VERSION | latest |
-+-------------------------------+
++------------------------------+
+| RETRO_VERSION       | latest |
+| RETRO_RETRO_VERSION | latest |
+| REACT_VERSION       | latest |
+| REACT_DOM_VERSION   | latest |
++------------------------------+
 `
 
 	SetPackageVars(text)
 
 	tests := []Test{
+		{got: os.Getenv("RETRO_VERSION"), want: "latest"},
+		{got: os.Getenv("RETRO_RETRO_VERSION"), want: "latest"},
 		{got: os.Getenv("REACT_VERSION"), want: "latest"},
 		{got: os.Getenv("REACT_DOM_VERSION"), want: "latest"},
-		{got: os.Getenv("RETRO_CLIENT_VERSION"), want: "latest"},
-		{got: os.Getenv("RETRO_SERVER_VERSION"), want: "latest"},
 	}
 	for _, test := range tests {
 		if test.got != test.want {

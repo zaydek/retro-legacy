@@ -92,10 +92,10 @@ func (r Runtime) Create() {
 
 	dot := embeds.PackageDot{
 		RepoName:           repoName,
+		RetroVersion:       os.Getenv("RETRO_VERSION"),
+		RetroRouterVersion: os.Getenv("RETRO_ROUTER_VERSION"),
 		ReactVersion:       os.Getenv("REACT_VERSION"),
 		ReactDOMVersion:    os.Getenv("REACT_DOM_VERSION"),
-		RetroClientVersion: os.Getenv("RETRO_CLIENT_VERSION"),
-		RetroServerVersion: os.Getenv("RETRO_SERVER_VERSION"),
 	}
 
 	var buf bytes.Buffer

@@ -8,10 +8,10 @@ import (
 
 type PackageDot struct {
 	RepoName           string
+	RetroVersion       string
+	RetroRouterVersion string
 	ReactVersion       string
 	ReactDOMVersion    string
-	RetroClientVersion string
-	RetroServerVersion string
 }
 
 //go:embed package.json

@@ -1,5 +1,5 @@
 bin:
-	@go build -o=retro cmd/*.go && mv retro /usr/local/bin
+	go build -o=retro cmd/*.go && mv retro /usr/local/bin
 
 build:
 	test
