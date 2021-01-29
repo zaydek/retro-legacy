@@ -6,19 +6,25 @@ import (
 	"time"
 )
 
-// New returns a read-only channel that sends on recursive file and or directory
-// changes to dir.
-func New(dir string, poll time.Duration) <-chan struct{} {
-	var (
-		ch = make(chan struct{})
+type WatchResult struct{ Err error }
 
-		// Maps paths to (file.FileInfo).ModTime().
+// Creates a new watcher for directory dir. Directory dir is walked recursively.
+func New(dir string, poll time.Duration) <-chan WatchResult {
+	var (
+		ch     = make(chan WatchResult)
 		modMap = map[string]time.Time{}
 	)
 
 	go func() {
 		defer close(ch)
-		for range time.Tick(poll) {
+
+		// NOTE: Use time.NewTicker(poll) not time.Tick(poll); time.Tick(poll)
+		// starts after poll duration, not before.
+		//
+		// Based on https://stackoverflow.com/a/47448177.
+		ticker := time.NewTicker(poll)
+		defer ticker.Stop()
+		for ; true; <-ticker.C {
 			if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err
@@ -29,14 +35,16 @@ func New(dir string, poll time.Duration) <-chan struct{} {
 				} else {
 					if next := info.ModTime(); prev != next {
 						modMap[path] = next
-						ch <- struct{}{}
+						ch <- WatchResult{nil}
 					}
 				}
 				return nil
 			}); err != nil {
-				panic(err)
+				ch <- WatchResult{err}
 			}
 		}
 	}()
+
+	time.Sleep(1 * time.Millisecond)
 	return ch
 }
