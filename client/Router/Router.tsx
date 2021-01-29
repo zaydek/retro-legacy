@@ -48,7 +48,8 @@ export function Router({ children }: RouterProps) {
 	})
 
 	useLayoutEffect(() => {
-		const defer = history.listen(e => {
+		// FIXME: any
+		const defer = history.listen((e: any) => {
 			if (e.location.pathname === state.page) {
 				setState({ ...state, hash: newHash() })
 				return
