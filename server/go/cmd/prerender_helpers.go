@@ -12,9 +12,9 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/color"
-	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/cmd/errs"
 	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/term"
 )
 
 // TODO: Can we embed PageBasedRoute here and simply add Head and Page?
@@ -64,13 +64,13 @@ func (r Runtime) parseBaseHTMLTemplate() (*template.Template, error) {
 
 	text := string(bstr)
 	if !strings.Contains(text, "{{ .Head }}") {
-		return nil, errors.New("No such template tag " + color.Bold("{{ .Head }}") + ". " +
-			"This is the entry point for the " + color.Bold("<Head>") + " component in your page components. " +
-			"Add " + color.Bold("{{ .Head }}") + " to " + color.Bold("<head>") + ".")
+		return nil, errors.New("No such template tag " + term.Bold("{{ .Head }}") + ". " +
+			"This is the entry point for the " + term.Bold("<Head>") + " component in your page components. " +
+			"Add " + term.Bold("{{ .Head }}") + " to " + term.Bold("<head>") + ".")
 	} else if !strings.Contains(text, "{{ .Page }}") {
-		return nil, errors.New("No such template tag " + color.Bold("{{ .Page }}") + ". " +
-			"This is the entry point for the " + color.Bold("<Page>") + " component in your page components. " +
-			"Add " + color.Bold("{{ .Page }}") + " to " + color.Bold("<body>") + ".")
+		return nil, errors.New("No such template tag " + term.Bold("{{ .Page }}") + ". " +
+			"This is the entry point for the " + term.Bold("<Page>") + " component in your page components. " +
+			"Add " + term.Bold("{{ .Page }}") + " to " + term.Bold("<body>") + ".")
 	}
 
 	base, err := template.New(p.Join(r.Config.AssetDirectory, "index.html")).Parse(text)
@@ -85,7 +85,7 @@ func (r Runtime) parseBaseHTMLTemplate() (*template.Template, error) {
 func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) ([]byte, error) {
 	if _, err := os.Stat(p.Join(r.Config.CacheDirectory, "props.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
-			"Remove " + color.Bold("--cached") + " and try again.")
+			"Remove " + term.Bold("--cached") + " and try again.")
 	}
 
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.

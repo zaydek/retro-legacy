@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/cmd/errs"
 )
 
 var allowedRouteFileTypes = []string{

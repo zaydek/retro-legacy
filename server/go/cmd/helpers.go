@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/zaydek/retro/cli"
-	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/cmd/errs"
 	"github.com/zaydek/retro/mode"
 )
 

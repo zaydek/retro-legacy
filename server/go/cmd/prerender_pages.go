@@ -10,7 +10,7 @@ import (
 	p "path"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/cmd/errs"
 	"github.com/zaydek/retro/mode"
 )
 

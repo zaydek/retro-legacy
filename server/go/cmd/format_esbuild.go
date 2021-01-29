@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/color"
+	"github.com/zaydek/retro/term"
 )
 
 func formatEsbuildMessagesAsTermString(msgs []api.Message) string {
@@ -18,7 +18,7 @@ func formatEsbuildMessagesAsTermString(msgs []api.Message) string {
 
 	return fmt.Sprintf("%s:%d:%d: %s", msg.Location.File, msg.Location.Line, msg.Location.Column, msg.Text) + `
 
-` + color.Boldf("%-*d | %s", gutter, msg.Location.Line+0, msg.Location.LineText) + `
+` + term.Boldf("%-*d | %s", gutter, msg.Location.Line+0, msg.Location.LineText) + `
 ` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap) + `
 ` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, msg.Text)
 }

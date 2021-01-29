@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/cmd/errs"
 	"github.com/zaydek/retro/mode"
 )
 

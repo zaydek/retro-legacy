@@ -46,8 +46,8 @@ var (
 	BoldWhitef   = sprintfImpl("\033[1;37m%s\033[0m")
 )
 
-func Revert(w io.Writer) {
-	fmt.Fprint(w, "\033[0m")
+func Revert(w io.Writer) (n int, err error) {
+	return fmt.Fprint(w, "\033[0m")
 }
 
 // sprintImpl decorates fmt.Sprint.

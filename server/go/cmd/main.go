@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/zaydek/retro/color"
+	"github.com/zaydek/retro/term"
 	"github.com/zaydek/retro/versions"
 )
 
@@ -18,7 +18,7 @@ func init() {
 }
 
 func main() {
-	defer color.TerminateFormatting(os.Stdout)
+	defer term.Revert(os.Stdout)
 
 	start := time.Now()
 

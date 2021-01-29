@@ -6,15 +6,15 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/loggers"
+	"github.com/zaydek/retro/term"
 )
 
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.Config.BuildDirectory); os.IsNotExist(err) {
-		loggers.Stderr.Println("Failed to stat directory " + color.Bold(r.Config.BuildDirectory) + ". " +
-			"It looks like haven’t run " + color.Bold("retro build") + " yet. " +
-			"Try " + color.Bold("retro build && retro serve") + ".")
+		loggers.Stderr.Println("Failed to stat directory " + term.Bold(r.Config.BuildDirectory) + ". " +
+			"It looks like haven’t run " + term.Bold("retro build") + " yet. " +
+			"Try " + term.Bold("retro build && retro serve") + ".")
 		os.Exit(1)
 	}
 

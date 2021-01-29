@@ -9,11 +9,11 @@ import (
 	p "path"
 
 	"github.com/zaydek/retro/cli"
-	"github.com/zaydek/retro/color"
+	"github.com/zaydek/retro/cmd/errs"
 	"github.com/zaydek/retro/embeds"
-	"github.com/zaydek/retro/errs"
 	"github.com/zaydek/retro/loggers"
 	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/term"
 )
 
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
@@ -33,10 +33,10 @@ func (r Runtime) Create() {
 			} else {
 				typ = "directory"
 			}
-			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Bold(cmd.Directory) + " already exists.\n\n" +
-				"- " + color.Bold("retro create [dir]") + "\n\n" +
+			loggers.Stderr.Println("Aborted. A " + typ + " named " + term.Bold(cmd.Directory) + " already exists.\n\n" +
+				"- " + term.Bold("retro create [dir]") + "\n\n" +
 				"Or\n\n" +
-				"- " + color.Boldf("rm -r %[1]s && retro create %[1]s", cmd.Directory))
+				"- " + term.Boldf("rm -r %[1]s && retro create %[1]s", cmd.Directory))
 			os.Exit(1)
 		}
 
@@ -112,12 +112,12 @@ func (r Runtime) Create() {
 	if cmd.Directory == "." {
 		fmt.Println(`Successfully created a new Retro app.
 
-` + color.Bold("# npm") + `
+` + term.Bold("# npm") + `
 
 	1. npm
 	2. npm run watch
 
-` + color.Bold("# yarn") + `
+` + term.Bold("# yarn") + `
 
 	1. yarn
 	2. yarn watch
@@ -126,13 +126,13 @@ Happy hacking!`)
 	} else {
 		fmt.Println(`Successfully created a new Retro app.
 
-` + color.Bold("# npm") + `
+` + term.Bold("# npm") + `
 
 	1. cd ` + cmd.Directory + `
 	2. npm
 	3. npm run watch
 
-` + color.Bold("# yarn") + `
+` + term.Bold("# yarn") + `
 
 	1. cd ` + cmd.Directory + `
 	2. yarn

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"os/exec"
 
-	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/cmd/errs"
 )
 
 func execNode(stdin []byte) (bytes.Buffer, error) {

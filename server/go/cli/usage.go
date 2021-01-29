@@ -3,7 +3,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/zaydek/retro/color"
+	"github.com/zaydek/retro/term"
 )
 
 var usageOnly = strings.TrimSpace(`
@@ -14,20 +14,20 @@ retro serve             Serves the production-ready build
 `)
 
 var manpages = `
-  ` + color.BoldWhite("Usage:") + `
+  ` + term.BoldWhite("Usage:") + `
 
     retro create [dir]      Creates a new Retro app at directory dir
     retro watch [...paths]  Starts the dev server and watches paths for changes
     retro build             Builds the production-ready build
     retro serve             Serves the production-ready build
 
-  ` + color.BoldWhite("retro create [dir]") + `
+  ` + term.BoldWhite("retro create [dir]") + `
 
     Creates a new Retro app at directory dir
 
       --template=[js|ts]    Starter template (default js)
 
-  ` + color.BoldWhite("retro watch [...dirs]") + `
+  ` + term.BoldWhite("retro watch [...dirs]") + `
 
     Starts a dev server and watches directories dirs for changes (default pages)
 
@@ -36,20 +36,20 @@ var manpages = `
       --port=<number>       Port number (default 8000)
       --source-map          Add source maps (disabled by default)
 
-  ` + color.BoldWhite("retro build") + `
+  ` + term.BoldWhite("retro build") + `
 
     Builds the production-ready build
 
       --cached              Reuse cached props (disabled by default)
       --source-map          Add source maps (disabled by default)
 
-  ` + color.BoldWhite("retro serve") + `
+  ` + term.BoldWhite("retro serve") + `
 
     Serves the production-ready build
 
       --port=<number>       Port number (default 8000)
 
-  ` + color.BoldWhite("Repository:") + `
+  ` + term.BoldWhite("Repository:") + `
 
-    ` + color.Underline("https://github.com/zaydek/retro") + `
+    ` + term.Underline("https://github.com/zaydek/retro") + `
 `
