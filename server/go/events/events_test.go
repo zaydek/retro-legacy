@@ -3,41 +3,40 @@ package events
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+type Test struct{ got, want string }
 
 type Message struct {
 	Text string `json:"text"`
 }
 
 func TestHeaders(t *testing.T) {
-	var got, want string
-
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		SetSSEHeaders(w)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
 	}))
 	defer ts.Close()
 	res, err := http.Get(ts.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	got = res.Header.Get("Content-Type")
-	want = "text/event-stream"
-	if got != want {
-		t.Fatalf("got %s want %s", got, want)
+	test1 := Test{want: res.Header.Get("Content-Type"), got: "text/event-stream"}
+	if test1.got != test1.want {
+		t.Fatalf("got %s want %s", test1.got, test1.want)
 	}
-	got = res.Header.Get("Cache-Control")
-	want = "no-cache"
-	if got != want {
-		t.Fatalf("got %s want %s", got, want)
+	test2 := Test{want: res.Header.Get("Cache-Control"), got: "no-cache"}
+	if test2.got != test2.want {
+		t.Fatalf("got %s want %s", test2.got, test2.want)
 	}
-	got = res.Header.Get("Connection")
-	want = "keep-alive"
-	if got != want {
-		t.Fatalf("got %s want %s", got, want)
+	test3 := Test{want: res.Header.Get("Connection"), got: "keep-alive"}
+	if test3.got != test3.want {
+		t.Fatalf("got %s want %s", test3.got, test3.want)
 	}
 }
 
@@ -46,9 +45,9 @@ func TestFieldEvent(t *testing.T) {
 	if _, err := (SSE{Event: "greet"}).Write(&buf); err != nil {
 		t.Fatal(err)
 	}
-	want := "event: greet\n\n"
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
+	test := Test{got: buf.String(), want: "event: greet\n\n"}
+	if test.got != test.want {
+		t.Fatalf("got %q want %q", test.got, test.want)
 	}
 }
 
@@ -61,9 +60,9 @@ func TestFieldData(t *testing.T) {
 	if _, err := (SSE{Data: string(data)}).Write(&buf); err != nil {
 		t.Fatal(err)
 	}
-	want := "data: " + `{"text":"Hello, world!"}` + "\n\n"
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
+	test := Test{got: buf.String(), want: "data: " + `{"text":"Hello, world!"}` + "\n\n"}
+	if test.got != test.want {
+		t.Fatalf("got %q want %q", test.got, test.want)
 	}
 }
 
@@ -72,20 +71,20 @@ func TestFieldID(t *testing.T) {
 	if _, err := (SSE{ID: "abc-123-xyz"}).Write(&buf); err != nil {
 		t.Fatal(err)
 	}
-	want := "id: abc-123-xyz\n\n"
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
+	test := Test{got: buf.String(), want: "id: abc-123-xyz\n\n"}
+	if test.got != test.want {
+		t.Fatalf("got %q want %q", test.got, test.want)
 	}
 }
 
 func TestFieldRety(t *testing.T) {
 	var buf bytes.Buffer
-	if _, err := (SSE{Retry: 1e3}).Write(&buf); err != nil {
+	if _, err := (SSE{Retry: 1000}).Write(&buf); err != nil {
 		t.Fatal(err)
 	}
-	want := "retry: 1000\n\n"
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
+	test := Test{want: buf.String(), got: "retry: 1000\n\n"}
+	if test.got != test.want {
+		t.Fatalf("got %q want %q", test.got, test.want)
 	}
 }
 
@@ -99,12 +98,19 @@ func TestAllFields(t *testing.T) {
 		Event: "greet",
 		Data:  string(data),
 		ID:    "abc-123-xyz",
-		Retry: 1e3,
+		Retry: 1000,
 	}).Write(&buf); err != nil {
 		t.Fatal(err)
 	}
-	want := "event: greet\ndata: " + `{"text":"Hello, world!"}` + "\nid: abc-123-xyz\nretry: 1000\n\n"
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
+	test := Test{
+		want: buf.String(),
+		got: fmt.Sprintf("event: %s\ndata: %s\nid: %s\nretry: %d\n\n",
+			"greet",
+			`{"text":"Hello, world!"}`,
+			"abc-123-xyz",
+			1000,
+		)}
+	if test.got != test.want {
+		t.Fatalf("got %q want %q", test.got, test.want)
 	}
 }

@@ -7,25 +7,22 @@ import (
 	"testing"
 )
 
-type TestStruct struct {
-	Pkg string
-	V   string
-}
+type Test struct{ got, want string }
 
 func TestEmbed(t *testing.T) {
 	//go:embed versions.txt
 	var text string
 	SetPackageVars(text)
 
-	tests := []TestStruct{
-		{Pkg: "REACT_VERSION", V: "v17.0.1"},
-		{Pkg: "REACT_DOM_VERSION", V: "v17.0.1"},
-		{Pkg: "RETRO_CLIENT_VERSION", V: "v0.1.0"},
-		{Pkg: "RETRO_SERVER_VERSION", V: "v0.1.0"},
+	tests := []Test{
+		{got: os.Getenv("REACT_VERSION"), want: "v17.0.1"},
+		{got: os.Getenv("REACT_DOM_VERSION"), want: "v17.0.1"},
+		{got: os.Getenv("RETRO_CLIENT_VERSION"), want: "v0.1.0"},
+		{got: os.Getenv("RETRO_SERVER_VERSION"), want: "v0.1.0"},
 	}
 	for _, test := range tests {
-		if got := os.Getenv(test.Pkg); got != test.V {
-			t.Fatalf("got %s want %s", got, test.V)
+		if test.got != test.want {
+			t.Fatalf("got %s want %s", test.got, test.want)
 		}
 	}
 }
@@ -42,15 +39,15 @@ func Test17(t *testing.T) {
 
 	SetPackageVars(text)
 
-	tests := []TestStruct{
-		{Pkg: "REACT_VERSION", V: "v17.0.1"},
-		{Pkg: "REACT_DOM_VERSION", V: "v17.0.1"},
-		{Pkg: "RETRO_CLIENT_VERSION", V: "v0.1.0"},
-		{Pkg: "RETRO_SERVER_VERSION", V: "v0.1.0"},
+	tests := []Test{
+		{got: os.Getenv("REACT_VERSION"), want: "v17.0.1"},
+		{got: os.Getenv("REACT_DOM_VERSION"), want: "v17.0.1"},
+		{got: os.Getenv("RETRO_CLIENT_VERSION"), want: "v0.1.0"},
+		{got: os.Getenv("RETRO_SERVER_VERSION"), want: "v0.1.0"},
 	}
 	for _, test := range tests {
-		if got := os.Getenv(test.Pkg); got != test.V {
-			t.Fatalf("got %s want %s", got, test.V)
+		if test.got != test.want {
+			t.Fatalf("got %s want %s", test.got, test.want)
 		}
 	}
 }
@@ -67,15 +64,15 @@ func TestLatest(t *testing.T) {
 
 	SetPackageVars(text)
 
-	tests := []TestStruct{
-		{Pkg: "REACT_VERSION", V: "latest"},
-		{Pkg: "REACT_DOM_VERSION", V: "latest"},
-		{Pkg: "RETRO_CLIENT_VERSION", V: "latest"},
-		{Pkg: "RETRO_SERVER_VERSION", V: "latest"},
+	tests := []Test{
+		{got: os.Getenv("REACT_VERSION"), want: "latest"},
+		{got: os.Getenv("REACT_DOM_VERSION"), want: "latest"},
+		{got: os.Getenv("RETRO_CLIENT_VERSION"), want: "latest"},
+		{got: os.Getenv("RETRO_SERVER_VERSION"), want: "latest"},
 	}
 	for _, test := range tests {
-		if got := os.Getenv(test.Pkg); got != test.V {
-			t.Fatalf("got %s want %s", got, test.V)
+		if test.got != test.want {
+			t.Fatalf("got %s want %s", test.got, test.want)
 		}
 	}
 }

@@ -126,7 +126,9 @@ func (r Runtime) Watch() {
 	})
 
 	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {
-		events.SetSSEHeaders(w)
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 			// TODO: Change to a warning.
