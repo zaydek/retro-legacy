@@ -14,26 +14,6 @@ func expect(t *testing.T, x, y interface{}) {
 	t.Fatalf("got %+v want %+v", x, y)
 }
 
-// func TestCreate(t *testing.T) {
-// 	// retro create .
-// 	cmd1 := parseCreateCommandArgs(".")
-// 	expect(t, cmd1.Directory, ".")
-//
-// 	// retro create dir
-// 	cmd2 := parseCreateCommandArgs("dir")
-// 	expect(t, cmd2.Directory, "dir")
-//
-// 	// retro create --template=ts .
-// 	cmd3 := parseCreateCommandArgs("--template=ts", ".")
-// 	expect(t, cmd3.Template, "ts")
-// 	expect(t, cmd3.Directory, ".")
-//
-// 	// retro create --template=ts dir
-// 	cmd4 := parseCreateCommandArgs("--template=js", "dir")
-// 	expect(t, cmd4.Template, "js")
-// 	expect(t, cmd4.Directory, "dir")
-// }
-
 func TestCreate(t *testing.T) {
 	var cmd CreateCommand
 
@@ -117,25 +97,40 @@ func TestWatch(t *testing.T) {
 	})
 }
 
-// Cached    bool
-// Poll      time.Duration
-// Port      int
-// SourceMap bool
+func TestBuild(t *testing.T) {
+	var cmd BuildCommand
 
-// func TestWatch(t *testing.T) {
-// 	// retro watch
-// 	cmd1 := parseWatchCommandArgs()
-// 	expect(t, cmd1.Directories, []string{"pages"})
-//
-// 	//	// retro watch x
-// 	//	cmd2 := parseWatchCommandArgs("x")
-// 	//	expect(t, cmd2.Directories, []string{"x"})
-// 	//
-// 	//	// retro watch x y
-// 	//	cmd3 := parseWatchCommandArgs("x", "y")
-// 	//	expect(t, cmd3.Directories, []string{"x", "y"})
-// 	//
-// 	//	// retro watch x y z
-// 	//	cmd4 := parseWatchCommandArgs("x", "y", "z")
-// 	//	expect(t, cmd4.Directories, []string{"x", "y", "z"})
-// }
+	cmd = parseBuildCommandArgs()
+	expect(t, cmd, BuildCommand{
+		Cached:    false,
+		SourceMap: false,
+	})
+
+	cmd = parseBuildCommandArgs("--cached")
+	expect(t, cmd, BuildCommand{
+		Cached:    true,
+		SourceMap: false,
+	})
+
+	cmd = parseBuildCommandArgs("--source-map")
+	expect(t, cmd, BuildCommand{
+		Cached:    false,
+		SourceMap: true,
+	})
+
+	cmd = parseBuildCommandArgs("--cached", "--source-map")
+	expect(t, cmd, BuildCommand{
+		Cached:    true,
+		SourceMap: true,
+	})
+}
+
+func TestServe(t *testing.T) {
+	var cmd ServeCommand
+
+	cmd = parseServeCommandArgs()
+	expect(t, cmd, ServeCommand{Port: 8000})
+
+	cmd = parseServeCommandArgs("--port=8080")
+	expect(t, cmd, ServeCommand{Port: 8080})
+}

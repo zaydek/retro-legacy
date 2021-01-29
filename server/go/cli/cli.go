@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -20,9 +21,7 @@ func usage() {
 
 func parseCreateCommandArgs(args ...string) CreateCommand {
 	cmd := flag.NewFlagSet("create", flag.ContinueOnError)
-	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
-	// It might be that cmd.Parse(args) is generating an error we don’t want.
-	// cmd.SetOutput(ioutil.Discard)
+	cmd.SetOutput(ioutil.Discard)
 
 	flags := CreateCommand{}
 	cmd.StringVar(&flags.Template, "template", "js", "")
@@ -52,9 +51,7 @@ func parseCreateCommandArgs(args ...string) CreateCommand {
 
 func parseWatchCommandArgs(args ...string) WatchCommand {
 	cmd := flag.NewFlagSet("watch", flag.ContinueOnError)
-	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
-	// It might be that cmd.Parse(args) is generating an error we don’t want.
-	// cmd.SetOutput(ioutil.Discard)
+	cmd.SetOutput(ioutil.Discard)
 
 	flags := WatchCommand{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
@@ -88,9 +85,7 @@ func parseWatchCommandArgs(args ...string) WatchCommand {
 
 func parseBuildCommandArgs(args ...string) BuildCommand {
 	cmd := flag.NewFlagSet("build", flag.ContinueOnError)
-	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
-	// It might be that cmd.Parse(args) is generating an error we don’t want.
-	// cmd.SetOutput(ioutil.Discard)
+	cmd.SetOutput(ioutil.Discard)
 
 	flags := BuildCommand{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
@@ -105,9 +100,7 @@ func parseBuildCommandArgs(args ...string) BuildCommand {
 
 func parseServeCommandArgs(args ...string) ServeCommand {
 	cmd := flag.NewFlagSet("serve", flag.ContinueOnError)
-	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
-	// It might be that cmd.Parse(args) is generating an error we don’t want.
-	// cmd.SetOutput(ioutil.Discard)
+	cmd.SetOutput(ioutil.Discard)
 
 	flags := ServeCommand{}
 	cmd.IntVar(&flags.Port, "port", 8000, "")
