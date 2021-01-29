@@ -3,7 +3,6 @@ package cli
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -16,12 +15,14 @@ func version() {
 }
 
 func usage() {
-	fmt.Println(manpages)
+	fmt.Println(manpage)
 }
 
-func parseCreateCommandFlags(args []string) CreateCommand {
+func parseCreateCommandArgs(args ...string) CreateCommand {
 	cmd := flag.NewFlagSet("create", flag.ContinueOnError)
-	cmd.SetOutput(ioutil.Discard)
+	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
+	// It might be that cmd.Parse(args) is generating an error we don’t want.
+	// cmd.SetOutput(ioutil.Discard)
 
 	flags := CreateCommand{}
 	cmd.StringVar(&flags.Template, "template", "js", "")
@@ -31,10 +32,10 @@ func parseCreateCommandFlags(args []string) CreateCommand {
 		os.Exit(2)
 	}
 	if flags.Template != "js" && flags.Template != "ts" {
-		loggers.Stderr.Println(term.Bold("--language") + " must be " + term.Bold("js") + " for JavaScript or " + term.Bold("ts") + " for TypeScript.\n\n" +
-			"- " + term.Bold("retro create --language=js [dir]") + "\n\n" +
+		loggers.Stderr.Println(term.Bold("--template") + " must be " + term.Bold("js") + " for JavaScript or " + term.Bold("ts") + " for TypeScript.\n\n" +
+			"- " + term.Bold("retro create --template=js [dir]") + "\n\n" +
 			"Or\n\n" +
-			"- " + term.Bold("retro create --language=ts [dir]") + "")
+			"- " + term.Bold("retro create --template=ts [dir]") + "")
 		os.Exit(2)
 	}
 	if len(cmd.Args()) == 0 {
@@ -49,9 +50,11 @@ func parseCreateCommandFlags(args []string) CreateCommand {
 	return flags
 }
 
-func parseWatchCommandFlags(args []string) WatchCommand {
+func parseWatchCommandArgs(args ...string) WatchCommand {
 	cmd := flag.NewFlagSet("watch", flag.ContinueOnError)
-	cmd.SetOutput(ioutil.Discard)
+	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
+	// It might be that cmd.Parse(args) is generating an error we don’t want.
+	// cmd.SetOutput(ioutil.Discard)
 
 	flags := WatchCommand{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
@@ -70,26 +73,24 @@ func parseWatchCommandFlags(args []string) WatchCommand {
 		loggers.Stderr.Println(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
-
+	flags.Directories = []string{"pages"}
 	// for _, each := range cmd.Args() {
 	// 	if _, err := os.Stat(each); os.IsNotExist(err) {
 	// 		loggers.Stderr.Println("Failed to stat file or directory " + term.Bold(each) + ".")
 	// 		os.Exit(2)
 	// 	}
 	// }
-	// flags.Directories = cmd.Args()
-
-	// TODO
-	flags.Directory = "pages"
-	// if len(cmd.Args()) > 0 {
-	// 	flags.Directory = cmd.Args()[0]
-	// }
+	if len(cmd.Args()) > 0 {
+		flags.Directories = cmd.Args()
+	}
 	return flags
 }
 
-func parseBuildCommandFlags(args []string) BuildCommand {
+func parseBuildCommandArgs(args ...string) BuildCommand {
 	cmd := flag.NewFlagSet("build", flag.ContinueOnError)
-	cmd.SetOutput(ioutil.Discard)
+	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
+	// It might be that cmd.Parse(args) is generating an error we don’t want.
+	// cmd.SetOutput(ioutil.Discard)
 
 	flags := BuildCommand{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
@@ -102,9 +103,11 @@ func parseBuildCommandFlags(args []string) BuildCommand {
 	return flags
 }
 
-func parseServeCommandFlags(args []string) ServeCommand {
+func parseServeCommandArgs(args ...string) ServeCommand {
 	cmd := flag.NewFlagSet("serve", flag.ContinueOnError)
-	cmd.SetOutput(ioutil.Discard)
+	// TODO: Do we still need this command if we’re using flag.ContinueOnError?
+	// It might be that cmd.Parse(args) is generating an error we don’t want.
+	// cmd.SetOutput(ioutil.Discard)
 
 	flags := ServeCommand{}
 	cmd.IntVar(&flags.Port, "port", 8000, "")
@@ -157,22 +160,22 @@ func ParseCLIArguments() interface{} {
 	// $ retro create
 	case "create":
 		os.Setenv("NODE_ENV", "development")
-		cmd = parseCreateCommandFlags(os.Args[2:])
+		cmd = parseCreateCommandArgs(os.Args[2:]...)
 
 	// $ retro watch
 	case "watch":
 		os.Setenv("NODE_ENV", "development")
-		cmd = parseWatchCommandFlags(os.Args[2:])
+		cmd = parseWatchCommandArgs(os.Args[2:]...)
 
 	// $ retro build
 	case "build":
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseBuildCommandFlags(os.Args[2:])
+		cmd = parseBuildCommandArgs(os.Args[2:]...)
 
 	// $ retro serve
 	case "serve":
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseServeCommandFlags(os.Args[2:])
+		cmd = parseServeCommandArgs(os.Args[2:]...)
 
 	default:
 		loggers.Stderr.Println("Unrecognized command. " +

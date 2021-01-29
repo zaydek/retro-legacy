@@ -18,9 +18,7 @@ type WatchCommand struct {
 	SourceMap bool
 
 	// Arguments
-	//
-	// TODO: Change to directories.
-	Directory string
+	Directories []string
 }
 
 // BuildCommand describes retro build flags and arguments.
@@ -33,10 +31,3 @@ type BuildCommand struct {
 type ServeCommand struct {
 	Port int
 }
-
-// type Commands struct {
-// 	CreateCommand *CreateCommandFlags
-// 	WatchCommand  *WatchCommandFlags
-// 	BuildCommand  *BuildCommandFlags
-// 	ServeCommand  *ServeCommandFlags
-// }

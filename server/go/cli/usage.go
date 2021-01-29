@@ -13,7 +13,7 @@ retro build             Builds the production-ready build
 retro serve             Serves the production-ready build
 `)
 
-var manpages = `
+var manpage = `
   ` + term.BoldWhite("Usage:") + `
 
     retro create [dir]      Creates a new Retro app at directory dir
