@@ -1,0 +1,14 @@
+{
+	"name": "my-retro-app",
+	"scripts": {
+		"watch": "retro-server watch",
+		"build": "retro-server build",
+		"serve": "retro-server serve"
+	},
+	"dependencies": {
+		"react": "v17.0.1",
+		"react-dom": "v17.0.1",
+		"retro-client": "v0.1.0",
+		"retro-server": "v0.1.0"
+	}
+}

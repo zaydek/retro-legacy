@@ -104,40 +104,45 @@ func (r Runtime) Create() {
 		os.Exit(1)
 	}
 
-	if err := ioutil.WriteFile("package.json", buf.Bytes(), mode.File); err != nil {
-		loggers.Stderr.Println(errs.WriteFile("package.json", err))
+	path := p.Join(cmd.Directory, "package.json")
+	if err := ioutil.WriteFile(path, buf.Bytes(), mode.File); err != nil {
+		loggers.Stderr.Println(errs.WriteFile(path, err))
 		os.Exit(1)
 	}
 
 	if cmd.Directory == "." {
-		fmt.Println(`Successfully created a new Retro app.
+		fmt.Println(`
+  ` + term.BoldGreen("Success!") + ` Created a new Retro app.
 
-` + term.Bold("# npm") + `
+  ` + term.Bold("# npm") + `
 
-	1. npm
-	2. npm run watch
+    1. npm
+    2. npm run watch
 
-` + term.Bold("# yarn") + `
+  ` + term.Bold("# yarn") + `
 
-	1. yarn
-	2. yarn watch
+    1. yarn
+    2. yarn watch
 
-Happy hacking!`)
+  Happy hacking!
+`)
 	} else {
-		fmt.Println(`Successfully created a new Retro app.
+		fmt.Println(`
+  ` + term.BoldGreen("Success!") + ` Created Retro app ` + term.Bold(cmd.Directory) + `.
 
-` + term.Bold("# npm") + `
+  ` + term.Bold("# npm") + `
 
-	1. cd ` + cmd.Directory + `
-	2. npm
-	3. npm run watch
+    1. cd ` + cmd.Directory + `
+    2. npm
+    3. npm run watch
 
-` + term.Bold("# yarn") + `
+  ` + term.Bold("# yarn") + `
 
-	1. cd ` + cmd.Directory + `
-	2. yarn
-	3. yarn watch
+    1. cd ` + cmd.Directory + `
+    2. yarn
+    3. yarn watch
 
-Happy hacking!`)
+  Happy hacking!
+`)
 	}
 }

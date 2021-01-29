@@ -8,7 +8,9 @@
 	"dependencies": {
 		"react": "{{ .ReactVersion }}",
 		"react-dom": "{{ .ReactDOMVersion }}",
-		"retro-client": "{{ .RetroClientVersion }}",
+		"retro-client": "{{ .RetroClientVersion }}"
+	},
+	"devDependencies": {
 		"retro-server": "{{ .RetroServerVersion }}"
 	}
 }

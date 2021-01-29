@@ -1,3 +1,6 @@
+bin:
+	@go build -o=retro cmd/*.go && mv retro /usr/local/bin
+
 build:
 	test
 	make -j4 \
