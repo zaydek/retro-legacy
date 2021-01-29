@@ -20,7 +20,7 @@ func loadRuntime() Runtime {
 		},
 	}
 
-	runtime.Commands = cli.ParseCLIArguments()
+	runtime.Command = cli.ParseCLIArguments()
 	if cmd := runtime.getCmd(); cmd == "watch" || cmd == "build" {
 		if runtime.Router, err = loadRouter(runtime.Config); err != nil {
 			loggers.Stderr.Println(err)

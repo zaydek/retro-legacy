@@ -2,16 +2,16 @@ package cli
 
 import "time"
 
-// CreateCommandFlags describes retro create flags and arguments.
-type CreateCommandFlags struct {
+// CreateCommand describes retro create flags and arguments.
+type CreateCommand struct {
 	Template string
 
 	// Arguments
 	Directory string
 }
 
-// WatchCommandFlags describes retro watch flags and arguments.
-type WatchCommandFlags struct {
+// WatchCommand describes retro watch flags and arguments.
+type WatchCommand struct {
 	Cached    bool
 	Poll      time.Duration
 	Port      int
@@ -23,20 +23,20 @@ type WatchCommandFlags struct {
 	Directory string
 }
 
-// BuildCommandFlags describes retro build flags and arguments.
-type BuildCommandFlags struct {
+// BuildCommand describes retro build flags and arguments.
+type BuildCommand struct {
 	Cached    bool
 	SourceMap bool
 }
 
-// ServeCommandFlags describes retro serve flags and arguments.
-type ServeCommandFlags struct {
+// ServeCommand describes retro serve flags and arguments.
+type ServeCommand struct {
 	Port int
 }
 
-type Commands struct {
-	CreateCommand *CreateCommandFlags
-	WatchCommand  *WatchCommandFlags
-	BuildCommand  *BuildCommandFlags
-	ServeCommand  *ServeCommandFlags
-}
+// type Commands struct {
+// 	CreateCommand *CreateCommandFlags
+// 	WatchCommand  *WatchCommandFlags
+// 	BuildCommand  *BuildCommandFlags
+// 	ServeCommand  *ServeCommandFlags
+// }

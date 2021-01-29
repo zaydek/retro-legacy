@@ -8,44 +8,39 @@ import (
 	"os"
 	p "path"
 
+	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/embeds"
 	"github.com/zaydek/retro/errs"
 	"github.com/zaydek/retro/loggers"
 )
 
-// TODO: Reference versions from versions.txt; use os.Getenv.
-var (
-	reactVersion        = "latest"
-	reactDOMVersion     = "latest"
-	retroVersion        = "latest"
-	retroScriptsVersion = "latest"
-)
-
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
 func (r Runtime) Create() {
+	cmd := r.Command.(cli.CreateCommand)
+
 	fsys := embeds.JavaScriptFS
-	if r.CreateCommand.Template == "ts" {
+	if r.Command.(cli.CreateCommand).Template == "ts" {
 		fsys = embeds.TypeScriptFS
 	}
 
-	if r.CreateCommand.Directory != "." {
-		if info, err := os.Stat(r.CreateCommand.Directory); !os.IsNotExist(err) {
+	if cmd.Directory != "." {
+		if info, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
 			var typ string
 			if !info.IsDir() {
 				typ = "file"
 			} else {
 				typ = "directory"
 			}
-			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Bold(r.CreateCommand.Directory) + " already exists.\n\n" +
+			loggers.Stderr.Println("Aborted. A " + typ + " named " + color.Bold(cmd.Directory) + " already exists.\n\n" +
 				"- " + color.Bold("retro create [dir]") + "\n\n" +
 				"Or\n\n" +
-				"- " + color.Boldf("rm -r %[1]s && retro create %[1]s", r.CreateCommand.Directory))
+				"- " + color.Boldf("rm -r %[1]s && retro create %[1]s", cmd.Directory))
 			os.Exit(1)
 		}
 
-		if err := os.MkdirAll(r.CreateCommand.Directory, 0755); err != nil {
-			loggers.Stderr.Println(errs.MkdirAll(r.CreateCommand.Directory, err))
+		if err := os.MkdirAll(cmd.Directory, 0755); err != nil {
+			loggers.Stderr.Println(errs.MkdirAll(cmd.Directory, err))
 			os.Exit(1)
 		}
 	}
@@ -57,12 +52,12 @@ func (r Runtime) Create() {
 		}
 		if !dirEntry.IsDir() {
 			src := path
-			dst := p.Join(r.CreateCommand.Directory, path)
+			dst := p.Join(cmd.Directory, path)
 			paths = append(paths, copyPath{src: src, dst: dst})
 		}
 		return nil
 	}); err != nil {
-		entry := fmt.Sprintf("<embeds:%s>", r.CreateCommand.Template)
+		entry := fmt.Sprintf("<embeds:%s>", cmd.Template)
 		loggers.Stderr.Println(errs.Walk(entry, err))
 		os.Exit(1)
 	}
@@ -89,7 +84,7 @@ func (r Runtime) Create() {
 		}
 	}
 
-	repoName := r.CreateCommand.Directory
+	repoName := cmd.Directory
 	if repoName == "." {
 		repoName = "retro-app"
 	}
@@ -113,7 +108,7 @@ func (r Runtime) Create() {
 		os.Exit(1)
 	}
 
-	if r.CreateCommand.Directory == "." {
+	if cmd.Directory == "." {
 		fmt.Println(`Successfully created a new Retro app.
 
 ` + color.Bold("# npm") + `
@@ -132,13 +127,13 @@ Happy hacking!`)
 
 ` + color.Bold("# npm") + `
 
-	1. cd ` + r.CreateCommand.Directory + `
+	1. cd ` + cmd.Directory + `
 	2. npm
 	3. npm run watch
 
 ` + color.Bold("# yarn") + `
 
-	1. cd ` + r.CreateCommand.Directory + `
+	1. cd ` + cmd.Directory + `
 	2. yarn
 	3. yarn watch
 

@@ -19,11 +19,11 @@ func usage() {
 	fmt.Println(manpages)
 }
 
-func parseCreateCommandFlags(args []string) *CreateCommandFlags {
+func parseCreateCommandFlags(args []string) CreateCommand {
 	cmd := flag.NewFlagSet("create", flag.ContinueOnError)
 	cmd.SetOutput(ioutil.Discard)
 
-	flags := &CreateCommandFlags{}
+	flags := CreateCommand{}
 	cmd.StringVar(&flags.Template, "template", "js", "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
@@ -49,11 +49,11 @@ func parseCreateCommandFlags(args []string) *CreateCommandFlags {
 	return flags
 }
 
-func parseWatchCommandFlags(args []string) *WatchCommandFlags {
+func parseWatchCommandFlags(args []string) WatchCommand {
 	cmd := flag.NewFlagSet("watch", flag.ContinueOnError)
 	cmd.SetOutput(ioutil.Discard)
 
-	flags := &WatchCommandFlags{}
+	flags := WatchCommand{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
 	cmd.DurationVar(&flags.Poll, "poll", 250*time.Millisecond, "")
 	cmd.IntVar(&flags.Port, "port", 8000, "")
@@ -87,11 +87,11 @@ func parseWatchCommandFlags(args []string) *WatchCommandFlags {
 	return flags
 }
 
-func parseBuildCommandFlags(args []string) *BuildCommandFlags {
+func parseBuildCommandFlags(args []string) BuildCommand {
 	cmd := flag.NewFlagSet("build", flag.ContinueOnError)
 	cmd.SetOutput(ioutil.Discard)
 
-	flags := &BuildCommandFlags{}
+	flags := BuildCommand{}
 	cmd.BoolVar(&flags.Cached, "cached", false, "")
 	cmd.BoolVar(&flags.SourceMap, "source-map", false, "")
 	if err := cmd.Parse(args); err != nil {
@@ -102,11 +102,11 @@ func parseBuildCommandFlags(args []string) *BuildCommandFlags {
 	return flags
 }
 
-func parseServeCommandFlags(args []string) *ServeCommandFlags {
+func parseServeCommandFlags(args []string) ServeCommand {
 	cmd := flag.NewFlagSet("serve", flag.ContinueOnError)
 	cmd.SetOutput(ioutil.Discard)
 
-	flags := &ServeCommandFlags{}
+	flags := ServeCommand{}
 	cmd.IntVar(&flags.Port, "port", 8000, "")
 	if err := cmd.Parse(args); err != nil {
 		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
@@ -120,8 +120,8 @@ func parseServeCommandFlags(args []string) *ServeCommandFlags {
 	return flags
 }
 
-func ParseCLIArguments() Commands {
-	var cmds Commands
+func ParseCLIArguments() interface{} {
+	var cmd interface{}
 
 	// $ retro
 	if len(os.Args) < 2 {
@@ -157,22 +157,22 @@ func ParseCLIArguments() Commands {
 	// $ retro create
 	case "create":
 		os.Setenv("NODE_ENV", "development")
-		cmds.CreateCommand = parseCreateCommandFlags(os.Args[2:])
+		cmd = parseCreateCommandFlags(os.Args[2:])
 
 	// $ retro watch
 	case "watch":
 		os.Setenv("NODE_ENV", "development")
-		cmds.WatchCommand = parseWatchCommandFlags(os.Args[2:])
+		cmd = parseWatchCommandFlags(os.Args[2:])
 
 	// $ retro build
 	case "build":
 		os.Setenv("NODE_ENV", "production")
-		cmds.BuildCommand = parseBuildCommandFlags(os.Args[2:])
+		cmd = parseBuildCommandFlags(os.Args[2:])
 
 	// $ retro serve
 	case "serve":
 		os.Setenv("NODE_ENV", "production")
-		cmds.ServeCommand = parseServeCommandFlags(os.Args[2:])
+		cmd = parseServeCommandFlags(os.Args[2:])
 
 	default:
 		loggers.Stderr.Println("Unrecognized command. " +
@@ -180,5 +180,5 @@ func ParseCLIArguments() Commands {
 			usageOnly)
 		os.Exit(2)
 	}
-	return cmds
+	return cmd
 }

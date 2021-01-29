@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cli"
 )
 
 // PageBasedRoute describes a page-based route from pages/* or src/pages/*.
@@ -27,13 +26,15 @@ type DirConfiguration struct {
 // TODO: We need a way of preventing the same error from logging twice. May want
 // some kind of fingerprint for warnings and errors.
 type Runtime struct {
+	// Unexported
 	esbuildResult   api.BuildResult
 	esbuildWarnings []api.Message
 	esbuildErrors   []api.Message
 
-	cli.Commands
-	Config DirConfiguration
-	Router []PageBasedRoute
+	// Exported
+	Command interface{}
+	Config  DirConfiguration
+	Router  []PageBasedRoute
 }
 
 // ExperimentalReactSuspenseEnabled   bool // Wrap <React.Suspense>

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/events"
 	"github.com/zaydek/retro/loggers"
 	"github.com/zaydek/retro/watcher"
@@ -71,7 +72,8 @@ func (r Runtime) Watch() {
 	}
 
 	go func() {
-		for range watcher.New(r.WatchCommand.Directory, r.WatchCommand.Poll) {
+		cmd := r.Command.(cli.WatchCommand)
+		for range watcher.New(cmd.Directory, cmd.Poll) {
 			r.esbuildRebuild()
 			serverSentEvents <- events.SSE{Event: "reload"}
 		}

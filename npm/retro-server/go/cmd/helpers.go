@@ -6,18 +6,20 @@ import (
 	p "path"
 	"path/filepath"
 
+	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/errs"
 )
 
 // getCmd gets the current command.
 func (r Runtime) getCmd() string {
-	if r.CreateCommand != nil {
+	switch r.Command.(type) {
+	case cli.CreateCommand:
 		return "create"
-	} else if r.WatchCommand != nil {
+	case cli.WatchCommand:
 		return "watch"
-	} else if r.BuildCommand != nil {
+	case cli.BuildCommand:
 		return "build"
-	} else if r.ServeCommand != nil {
+	case cli.ServeCommand:
 		return "serve"
 	}
 	return ""
@@ -26,9 +28,9 @@ func (r Runtime) getCmd() string {
 // getPort gets the current port.
 func (r Runtime) getPort() int {
 	if cmd := r.getCmd(); cmd == "watch" {
-		return r.WatchCommand.Port
+		return r.Command.(cli.WatchCommand).Port
 	} else if cmd == "serve" {
-		return r.ServeCommand.Port
+		return r.Command.(cli.ServeCommand).Port
 	}
 	return 0
 }
