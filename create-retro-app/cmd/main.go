@@ -18,22 +18,6 @@ type CreateRetroApp struct {
 	Directory string
 }
 
-var manpages = `
-  ` + term.BoldWhite("Usage:") + `
-
-    create-retro-app [dir]      Creates a new Retro app at directory dir
-
-  ` + term.BoldWhite("create-retro-app [dir]") + `
-
-    Creates a new Retro app at directory dir
-
-      --template=[js|ts]    Starter template (defaults to js)
-
-  ` + term.BoldWhite("Repository:") + `
-
-    ` + term.Underline("https://github.com/zaydek/retro") + `
-`
-
 func parseArgs(args ...string) CreateRetroApp {
 	cmd := flag.NewFlagSet("create", flag.ContinueOnError)
 	cmd.SetOutput(ioutil.Discard)
@@ -64,9 +48,30 @@ func parseArgs(args ...string) CreateRetroApp {
 	return parsed
 }
 
+// ` + term.BoldGreen("$") + ` ` + term.Bold("create-retro-app") + ` [` + term.Underline("name") + `] --template=[` + term.Underline("javascript") + `|` + term.Underline("typescript") + `]
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println(manpages)
+		fmt.Println(`
+  ` + term.BoldGreen("👾") + ` ` + term.Bold("create-retro-app") + ` ` + term.Underline("name") + ` --template=[javascript|typescript]
+
+  Creates a new Retro app at directory ` + term.Underline("name") + `.
+
+  Then run:
+
+    ` + term.Bold("npm") + `
+
+      1. cd ` + term.Underline("name") + `
+      2. npm
+      3. npm run watch
+
+    ` + term.Bold("yarn") + `
+
+      1. cd ` + term.Underline("name") + `
+      2. yarn
+      3. yarn watch
+
+  Happy hacking!
+`)
 		os.Exit(0)
 	}
 	parseArgs(os.Args[1:]...)
