@@ -1,10 +1,11 @@
 {
-	"name": "retro-client",
+	"name": "@zaydek/retro-client",
 	"version": "0.1.0",
 	"main": "index.js",
 	"license": "MIT",
 	"scripts": {
-		"test": "jest"
+		"test": "jest",
+		"build": "rm -r dist && yarn tsc --declaration --removeComments --outDir dist"
 	},
 	"devDependencies": {
 		"@types/node": "^14.14.22",

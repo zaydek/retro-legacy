@@ -1,28 +1,42 @@
 {
 	"compilerOptions": {
-		"target": "es2017", // Changed from `"es5"`
+		/**/
+		"target": "es2017",
 		"module": "commonjs",
-		"lib": ["dom", "esnext"], // Added
-		"jsx": "react", // Added
+		"lib": ["dom", "esnext"],
+		"jsx": "react",
 
+		/**/
 		"strict": true,
-		"noImplicitAny": true, // Added
-		"strictNullChecks": true, // Added
-		"strictFunctionTypes": true, // Added
-		"strictBindCallApply": true, // Added
-		"strictPropertyInitialization": true, // Added
-		"noImplicitThis": true, // Added
-		"alwaysStrict": true, // Added
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"strictFunctionTypes": true,
+		"strictBindCallApply": true,
+		"strictPropertyInitialization": true,
+		"noImplicitThis": true,
+		"alwaysStrict": true,
 
-		"noUnusedLocals": true, // Added
-		"noUnusedParameters": true, // Added
-		"noImplicitReturns": true, // Added
-		"noFallthroughCasesInSwitch": true, // Added
-		"noUncheckedIndexedAccess": true, // Added
+		/**/
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedIndexedAccess": true,
 
+		/**/
 		"esModuleInterop": true,
 
+		/**/
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true
-	}
+	},
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.tsx"
+	],
+	"exclude": [
+		"src/**/*.test.ts",
+		"src/**/*.test.tsx",
+		"src/**/jest.setupFile.ts"
+	]
 }
