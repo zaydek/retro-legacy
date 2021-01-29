@@ -3,6 +3,7 @@ package events
 import (
 	"fmt"
 	"io"
+	"net/http"
 )
 
 // SSE describes a server-sent event (SSE).
@@ -28,6 +29,12 @@ type SSE struct {
 	// be an integer, specifying the reconnection time in milliseconds. If a non-
 	// integer value is specified, the field is ignored.
 	Retry int
+}
+
+func SetSSEHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
 }
 
 func (e SSE) Write(w io.Writer) (n int, err error) {

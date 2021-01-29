@@ -57,7 +57,7 @@ func (r Runtime) Watch() {
 		os.Exit(1)
 	}
 
-	serverSentEvents := make(chan events.SSE, 8)
+	srvEvents := make(chan events.SSE, 8)
 
 	must(copyAssetDirectoryToBuildDirectory(r.Config))
 	r.esbuildBuild()
@@ -75,7 +75,7 @@ func (r Runtime) Watch() {
 		cmd := r.Command.(cli.WatchCommand)
 		for range watcher.New(cmd.Directory, cmd.Poll) {
 			r.esbuildRebuild()
-			serverSentEvents <- events.SSE{Event: "reload"}
+			srvEvents <- events.SSE{Event: "reload"}
 		}
 	}()
 
@@ -91,7 +91,7 @@ func (r Runtime) Watch() {
 			defer func() {
 				// Pause so the server-sent event does not drop on refresh:
 				time.Sleep(100 * time.Millisecond)
-				serverSentEvents <- events.SSE{Event: "warning", Data: string(data)}
+				srvEvents <- events.SSE{Event: "warning", Data: string(data)}
 			}()
 		}
 		if len(r.esbuildErrors) > 0 {
@@ -126,18 +126,17 @@ func (r Runtime) Watch() {
 	})
 
 	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
+		events.SetSSEHeaders(w)
 		flusher, ok := w.(http.Flusher)
 		if !ok {
+			// TODO: Change to a warning.
 			loggers.Stderr.Println("Your browser does not support server-sent events (SSE).")
 			os.Exit(1)
 			return
 		}
 		for {
 			select {
-			case e := <-serverSentEvents:
+			case e := <-srvEvents:
 				e.Write(w)
 				flusher.Flush()
 			case <-r.Context().Done():
