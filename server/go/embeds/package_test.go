@@ -29,13 +29,11 @@ func TestTemplate(t *testing.T) {
 		RetroClientVersion: "^1.33.7",
 		RetroServerVersion: "^1.33.7",
 	}
-
 	var buf bytes.Buffer
 	if err := PackageTemplate.Execute(&buf, dot); err != nil {
 		t.Fatal(err)
 	}
-
 	if got := buf.String(); got != want {
-		t.Fatalf("got:\n\n%s\n\nwant:\n\n%s", got, want)
+		t.Fatalf("got: %q want %q", got, want)
 	}
 }

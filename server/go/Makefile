@@ -1,4 +1,5 @@
 build:
+	test
 	make -j4 \
 		build-installer \
 		build-darwin \
@@ -16,6 +17,9 @@ build-linux:
 
 build-windows:
 	GOOS=windows GOARCH=amd64 go build "-ldflags=-s -w" -o bin/windows-64.exe cmd/main.go
+
+test:
+	go test ./...
 
 clean:
 	rm bin/installer.js

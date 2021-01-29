@@ -19,7 +19,7 @@ type SSE struct {
 	// The data field for the message. When the EventSource receives multiple
 	// consecutive lines that begin with data:, it concatenates them, inserting a
 	// newline character between each one. Trailing newlines are removed.
-	Data interface{}
+	Data string
 
 	// The event ID to set the EventSource object's last event ID value.
 	ID string
@@ -30,10 +30,10 @@ type SSE struct {
 	Retry int
 }
 
-func (e SSE) Write(w io.Writer) {
-	if e.Event != "" { fmt.Fprintf(w, "event: %v\n", e.Event) }
-	if e.Data != ""  { fmt.Fprintf(w, "data: %v\n", e.Data) }
-	if e.ID != ""    { fmt.Fprintf(w, "id: %v\n", e.ID) }
-	if e.Retry != 0  { fmt.Fprintf(w, "retry: %v\n", e.Retry) }
-	fmt.Fprintln(w)
+func (e SSE) Write(w io.Writer) (n int, err error) {
+	if e.Event != "" { fmt.Fprintf(w, "event: %s\n", e.Event) }
+	if e.Data  != "" { fmt.Fprintf(w, "data: %s\n", e.Data) }
+	if e.ID    != "" { fmt.Fprintf(w, "id: %s\n", e.ID) }
+	if e.Retry != 0  { fmt.Fprintf(w, "retry: %d\n", e.Retry) }
+	return fmt.Fprintln(w)
 }
