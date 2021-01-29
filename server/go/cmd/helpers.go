@@ -44,6 +44,8 @@ type copyPath struct {
 // copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
 // the build directory.
 func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
+	// TODO: We need to check for the presence of build/public and recursively
+	// delete if it exists. This is related to #19.
 
 	var paths []copyPath
 	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {

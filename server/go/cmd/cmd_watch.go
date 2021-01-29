@@ -72,8 +72,9 @@ func (r Runtime) Watch() {
 	}
 
 	go func() {
+		// TODO: Add support for many paths.
 		cmd := r.Command.(cli.WatchCommand)
-		for range watcher.New(cmd.Directory, cmd.Poll) {
+		for range watcher.New(cmd.Paths[0], cmd.Poll) {
 			r.esbuildRebuild()
 			srvEvents <- events.SSE{Event: "reload"}
 		}

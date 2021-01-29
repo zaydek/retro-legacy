@@ -35,65 +35,65 @@ func TestWatch(t *testing.T) {
 
 	cmd = parseWatchCommandArgs()
 	expect(t, cmd, WatchCommand{
-		Cached:      false,
-		Poll:        250 * time.Millisecond,
-		Port:        8000,
-		SourceMap:   false,
-		Directories: []string{"pages"},
+		Cached:    false,
+		Poll:      250 * time.Millisecond,
+		Port:      8000,
+		SourceMap: false,
+		Paths:     []string{"pages"},
 	})
 
 	cmd = parseWatchCommandArgs("src", "components", "pages")
 	expect(t, cmd, WatchCommand{
-		Cached:      false,
-		Poll:        250 * time.Millisecond,
-		Port:        8000,
-		SourceMap:   false,
-		Directories: []string{"src", "components", "pages"},
+		Cached:    false,
+		Poll:      250 * time.Millisecond,
+		Port:      8000,
+		SourceMap: false,
+		Paths:     []string{"src", "components", "pages"},
 	})
 
 	cmd = parseWatchCommandArgs("--cached")
 	expect(t, cmd, WatchCommand{
-		Cached:      true,
-		Poll:        250 * time.Millisecond,
-		Port:        8000,
-		SourceMap:   false,
-		Directories: []string{"pages"},
+		Cached:    true,
+		Poll:      250 * time.Millisecond,
+		Port:      8000,
+		SourceMap: false,
+		Paths:     []string{"pages"},
 	})
 
 	cmd = parseWatchCommandArgs("--poll=500ms")
 	expect(t, cmd, WatchCommand{
-		Cached:      false,
-		Poll:        500 * time.Millisecond,
-		Port:        8000,
-		SourceMap:   false,
-		Directories: []string{"pages"},
+		Cached:    false,
+		Poll:      500 * time.Millisecond,
+		Port:      8000,
+		SourceMap: false,
+		Paths:     []string{"pages"},
 	})
 
 	cmd = parseWatchCommandArgs("--port=8080")
 	expect(t, cmd, WatchCommand{
-		Cached:      false,
-		Poll:        250 * time.Millisecond,
-		Port:        8080,
-		SourceMap:   false,
-		Directories: []string{"pages"},
+		Cached:    false,
+		Poll:      250 * time.Millisecond,
+		Port:      8080,
+		SourceMap: false,
+		Paths:     []string{"pages"},
 	})
 
 	cmd = parseWatchCommandArgs("--source-map")
 	expect(t, cmd, WatchCommand{
-		Cached:      false,
-		Poll:        250 * time.Millisecond,
-		Port:        8000,
-		SourceMap:   true,
-		Directories: []string{"pages"},
+		Cached:    false,
+		Poll:      250 * time.Millisecond,
+		Port:      8000,
+		SourceMap: true,
+		Paths:     []string{"pages"},
 	})
 
 	cmd = parseWatchCommandArgs("--cached", "--poll=500ms", "--port=8080", "--source-map", "src", "components", "pages")
 	expect(t, cmd, WatchCommand{
-		Cached:      true,
-		Poll:        500 * time.Millisecond,
-		Port:        8080,
-		SourceMap:   true,
-		Directories: []string{"src", "components", "pages"},
+		Cached:    true,
+		Poll:      500 * time.Millisecond,
+		Port:      8080,
+		SourceMap: true,
+		Paths:     []string{"src", "components", "pages"},
 	})
 }
 

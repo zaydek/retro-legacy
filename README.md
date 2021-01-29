@@ -15,27 +15,29 @@ Retro is a friendly development server and static-site generator (SSG) for React
 
     Creates a new Retro app at directory dir
 
-      --language=[js|ts]    Programming language (default js)
+      --template=[js|ts]    Starter template (defaults to js)
 
-  retro watch [...dirs]
+  retro watch [...paths]
 
-    Starts a dev server and watches directories dirs for changes (default pages)
+    Starts a dev server and watches paths for changes (defaults to pages)
 
       --cached              Reuse cached props (disabled by default)
-      --poll=<duration>     Poll duration (default 250ms)
-      --port=<number>       Port number (default 8000)
+      --poll=<duration>     Poll duration (defaults to 250ms)
+      --port=<number>       Port number (defaults to 8000)
+      --source-map          Add source maps (disabled by default)
 
   retro build
 
     Builds the production-ready build
 
       --cached              Reuse cached props (disabled by default)
+      --source-map          Add source maps (disabled by default)
 
   retro serve
 
     Serves the production-ready build
 
-      --port=<number>       Port number (default 8000)
+      --port=<number>       Port number (defaults to 8000)
 
   Repository:
 

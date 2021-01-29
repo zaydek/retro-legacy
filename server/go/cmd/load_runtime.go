@@ -17,7 +17,7 @@ func loadRuntime() Runtime {
 		Config: DirConfiguration{
 			AssetDirectory: "public",
 			PagesDirectory: "pages",
-			CacheDirectory: "cache",
+			CacheDirectory: "__cache__",
 			BuildDirectory: "build",
 		},
 	}

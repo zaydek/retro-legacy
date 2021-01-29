@@ -18,7 +18,7 @@ type WatchCommand struct {
 	SourceMap bool
 
 	// Arguments
-	Directories []string
+	Paths []string
 }
 
 // BuildCommand describes retro build flags and arguments.
