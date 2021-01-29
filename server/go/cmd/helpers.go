@@ -8,6 +8,7 @@ import (
 
 	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/mode"
 )
 
 // getCmd gets the current command.
@@ -64,7 +65,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(dir, mode.Directory); err != nil {
 				return errs.MkdirAll(dir, err)
 			}
 		}
@@ -75,7 +76,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 		if err != nil {
 			return errs.ReadFile(each.src, err)
 		}
-		if err := ioutil.WriteFile(each.dst, bstr, 0644); err != nil {
+		if err := ioutil.WriteFile(each.dst, bstr, mode.File); err != nil {
 			return errs.ReadFile(each.dst, err)
 		}
 	}

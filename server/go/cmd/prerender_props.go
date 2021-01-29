@@ -9,6 +9,7 @@ import (
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/mode"
 )
 
 func (r Runtime) prerenderProps() error {
@@ -41,7 +42,7 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(text), 0644); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(text), mode.File); err != nil {
 		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), err)
 	}
 
@@ -67,7 +68,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 
 export default ` + stdoutBuf.String())
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), contents, 0644); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), contents, mode.File); err != nil {
 		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), err)
 	}
 	return nil

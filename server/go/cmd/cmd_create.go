@@ -13,6 +13,7 @@ import (
 	"github.com/zaydek/retro/embeds"
 	"github.com/zaydek/retro/errs"
 	"github.com/zaydek/retro/loggers"
+	"github.com/zaydek/retro/mode"
 )
 
 // TODO: npx create-retro-app is functionally equivalent to retro create [dir].
@@ -39,7 +40,7 @@ func (r Runtime) Create() {
 			os.Exit(1)
 		}
 
-		if err := os.MkdirAll(cmd.Directory, 0755); err != nil {
+		if err := os.MkdirAll(cmd.Directory, mode.Directory); err != nil {
 			loggers.Stderr.Println(errs.MkdirAll(cmd.Directory, err))
 			os.Exit(1)
 		}
@@ -64,7 +65,7 @@ func (r Runtime) Create() {
 
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {
-			if err := os.MkdirAll(dir, 0755); err != nil {
+			if err := os.MkdirAll(dir, mode.Directory); err != nil {
 				loggers.Stderr.Println(errs.MkdirAll(dir, err))
 				os.Exit(1)
 			}
@@ -78,7 +79,7 @@ func (r Runtime) Create() {
 			loggers.Stderr.Println(errs.ReadFile(entry, err))
 			os.Exit(1)
 		}
-		if err := ioutil.WriteFile(each.dst, bstr, 0644); err != nil {
+		if err := ioutil.WriteFile(each.dst, bstr, mode.File); err != nil {
 			loggers.Stderr.Println(errs.WriteFile(each.dst, err))
 			os.Exit(1)
 		}
@@ -103,7 +104,7 @@ func (r Runtime) Create() {
 		os.Exit(1)
 	}
 
-	if err := ioutil.WriteFile("package.json", buf.Bytes(), 0644); err != nil {
+	if err := ioutil.WriteFile("package.json", buf.Bytes(), mode.File); err != nil {
 		loggers.Stderr.Println(errs.WriteFile("package.json", err))
 		os.Exit(1)
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/color"
 	"github.com/zaydek/retro/errs"
+	"github.com/zaydek/retro/mode"
 )
 
 // TODO: Can we embed PageBasedRoute here and simply add Head and Page?
@@ -135,7 +136,7 @@ run(` + fmt.Sprintf(`{
 }`, route.DiskPathSrc, route.DiskPathDst, route.Path, route.Component) + `)
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), []byte(text), 0644); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), []byte(text), mode.File); err != nil {
 		return nil, errs.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), err)
 	}
 
@@ -177,9 +178,9 @@ run(` + fmt.Sprintf(`{
 	return buf.Bytes(), nil
 
 	// // TODO: Can we combine these functions?
-	// if err := os.MkdirAll(p.Dir(page.DiskPathDst), 0755); err != nil {
+	// if err := os.MkdirAll(p.Dir(page.DiskPathDst), mode.Directory); err != nil {
 	// 	return errs.MkdirAll(p.Dir(page.DiskPathDst), err)
-	// } else if err := ioutil.WriteFile(page.DiskPathDst, buf.Bytes(), 0644); err != nil {
+	// } else if err := ioutil.WriteFile(page.DiskPathDst, buf.Bytes(), mode.File); err != nil {
 	// 	return errs.WriteFile(page.DiskPathDst, err)
 	// }
 	// return nil
