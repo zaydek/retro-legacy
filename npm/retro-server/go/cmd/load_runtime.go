@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/loggers"
 )
@@ -12,6 +13,7 @@ func loadRuntime() Runtime {
 	var err error
 
 	runtime := Runtime{
+		epochUUID: uuid.NewString(),
 		Config: DirConfiguration{
 			AssetDirectory: "public",
 			PagesDirectory: "pages",

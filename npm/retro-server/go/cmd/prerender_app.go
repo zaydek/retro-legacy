@@ -69,8 +69,9 @@ ReactDOM.hydrate(
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	if err := ioutil.WriteFile(p.Join(r.Config.BuildDirectory, "app.js"), results.OutputFiles[0].Contents, 0644); err != nil {
-		return errs.WriteFile(p.Join(r.Config.BuildDirectory, "app.js"), err)
+	path := p.Join(r.Config.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochUUID))
+	if err := ioutil.WriteFile(path, results.OutputFiles[0].Contents, 0644); err != nil {
+		return errs.WriteFile(path, err)
 	}
 	return nil
 }

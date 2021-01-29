@@ -27,6 +27,7 @@ type DirConfiguration struct {
 // some kind of fingerprint for warnings and errors.
 type Runtime struct {
 	// Unexported
+	epochUUID       string
 	esbuildResult   api.BuildResult
 	esbuildWarnings []api.Message
 	esbuildErrors   []api.Message
