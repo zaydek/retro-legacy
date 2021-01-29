@@ -1,0 +1,14 @@
+ssg-rendered pages
+page.csr.js
+	- ~~the only way this works if we don't emit a corresponding html file and our
+		hosting provided understands that we want to route to index.html always~~
+	- ~~then we may have a problem where our index.html is already generated and
+		therefore we have an unexpected page flash. so we can either us a fully
+		dynamic 404 or maybe we just don't support this use-case and we make it
+		possible to create retro apps that use the same cli but are fully dynamic
+		(maybe we should have done this from the beginning)~~
+	- no -- we are over-engineering. we basically need to change the equation so
+		that for these pages **we do** emit an html file but we use render not
+		hydrate. so maybe this becomes a parameter attached to every page-based
+		route; whether it's client-side rendered or server-side generated
+server

@@ -5,7 +5,3 @@
 .env
 *.log*
 node_modules
-
-# Production
-/build
-/cache
