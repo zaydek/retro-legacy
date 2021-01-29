@@ -54,19 +54,19 @@ func Test17(t *testing.T) {
 
 func TestLatest(t *testing.T) {
 	text := `
-+------------------------------+
-| RETRO_VERSION       | latest |
-| RETRO_RETRO_VERSION | latest |
-| REACT_VERSION       | latest |
-| REACT_DOM_VERSION   | latest |
-+------------------------------+
++-------------------------------+
+| RETRO_VERSION        | latest |
+| RETRO_ROUTER_VERSION | latest |
+| REACT_VERSION        | latest |
+| REACT_DOM_VERSION    | latest |
++-------------------------------+
 `
 
 	SetPackageVars(text)
 
 	tests := []Test{
 		{got: os.Getenv("RETRO_VERSION"), want: "latest"},
-		{got: os.Getenv("RETRO_RETRO_VERSION"), want: "latest"},
+		{got: os.Getenv("RETRO_ROUTER_VERSION"), want: "latest"},
 		{got: os.Getenv("REACT_VERSION"), want: "latest"},
 		{got: os.Getenv("REACT_DOM_VERSION"), want: "latest"},
 	}

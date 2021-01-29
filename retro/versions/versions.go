@@ -7,7 +7,7 @@ import (
 )
 
 // https://regex101.com/r/0L0wqz/1
-var rowRe = regexp.MustCompile(`^\| ([^ ]+) +\| ([^ ]+) +\|$`)
+var rowRe = regexp.MustCompile(`^\| +([^ ]+) +\| +([^ ]+) +\|$`)
 
 func SetPackageVars(table string) {
 	for _, each := range strings.Split(table, "\n") {

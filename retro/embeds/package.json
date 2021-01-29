@@ -1,9 +1,9 @@
 {
 	"name": "{{ .RepoName }}",
 	"scripts": {
-		"watch": "retro-server watch",
-		"build": "retro-server build",
-		"serve": "retro-server serve"
+		"watch": "retro watch",
+		"build": "retro build",
+		"serve": "retro serve"
 	},
 	"dependencies": {
 		"@zaydek/retro-router": "{{ .RetroRouterVersion }}",
