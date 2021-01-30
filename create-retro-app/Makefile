@@ -5,7 +5,7 @@ test:
 	go test ./...
 
 build-postinstall:
-	yarn esbuild --outfile=bin/postinstall.js postinstall.ts
+	yarn esbuild --outfile=postinstall.js postinstall.ts
 
 build-darwin:
 	GOOS=darwin GOARCH=amd64 go build "-ldflags=-s -w" -o=bin/darwin-64 ./cmd

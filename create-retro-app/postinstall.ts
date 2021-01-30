@@ -12,7 +12,7 @@ const supported: Record<string, string> = {
 }
 
 function absoluteBinaryPath(binary: string) {
-	return path.join(__dirname, binary)
+	return path.join(__dirname, "bin", binary)
 }
 
 function copyBinaryToCanonicalBinary(binary: string) {

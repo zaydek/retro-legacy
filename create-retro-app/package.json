@@ -1,14 +1,15 @@
 {
 	"name": "@zaydek/create-retro-app",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "TODO",
 	"repository": "https://github.com/zaydek/retro/create-retro-app",
 	"license": "MIT",
 	"files": [
-		"bin/"
+		"bin/",
+		"postinstall.js"
 	],
 	"scripts": {
-		"postinstall": "node bin/postinstall.js"
+		"postinstall": "node postinstall.js"
 	},
 	"bin": {
 		"create-retro-app": "bin/create-retro-app"
