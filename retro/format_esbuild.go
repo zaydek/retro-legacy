@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 func formatEsbuildMessagesAsTermString(msgs []api.Message) string {

@@ -14,22 +14,6 @@ func expect(t *testing.T, x, y interface{}) {
 	t.Fatalf("got %+v want %+v", x, y)
 }
 
-// func TestCreate(t *testing.T) {
-// 	var cmd CreateCommand
-//
-// 	cmd = parseCreateCommandArgs(".")
-// 	expect(t, cmd, CreateCommand{Template: "js", Directory: "."})
-//
-// 	cmd = parseCreateCommandArgs("--template=js", ".")
-// 	expect(t, cmd, CreateCommand{Template: "js", Directory: "."})
-//
-// 	cmd = parseCreateCommandArgs("retro-app")
-// 	expect(t, cmd, CreateCommand{Template: "js", Directory: "retro-app"})
-//
-// 	cmd = parseCreateCommandArgs("--template=js", "retro-app")
-// 	expect(t, cmd, CreateCommand{Template: "js", Directory: "retro-app"})
-// }
-
 func TestWatch(t *testing.T) {
 	var cmd WatchCommand
 

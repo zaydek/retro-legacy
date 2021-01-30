@@ -10,8 +10,8 @@ import (
 	p "path"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/perm"
+	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/perm"
 )
 
 func (r Runtime) prerenderPages() error {
@@ -96,7 +96,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	stdoutBuf, err := execNode(results.OutputFiles[0].Contents)
+	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
 	if err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@ package cli
 import (
 	"strings"
 
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 var usageOnly = strings.TrimSpace(`

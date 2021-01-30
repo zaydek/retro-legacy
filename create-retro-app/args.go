@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/zaydek/create-retro-app/loggers"
-	"github.com/zaydek/create-retro-app/term"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 func parseArguments(arguments ...string) Command {

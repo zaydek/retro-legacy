@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/zaydek/retro/env"
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/env"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 func init() {

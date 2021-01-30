@@ -1,6 +1,6 @@
 package main
 
-import "github.com/zaydek/create-retro-app/term"
+import "github.com/zaydek/retro/pkg/term"
 
 var usage = `
   👾 ` + term.Bold("create-retro-app") + ` [flags] ` + term.Bold("app-name") + `

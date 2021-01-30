@@ -10,8 +10,8 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/perm"
+	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/perm"
 )
 
 func (r Runtime) prerenderApp() error {

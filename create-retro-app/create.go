@@ -9,11 +9,11 @@ import (
 	"os"
 	p "path"
 
-	"github.com/zaydek/create-retro-app/cmd/errs"
-	"github.com/zaydek/create-retro-app/embeds"
 	"github.com/zaydek/create-retro-app/loggers"
-	"github.com/zaydek/create-retro-app/perm"
-	"github.com/zaydek/create-retro-app/term"
+	"github.com/zaydek/retro/create-retro-app/embeds"
+	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 type copyPath struct{ src, dst string }

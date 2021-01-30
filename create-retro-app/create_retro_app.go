@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/zaydek/create-retro-app/env"
+	"github.com/zaydek/retro/pkg/env"
 )
 
 func init() {

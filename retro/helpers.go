@@ -6,9 +6,9 @@ import (
 	p "path"
 	"path/filepath"
 
-	"github.com/zaydek/retro/cli"
-	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/perm"
+	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/retro/cli"
 )
 
 // getCmd gets the current command.

@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cli"
-	"github.com/zaydek/retro/events"
-	"github.com/zaydek/retro/loggers"
-	"github.com/zaydek/retro/watcher"
+	"github.com/zaydek/retro/pkg/events"
+	"github.com/zaydek/retro/pkg/loggers"
+	"github.com/zaydek/retro/pkg/watcher"
+	"github.com/zaydek/retro/retro/cli"
 )
 
 func (r *Runtime) esbuildBuild() {

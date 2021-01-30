@@ -12,9 +12,9 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/perm"
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 // TODO: Can we embed PageBasedRoute here and simply add Head and Page?
@@ -161,7 +161,7 @@ run(` + fmt.Sprintf(`{
 	// TODO: It would also be nice if we can automatically unmarshal the return nil, of
 	// Node since we’re only using Node for IPC processes.
 	var page prerenderedPage
-	stdoutBuf, err := execNode(results.OutputFiles[0].Contents)
+	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
 	if err != nil {
 		return nil, err
 	}

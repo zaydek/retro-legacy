@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/zaydek/retro/loggers"
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/loggers"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 func parseWatchArguments(arguments ...string) WatchCommand {

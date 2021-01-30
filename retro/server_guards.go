@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/perm"
+	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/perm"
 )
 
 // statOrCreateDir stats for the presence of a directory or creates one.

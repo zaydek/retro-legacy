@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/zaydek/retro/loggers"
+	"github.com/zaydek/retro/pkg/loggers"
 )
 
 func check(err error) {

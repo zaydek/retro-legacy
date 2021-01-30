@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/zaydek/retro/cli"
-	"github.com/zaydek/retro/loggers"
+	"github.com/zaydek/retro/pkg/loggers"
+	"github.com/zaydek/retro/retro/cli"
 )
 
 // loadRuntime parses CLI arguments and the page-based routes.

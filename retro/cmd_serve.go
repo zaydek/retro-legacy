@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/zaydek/retro/loggers"
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/loggers"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 func (r Runtime) Serve() {
