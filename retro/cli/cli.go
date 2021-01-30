@@ -40,12 +40,6 @@ func parseWatchArguments(arguments ...string) WatchCommand {
 		loggers.Stderr.Println(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
-	// for _, each := range flagset.Args() {
-	// 	if _, err := os.Stat(each); os.IsNotExist(err) {
-	// 		loggers.Stderr.Println("Failed to stat file or directory " + term.Bold(each) + ".")
-	// 		os.Exit(2)
-	// 	}
-	// }
 	cmd.Paths = []string{"pages"}
 	if len(flagset.Args()) > 0 {
 		cmd.Paths = flagset.Args()
