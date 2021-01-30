@@ -4,13 +4,13 @@ import (
 	"os"
 
 	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/perm"
 )
 
 // statOrCreateDir stats for the presence of a directory or creates one.
 func statOrCreateDir(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, mode.Directory); err != nil {
+		if err := os.MkdirAll(dir, perm.Directory); err != nil {
 			return errs.MkdirAll(dir, err)
 		}
 	}

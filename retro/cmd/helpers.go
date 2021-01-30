@@ -8,14 +8,12 @@ import (
 
 	"github.com/zaydek/retro/cli"
 	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/perm"
 )
 
 // getCmd gets the current command.
 func (r Runtime) getCmd() string {
 	switch r.Command.(type) {
-	case cli.CreateCommand:
-		return "create"
 	case cli.WatchCommand:
 		return "watch"
 	case cli.BuildCommand:
@@ -67,7 +65,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {
-			if err := os.MkdirAll(dir, mode.Directory); err != nil {
+			if err := os.MkdirAll(dir, perm.Directory); err != nil {
 				return errs.MkdirAll(dir, err)
 			}
 		}
@@ -78,7 +76,7 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 		if err != nil {
 			return errs.ReadFile(each.src, err)
 		}
-		if err := ioutil.WriteFile(each.dst, bstr, mode.File); err != nil {
+		if err := ioutil.WriteFile(each.dst, bstr, perm.File); err != nil {
 			return errs.ReadFile(each.dst, err)
 		}
 	}

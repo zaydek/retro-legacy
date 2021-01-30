@@ -24,8 +24,6 @@ func main() {
 
 	runtime := loadRuntime()
 	switch cmd := runtime.getCmd(); cmd {
-	case "create":
-		runtime.Create()
 	case "watch":
 		must(serverGuards(runtime.Config))
 		runtime.Watch()

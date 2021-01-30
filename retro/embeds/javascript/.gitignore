@@ -1,8 +1,0 @@
-# macOS
-.DS_Store
-
-# NPM / Yarn
-/node_modules/
-
-/__cache__/
-/build/

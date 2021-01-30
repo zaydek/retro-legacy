@@ -11,7 +11,7 @@ import (
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/perm"
 )
 
 func (r Runtime) prerenderApp() error {
@@ -53,7 +53,7 @@ ReactDOM.hydrate(
 		return errs.ExecuteTemplate(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), err)
 	}
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), buf.Bytes(), mode.File); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), buf.Bytes(), perm.File); err != nil {
 		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), err)
 	}
 
@@ -71,7 +71,7 @@ ReactDOM.hydrate(
 	}
 
 	path := p.Join(r.Config.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochUUID))
-	if err := ioutil.WriteFile(path, results.OutputFiles[0].Contents, mode.File); err != nil {
+	if err := ioutil.WriteFile(path, results.OutputFiles[0].Contents, perm.File); err != nil {
 		return errs.WriteFile(path, err)
 	}
 	return nil

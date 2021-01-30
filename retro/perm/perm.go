@@ -1,4 +1,4 @@
-package mode
+package perm
 
 // http://permissions-calculator.org
 const (

@@ -1,4 +1,4 @@
-package mode
+package perm
 
 import "testing"
 

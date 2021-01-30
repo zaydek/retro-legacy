@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/perm"
 )
 
 type Test struct{ got, want int }
@@ -37,11 +37,11 @@ func TestWatch(t *testing.T) {
 		}
 	}()
 
-	check(t, ioutil.WriteFile(path.Join(dir, "a"), []byte("Hello, world!\n"), mode.File))
+	check(t, ioutil.WriteFile(path.Join(dir, "a"), []byte("Hello, world!\n"), perm.File))
 	time.Sleep(10 * time.Millisecond)
-	check(t, ioutil.WriteFile(path.Join(dir, "b"), []byte("Hello, world!\n"), mode.File))
+	check(t, ioutil.WriteFile(path.Join(dir, "b"), []byte("Hello, world!\n"), perm.File))
 	time.Sleep(10 * time.Millisecond)
-	check(t, ioutil.WriteFile(path.Join(dir, "c"), []byte("Hello, world!\n"), mode.File))
+	check(t, ioutil.WriteFile(path.Join(dir, "c"), []byte("Hello, world!\n"), perm.File))
 	time.Sleep(10 * time.Millisecond)
 
 	test := Test{got: called, want: 3}

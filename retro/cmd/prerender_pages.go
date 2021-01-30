@@ -11,7 +11,7 @@ import (
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/errs"
-	"github.com/zaydek/retro/mode"
+	"github.com/zaydek/retro/perm"
 )
 
 func (r Runtime) prerenderPages() error {
@@ -79,7 +79,7 @@ async function asyncRun(requireStmtAsArray) {
 asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(text), mode.File); err != nil {
+	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(text), perm.File); err != nil {
 		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), err)
 	}
 
@@ -112,7 +112,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 		path = path[:len(path)-len(p.Ext(path))] + ".html" // page.js -> page.html
 		path = p.Join(r.Config.BuildDirectory, path)       // page.html -> build/page.html
 		if dir := p.Dir(path); dir != "." {
-			if err := os.MkdirAll(dir, mode.Directory); err != nil {
+			if err := os.MkdirAll(dir, perm.Directory); err != nil {
 				return errs.MkdirAll(dir, err)
 			}
 		}
@@ -120,7 +120,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 		if err := base.Execute(&buf, each); err != nil {
 			return errs.ExecuteTemplate(path, err)
 		}
-		if err := ioutil.WriteFile(path, buf.Bytes(), mode.File); err != nil {
+		if err := ioutil.WriteFile(path, buf.Bytes(), perm.File); err != nil {
 			return errs.WriteFile(path, err)
 		}
 	}
