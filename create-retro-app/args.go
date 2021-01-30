@@ -22,9 +22,9 @@ func parseArguments(arguments ...string) Command {
 	}
 	if cmd.Template != "javascript" && cmd.Template != "typescript" {
 		loggers.Stderr.Println(term.Bold("--template") + " must be " + term.Bold("javascript") + " or " + term.Bold("typescript") + ".\n\n" +
-			"- " + term.Bold("create-retro-app [app-name] --template=javascript") + "\n\n" +
+			"- " + term.Bold("create-retro-app app-name --template=javascript") + "\n\n" +
 			"Or\n\n" +
-			"- " + term.Bold("create-retro-app [app-name] --template=javascript") + "")
+			"- " + term.Bold("create-retro-app app-name --template=javascript") + "")
 		os.Exit(2)
 	}
 	cmd.Directory = "retro-app"

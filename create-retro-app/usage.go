@@ -3,9 +3,18 @@ package main
 import "github.com/zaydek/create-retro-app/term"
 
 var usage = `
-  👾 ` + term.Bold("create-retro-app") + ` ` + term.Bold("[app-name]") + ` --template=[javascript|typescript]
+  👾 ` + term.Bold("create-retro-app") + ` [flags] ` + term.Bold("app-name") + `
 
-    Creates a new Retro app at directory ` + term.Bold("[app-name]") + `.
+    Creates a new Retro app at directory ` + term.Bold("app-name") + `.
+
+    Flags:
+
+      --template=javascript  Use the JavaScript template (default)
+      --template=typescript  Use the TypeScript template
+
+  ` + term.Bold("Documentation:") + `
+
+    ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
 
   ` + term.Bold("Repository:") + `
 

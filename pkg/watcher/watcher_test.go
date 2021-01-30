@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zaydek/retro/perm"
+	"github.com/zaydek/retro/pkg/perm"
 )
 
 type Test struct{ got, want int }

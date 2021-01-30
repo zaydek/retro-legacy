@@ -3,13 +3,13 @@ package errs
 import (
 	"fmt"
 
-	"github.com/zaydek/create-retro-app/term"
+	"github.com/zaydek/retro/pkg/term"
 )
-
-const repoName = "create-retro-app"
 
 func MkdirAll(dir string, err error) error {
 	return fmt.Errorf("Failed to make directory "+term.Bold(dir)+". "+
+		"This is likely due to a permissions error. "+
+		"Try "+term.Boldf("rm -r %s", dir)+" or "+term.Boldf("sudo rm -r %s", dir)+" if that doesn’t work.\n\n"+
 		"Original error: %w", err)
 }
 
@@ -28,6 +28,11 @@ func WriteFile(path string, err error) error {
 		"Original error: %w", err)
 }
 
+func RunNode(err error) error {
+	return fmt.Errorf("Failed to run Node.\n\n"+
+		"Original error: %w", err)
+}
+
 func ParseTemplate(name string, err error) error {
 	return fmt.Errorf("Failed to parse template "+term.Bold(name)+".\n\n"+
 		"Original error: %w", err)
@@ -40,6 +45,6 @@ func ExecuteTemplate(name string, err error) error {
 
 func Unexpected(err error) error {
 	return fmt.Errorf("An unexpected error occurred. "+
-		"Please open an issue at "+term.Underlinef("https://github.com/zaydek/%s", repoName)+".\n\n"+
+		"Please open an issue at "+term.Underline("https://github.com/zaydek/retro")+".\n\n"+
 		"Original error: %w", err)
 }

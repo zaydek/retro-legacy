@@ -10,7 +10,7 @@ import (
 type Test struct{ got, want string }
 
 func TestEmbed(t *testing.T) {
-	//go:embed env_test.txt
+	//go:embed version_copy.txt
 	var text string
 
 	SetEnvVars(text)

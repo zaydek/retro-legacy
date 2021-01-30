@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zaydek/retro/term"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 var Stderr = NewTransform(os.Stdout, func(msg string) string {
