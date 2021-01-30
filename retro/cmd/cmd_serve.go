@@ -21,5 +21,5 @@ func (r Runtime) Serve() {
 	fmt.Printf("👾 http://localhost:%d\n", r.getPort())
 
 	http.Handle("/", http.FileServer(http.Dir(r.Config.BuildDirectory)))
-	must(http.ListenAndServe(":"+strconv.Itoa(int(r.getPort())), nil))
+	check(http.ListenAndServe(":"+strconv.Itoa(int(r.getPort())), nil))
 }

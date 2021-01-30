@@ -7,16 +7,14 @@ import (
 )
 
 var usageOnly = strings.TrimSpace(`
-retro create [dir]      Creates a new Retro app at directory dir
 retro watch [...paths]  Starts the dev server and watches paths for changes
 retro build             Builds the production-ready build
 retro serve             Serves the production-ready build
 `)
 
-var manpages = `
+var usage = `
   ` + term.BoldWhite("Usage:") + `
 
-    retro create [dir]      Creates a new Retro app at directory dir
     retro watch [...paths]  Starts the dev server and watches paths for changes
     retro build             Builds the production-ready build
     retro serve             Serves the production-ready build

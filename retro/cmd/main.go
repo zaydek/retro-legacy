@@ -7,14 +7,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/zaydek/retro/env"
 	"github.com/zaydek/retro/term"
-	"github.com/zaydek/retro/versions"
 )
 
 func init() {
 	//go:embed versions.txt
 	var text string
-	versions.SetPackageVars(text)
+	env.SetEnvVars(text)
 }
 
 func main() {
@@ -25,10 +25,10 @@ func main() {
 	runtime := loadRuntime()
 	switch cmd := runtime.getCmd(); cmd {
 	case "watch":
-		must(serverGuards(runtime.Config))
+		check(serverGuards(runtime.Config))
 		runtime.Watch()
 	case "build":
-		must(serverGuards(runtime.Config))
+		check(serverGuards(runtime.Config))
 		runtime.Build()
 	case "serve":
 		runtime.Serve()

@@ -6,7 +6,7 @@ import (
 	"github.com/zaydek/retro/loggers"
 )
 
-func must(err error) {
+func check(err error) {
 	if err == nil {
 		// No-op
 		return

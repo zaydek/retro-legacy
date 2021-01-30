@@ -1,4 +1,4 @@
-package versions
+package env
 
 import (
 	_ "embed"
@@ -10,10 +10,10 @@ import (
 type Test struct{ got, want string }
 
 func TestEmbed(t *testing.T) {
-	//go:embed versions_test.txt
+	//go:embed env_test.txt
 	var text string
 
-	SetPackageVars(text)
+	SetEnvVars(text)
 
 	tests := []Test{
 		{got: os.Getenv("RETRO_VERSION"), want: "v0.0.1"},
@@ -38,7 +38,7 @@ func Test17(t *testing.T) {
 +--------------------------------+
 `
 
-	SetPackageVars(text)
+	SetEnvVars(text)
 
 	tests := []Test{
 		{got: os.Getenv("RETRO_VERSION"), want: "v0.0.1"},
@@ -63,7 +63,7 @@ func TestLatest(t *testing.T) {
 +-------------------------------+
 `
 
-	SetPackageVars(text)
+	SetEnvVars(text)
 
 	tests := []Test{
 		{got: os.Getenv("RETRO_VERSION"), want: "latest"},

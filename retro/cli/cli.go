@@ -11,14 +11,6 @@ import (
 	"github.com/zaydek/retro/term"
 )
 
-func version() {
-	fmt.Println("TODO")
-}
-
-func usage() {
-	fmt.Println(manpages)
-}
-
 func parseWatchArguments(arguments ...string) WatchCommand {
 	flagset := flag.NewFlagSet("watch", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
@@ -82,7 +74,7 @@ func parseServeArguments(arguments ...string) ServeCommand {
 
 func ParseCLIArguments() interface{} {
 	if len(os.Args) < 2 {
-		usage()
+		fmt.Println(usage)
 		os.Exit(0)
 	}
 
@@ -93,7 +85,7 @@ func ParseCLIArguments() interface{} {
 	case "version":
 		fallthrough
 	case "--version":
-		version()
+		fmt.Println("TODO")
 		os.Exit(0)
 
 	// $ retro usage
@@ -104,7 +96,7 @@ func ParseCLIArguments() interface{} {
 	case "help":
 		fallthrough
 	case "--help":
-		usage()
+		fmt.Println(usage)
 		os.Exit(0)
 
 	// $ retro watch

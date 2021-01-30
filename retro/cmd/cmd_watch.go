@@ -59,7 +59,7 @@ func (r Runtime) Watch() {
 
 	srvEvents := make(chan events.SSE, 8)
 
-	must(copyAssetDirectoryToBuildDirectory(r.Config))
+	check(copyAssetDirectoryToBuildDirectory(r.Config))
 	r.esbuildBuild()
 
 	fmt.Printf("👾 http://localhost:%d\n", r.getPort())
