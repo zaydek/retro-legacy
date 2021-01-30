@@ -2,9 +2,7 @@
 .DS_Store
 
 # NPM / Yarn
-/.env
-/*.log*
-/node_modules
+/node_modules/
 
-/__cache__
-/build
+/__cache__/
+/build/
