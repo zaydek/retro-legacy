@@ -6,6 +6,8 @@ import (
 	"github.com/zaydek/retro/term"
 )
 
+const repoName = "retro"
+
 // MkdirAll decorates os.MkdirAll errors.
 func MkdirAll(dir string, err error) error {
 	return fmt.Errorf("Failed to make directory "+term.Bold(dir)+". "+
@@ -53,6 +55,6 @@ func ExecuteTemplate(name string, err error) error {
 // Unexpected decorates unexpected errors.
 func Unexpected(err error) error {
 	return fmt.Errorf("An unexpected error occurred. "+
-		"Please open an issue at "+term.Underline("https://github.com/zaydek/retro")+".\n\n"+
+		"Please open an issue at "+term.Underlinef("https://github.com/zaydek/%s", repoName)+".\n\n"+
 		"Original error: %w", err)
 }

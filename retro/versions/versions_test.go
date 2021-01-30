@@ -12,6 +12,7 @@ type Test struct{ got, want string }
 func TestEmbed(t *testing.T) {
 	//go:embed versions_test.txt
 	var text string
+
 	SetPackageVars(text)
 
 	tests := []Test{
