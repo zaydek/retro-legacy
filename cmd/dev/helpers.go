@@ -1,4 +1,4 @@
-package cmd
+package dev
 
 import (
 	"io/ioutil"
@@ -6,9 +6,9 @@ import (
 	p "path"
 	"path/filepath"
 
+	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
-	"github.com/zaydek/retro/retro/cli"
 )
 
 // getCmd gets the current command.

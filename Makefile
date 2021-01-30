@@ -6,23 +6,23 @@ bin:
 
 ################################################################################
 
-test-create-retro-app:
-	echo TODO
+test-create:
+	go test ./cmd/create/...
+
+test-dev:
+	go test ./cmd/dev/...
 
 test-pkg:
-	go test ./...
+	go test ./pkg/...
 
-test-retro:
-	go test ./...
-
-test-retro-router:
-	echo TODO
+test-router:
+	(cd retro-router && yarn test) || cd ..
 
 test:
-	make test-create-retro-app \
-		test-pkg \
-		test-retro \
-		test-retro-router
+	make test-create
+	make test-dev
+	make test-pkg
+	make test-router
 
 ################################################################################
 

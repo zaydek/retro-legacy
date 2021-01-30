@@ -1,4 +1,4 @@
-package cmd
+package create
 
 type Command struct {
 	// Flags

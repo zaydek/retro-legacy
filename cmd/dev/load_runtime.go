@@ -1,11 +1,11 @@
-package cmd
+package dev
 
 import (
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/loggers"
-	"github.com/zaydek/retro/retro/cli"
 )
 
 // loadRuntime parses CLI arguments and the page-based routes.

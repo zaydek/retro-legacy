@@ -1,4 +1,4 @@
-package cmd
+package dev
 
 import (
 	_ "embed"
@@ -10,8 +10,8 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func Start() {
-	//go:embed versions.txt
+func Run() {
+	//go:embed version.txt
 	var text string
 	env.SetEnvVars(text)
 
