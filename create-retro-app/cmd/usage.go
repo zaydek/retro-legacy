@@ -3,13 +3,13 @@ package main
 import "github.com/zaydek/create-retro-app/term"
 
 var usage = `
-  👾 ` + term.Bold("create-retro-app") + ` ` + term.Bold("app-name") + ` --template=[javascript|typescript]
+  👾 ` + term.Bold("create-retro-app") + ` ` + term.Bold("[app-name]") + ` --template=[javascript|typescript]
 
-    Creates a new Retro app at directory ` + term.Bold("app-name") + `.
+    Creates a new Retro app at directory ` + term.Bold("[app-name]") + `.
 
   ` + term.Bold("Repository:") + `
 
-    ` + term.Bold("https://github.com/zaydek/create-retro-app") + `
+    ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
 `
 
 var successfmt = `

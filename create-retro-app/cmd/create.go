@@ -12,7 +12,7 @@ import (
 	"github.com/zaydek/create-retro-app/cmd/errs"
 	"github.com/zaydek/create-retro-app/embeds"
 	"github.com/zaydek/create-retro-app/loggers"
-	"github.com/zaydek/create-retro-app/mode"
+	"github.com/zaydek/create-retro-app/perm"
 	"github.com/zaydek/create-retro-app/term"
 )
 
@@ -38,7 +38,7 @@ func (cmd Command) CreateRetroApp() {
 				"- " + term.Boldf("rm -r %[1]s && npx create-retro-app %[1]s", cmd.Directory))
 		}
 
-		if err := os.MkdirAll(cmd.Directory, mode.Directory); err != nil {
+		if err := os.MkdirAll(cmd.Directory, perm.Directory); err != nil {
 			loggers.Stderr.Fatalln(errs.MkdirAll(cmd.Directory, err))
 		}
 	}
@@ -62,7 +62,7 @@ func (cmd Command) CreateRetroApp() {
 
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {
-			if err := os.MkdirAll(dir, mode.Directory); err != nil {
+			if err := os.MkdirAll(dir, perm.Directory); err != nil {
 				loggers.Stderr.Fatalln(errs.MkdirAll(dir, err))
 			}
 		}
@@ -100,7 +100,7 @@ func (cmd Command) CreateRetroApp() {
 	}
 
 	path := p.Join(cmd.Directory, "package.json")
-	if err := ioutil.WriteFile(path, buf.Bytes(), mode.File); err != nil {
+	if err := ioutil.WriteFile(path, buf.Bytes(), perm.File); err != nil {
 		loggers.Stderr.Fatalln(errs.WriteFile(path, err))
 	}
 

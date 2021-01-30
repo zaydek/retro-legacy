@@ -10,23 +10,26 @@ import (
 	"github.com/zaydek/create-retro-app/term"
 )
 
-func parseArgs(args ...string) Command {
+func parseArguments(arguments ...string) Command {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
 	cmd := Command{}
-	flagset.StringVar(&cmd.Template, "template", "js", "")
-	if err := flagset.Parse(args); err != nil {
+	flagset.StringVar(&cmd.Template, "template", "javascript", "")
+	if err := flagset.Parse(arguments); err != nil {
 		fmt.Println(usage)
 		os.Exit(2)
 	}
-	if cmd.Template != "js" && cmd.Template != "ts" {
-		loggers.Stderr.Println(term.Bold("--template") + " must be " + term.Bold("js") + " for JavaScript or " + term.Bold("ts") + " for TypeScript.\n\n" +
-			"- " + term.Bold("create-retro-app --template=js "+term.Underline("app-name")) + "\n\n" +
+	if cmd.Template != "javascript" && cmd.Template != "typescript" {
+		loggers.Stderr.Println(term.Bold("--template") + " must be " + term.Bold("javascript") + " or " + term.Bold("typescript") + ".\n\n" +
+			"- " + term.Bold("create-retro-app [app-name] --template=javascript") + "\n\n" +
 			"Or\n\n" +
-			"- " + term.Bold("create-retro-app --template=ts "+term.Underline("app-name")) + "")
+			"- " + term.Bold("create-retro-app [app-name] --template=javascript") + "")
 		os.Exit(2)
 	}
-	cmd.Directory = flagset.Args()[0]
+	cmd.Directory = "retro-app"
+	if len(flagset.Args()) > 0 {
+		cmd.Directory = flagset.Args()[0]
+	}
 	return cmd
 }

@@ -2,12 +2,17 @@ package main
 
 import (
 	_ "embed"
-
 	"fmt"
 	"os"
 
 	"github.com/zaydek/create-retro-app/env"
 )
+
+func init() {
+	//go:embed env.txt
+	var text string
+	env.SetEnvVars(text)
+}
 
 func main() {
 	if len(os.Args) < 2 {
@@ -32,10 +37,7 @@ func main() {
 		fmt.Println(usage)
 		os.Exit(0)
 	default:
-		//go:embed env.txt
-		var text string
-		env.SetEnvVars(text)
-		cmd = parseArgs(os.Args[1:]...)
+		cmd = parseArguments(os.Args[1:]...)
 	}
 
 	cmd.CreateRetroApp()
