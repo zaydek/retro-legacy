@@ -1,6 +1,6 @@
 +--------------------------------+
-| RETRO_VERSION        |  v0.0.1 |
-| RETRO_ROUTER_VERSION |  v0.0.1 |
+| RETRO_VERSION        |  v0.0.6 |
+| RETRO_ROUTER_VERSION |  v0.0.6 |
 | REACT_VERSION        | v17.0.1 |
 | REACT_DOM_VERSION    | v17.0.1 |
 +--------------------------------+
