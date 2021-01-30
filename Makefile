@@ -1,8 +1,14 @@
+bin-create:
+	go build -o=create-retro-app create.go && mv create-retro-app /usr/local/bin/
 
-################################################################################
+bin-dev:
+	go build -o=retro dev.go && mv retro /usr/local/bin/
 
 bin:
-	go build -o=create-retro-app ./cmd && mv create-retro-app /usr/local/bin
+	make test-go
+	make -j2 \
+		bin-create \
+		bin-dev
 
 ################################################################################
 
@@ -14,6 +20,11 @@ test-dev:
 
 test-pkg:
 	go test ./pkg/...
+
+test-go:
+	make test-create
+	make test-dev
+	make test-pkg
 
 test-router:
 	(cd retro-router && yarn test) || cd ..
@@ -45,6 +56,11 @@ build:
 		build-darwin \
 		build-linux \
 		build-windows
+
+################################################################################
+
+release:
+	echo TODO
 
 ################################################################################
 

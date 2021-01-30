@@ -18,8 +18,8 @@ func New(dir string, poll time.Duration) <-chan WatchResult {
 	go func() {
 		defer close(ch)
 
-		// NOTE: Use time.NewTicker(poll) not time.Tick(poll); time.Tick(poll)
-		// starts after poll duration, not before.
+		// NOTE: Use time.NewTicker(poll) not time.Tick(poll); time.NewTicker(poll)
+		// starts eagerly.
 		//
 		// Based on https://stackoverflow.com/a/47448177.
 		ticker := time.NewTicker(poll)
