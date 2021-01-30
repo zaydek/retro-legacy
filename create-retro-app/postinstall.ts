@@ -1,8 +1,8 @@
-import * as fs from "fs"
-import * as os from "os"
-import * as path from "path"
+const fs = require("fs")
+const os = require("os")
+const path = require("path")
 
-const canonicalBinary = "create-retro-app"
+const CANONICAL_BINARY = "create-retro-app"
 
 const supported: Record<string, string> = {
 	"darwin arm64 LE": "darwin-64", // TODO: Upgrade to support M1
@@ -11,13 +11,9 @@ const supported: Record<string, string> = {
 	"win32 x64 LE": "windows-64.exe",
 }
 
-function absoluteBinaryPath(binary: string) {
-	return path.join(__dirname, "bin", binary)
-}
-
 function copyBinaryToCanonicalBinary(binary: string) {
-	const src = absoluteBinaryPath(binary)
-	const dst = absoluteBinaryPath(canonicalBinary)
+	const src = path.join(__dirname, binary)
+	const dst = path.join(__dirname, CANONICAL_BINARY)
 	fs.copyFileSync(src, dst)
 	fs.chmodSync(dst, 0o755)
 }
