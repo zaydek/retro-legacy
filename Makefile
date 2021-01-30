@@ -1,8 +1,30 @@
+
+################################################################################
+
 bin:
 	go build -o=create-retro-app ./cmd && mv create-retro-app /usr/local/bin
 
-test:
+################################################################################
+
+test-create-retro-app:
+	echo TODO
+
+test-pkg:
 	go test ./...
+
+test-retro:
+	go test ./...
+
+test-retro-router:
+	echo TODO
+
+test:
+	make test-create-retro-app \
+		test-pkg \
+		test-retro \
+		test-retro-router
+
+################################################################################
 
 build-postinstall:
 	yarn esbuild --outfile=bin/postinstall.js postinstall.ts
@@ -23,6 +45,8 @@ build:
 		build-darwin \
 		build-linux \
 		build-windows
+
+################################################################################
 
 clean:
 	rm bin/postinstall.js

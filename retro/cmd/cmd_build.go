@@ -1,4 +1,4 @@
-package main
+package cmd
 
 func (r Runtime) Build() {
 	check(copyAssetDirectoryToBuildDirectory(r.Config))

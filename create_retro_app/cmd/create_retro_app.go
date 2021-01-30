@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"bytes"
@@ -9,9 +9,9 @@ import (
 	"os"
 	p "path"
 
-	"github.com/zaydek/create-retro-app/loggers"
-	"github.com/zaydek/retro/create-retro-app/embeds"
+	"github.com/zaydek/retro/create_retro_app/embeds"
 	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/term"
 )

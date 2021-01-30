@@ -1,8 +1,7 @@
-package main
+package cmd
 
 import (
 	_ "embed"
-
 	"fmt"
 	"os"
 	"time"
@@ -11,13 +10,11 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func init() {
+func Start() {
 	//go:embed versions.txt
 	var text string
 	env.SetEnvVars(text)
-}
 
-func main() {
 	defer term.Revert(os.Stdout)
 
 	start := time.Now()

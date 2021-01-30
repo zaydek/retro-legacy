@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"flag"
@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/zaydek/create-retro-app/loggers"
+	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/term"
 )
 
