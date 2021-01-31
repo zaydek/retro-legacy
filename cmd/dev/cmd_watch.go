@@ -57,9 +57,6 @@ func (r Runtime) Watch() {
 
 	srvEvents := make(chan events.SSE, 8)
 
-	// TODO: Delete this line; simply server the asset directory so that changes
-	// to the directory are reflected in realtime and we don’t need to rebuild.
-	must(copyAssetDirectoryToBuildDirectory(r.Config))
 	r.esbuildBuild()
 
 	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
@@ -81,6 +78,7 @@ func (r Runtime) Watch() {
 	}()
 
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
+		// TODO: We probably don’t need this anymore, right?
 		if ext := p.Ext(req.URL.Path); ext != "" {
 			http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
 		}
@@ -123,6 +121,14 @@ func (r Runtime) Watch() {
 		// return
 
 		// http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
+	})
+
+	http.HandleFunc("/public/", func(w http.ResponseWriter, r *http.Request) {
+		path := fmt.Sprintf("./%s", r.URL.Path)
+		if p.Ext(r.URL.Path) == "" {
+			path += ".html"
+		}
+		http.ServeFile(w, r, path)
 	})
 
 	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {

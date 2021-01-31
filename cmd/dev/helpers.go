@@ -1,7 +1,7 @@
 package dev
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	p "path"
 	"path/filepath"
@@ -43,15 +43,12 @@ type copyPath struct {
 // copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
 // the build directory.
 func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
-	// TODO: We need to check for the presence of build/public and recursively
-	// delete if it exists. This is related to #19.
-
-	// path := p.Join(config.BuildDirectory, config.AssetDirectory)
-	// if _, err := os.Stat(path); os.IsExist(err) {
-	// 	if err := os.RemoveAll(path); err != nil {
-	// 		return errs.Unexpected(err)
-	// 	}
-	// }
+	path := p.Join(config.BuildDirectory, config.AssetDirectory)
+	if _, err := os.Stat(path); os.IsExist(err) {
+		if err := os.RemoveAll(path); err != nil {
+			return errs.Unexpected(err)
+		}
+	}
 
 	var paths []copyPath
 	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
@@ -71,22 +68,40 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 		errs.Walk(config.AssetDirectory, err)
 	}
 
+	//for _, each := range paths {
+	//	if dir := p.Dir(each.dst); dir != "." {
+	//		if err := os.MkdirAll(dir, perm.Directory); err != nil {
+	//			return errs.MkdirAll(dir, err)
+	//		}
+	//	}
+	//	bstr, err := os.ReadFile(each.src)
+	//	if err != nil {
+	//		return errs.ReadFile(each.src, err)
+	//	}
+	//	if err := ioutil.WriteFile(each.dst, bstr, perm.File); err != nil {
+	//		return errs.ReadFile(each.dst, err)
+	//	}
+	//}
+
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
 				return errs.MkdirAll(dir, err)
 			}
 		}
-	}
-
-	for _, each := range paths {
-		bstr, err := os.ReadFile(each.src)
+		src, err := os.Open(each.src)
 		if err != nil {
-			return errs.ReadFile(each.src, err)
+			return errs.Unexpected(err)
 		}
-		if err := ioutil.WriteFile(each.dst, bstr, perm.File); err != nil {
-			return errs.ReadFile(each.dst, err)
+		dst, err := os.Create(each.dst)
+		if err != nil {
+			return errs.Unexpected(err)
 		}
+		if _, err := io.Copy(dst, src); err != nil {
+			return errs.Unexpected(err)
+		}
+		src.Close()
+		dst.Close()
 	}
 	return nil
 }
