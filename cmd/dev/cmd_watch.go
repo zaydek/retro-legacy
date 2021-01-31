@@ -24,7 +24,7 @@ func (r *Runtime) esbuildBuild() {
 		},
 		EntryPoints: []string{p.Join(r.Config.PagesDirectory, "index.js")},
 		Incremental: true,
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
+		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 		Outfile:     p.Join(r.Config.BuildDirectory, "app.js"),
 		Write:       true,
 	})

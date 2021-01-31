@@ -40,8 +40,8 @@ type copyPath struct {
 	dst string
 }
 
-// copyAssetDirectoryToBuildDirectory recursively copies the asset directory to
-// the build directory.
+// copyAssetDirectoryToBuildDirectory destructively and recursively copies the
+// asset directory to the build directory.
 func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 	path := p.Join(config.BuildDirectory, config.AssetDirectory)
 	if _, err := os.Stat(path); os.IsExist(err) {
@@ -67,21 +67,6 @@ func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 	}); err != nil {
 		errs.Walk(config.AssetDirectory, err)
 	}
-
-	//for _, each := range paths {
-	//	if dir := p.Dir(each.dst); dir != "." {
-	//		if err := os.MkdirAll(dir, perm.Directory); err != nil {
-	//			return errs.MkdirAll(dir, err)
-	//		}
-	//	}
-	//	bstr, err := os.ReadFile(each.src)
-	//	if err != nil {
-	//		return errs.ReadFile(each.src, err)
-	//	}
-	//	if err := ioutil.WriteFile(each.dst, bstr, perm.File); err != nil {
-	//		return errs.ReadFile(each.dst, err)
-	//	}
-	//}
 
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {

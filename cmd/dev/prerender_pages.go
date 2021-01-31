@@ -90,7 +90,7 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
 		EntryPoints: []string{p.Join(r.Config.CacheDirectory, "pages.esbuild.js")},
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
+		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 	})
 	if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))

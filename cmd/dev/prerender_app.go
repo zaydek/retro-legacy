@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	p "path"
+	"strings"
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
@@ -22,7 +23,7 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
 // Pages
-` + buildRequireStmt(r.Router) + `
+` + strings.Join(require(r.Router), "\n") + `
 
 // Props
 const props = require("../{{ .Config.CacheDirectory }}/props.js").default
@@ -45,16 +46,19 @@ ReactDOM.hydrate(
 )
 `
 
+	src := p.Join(r.Config.CacheDirectory, "app.esbuild.js")
+	dst := p.Join(r.Config.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochUUID))
+
 	var buf bytes.Buffer
-	tmpl, err := template.New(p.Join(r.Config.CacheDirectory, "app.esbuild.js")).Parse(text)
+	tmpl, err := template.New(src).Parse(text)
 	if err != nil {
-		return errs.ParseTemplate(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), err)
+		return errs.ParseTemplate(src, err)
 	} else if err := tmpl.Execute(&buf, r); err != nil {
-		return errs.ExecuteTemplate(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), err)
+		return errs.ExecuteTemplate(tmpl.Name(), err)
 	}
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), buf.Bytes(), perm.File); err != nil {
-		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "app.esbuild.js"), err)
+	if err := ioutil.WriteFile(src, buf.Bytes(), perm.File); err != nil {
+		return errs.WriteFile(src, err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -63,16 +67,18 @@ ReactDOM.hydrate(
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{p.Join(r.Config.CacheDirectory, "app.esbuild.js")},
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
+		EntryPoints: []string{src},
+		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 	})
-	if len(results.Errors) > 0 {
+	// TODO
+	if len(results.Warnings) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+	} else if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	path := p.Join(r.Config.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochUUID))
-	if err := ioutil.WriteFile(path, results.OutputFiles[0].Contents, perm.File); err != nil {
-		return errs.WriteFile(path, err)
+	if err := ioutil.WriteFile(dst, results.OutputFiles[0].Contents, perm.File); err != nil {
+		return errs.WriteFile(dst, err)
 	}
 	return nil
 }
