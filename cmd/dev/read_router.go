@@ -87,8 +87,8 @@ func newPageBasedRoute(config DirConfiguration, src string) PageBasedRoute {
 	return route
 }
 
-// loadRouter loads the page-based router.
-func loadRouter(config DirConfiguration) ([]PageBasedRoute, error) {
+// readRouter reads the page-based router.
+func readRouter(config DirConfiguration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

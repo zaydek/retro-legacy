@@ -73,21 +73,20 @@ func parseServeArguments(arguments ...string) ServeCommand {
 }
 
 func ParseCLIArguments() interface{} {
-	if len(os.Args) < 2 {
+	// Cover []string{"retro"} case:
+	if len(os.Args) == 1 {
 		fmt.Println(usage)
 		os.Exit(0)
 	}
 
 	var cmd interface{}
 	switch os.Args[1] {
-
 	// $ retro version
 	case "version":
 		fallthrough
 	case "--version":
 		fmt.Println("TODO")
 		os.Exit(0)
-
 	// $ retro usage
 	case "usage":
 		fallthrough
@@ -98,28 +97,23 @@ func ParseCLIArguments() interface{} {
 	case "--help":
 		fmt.Println(usage)
 		os.Exit(0)
-
 	// $ retro watch
 	case "watch":
 		os.Setenv("NODE_ENV", "development")
 		cmd = parseWatchArguments(os.Args[2:]...)
-
 	// $ retro build
 	case "build":
 		os.Setenv("NODE_ENV", "production")
 		cmd = parseBuildArguments(os.Args[2:]...)
-
 	// $ retro serve
 	case "serve":
 		os.Setenv("NODE_ENV", "production")
 		cmd = parseServeArguments(os.Args[2:]...)
-
 	default:
 		loggers.Stderr.Println("Unrecognized command. " +
 			"Try " + term.Bold("retro help") + " for help.\n\n" +
 			usageOnly)
 		os.Exit(2)
 	}
-
 	return cmd
 }

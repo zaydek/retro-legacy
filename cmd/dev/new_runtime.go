@@ -1,17 +1,12 @@
 package dev
 
 import (
-	"os"
-
 	"github.com/google/uuid"
 	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/loggers"
 )
 
-// loadRuntime parses CLI arguments and the page-based routes.
-func loadRuntime() Runtime {
-	var err error
-
+func newRuntime() Runtime {
 	runtime := Runtime{
 		epochUUID: uuid.NewString(),
 		Config: DirConfiguration{
@@ -24,9 +19,15 @@ func loadRuntime() Runtime {
 
 	runtime.Command = cli.ParseCLIArguments()
 	if cmd := runtime.getCmd(); cmd == "watch" || cmd == "build" {
-		if runtime.Router, err = loadRouter(runtime.Config); err != nil {
-			loggers.Stderr.Println(err)
-			os.Exit(1)
+		var err error
+		if runtime.Router, err = readRouter(runtime.Config); err != nil {
+			loggers.Stderr.Fatalln(err)
+		}
+	}
+
+	if cmd := runtime.getCmd(); cmd == "watch" || cmd == "build" {
+		if err := runServerGuards(runtime.Config); err != nil {
+			loggers.Stderr.Fatalln(err)
 		}
 	}
 	return runtime

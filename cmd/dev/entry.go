@@ -10,21 +10,17 @@ import (
 )
 
 func Run() {
+	start := time.Now()
 	defer term.Revert(os.Stdout)
 
-	start := time.Now()
-
-	runtime := loadRuntime()
+	runtime := newRuntime()
 	switch cmd := runtime.getCmd(); cmd {
 	case "watch":
-		check(serverGuards(runtime.Config))
 		runtime.Watch()
 	case "build":
-		check(serverGuards(runtime.Config))
 		runtime.Build()
 	case "serve":
 		runtime.Serve()
 	}
-
 	fmt.Printf("⚡️ %0.3fs\n", time.Since(start).Seconds())
 }

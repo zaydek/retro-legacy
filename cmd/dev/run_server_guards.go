@@ -17,9 +17,9 @@ func statOrCreateDir(dir string) error {
 	return nil
 }
 
-// serverGuards runs server guards on the configuration.
-func serverGuards(config DirConfiguration) error {
-	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.CacheDirectory, config.BuildDirectory}
+// runServerGuards runs server guards on the configuration.
+func runServerGuards(config DirConfiguration) error {
+	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.BuildDirectory}
 	for _, each := range dirs {
 		if err := statOrCreateDir(each); err != nil {
 			return err

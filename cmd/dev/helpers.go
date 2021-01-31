@@ -5,6 +5,7 @@ import (
 	"os"
 	p "path"
 	"path/filepath"
+	"strconv"
 
 	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/errs"
@@ -25,6 +26,8 @@ func (r Runtime) getCmd() string {
 }
 
 // getPort gets the current port.
+//
+// TODO: Deprecate; prefer getPortStr.
 func (r Runtime) getPort() int {
 	if cmd := r.getCmd(); cmd == "watch" {
 		return r.Command.(cli.WatchCommand).Port
@@ -32,6 +35,16 @@ func (r Runtime) getPort() int {
 		return r.Command.(cli.ServeCommand).Port
 	}
 	return 0
+}
+
+// getPort gets the current port.
+func (r Runtime) getPortString() string {
+	if cmd := r.getCmd(); cmd == "watch" {
+		return strconv.Itoa(r.Command.(cli.WatchCommand).Port)
+	} else if cmd == "serve" {
+		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)
+	}
+	return ""
 }
 
 type copyPath struct {
