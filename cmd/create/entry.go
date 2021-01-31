@@ -7,14 +7,14 @@ import (
 )
 
 func Run() {
-	var cmd Command
-
-	var arg string
-	if len(os.Args) > 1 {
-		arg = os.Args[1]
+	// Cover []string{"create-retro-app"} case:
+	if len(os.Args) == 1 {
+		fmt.Println(usage)
+		os.Exit(0)
 	}
 
-	switch arg {
+	var cmd Command
+	switch os.Args[1] {
 	case "version":
 		fallthrough
 	case "--version":
@@ -32,6 +32,5 @@ func Run() {
 	default:
 		cmd = parseArguments(os.Args[1:]...)
 	}
-
 	cmd.CreateRetroApp()
 }
