@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	p "path"
+	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/pkg/errs"
@@ -26,49 +27,38 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Pages
-` + buildRequireStmt(r.Router) + `
+` + strings.Join(requires(r.Router), "\n") + `
 
 // Props
-const props = require("../` + r.Config.CacheDirectory + `/props.js").default
+` + fmt.Sprintf(`const props = require("%s").default, ../`+r.Config.CacheDirectory+"/props.js") + `
 
-async function asyncRun(requireStmtAsArray) {
+async function asyncRun(exports) {
 	const chain = []
-	for (const { fs_path, path, exports } of requireStmtAsArray) {
+	for (const { path, exports } of exports) {
 		const promise = new Promise(async resolve => {
-			const { Head, default: Page } = exports
-
-			// Resolve <Head {...props}>:
 			let head = ""
-			if (Head) {
- 				head = ReactDOMServer.renderToStaticMarkup(<Head {...props[path]} />)
+			if ("Head" in exports) {
+				const Component = exports.Head
+				head = ReactDOMServer.renderToStaticMarkup(
+					<Component {...props[path]} />
+				)
 			}
-			head = head.replace(/></g, ">\n\t\t<")
-			head = head.replace(/\/>/g, " />")
+			head = head
+				.replace(/></g, ">\n\t\t<")
+				.replace(/\/>/g, " />")
 
-			// Resolve <Page {...props}>:
-			let page = '<div id="root" data-reactroot=""></div>'
-			if (Page) {
+			let page = '<div id="root"></div>'
+			if ("default" in exports) {
+				const Component = exports.default
 				page = ReactDOMServer.renderToString(
 					<div id="root">
-						<Page {...props[path]} />
+						<Component {...props[path]} />
 					</div>
 				)
 			}
+
 			page += '\n\t\t<script src="/app.js"></script>'
-
-			// page += "		<script src="/app.js"></script>" +
-			// page += "		<script>" +
-			// page += "			const source = new EventSource("/sse")" +
-			// page += "			source.addEventListener("reload", e => {" +
-			// page += "				window.location.reload()" +
-			// page += "			})" +
-			// page += "			source.addEventListener("warning", e => {" +
-			// page += "				console.warn(JSON.parse(e.data))" +
-			// page += "			})" +
-			// page += "		</script>"
-			// page += "		"
-
-			resolve({ fs_path, path, head, page })
+			resolve({ path, head, page })
 		})
 		chain.push(promise)
 	}
@@ -76,11 +66,15 @@ async function asyncRun(requireStmtAsArray) {
 	console.log(JSON.stringify(resolvedAsArr, null, 2))
 }
 
-asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
+asyncRun([
+	` + strings.Join(exports(r.Router), ",\n\t") + `
+])
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), []byte(text), perm.File); err != nil {
-		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "pages.esbuild.js"), err)
+	src := p.Join(r.Config.CacheDirectory, "pages.esbuild.js")
+
+	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
+		return errs.WriteFile(src, err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -89,10 +83,13 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{p.Join(r.Config.CacheDirectory, "pages.esbuild.js")},
+		EntryPoints: []string{src},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 	})
-	if len(results.Errors) > 0 {
+	// TODO
+	if len(results.Warnings) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+	} else if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
@@ -107,21 +104,17 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 	}
 
 	for _, each := range pages {
-		var path string
-		path = each.FSPath[len(r.Config.PagesDirectory):]  // pages/page.js -> page.js
-		path = path[:len(path)-len(p.Ext(path))] + ".html" // page.js -> page.html
-		path = p.Join(r.Config.BuildDirectory, path)       // page.html -> build/page.html
-		if dir := p.Dir(path); dir != "." {
+		if dir := p.Dir(each.DstPath); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
 				return errs.MkdirAll(dir, err)
 			}
 		}
 		var buf bytes.Buffer
 		if err := base.Execute(&buf, each); err != nil {
-			return errs.ExecuteTemplate(path, err)
+			return errs.ExecuteTemplate(base.Name(), err)
 		}
-		if err := ioutil.WriteFile(path, buf.Bytes(), perm.File); err != nil {
-			return errs.WriteFile(path, err)
+		if err := ioutil.WriteFile(each.DstPath, buf.Bytes(), perm.File); err != nil {
+			return errs.WriteFile(each.DstPath, err)
 		}
 	}
 	return nil

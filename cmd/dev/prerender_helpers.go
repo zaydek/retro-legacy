@@ -24,8 +24,8 @@ func requires(routes []PageBasedRoute) []string {
 func exports(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
-		arr = append(arr, fmt.Sprintf(`{ path: %q, exports: %s }`,
-			each.Path, each.Component))
+		arr = append(arr, fmt.Sprintf(`{ srcPath: %q, dstPath: %q, path: %q, exports: %s }`,
+			each.SrcPath, each.DstPath, each.Path, each.Component))
 	}
 	return arr
 }

@@ -17,16 +17,13 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-// TODO: Can we embed PageBasedRoute here and simply add Head and Page?
 type prerenderedPage struct {
-	// TODO
-	FSPath string `json:"srcPath"`
+	SrcPath string `json:"srcPath"`
+	DstPath string `json:"dstPath"`
+	Path    string `json:"path"`
 
-	srcPath     string `json:"srcPath"`
-	DiskPathDst string `json:"diskPathDst"`
-	Path        string `json:"path"`
-	Head        string `json:"head"`
-	Page        string `json:"page"`
+	Head string `json:"head"`
+	Page string `json:"page"`
 }
 
 // TODO: May want to add some kind of scroll-restoration logic for SSE as well
@@ -42,8 +39,8 @@ func (r Runtime) prerenderPageAsBytes(base *template.Template, route PageBasedRo
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
-` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.SrcPath) + `
-const props = require("../` + r.Config.CacheDirectory + `/props.js").default
+` + fmt.Sprintf(`const %s = require("%s")`, route.Component, "../"+route.SrcPath) + `
+` + fmt.Sprintf(`const props = require("%s").default, ../`+r.Config.CacheDirectory+"/props.js") + `
 
 function run({ path, exports }) {
 	let head = ""
