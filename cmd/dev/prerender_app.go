@@ -23,7 +23,7 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
 // Pages
-` + strings.Join(require(r.Router), "\n") + `
+` + strings.Join(requires(r.Router), "\n") + `
 
 // Props
 const props = require("../{{ .Config.CacheDirectory }}/props.js").default

@@ -123,7 +123,6 @@ run(` + fmt.Sprintf(`{
 		EntryPoints: []string{p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 	})
-
 	// TODO
 	if len(results.Warnings) > 0 {
 		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Warnings))

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	p "path"
+	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/pkg/errs"
@@ -16,7 +17,7 @@ func (r Runtime) prerenderProps() error {
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 // Pages
-` + buildRequireStmt(r.Router) + `
+` + strings.Join(requires(r.Router), "\n") + `
 
 async function asyncRun(requireStmtAsArray) {
 	const chain = []
@@ -39,11 +40,16 @@ async function asyncRun(requireStmtAsArray) {
 	console.log(JSON.stringify(resolvedAsMap, null, 2))
 }
 
-asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
+asyncRun([
+	` + strings.Join(exports(r.Router), ",\n\t") + `
+])
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), []byte(text), perm.File); err != nil {
-		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.esbuild.js"), err)
+	src := p.Join(r.Config.CacheDirectory, "props.esbuild.js")
+	dst := p.Join(r.Config.CacheDirectory, "props.js")
+
+	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
+		return errs.WriteFile(src, err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -52,13 +58,18 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{p.Join(r.Config.CacheDirectory, "props.esbuild.js")},
+		EntryPoints: []string{src},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 	})
+	// TODO
+	if len(results.Warnings) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+	}
 	if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
+	// TODO
 	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
 	if err != nil {
 		return err
@@ -68,8 +79,8 @@ asyncRun(` + buildRequireStmtAsArray(r.Router) + `)
 
 export default ` + stdoutBuf.String())
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), contents, perm.File); err != nil {
-		return errs.WriteFile(p.Join(r.Config.CacheDirectory, "props.js"), err)
+	if err := ioutil.WriteFile(dst, contents, perm.File); err != nil {
+		return errs.WriteFile(dst, err)
 	}
 	return nil
 }
