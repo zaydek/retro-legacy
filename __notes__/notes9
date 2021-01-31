@@ -1,0 +1,1 @@
+Note: create-retro-app does not initialize NPM or Yarn dependencies or initialize git. These are intentional differences from Create React App because this use-case for CRA strikes me as heavy-handed.

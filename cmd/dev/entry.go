@@ -6,15 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/zaydek/retro/pkg/env"
 	"github.com/zaydek/retro/pkg/term"
 )
 
 func Run() {
-	//go:embed version.txt
-	var text string
-	env.SetEnvVars(text)
-
 	defer term.Revert(os.Stdout)
 
 	start := time.Now()

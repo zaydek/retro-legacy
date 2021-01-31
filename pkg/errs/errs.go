@@ -8,8 +8,11 @@ import (
 
 func MkdirAll(dir string, err error) error {
 	return fmt.Errorf("Failed to make directory "+term.Bold(dir)+". "+
-		"This is likely due to a permissions error. "+
-		"Try "+term.Boldf("rm -r %s", dir)+" or "+term.Boldf("sudo rm -r %s", dir)+" if that doesn’t work.\n\n"+
+		"Original error: %w", err)
+}
+
+func Chdir(dir string, err error) error {
+	return fmt.Errorf("Failed to open directory "+term.Bold(dir)+". "+
 		"Original error: %w", err)
 }
 
@@ -18,26 +21,33 @@ func Walk(dir string, err error) error {
 		"Original error: %w", err)
 }
 
+// TODO: Pass *os.File or fs.File here?
 func ReadFile(path string, err error) error {
 	return fmt.Errorf("Failed to read file "+term.Bold(path)+".\n\n"+
 		"Original error: %w", err)
 }
 
+// TODO: Pass *os.File or fs.File here?
 func WriteFile(path string, err error) error {
 	return fmt.Errorf("Failed to write file "+term.Bold(path)+".\n\n"+
 		"Original error: %w", err)
 }
 
+// TODO: Pass commandStr as an argument here?
 func RunNode(err error) error {
 	return fmt.Errorf("Failed to run Node.\n\n"+
 		"Original error: %w", err)
 }
 
+// TODO: Pass *template.Template as an argument, then use tmpl.Name() as a
+// shorthand.
 func ParseTemplate(name string, err error) error {
 	return fmt.Errorf("Failed to parse template "+term.Bold(name)+".\n\n"+
 		"Original error: %w", err)
 }
 
+// TODO: Pass *template.Template as an argument, then use tmpl.Name() as a
+// shorthand.
 func ExecuteTemplate(name string, err error) error {
 	return fmt.Errorf("Failed to execute template "+term.Bold(name)+".\n\n"+
 		"Original error: %w", err)

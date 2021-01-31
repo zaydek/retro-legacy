@@ -19,11 +19,6 @@ import (
 type copyPath struct{ src, dst string }
 
 func (cmd Command) CreateRetroApp() {
-	fsys := embeds.JavaScriptFS
-	if cmd.Template == "ts" {
-		fsys = embeds.TypeScriptFS
-	}
-
 	if cmd.Directory != "." {
 		if info, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
 			var typ string
@@ -32,15 +27,28 @@ func (cmd Command) CreateRetroApp() {
 			} else {
 				typ = "directory"
 			}
-			loggers.Stderr.Fatalln("Aborted. A " + typ + " named " + term.Bold(cmd.Directory) + " already exists.\n\n" +
-				"- " + term.Boldf("npx create-retro-app %s", cmd.Directory) + "\n\n" +
+			loggers.Stderr.Fatalln("Aborted. " +
+				"A " + typ + " named " + term.Bold(cmd.Directory) + " already exists.\n\n" +
+				"- " + term.Boldf("create-retro-app %s", increment(cmd.Directory)) + "\n\n" +
 				"Or\n\n" +
-				"- " + term.Boldf("rm -r %[1]s && npx create-retro-app %[1]s", cmd.Directory))
+				"- " + term.Boldf("rm -r %[1]s && create-retro-app %[1]s", cmd.Directory))
 		}
 
 		if err := os.MkdirAll(cmd.Directory, perm.Directory); err != nil {
 			loggers.Stderr.Fatalln(errs.MkdirAll(cmd.Directory, err))
 		}
+
+		if cmd.Directory != "." {
+			if err := os.Chdir(cmd.Directory); err != nil {
+				loggers.Stderr.Fatalln(errs.Chdir(cmd.Directory, err))
+			}
+			defer os.Chdir("..")
+		}
+	}
+
+	fsys := embeds.JavaScriptFS
+	if cmd.Template == "ts" {
+		fsys = embeds.TypeScriptFS
 	}
 
 	var paths []copyPath
@@ -58,6 +66,28 @@ func (cmd Command) CreateRetroApp() {
 	}); err != nil {
 		path := fmt.Sprintf("<embed:%s>", cmd.Template)
 		loggers.Stderr.Fatalln(errs.Walk(path, err))
+	}
+
+	var badPaths []string
+	for _, each := range paths {
+		if _, err := os.Stat(each.dst); !os.IsNotExist(err) {
+			badPaths = append(badPaths, each.dst)
+		}
+	}
+
+	if len(badPaths) > 0 {
+		var badPathsStr string
+		for x, each := range badPaths {
+			var sep string
+			if x > 0 {
+				sep = "\n"
+			}
+			badPathsStr += sep + "- " + term.Bold(each)
+		}
+		loggers.Stderr.Fatalln("Aborted. " +
+			"These paths must be removed and or renamed. " +
+			"Use " + term.Bold("rm -r paths") + " to remove them or " + term.Bold("mv src dst") + " to rename them.\n\n" +
+			badPathsStr)
 	}
 
 	for _, each := range paths {
@@ -83,20 +113,25 @@ func (cmd Command) CreateRetroApp() {
 
 	appName := cmd.Directory
 	if cmd.Directory == "." {
-		appName = "retro-app"
+		cwd, _ := os.Getwd()
+		appName = p.Base(cwd)
+	}
+
+	tmpl := embeds.JavaScriptPackageTemplate
+	if cmd.Template == "typescript" {
+		tmpl = embeds.TypeScriptPackageTemplate
 	}
 
 	dot := embeds.PackageDot{
-		AppName:            appName,
-		RetroVersion:       os.Getenv("RETRO_VERSION"),
-		RetroRouterVersion: os.Getenv("RETRO_ROUTER_VERSION"),
-		ReactVersion:       os.Getenv("REACT_VERSION"),
-		ReactDOMVersion:    os.Getenv("REACT_DOM_VERSION"),
+		AppName:           appName,
+		RetroVersion:      os.Getenv("RETRO_VERSION"),
+		ReactVersion:      os.Getenv("REACT_VERSION"),
+		TypesReactVersion: os.Getenv("TYPES_REACT_VERSION"),
 	}
 
 	var buf bytes.Buffer
-	if err := embeds.PackageTemplate.Execute(&buf, dot); err != nil {
-		loggers.Stderr.Fatalln(errs.ExecuteTemplate(embeds.PackageTemplate.Name(), err))
+	if err := tmpl.Execute(&buf, dot); err != nil {
+		loggers.Stderr.Fatalln(errs.ExecuteTemplate(tmpl.Name(), err))
 	}
 
 	path := p.Join(cmd.Directory, "package.json")
@@ -104,5 +139,9 @@ func (cmd Command) CreateRetroApp() {
 		loggers.Stderr.Fatalln(errs.WriteFile(path, err))
 	}
 
-	fmt.Printf(successfmt+"\n", appName)
+	if cmd.Directory == "." {
+		fmt.Printf(successFormat+"\n", appName)
+	} else {
+		fmt.Printf(successDirectoryFormat+"\n", appName)
+	}
 }

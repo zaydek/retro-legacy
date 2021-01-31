@@ -6,11 +6,9 @@
 		"serve": "retro serve"
 	},
 	"dependencies": {
-		"@zaydek/retro-router": "{{ .RetroRouterVersion }}",
+		"@zaydek/retro": "{{ .RetroVersion }}",
+		"@zaydek/retro-router": "{{ .RetroVersion }}",
 		"react": "{{ .ReactVersion }}",
-		"react-dom": "{{ .ReactDOMVersion }}"
-	},
-	"devDependencies": {
-		"@zaydek/retro": "{{ .RetroRouterVersion }}"
+		"react-dom": "{{ .ReactVersion }}"
 	}
 }

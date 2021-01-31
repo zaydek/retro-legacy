@@ -12,17 +12,29 @@ var usage = `
       --template=javascript  Use the JavaScript template (default)
       --template=typescript  Use the TypeScript template
 
-  ` + term.Bold("Documentation:") + `
-
-    ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
-
   ` + term.Bold("Repository:") + `
 
     ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
 `
 
-var successfmt = `
-  👾 Created Retro app ` + term.Bold("%[1]s") + `.
+var successFormat = `
+  👾 Successfully created ` + term.Bold("%[1]s") + `!
+
+  ` + term.Bold("npm") + `
+
+    1. npm
+    2. npm run watch
+
+  ` + term.Bold("yarn") + `
+
+    1. yarn
+    2. yarn watch
+
+  Happy hacking!
+`
+
+var successDirectoryFormat = `
+  👾 Successfully created ` + term.Bold("%[1]s") + `!
 
   ` + term.Bold("npm") + `
 

@@ -6,14 +6,17 @@ import (
 )
 
 type PackageDot struct {
-	AppName            string
-	RetroVersion       string
-	RetroRouterVersion string
-	ReactVersion       string
-	ReactDOMVersion    string
+	AppName           string
+	RetroVersion      string
+	ReactVersion      string
+	TypesReactVersion string
 }
 
-//go:embed common/package.json
-var package_ string
+//go:embed package.javascript.json
+var javaScriptPackage string
 
-var PackageTemplate = template.Must(template.New("package.json").Parse(package_))
+//go:embed package.typescript.json
+var typeScriptPackage string
+
+var JavaScriptPackageTemplate = template.Must(template.New("package.json").Parse(javaScriptPackage))
+var TypeScriptPackageTemplate = template.Must(template.New("package.json").Parse(typeScriptPackage))

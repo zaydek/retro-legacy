@@ -4,22 +4,17 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-
-	"github.com/zaydek/retro/pkg/env"
 )
 
 func Run() {
-	//go:embed version.txt
-	var text string
-	env.SetEnvVars(text)
+	var cmd Command
 
-	if len(os.Args) < 2 {
-		fmt.Println(usage)
-		os.Exit(0)
+	var arg string
+	if len(os.Args) > 1 {
+		arg = os.Args[1]
 	}
 
-	var cmd Command
-	switch os.Args[1] {
+	switch arg {
 	case "version":
 		fallthrough
 	case "--version":
