@@ -29,34 +29,9 @@ type prerenderedPage struct {
 	Page        string `json:"page"`
 }
 
-// parseBaseHTMLTemplate parses public/index.html as a text/template template.
-func (r Runtime) parseBaseHTMLTemplate() (*template.Template, error) {
-	bstr, err := ioutil.ReadFile(p.Join(r.Config.AssetDirectory, "index.html"))
-	if err != nil {
-		return nil, errs.ReadFile(p.Join(r.Config.AssetDirectory, "index.html"), err)
-	}
-
-	text := string(bstr)
-	if !strings.Contains(text, "{{ .Head }}") {
-		return nil, errors.New("No such template tag " + term.Bold("{{ .Head }}") + ". " +
-			"This is the entry point for the " + term.Bold("<Head>") + " component in your page components. " +
-			"Add " + term.Bold("{{ .Head }}") + " to " + term.Bold("<head>") + ".")
-	} else if !strings.Contains(text, "{{ .Page }}") {
-		return nil, errors.New("No such template tag " + term.Bold("{{ .Page }}") + ". " +
-			"This is the entry point for the " + term.Bold("<Page>") + " component in your page components. " +
-			"Add " + term.Bold("{{ .Page }}") + " to " + term.Bold("<body>") + ".")
-	}
-
-	base, err := template.New(p.Join(r.Config.AssetDirectory, "index.html")).Parse(text)
-	if err != nil {
-		return nil, errs.ParseTemplate(p.Join(r.Config.AssetDirectory, "index.html"), err)
-	}
-	return base, nil
-}
-
 // TODO: May want to add some kind of scroll-restoration logic for SSE as well
 // as disconnected SSE to stop retrying. Can try retry -1 for example.
-func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) ([]byte, error) {
+func (r Runtime) prerenderPageAsBytes(base *template.Template, route PageBasedRoute) ([]byte, error) {
 	if _, err := os.Stat(p.Join(r.Config.CacheDirectory, "props.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + term.Bold("--cached") + " and try again.")
@@ -70,11 +45,12 @@ import ReactDOMServer from "react-dom/server"
 ` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.SrcPath) + `
 const props = require("../` + r.Config.CacheDirectory + `/props.js").default
 
-function run({ path, Head, Page, ...etc }) {
+function run({ path, exports }) {
 	let head = ""
-	if (Head) {
+	if ("Head" in exports) {
+		const Component = exports.Head
 		head = ReactDOMServer.renderToStaticMarkup(
-			<Head {...props[path]} />
+			<Component {...props[path]} />
 		)
 	}
 	head = head
@@ -82,10 +58,11 @@ function run({ path, Head, Page, ...etc }) {
 		.replace(/\/>/g, " />")
 
 	let page = '<div id="root"></div>'
-	if (Page) {
+	if ("default" in exports) {
+		const Component = exports.default
 		page = ReactDOMServer.renderToString(
 			<div id="root">
-				<Page {...props[path]} />
+				<Component {...props[path]} />
 			</div>
 		)
 	}
@@ -101,17 +78,15 @@ function run({ path, Head, Page, ...etc }) {
 	console.log(JSON.stringify({ ...etc, head, page }))
 }
 
-run(` + fmt.Sprintf(`{
-	srcPath: %q,
-	dstPath: %q,
-	path: %q,
-	Head: %[4]s.Head,
-	Page: %[4]s.default,
-}`, route.SrcPath, route.DstPath, route.Path, route.Component) + `)
+run([
+	` + strings.Join(exports(r.Router), ",\n\t") + `
+])
 `
 
-	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), []byte(text), perm.File); err != nil {
-		return nil, errs.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), err)
+	src := p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
+
+	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
+		return nil, errs.WriteFile(src, err)
 	}
 
 	results := api.Build(api.BuildOptions{
@@ -120,16 +95,17 @@ run(` + fmt.Sprintf(`{
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))},
+		EntryPoints: []string{src},
 		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
 		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
-	}
-	if len(results.Errors) > 0 {
+	} else if len(results.Errors) > 0 {
 		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
+
+	var buf bytes.Buffer
 
 	// TODO: It would also be nice if we can automatically unmarshal the return nil, of
 	// Node since we’re only using Node for IPC processes.
@@ -137,24 +113,13 @@ run(` + fmt.Sprintf(`{
 	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
 	if err != nil {
 		return nil, err
-	}
-
-	if err := json.Unmarshal(stdoutBuf.Bytes(), &page); err != nil {
+	} else if err := json.Unmarshal(stdoutBuf.Bytes(), &page); err != nil {
 		return nil, errs.Unexpected(err)
 	}
 
-	var buf bytes.Buffer
 	if err := base.Execute(&buf, page); err != nil {
-		return nil, errs.ExecuteTemplate(fmt.Sprintf("<%s:%s>", base.Name(), route.Component), err)
+		return nil, errs.ExecuteTemplate(base.Name(), err)
 	}
 
 	return buf.Bytes(), nil
-
-	// // TODO: Can we combine these functions?
-	// if err := os.MkdirAll(p.Dir(page.DiskPathDst), perm.Directory); err != nil {
-	// 	return errs.MkdirAll(p.Dir(page.DiskPathDst), err)
-	// } else if err := ioutil.WriteFile(page.DiskPathDst, buf.Bytes(), perm.File); err != nil {
-	// 	return errs.WriteFile(page.DiskPathDst, err)
-	// }
-	// return nil
 }
