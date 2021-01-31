@@ -45,7 +45,7 @@ func newRuntime() Runtime {
 	runtime.Command = cli.ParseCLIArguments()
 	if cmd := runtime.getCmd(); cmd == "watch" || cmd == "build" {
 		var err error
-		if runtime.Router, err = readRouter(runtime.Config); err != nil {
+		if runtime.Router, err = newRouter(runtime.Config); err != nil {
 			loggers.Stderr.Fatalln(err)
 		}
 	}

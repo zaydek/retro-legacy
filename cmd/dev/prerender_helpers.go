@@ -19,10 +19,10 @@ import (
 
 // TODO: Can we embed PageBasedRoute here and simply add Head and Page?
 type prerenderedPage struct {
-	FSPath string `json:"fs_path"`
-
 	// TODO
-	DiskPathSrc string `json:"diskPathSrc"`
+	FSPath string `json:"srcPath"`
+
+	srcPath     string `json:"srcPath"`
 	DiskPathDst string `json:"diskPathDst"`
 	Path        string `json:"path"`
 	Head        string `json:"head"`
@@ -38,7 +38,7 @@ func buildRequireStmt(routes []PageBasedRoute) string {
 			sep = "\n"
 		}
 		requireStmt += sep + fmt.Sprintf(`const %s = require("../%s")`,
-			each.Component, each.FSPath)
+			each.Component, each.SrcPath)
 	}
 	return requireStmt
 }
@@ -48,8 +48,8 @@ func buildRequireStmt(routes []PageBasedRoute) string {
 func buildRequireStmtAsArray(routes []PageBasedRoute) string {
 	var requireStmtAsArray string
 	for _, each := range routes {
-		requireStmtAsArray += "\n\t" + fmt.Sprintf(`{ fs_path: %q, path: %q, exports: %s },`,
-			each.FSPath, each.Path, each.Component)
+		requireStmtAsArray += "\n\t" + fmt.Sprintf(`{ srcPath: %q, path: %q, exports: %s },`,
+			each.SrcPath, each.Path, each.Component)
 	}
 	requireStmtAsArray = "[" + requireStmtAsArray + "\n]"
 	return requireStmtAsArray
@@ -93,7 +93,7 @@ func (r Runtime) prerenderPage(base *template.Template, route PageBasedRoute) ([
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
-` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.FSPath) + `
+` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.SrcPath) + `
 const props = require("../` + r.Config.CacheDirectory + `/props.js").default
 
 function run({ path, Head, Page, ...etc }) {
@@ -128,12 +128,12 @@ function run({ path, Head, Page, ...etc }) {
 }
 
 run(` + fmt.Sprintf(`{
-	diskPathSrc: %q,
-	diskPathDst: %q,
+	srcPath: %q,
+	dstPath: %q,
 	path: %q,
 	Head: %[4]s.Head,
 	Page: %[4]s.default,
-}`, route.DiskPathSrc, route.DiskPathDst, route.Path, route.Component) + `)
+}`, route.SrcPath, route.DstPath, route.Path, route.Component) + `)
 `
 
 	if err := ioutil.WriteFile(p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component)), []byte(text), perm.File); err != nil {
