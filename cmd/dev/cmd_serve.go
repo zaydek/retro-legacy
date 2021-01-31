@@ -16,8 +16,8 @@ func (r Runtime) Serve() {
 			"Try " + term.Bold("retro build && retro serve") + ".")
 	}
 
-	fmt.Printf("👾 http://localhost:%s\n", r.getPortString())
+	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
 
 	http.Handle("/", http.FileServer(http.Dir(r.Config.BuildDirectory)))
-	check(http.ListenAndServe(":"+r.getPortString(), nil))
+	must(http.ListenAndServe(":"+r.getPort(), nil))
 }

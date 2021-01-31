@@ -48,21 +48,21 @@ func (r *Runtime) esbuildRebuild() {
 func (r Runtime) Watch() {
 	// // if r.WatchCommand.Cached
 	if err := r.prerenderProps(); err != nil {
-		loggers.Stderr.Println(err)
-		os.Exit(1)
+		loggers.Stderr.Fatalln(err)
 	}
 	base, err := r.parseBaseHTMLTemplate()
 	if err != nil {
-		loggers.Stderr.Println(err)
-		os.Exit(1)
+		loggers.Stderr.Fatalln(err)
 	}
 
 	srvEvents := make(chan events.SSE, 8)
 
-	check(copyAssetDirectoryToBuildDirectory(r.Config))
+	// TODO: Delete this line; simply server the asset directory so that changes
+	// to the directory are reflected in realtime and we don’t need to rebuild.
+	must(copyAssetDirectoryToBuildDirectory(r.Config))
 	r.esbuildBuild()
 
-	fmt.Printf("👾 http://localhost:%d\n", r.getPort())
+	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
 
 	if len(r.esbuildWarnings) > 0 {
 		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
@@ -106,8 +106,7 @@ func (r Runtime) Watch() {
 		bstr, err := r.prerenderPage(base, r.Router[0])
 		if err != nil {
 			// TODO
-			loggers.Stderr.Println(err)
-			os.Exit(1)
+			loggers.Stderr.Fatalln(err)
 		}
 		wr.Write(bstr)
 
@@ -133,8 +132,7 @@ func (r Runtime) Watch() {
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 			// TODO: Change to a warning.
-			loggers.Stderr.Println("Your browser does not support server-sent events (SSE).")
-			os.Exit(1)
+			loggers.Stderr.Fatalln("Your browser does not support server-sent events (SSE).")
 			return
 		}
 		for {
@@ -149,8 +147,7 @@ func (r Runtime) Watch() {
 		}
 	})
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", r.getPort()), nil); err != nil {
-		loggers.Stderr.Println(err)
-		os.Exit(1)
+	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
+		loggers.Stderr.Fatalln(err)
 	}
 }

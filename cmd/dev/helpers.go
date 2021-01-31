@@ -26,19 +26,7 @@ func (r Runtime) getCmd() string {
 }
 
 // getPort gets the current port.
-//
-// TODO: Deprecate; prefer getPortStr.
-func (r Runtime) getPort() int {
-	if cmd := r.getCmd(); cmd == "watch" {
-		return r.Command.(cli.WatchCommand).Port
-	} else if cmd == "serve" {
-		return r.Command.(cli.ServeCommand).Port
-	}
-	return 0
-}
-
-// getPort gets the current port.
-func (r Runtime) getPortString() string {
+func (r Runtime) getPort() string {
 	if cmd := r.getCmd(); cmd == "watch" {
 		return strconv.Itoa(r.Command.(cli.WatchCommand).Port)
 	} else if cmd == "serve" {
@@ -57,6 +45,13 @@ type copyPath struct {
 func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
 	// TODO: We need to check for the presence of build/public and recursively
 	// delete if it exists. This is related to #19.
+
+	// path := p.Join(config.BuildDirectory, config.AssetDirectory)
+	// if _, err := os.Stat(path); os.IsExist(err) {
+	// 	if err := os.RemoveAll(path); err != nil {
+	// 		return errs.Unexpected(err)
+	// 	}
+	// }
 
 	var paths []copyPath
 	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {

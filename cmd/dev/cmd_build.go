@@ -1,8 +1,8 @@
 package dev
 
 func (r Runtime) Build() {
-	check(copyAssetDirectoryToBuildDirectory(r.Config))
-	check(r.prerenderProps())
-	check(r.prerenderApp())
-	check(r.prerenderPages())
+	must(copyAssetDirectoryToBuildDirectory(r.Config))
+	must(r.prerenderProps())
+	must(r.prerenderApp())
+	must(r.prerenderPages())
 }
