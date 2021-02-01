@@ -1,4 +1,4 @@
-bin-cra:
+bin-create-retro-app:
 	go build -o=create-retro-app create.go && mv create-retro-app /usr/local/bin/
 
 bin-retro:
@@ -6,12 +6,12 @@ bin-retro:
 
 bin:
 	make -j2 \
-		bin-cra \
+		bin-create-retro-app \
 		bin-retro
 
 ################################################################################
 
-test-cra:
+test-create-retro-app:
 	go test ./cmd/create/...
 
 test-retro:
@@ -20,13 +20,13 @@ test-retro:
 test-pkg:
 	go test ./pkg/...
 
-test-router:
-	(cd retro-router && yarn test) || cd ..
-
 test-go:
-	make test-cra
+	make test-create-retro-app
 	make test-retro
 	make test-pkg
+
+test-router:
+	(cd retro-router && yarn test) || cd ..
 
 test:
 	make test-go
@@ -47,19 +47,41 @@ build-retro:
 	BINARY=retro yarn --silent esbuild --outfile=npm/retro/bin/postinstall.js postinstall.ts
 
 build:
-	make -j2 \
-		build-create-retro-app \
+	make -j2
+		build-create-retro-app
 		build-retro
+	cd npm/retro-router && yarn build
 
 ################################################################################
 
+version-patch:
+	cd npm/create-retro-app && npm version patch
+	cd npm/retro && npm version patch
+	cd npm/retro-router && npm version patch
+
+version-minor:
+	cd npm/create-retro-app && npm version minor
+	cd npm/retro && npm version minor
+	cd npm/retro-router && npm version minor
+
+version-major:
+	cd npm/create-retro-app && npm version major
+	cd npm/retro && npm version major
+	cd npm/retro-router && npm version major
+
+################################################################################
+
+release-dry-run:
+	cd npm/create-retro-app && npm publish --dry-run
+	cd npm/retro && npm publish --dry-run
+	cd npm/retro-router && npm publish --dry-run
+
 release:
-	echo TODO
+	cd npm/create-retro-app && npm publish
+	cd npm/retro && npm publish
+	cd npm/retro-router && npm publish
 
 ################################################################################
 
 clean:
-	rm bin/postinstall.js
-	rm bin/darwin-64
-	rm bin/linux-64
-	rm bin/windows-64.exe
+	echo TODO
