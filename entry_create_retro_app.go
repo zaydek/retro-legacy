@@ -2,15 +2,16 @@ package main
 
 import (
 	_ "embed"
+	"os"
+	"strings"
 
 	"github.com/zaydek/retro/cmd/create"
-	"github.com/zaydek/retro/pkg/env"
 )
 
 func main() {
 	//go:embed version.txt
-	var text string
-	env.SetEnvVars(text)
+	var v string
+	os.Setenv("RETRO_VERSION", strings.TrimSpace(v))
 
 	create.Run()
 }

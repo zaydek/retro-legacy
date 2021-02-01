@@ -15,8 +15,7 @@ var usage = `
     ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
 `
 
-// TODO: Change to loggers.Stdout.Println.
-var successFormat = `Created ` + term.Bold("%[1]s") + `!
+var successFormat = `Successfully created ` + term.Bold("%[1]s") + `.
 
 ` + term.Bold("npm") + `
 
@@ -30,7 +29,7 @@ var successFormat = `Created ` + term.Bold("%[1]s") + `!
 
 Happy hacking!`
 
-var successDirectoryFormat = `Created ` + term.Bold("%[1]s") + `!
+var successDirectoryFormat = `Successfully created ` + term.Bold("%[1]s") + `.
 
 ` + term.Bold("npm") + `
 

@@ -117,10 +117,8 @@ func (cmd Command) CreateRetroApp() {
 	}
 
 	dot := embeds.PackageDot{
-		AppName:           appName,
-		RetroVersion:      os.Getenv("RETRO_VERSION"),
-		ReactVersion:      os.Getenv("REACT_VERSION"),
-		TypesReactVersion: os.Getenv("TYPES_REACT_VERSION"),
+		AppName:      appName,
+		RetroVersion: os.Getenv("RETRO_VERSION"),
 	}
 
 	var buf bytes.Buffer

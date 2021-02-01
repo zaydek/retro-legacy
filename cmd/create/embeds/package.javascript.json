@@ -1,14 +1,14 @@
 {
 	"name": "{{ .AppName }}",
 	"scripts": {
-		"watch": "retro watch",
+		"start": "retro start",
 		"build": "retro build",
 		"serve": "retro serve"
 	},
 	"dependencies": {
-		"@zaydek/retro": "{{ .RetroVersion }}",
-		"@zaydek/retro-router": "{{ .RetroVersion }}",
-		"react": "{{ .ReactVersion }}",
-		"react-dom": "{{ .ReactVersion }}"
+		"@zaydek/retro": "^{{ .RetroVersion }}",
+		"@zaydek/retro-router": "^{{ .RetroVersion }}",
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1"
 	}
 }

@@ -16,16 +16,14 @@ func TestJavaScriptTemplate(t *testing.T) {
 	"dependencies": {
 		"@zaydek/retro": "^1.33.7",
 		"@zaydek/retro-router": "^1.33.7",
-		"react": "^1.33.7",
-		"react-dom": "^1.33.7"
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1"
 	}
 }
 `
 
 	dot := PackageDot{
-		AppName:      "app-name",
-		RetroVersion: "^1.33.7",
-		ReactVersion: "^1.33.7",
+		AppName: "app-name",
 	}
 	var buf bytes.Buffer
 	if err := JavaScriptPackageTemplate.Execute(&buf, dot); err != nil {
@@ -47,21 +45,19 @@ func TestTypeScriptTemplate(t *testing.T) {
 	"dependencies": {
 		"@zaydek/retro": "^1.33.7",
 		"@zaydek/retro-router": "^1.33.7",
-		"react": "^1.33.7",
-		"react-dom": "^1.33.7"
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1"
 	},
 	"devDependencies": {
-		"@types/react": "^1.33.7",
-		"@types/react-dom": "^1.33.7"
+		"@types/react": "^17.0.0",
+		"@types/react-dom": "^17.0.0"
 	}
 }
 `
 
 	dot := PackageDot{
-		AppName:           "app-name",
-		RetroVersion:      "^1.33.7",
-		ReactVersion:      "^1.33.7",
-		TypesReactVersion: "^1.33.7",
+		AppName:      "app-name",
+		RetroVersion: "^1.33.7",
 	}
 	var buf bytes.Buffer
 	if err := TypeScriptPackageTemplate.Execute(&buf, dot); err != nil {

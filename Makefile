@@ -1,13 +1,15 @@
-bin-create-retro-app:
-	go build -o=create-retro-app create.go && mv create-retro-app /usr/local/bin/
+RETRO_VERSION = $(shell cat version.txt)
 
-bin-retro:
-	go build -o=retro dev.go && mv retro /usr/local/bin/
+local-bin-create-retro-app:
+	go build -o=create-retro-app entry_create_retro_app.go && mv create-retro-app /usr/local/bin/
 
-bin:
+local-bin-retro:
+	go build -o=retro entry_retro.go && mv retro /usr/local/bin/
+
+local-bin:
 	make -j2 \
-		bin-create-retro-app \
-		bin-retro
+		local-bin-create-retro-app \
+		local-bin-retro
 
 ################################################################################
 
@@ -26,7 +28,7 @@ test-go:
 	make test-pkg
 
 test-router:
-	(cd retro-router && yarn test) || cd ..
+	cd retro-router/ && yarn test
 
 test:
 	make test-go
@@ -35,51 +37,41 @@ test:
 ################################################################################
 
 build-create-retro-app:
-	GOOS=darwin GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/create-retro-app/bin/darwin-64 create.go
-	GOOS=linux GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/create-retro-app/bin/linux-64 create.go
-	GOOS=windows GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/create-retro-app/bin/windows-64.exe create.go
-	BINARY=create-retro-app yarn --silent esbuild --outfile=npm/create-retro-app/bin/postinstall.js postinstall.ts
+	GOOS=darwin  GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/create-retro-app/bin/darwin-64 entry_create_retro_app.go
+	GOOS=linux   GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/create-retro-app/bin/linux-64 entry_create_retro_app.go
+	GOOS=windows GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/create-retro-app/bin/windows-64.exe entry_create_retro_app.go
+	touch npm/create-retro-app/bin/create-retro-app
 
 build-retro:
-	GOOS=darwin GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/darwin-64 dev.go
-	GOOS=linux GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/linux-64 dev.go
-	GOOS=windows GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/windows-64.exe dev.go
-	BINARY=retro yarn --silent esbuild --outfile=npm/retro/bin/postinstall.js postinstall.ts
+	GOOS=darwin  GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/darwin-64 entry_retro.go
+	GOOS=linux   GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/linux-64 entry_retro.go
+	GOOS=windows GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/windows-64.exe entry_retro.go
+	touch npm/retro/bin/retro
 
 build:
 	make -j2 \
 		build-create-retro-app \
 		build-retro
-	cd npm/retro-router && yarn build
+	cd npm/retro-router/ && yarn -s build
 
 ################################################################################
 
-version-patch:
-	cd npm/create-retro-app && npm version patch
-	cd npm/retro && npm version patch
-	cd npm/retro-router && npm version patch
-
-version-minor:
-	cd npm/create-retro-app && npm version minor
-	cd npm/retro && npm version minor
-	cd npm/retro-router && npm version minor
-
-version-major:
-	cd npm/create-retro-app && npm version major
-	cd npm/retro && npm version major
-	cd npm/retro-router && npm version major
+version:
+	cd npm/create-retro-app/ && npm version "$(RETRO_VERSION)" --allow-same-version
+	cd npm/retro/ && npm version "$(RETRO_VERSION)" --allow-same-version
+	cd npm/retro-router/ && npm version "$(RETRO_VERSION)" --allow-same-version
 
 ################################################################################
 
 release-dry-run:
-	cd npm/create-retro-app && npm publish --dry-run
-	cd npm/retro && npm publish --dry-run
-	cd npm/retro-router && npm publish --dry-run
+	cd npm/create-retro-app/ && npm publish --dry-run
+	cd npm/retro/ && npm publish --dry-run
+	cd npm/retro-router/ && npm publish --dry-run
 
 release:
-	cd npm/create-retro-app && npm publish
-	cd npm/retro && npm publish
-	cd npm/retro-router && npm publish
+	cd npm/create-retro-app/ && npm publish
+	cd npm/retro/ && npm publish
+	cd npm/retro-router/ && npm publish
 
 ################################################################################
 
