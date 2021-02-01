@@ -16,36 +16,32 @@ var usage = `
 `
 
 // TODO: Change to loggers.Stdout.Println.
-var successFormat = `
-  Successfully created ` + term.Bold("%[1]s") + `!
+var successFormat = `Created ` + term.Bold("%[1]s") + `!
 
-  ` + term.Bold("npm") + `
+` + term.Bold("npm") + `
 
-    1. npm
-    2. npm run watch
+  1. npm
+  2. npm run watch
 
-  ` + term.Bold("yarn") + `
+` + term.Bold("yarn") + `
 
-    1. yarn
-    2. yarn watch
+  1. yarn
+  2. yarn watch
 
-  Happy hacking!
-`
+Happy hacking!`
 
-var successDirectoryFormat = `
-  Successfully created ` + term.Bold("%[1]s") + `!
+var successDirectoryFormat = `Created ` + term.Bold("%[1]s") + `!
 
-  ` + term.Bold("npm") + `
+` + term.Bold("npm") + `
 
-    1. cd %[1]s
-    2. npm
-    3. npm run watch
+  1. cd %[1]s
+  2. npm
+  3. npm run watch
 
-  ` + term.Bold("yarn") + `
+` + term.Bold("yarn") + `
 
-    1. cd %[1]s
-    2. yarn
-    3. yarn watch
+  1. cd %[1]s
+  2. yarn
+  3. yarn watch
 
-  Happy hacking!
-`
+Happy hacking!`

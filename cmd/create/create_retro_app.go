@@ -16,8 +16,6 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-type copyPath struct{ src, dst string }
-
 func (cmd Command) CreateRetroApp() {
 	if cmd.Directory != "." {
 		if info, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
@@ -38,12 +36,10 @@ func (cmd Command) CreateRetroApp() {
 			loggers.Stderr.Fatalln(errs.MkdirAll(cmd.Directory, err))
 		}
 
-		if cmd.Directory != "." {
-			if err := os.Chdir(cmd.Directory); err != nil {
-				loggers.Stderr.Fatalln(errs.Chdir(cmd.Directory, err))
-			}
-			defer os.Chdir("..")
+		if err := os.Chdir(cmd.Directory); err != nil {
+			loggers.Stderr.Fatalln(errs.Chdir(cmd.Directory, err))
 		}
+		defer os.Chdir("..")
 	}
 
 	fsys := embeds.JavaScriptFS
@@ -51,16 +47,14 @@ func (cmd Command) CreateRetroApp() {
 		fsys = embeds.TypeScriptFS
 	}
 
-	var paths []copyPath
+	var paths []string
 	if err := fs.WalkDir(fsys, ".", func(path string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !dirEntry.IsDir() {
-			src := path
-			dst := p.Join(cmd.Directory, path)
-			paths = append(paths, copyPath{src: src, dst: dst})
+			paths = append(paths, path)
 		}
 		return nil
 	}); err != nil {
@@ -70,8 +64,8 @@ func (cmd Command) CreateRetroApp() {
 
 	var badPaths []string
 	for _, each := range paths {
-		if _, err := os.Stat(each.dst); !os.IsNotExist(err) {
-			badPaths = append(badPaths, each.dst)
+		if _, err := os.Stat(each); !os.IsNotExist(err) {
+			badPaths = append(badPaths, each)
 		}
 	}
 
@@ -91,16 +85,16 @@ func (cmd Command) CreateRetroApp() {
 	}
 
 	for _, each := range paths {
-		if dir := p.Dir(each.dst); dir != "." {
+		if dir := p.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
 				loggers.Stderr.Fatalln(errs.MkdirAll(dir, err))
 			}
 		}
-		src, err := fsys.Open(each.src)
+		src, err := fsys.Open(each)
 		if err != nil {
 			loggers.Stderr.Fatalln(errs.Unexpected(err))
 		}
-		dst, err := os.Create(each.dst)
+		dst, err := os.Create(each)
 		if err != nil {
 			loggers.Stderr.Fatalln(errs.Unexpected(err))
 		}
@@ -134,14 +128,13 @@ func (cmd Command) CreateRetroApp() {
 		loggers.Stderr.Fatalln(errs.ExecuteTemplate(tmpl.Name(), err))
 	}
 
-	path := p.Join(cmd.Directory, "package.json")
-	if err := ioutil.WriteFile(path, buf.Bytes(), perm.File); err != nil {
-		loggers.Stderr.Fatalln(errs.WriteFile(path, err))
+	if err := ioutil.WriteFile("package.json", buf.Bytes(), perm.File); err != nil {
+		loggers.Stderr.Fatalln(errs.WriteFile("package.json", err))
 	}
 
 	if cmd.Directory == "." {
-		fmt.Printf(successFormat+"\n", appName)
+		loggers.Stdout.Println(fmt.Sprintf(successFormat, appName))
 	} else {
-		fmt.Printf(successDirectoryFormat+"\n", appName)
+		loggers.Stdout.Println(fmt.Sprintf(successDirectoryFormat, appName))
 	}
 }

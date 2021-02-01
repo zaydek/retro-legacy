@@ -17,8 +17,6 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-// TODO: May want to add some kind of scroll-restoration logic for SSE as well
-// as disconnected SSE to stop retrying. Can try retry -1 for example.
 func (r Runtime) RenderPageAsBytes(route PageBasedRoute) ([]byte, error) {
 	if _, err := os.Stat(p.Join(r.DirConfiguration.CacheDirectory, "props.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +

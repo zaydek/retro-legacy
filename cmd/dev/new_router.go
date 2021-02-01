@@ -59,15 +59,18 @@ func componentCase(basename string) string {
 func newPageBasedRoute(config DirectoryConfiguration, path string) PageBasedRoute {
 	var src, dst string
 
-	src = p.Join(config.PagesDirectory, path)
-	dst = p.Join(config.BuildDirectory, path)
+	// Get the basename from pages/*.
+	basename := path[len(config.PagesDirectory):]
+
+	src = p.Join(config.PagesDirectory, basename)
+	dst = p.Join(config.BuildDirectory, basename)
 	dst = dst[:len(dst)-len(p.Ext(dst))] + ".html"
 
 	route := PageBasedRoute{
 		SrcPath:   src,
 		DstPath:   dst,
-		Path:      pathCase(path),
-		Component: componentCase(path),
+		Path:      pathCase(basename),
+		Component: componentCase(basename),
 	}
 	return route
 }
