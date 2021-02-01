@@ -47,8 +47,8 @@ build-retro:
 	BINARY=retro yarn --silent esbuild --outfile=npm/retro/bin/postinstall.js postinstall.ts
 
 build:
-	make -j2
-		build-create-retro-app
+	make -j2 \
+		build-create-retro-app \
 		build-retro
 	cd npm/retro-router && yarn build
 
@@ -84,4 +84,6 @@ release:
 ################################################################################
 
 clean:
-	echo TODO
+	rm -rf npm/create-retro-app/bin/ npm/create-retro-app/dist/
+	rm -rf npm/retro/bin/ npm/retro/dist/
+	rm -rf npm/retro-router/bin/ npm/retro-router/dist/
