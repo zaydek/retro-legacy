@@ -9,6 +9,13 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
+func (r Runtime) Build() {
+	must(copyAssetDirectoryToBuildDirectory(r.Config))
+	must(r.prerenderProps())
+	must(r.prerenderApp())
+	must(r.prerenderPages())
+}
+
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.Config.BuildDirectory); os.IsNotExist(err) {
 		loggers.Stderr.Fatalln("Failed to stat directory " + term.Bold(r.Config.BuildDirectory) + ". " +

@@ -61,10 +61,10 @@ func (r Runtime) Watch() {
 
 	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
 
+	// TODO
 	if len(r.esbuildWarnings) > 0 {
 		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
-	}
-	if len(r.esbuildErrors) > 0 {
+	} else if len(r.esbuildErrors) > 0 {
 		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
 	}
 
@@ -73,6 +73,7 @@ func (r Runtime) Watch() {
 		cmd := r.Command.(cli.WatchCommand)
 		for range watcher.New(cmd.Paths[0], cmd.Poll) {
 			r.esbuildRebuild()
+			// TODO: Add retry here.
 			srvEvents <- events.SSE{Event: "reload"}
 		}
 	}()
@@ -82,6 +83,7 @@ func (r Runtime) Watch() {
 		if ext := p.Ext(req.URL.Path); ext != "" {
 			http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
 		}
+		// TODO
 		r.esbuildRebuild()
 		if len(r.esbuildWarnings) > 0 {
 			// TODO
@@ -92,8 +94,7 @@ func (r Runtime) Watch() {
 				time.Sleep(100 * time.Millisecond)
 				srvEvents <- events.SSE{Event: "warning", Data: string(data)}
 			}()
-		}
-		if len(r.esbuildErrors) > 0 {
+		} else if len(r.esbuildErrors) > 0 {
 			loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
 			fmt.Fprintln(wr, esbuildMessagesAsHTMLDocument(r.esbuildErrors))
 			return
@@ -101,7 +102,7 @@ func (r Runtime) Watch() {
 		// TODO: Add some caching layer here.
 		// TODO: Add some kind of r.Router.getRouteForPath(req.URL.Path). Non-
 		// matches should defer to ServeFile logic.
-		bstr, err := r.prerenderPage(base, r.Router[0])
+		bstr, err := r.prerenderPageAsBytes(base, r.Router[0])
 		if err != nil {
 			// TODO
 			loggers.Stderr.Fatalln(err)
@@ -153,7 +154,5 @@ func (r Runtime) Watch() {
 		}
 	})
 
-	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
-		loggers.Stderr.Fatalln(err)
-	}
+	must(http.ListenAndServe(":"+r.getPort(), nil))
 }

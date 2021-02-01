@@ -64,8 +64,7 @@ asyncRun([
 	// TODO
 	if len(results.Warnings) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
-	}
-	if len(results.Errors) > 0 {
+	} else if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
