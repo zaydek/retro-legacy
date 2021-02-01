@@ -3,30 +3,23 @@ package dev
 import (
 	"fmt"
 	"net/http"
+	"os"
 	p "path"
 
 	"github.com/zaydek/retro/pkg/loggers"
+	"github.com/zaydek/retro/pkg/term"
 )
 
-// TODO: prerenderServeOrBuild
-// TODO: Add --cached to watch and build.
-
-// 	results := api.Build(api.BuildOptions{
-// 		Bundle: true,
-// 		Define: map[string]string{
-// 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
-// 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
-// 		},
-// 		EntryPoints: []string{p.Join(r.Config.PagesDirectory, "index.js")},
-// 		Incremental: true,
-// 		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
-// 		Outfile:     p.Join(r.Config.BuildDirectory, "app.js"),
-// 		Write:       true,
-// 	})
+func (r Runtime) Build() {
+	must(copyAssetDirectoryToBuildDirectory(r.DirConfiguration))
+	must(r.RenderProps())
+	must(r.RenderApp())
+	must(r.RenderPages())
+}
 
 func (r Runtime) Watch() {
 	// // if r.WatchCommand.Cached
-	if err := r.prerenderProps(); err != nil {
+	if err := r.RenderProps(); err != nil {
 		loggers.Stderr.Fatalln(err)
 	}
 
@@ -36,12 +29,12 @@ func (r Runtime) Watch() {
 
 	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
 
-	// TODO
-	if len(r.esbuildWarnings) > 0 {
-		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
-	} else if len(r.esbuildErrors) > 0 {
-		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
-	}
+	// // TODO
+	// if len(r.esbuildWarnings) > 0 {
+	// 	loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
+	// } else if len(r.esbuildErrors) > 0 {
+	// 	loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
+	// }
 
 	// go func() {
 	// 	// TODO: Add support for many paths.
@@ -56,12 +49,12 @@ func (r Runtime) Watch() {
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
 		// TODO
 		if ext := p.Ext(req.URL.Path); ext != "" {
-			http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
+			http.ServeFile(wr, req, p.Join(string(r.DirConfiguration.BuildDirectory), req.URL.Path))
 		}
 		// TODO: Add some caching layer here.
 		// TODO: Add some kind of r.Router.getRouteForPath(req.URL.Path). Non-
 		// matches should defer to ServeFile logic.
-		bstr, err := r.prerenderPageAsBytes(base, r.Router[0])
+		bstr, err := r.RenderPageBytes(r.PageBasedRouter[0])
 		if err != nil {
 			// TODO
 			loggers.Stderr.Fatalln(err)
@@ -107,5 +100,18 @@ func (r Runtime) Watch() {
 		}
 	})
 
+	must(http.ListenAndServe(":"+r.getPort(), nil))
+}
+
+func (r Runtime) Serve() {
+	if _, err := os.Stat(r.DirConfiguration.BuildDirectory); os.IsNotExist(err) {
+		loggers.Stderr.Fatalln("Failed to stat directory " + term.Bold(r.DirConfiguration.BuildDirectory) + ". " +
+			"It looks like haven’t run " + term.Bold("retro build") + " yet. " +
+			"Try " + term.Bold("retro build && retro serve") + ".")
+	}
+
+	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
+
+	http.Handle("/", http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory)))
 	must(http.ListenAndServe(":"+r.getPort(), nil))
 }

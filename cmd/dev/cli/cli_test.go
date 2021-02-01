@@ -2,75 +2,46 @@ package cli
 
 import (
 	"testing"
-	"time"
 
 	"github.com/zaydek/retro/pkg/expect"
 )
 
 func TestWatch(t *testing.T) {
-	var cmd WatchCommand
+	var cmd StartCommand
 
-	cmd = parseWatchArguments()
-	expect.DeepEqual(t, cmd, WatchCommand{
+	cmd = parseStartArguments()
+	expect.DeepEqual(t, cmd, StartCommand{
 		Cached:    false,
-		Poll:      250 * time.Millisecond,
 		Port:      8000,
 		SourceMap: false,
-		Paths:     []string{"pages"},
 	})
 
-	cmd = parseWatchArguments("src", "components", "pages")
-	expect.DeepEqual(t, cmd, WatchCommand{
-		Cached:    false,
-		Poll:      250 * time.Millisecond,
-		Port:      8000,
-		SourceMap: false,
-		Paths:     []string{"src", "components", "pages"},
-	})
-
-	cmd = parseWatchArguments("--cached")
-	expect.DeepEqual(t, cmd, WatchCommand{
+	cmd = parseStartArguments("--cached")
+	expect.DeepEqual(t, cmd, StartCommand{
 		Cached:    true,
-		Poll:      250 * time.Millisecond,
 		Port:      8000,
 		SourceMap: false,
-		Paths:     []string{"pages"},
 	})
 
-	cmd = parseWatchArguments("--poll=500ms")
-	expect.DeepEqual(t, cmd, WatchCommand{
+	cmd = parseStartArguments("--port=8080")
+	expect.DeepEqual(t, cmd, StartCommand{
 		Cached:    false,
-		Poll:      500 * time.Millisecond,
-		Port:      8000,
-		SourceMap: false,
-		Paths:     []string{"pages"},
-	})
-
-	cmd = parseWatchArguments("--port=8080")
-	expect.DeepEqual(t, cmd, WatchCommand{
-		Cached:    false,
-		Poll:      250 * time.Millisecond,
 		Port:      8080,
 		SourceMap: false,
-		Paths:     []string{"pages"},
 	})
 
-	cmd = parseWatchArguments("--source-map")
-	expect.DeepEqual(t, cmd, WatchCommand{
+	cmd = parseStartArguments("--source-map")
+	expect.DeepEqual(t, cmd, StartCommand{
 		Cached:    false,
-		Poll:      250 * time.Millisecond,
 		Port:      8000,
 		SourceMap: true,
-		Paths:     []string{"pages"},
 	})
 
-	cmd = parseWatchArguments("--cached", "--poll=500ms", "--port=8080", "--source-map", "src", "components", "pages")
-	expect.DeepEqual(t, cmd, WatchCommand{
+	cmd = parseStartArguments("--cached", "--port=8080", "--source-map")
+	expect.DeepEqual(t, cmd, StartCommand{
 		Cached:    true,
-		Poll:      500 * time.Millisecond,
 		Port:      8080,
 		SourceMap: true,
-		Paths:     []string{"src", "components", "pages"},
 	})
 }
 

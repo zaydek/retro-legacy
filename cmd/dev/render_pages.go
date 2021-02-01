@@ -1,4 +1,4 @@
-package render
+package dev
 
 import (
 	"bytes"
@@ -11,23 +11,24 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/run"
 )
 
-func Pages(runtime dev.Runtime) error {
+func (r Runtime) RenderPages() error {
+	// TODO: When esbuild adds support for dynamic imports, this can be changed to
+	// a pure JavaScript implementation.
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Pages
-` + strings.Join(requires(runtime.PageBasedRouter), "\n") + `
+` + strings.Join(requires(r.PageBasedRouter), "\n") + `
 
 // Props
-` + fmt.Sprintf(`const props = require("%s").default, ../`+runtime.DirConfiguration.CacheDirectory+"/props.js") + `
+` + fmt.Sprintf(`const props = require("%s").default, ../`+r.DirConfiguration.CacheDirectory+"/props.js") + `
 
 async function asyncRun(exports) {
 	const chain = []
@@ -64,11 +65,11 @@ async function asyncRun(exports) {
 }
 
 asyncRun([
-	` + strings.Join(exports(runtime.PageBasedRouter), ",\n\t") + `
+	` + strings.Join(exports(r.PageBasedRouter), ",\n\t") + `
 ])
 `
 
-	src := p.Join(runtime.DirConfiguration.CacheDirectory, "pages.esbuild.js")
+	src := p.Join(r.DirConfiguration.CacheDirectory, "pages.esbuild.js")
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return errs.WriteFile(src, err)
@@ -85,14 +86,14 @@ asyncRun([
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
-		return errors.New(FormatEsbuildMessagesAsTermString(results.Warnings))
+		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
 	} else if len(results.Errors) > 0 {
-		return errors.New(FormatEsbuildMessagesAsTermString(results.Errors))
+		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
 	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
 	if err != nil {
-		return errs.RunNode(err)
+		return err
 	}
 
 	var pages []prerenderedPage
@@ -107,8 +108,8 @@ asyncRun([
 			}
 		}
 		var buf bytes.Buffer
-		if err := runtime.IndexHTMLTemplate.Execute(&buf, each); err != nil {
-			return errs.ExecuteTemplate(runtime.IndexHTMLTemplate.Name(), err)
+		if err := r.IndexHTMLTemplate.Execute(&buf, each); err != nil {
+			return errs.ExecuteTemplate(r.IndexHTMLTemplate.Name(), err)
 		}
 		if err := ioutil.WriteFile(each.DstPath, buf.Bytes(), perm.File); err != nil {
 			return errs.WriteFile(each.DstPath, err)

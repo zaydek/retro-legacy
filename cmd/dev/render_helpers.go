@@ -1,12 +1,18 @@
-package render
+package dev
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/zaydek/retro/cmd/dev"
-)
+// TODO
+type prerenderedPage struct {
+	SrcPath string `json:"srcPath"`
+	DstPath string `json:"dstPath"`
+	Path    string `json:"path"`
 
-func requires(routes []dev.PageBasedRoute) []string {
+	Head string `json:"head"`
+	Page string `json:"page"`
+}
+
+func requires(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
 		arr = append(arr, fmt.Sprintf(`const %s = require("%s")`,
@@ -15,7 +21,7 @@ func requires(routes []dev.PageBasedRoute) []string {
 	return arr
 }
 
-func exports(routes []dev.PageBasedRoute) []string {
+func exports(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
 		arr = append(arr, fmt.Sprintf(`{ srcPath: %q, dstPath: %q, path: %q, exports: %s }`,

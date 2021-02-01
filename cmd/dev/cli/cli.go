@@ -10,13 +10,12 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func parseWatchArguments(arguments ...string) WatchCommand {
-	flagset := flag.NewFlagSet("watch", flag.ContinueOnError)
+func parseStartArguments(arguments ...string) StartCommand {
+	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
-	cmd := WatchCommand{}
+	cmd := StartCommand{}
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	// flagset.DurationVar(&cmd.Poll, "poll", 250*time.Millisecond, "")
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
 	if err := flagset.Parse(arguments); err != nil {
@@ -24,23 +23,15 @@ func parseWatchArguments(arguments ...string) WatchCommand {
 			"Try " + term.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
-	// if cmd.Poll < (100*time.Millisecond) || cmd.Poll >= (10*time.Second) {
-	// 	loggers.Stderr.Println(term.Bold("--poll") + " must be between " + term.Bold("100ms") + " and " + term.Bold("10s") + ".")
-	// 	os.Exit(2)
-	// } else if ...
 	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
 		loggers.Stderr.Println(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
 		os.Exit(2)
-	}
-	cmd.Paths = []string{"pages"}
-	if len(flagset.Args()) > 0 {
-		cmd.Paths = flagset.Args()
 	}
 	return cmd
 }
 
 func parseBuildArguments(arguments ...string) BuildCommand {
-	flagset := flag.NewFlagSet("build", flag.ContinueOnError)
+	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
 	cmd := BuildCommand{}
@@ -55,7 +46,7 @@ func parseBuildArguments(arguments ...string) BuildCommand {
 }
 
 func parseServeArguments(arguments ...string) ServeCommand {
-	flagset := flag.NewFlagSet("serve", flag.ContinueOnError)
+	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
 	cmd := ServeCommand{}
@@ -97,10 +88,10 @@ func ParseCLIArguments() interface{} {
 	case "--help":
 		fmt.Println(usage)
 		os.Exit(0)
-	// $ retro watch
-	case "watch":
+	// $ retro start
+	case "start":
 		os.Setenv("NODE_ENV", "development")
-		cmd = parseWatchArguments(os.Args[2:]...)
+		cmd = parseStartArguments(os.Args[2:]...)
 	// $ retro build
 	case "build":
 		os.Setenv("NODE_ENV", "production")

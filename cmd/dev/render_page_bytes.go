@@ -1,4 +1,4 @@
-package render
+package dev
 
 import (
 	"bytes"
@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/run"
@@ -20,19 +19,21 @@ import (
 
 // TODO: May want to add some kind of scroll-restoration logic for SSE as well
 // as disconnected SSE to stop retrying. Can try retry -1 for example.
-func PageBytes(runtime dev.Runtime, route dev.PageBasedRoute) ([]byte, error) {
-	if _, err := os.Stat(p.Join(runtime.DirConfiguration.CacheDirectory, "props.js")); os.IsNotExist(err) {
+func (r Runtime) RenderPageBytes(route PageBasedRoute) ([]byte, error) {
+	if _, err := os.Stat(p.Join(r.DirConfiguration.CacheDirectory, "props.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + term.Bold("--cached") + " and try again.")
 	}
 
+	// TODO: When esbuild adds support for dynamic imports, this can be changed to
+	// a pure JavaScript implementation.
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 ` + fmt.Sprintf(`const %s = require("%s")`, route.Component, "../"+route.SrcPath) + `
-` + fmt.Sprintf(`const props = require("%s").default, ../`+runtime.DirConfiguration.CacheDirectory+"/props.js") + `
+` + fmt.Sprintf(`const props = require("%s").default, ../`+r.DirConfiguration.CacheDirectory+"/props.js") + `
 
 function run({ path, exports }) {
 	let head = ""
@@ -75,11 +76,11 @@ function run({ path, exports }) {
 }
 
 run([
-	` + strings.Join(exports(runtime.PageBasedRouter), ",\n\t") + `
+	` + strings.Join(exports(r.PageBasedRouter), ",\n\t") + `
 ])
 `
 
-	src := p.Join(runtime.DirConfiguration.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
+	src := p.Join(r.DirConfiguration.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return nil, errs.WriteFile(src, err)
@@ -96,25 +97,24 @@ run([
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
-		return nil, errors.New(FormatEsbuildMessagesAsTermString(results.Warnings))
+		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
 	} else if len(results.Errors) > 0 {
-		return nil, errors.New(FormatEsbuildMessagesAsTermString(results.Errors))
+		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	var buf bytes.Buffer
-
-	var page prerenderedPage
 	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
 	if err != nil {
-		return nil, err
+		return nil, errs.RunNode(err)
 	}
 
+	var page prerenderedPage
 	if err := json.Unmarshal(stdout, &page); err != nil {
 		return nil, errs.Unexpected(err)
 	}
 
-	if err := runtime.IndexHTMLTemplate.Execute(&buf, page); err != nil {
-		return nil, errs.ExecuteTemplate(runtime.IndexHTMLTemplate.Name(), err)
+	var buf bytes.Buffer
+	if err := r.IndexHTMLTemplate.Execute(&buf, page); err != nil {
+		return nil, errs.ExecuteTemplate(r.IndexHTMLTemplate.Name(), err)
 	}
 	return buf.Bytes(), nil
 }

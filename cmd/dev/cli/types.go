@@ -1,13 +1,10 @@
 package cli
 
-type WatchCommand struct {
+type StartCommand struct {
 	// Flags
 	Cached    bool
 	Port      int
 	SourceMap bool
-
-	// Arguments
-	Paths []string
 }
 
 type BuildCommand struct {

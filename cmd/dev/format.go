@@ -1,4 +1,4 @@
-package render
+package dev
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func FormatEsbuildMessagesAsTermString(msgs []api.Message) string {
+func formatEsbuildMessagesAsTermString(msgs []api.Message) string {
 	msg := msgs[0] // TODO
 
 	gutter := len(strconv.Itoa(msg.Location.Line))
@@ -23,7 +23,7 @@ func FormatEsbuildMessagesAsTermString(msgs []api.Message) string {
 ` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, msg.Text)
 }
 
-func FormatEsbuildMessagesAsHTMLString(msgs []api.Message) string {
+func formatEsbuildMessagesAsHTMLString(msgs []api.Message) string {
 	msg := msgs[0] // TODO
 
 	gutter := len(strconv.Itoa(msg.Location.Line))
@@ -69,7 +69,7 @@ body {
 	</head>
 	<body>
 		<a href="` + fmt.Sprintf("vscode://file%s/%s:%d:%d", cwd, msg.Location.File, msg.Location.Line, msg.Location.Column) + `">
-			<pre><code>` + FormatEsbuildMessagesAsHTMLString(msgs) + `</code></pre>
+			<pre><code>` + formatEsbuildMessagesAsHTMLString(msgs) + `</code></pre>
 		</a>
 		<script>
 			const source = new EventSource("/sse")

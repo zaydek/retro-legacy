@@ -15,8 +15,8 @@ import (
 // getCmd gets the current command.
 func (r Runtime) getCmd() string {
 	switch r.Command.(type) {
-	case cli.WatchCommand:
-		return "watch"
+	case cli.StartCommand:
+		return "start"
 	case cli.BuildCommand:
 		return "build"
 	case cli.ServeCommand:
@@ -28,7 +28,7 @@ func (r Runtime) getCmd() string {
 // getPort gets the current port.
 func (r Runtime) getPort() string {
 	if cmd := r.getCmd(); cmd == "watch" {
-		return strconv.Itoa(r.Command.(cli.WatchCommand).Port)
+		return strconv.Itoa(r.Command.(cli.StartCommand).Port)
 	} else if cmd == "serve" {
 		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)
 	}
@@ -42,7 +42,7 @@ type copyPath struct {
 
 // copyAssetDirectoryToBuildDirectory destructively and recursively copies the
 // asset directory to the build directory.
-func copyAssetDirectoryToBuildDirectory(config DirConfiguration) error {
+func copyAssetDirectoryToBuildDirectory(config DirectoryConfiguration) error {
 	path := p.Join(config.BuildDirectory, config.AssetDirectory)
 	if _, err := os.Stat(path); os.IsExist(err) {
 		if err := os.RemoveAll(path); err != nil {

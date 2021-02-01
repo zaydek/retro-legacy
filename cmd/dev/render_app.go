@@ -1,4 +1,4 @@
-package render
+package dev
 
 import (
 	"bytes"
@@ -11,12 +11,13 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 )
 
-func App(runtime dev.Runtime) error {
+func (r Runtime) RenderApp() error {
+	// TODO: When esbuild adds support for dynamic imports, this can be changed to
+	// a pure JavaScript implementation.
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
@@ -24,10 +25,10 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
 // Pages
-` + strings.Join(requires(runtime.PageBasedRouter), "\n") + `
+` + strings.Join(requires(r.PageBasedRouter), "\n") + `
 
 // Props
-const props = require("../{{ .DirConfiguration.CacheDirectory }}/props.js").default
+const props = require("../{{ .Config.CacheDirectory }}/props.js").default
 
 export default function RoutedApp() {
 	return (
@@ -47,16 +48,14 @@ ReactDOM.hydrate(
 )
 `
 
-	src := p.Join(runtime.DirConfiguration.CacheDirectory, "app.esbuild.js")
-	dst := p.Join(runtime.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", runtime.epochUUID))
+	src := p.Join(r.DirConfiguration.CacheDirectory, "app.esbuild.js")
+	dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.EpochUUID))
 
+	var buf bytes.Buffer
 	tmpl, err := template.New(src).Parse(text)
 	if err != nil {
 		return errs.ParseTemplate(src, err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, r); err != nil {
+	} else if err := tmpl.Execute(&buf, r); err != nil {
 		return errs.ExecuteTemplate(tmpl.Name(), err)
 	}
 
