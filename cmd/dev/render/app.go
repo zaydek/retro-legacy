@@ -1,4 +1,4 @@
-package dev
+package render
 
 import (
 	"bytes"
@@ -11,11 +11,12 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 )
 
-func (r Runtime) prerenderApp() error {
+func App(runtime dev.Runtime) error {
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
@@ -23,15 +24,15 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../Router"
 
 // Pages
-` + strings.Join(requires(r.Router), "\n") + `
+` + strings.Join(requires(runtime.PageBasedRouter), "\n") + `
 
 // Props
-const props = require("../{{ .Config.CacheDirectory }}/props.js").default
+const props = require("../{{ .DirConfiguration.CacheDirectory }}/props.js").default
 
 export default function RoutedApp() {
 	return (
 		<Router>
-		{{ range $each := .Router }}
+		{{ range $each := .PageBasedRouter }}
 			<Route path="{{ $each.Path }}">
 				<{{ $each.Component }} {...props["{{ $each.Path }}"]} />
 			</Route>
@@ -46,14 +47,16 @@ ReactDOM.hydrate(
 )
 `
 
-	src := p.Join(r.Config.CacheDirectory, "app.esbuild.js")
-	dst := p.Join(r.Config.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochUUID))
+	src := p.Join(runtime.DirConfiguration.CacheDirectory, "app.esbuild.js")
+	dst := p.Join(runtime.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", runtime.epochUUID))
 
-	var buf bytes.Buffer
 	tmpl, err := template.New(src).Parse(text)
 	if err != nil {
 		return errs.ParseTemplate(src, err)
-	} else if err := tmpl.Execute(&buf, r); err != nil {
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, r); err != nil {
 		return errs.ExecuteTemplate(tmpl.Name(), err)
 	}
 

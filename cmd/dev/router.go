@@ -56,7 +56,7 @@ func componentCase(basename string) string {
 }
 
 // Creates a new page-baed route.
-func newPageBasedRoute(config DirConfiguration, path string) PageBasedRoute {
+func newPageBasedRoute(config DirectoryConfiguration, path string) PageBasedRoute {
 	var src, dst string
 
 	src = p.Join(config.PagesDirectory, path)
@@ -73,7 +73,7 @@ func newPageBasedRoute(config DirConfiguration, path string) PageBasedRoute {
 }
 
 // newRouter creates a new page-based router.
-func newRouter(config DirConfiguration) ([]PageBasedRoute, error) {
+func newRouter(config DirectoryConfiguration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

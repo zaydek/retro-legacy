@@ -6,20 +6,35 @@ import (
 	"os/exec"
 )
 
-func Cmd(arguments ...string) (stdout []byte, err error) {
-	var (
-		stdoutBuf bytes.Buffer
-		stderrBuf bytes.Buffer
-	)
-
+func Cmd(stdin []byte, arguments ...string) (stdoutBytes []byte, err error) {
+	// Create a new command:
 	cmd := exec.Command(arguments[0], arguments[1:]...)
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
 
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	// Pipe stdin:
+	if stdin != nil {
+		go func() {
+			defer stdinPipe.Close()
+			stdinPipe.Write(stdin)
+		}()
+	}
+
+	// Connect stdout and stderr:
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	// Run the command:
 	if err := cmd.Run(); err != nil {
 		return nil, err
-	} else if stderr := stderrBuf.String(); stderr != "" {
-		return nil, fmt.Errorf("stderr: %s", stderrBuf.String())
+	} else if stderr.Len() > 0 {
+		return nil, fmt.Errorf("stderr: %s", stderr.String())
 	}
-	return stdoutBuf.Bytes(), nil
+	return stdout.Bytes(), nil
 }

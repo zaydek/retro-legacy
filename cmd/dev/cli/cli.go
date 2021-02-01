@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/term"
@@ -17,7 +16,7 @@ func parseWatchArguments(arguments ...string) WatchCommand {
 
 	cmd := WatchCommand{}
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	flagset.DurationVar(&cmd.Poll, "poll", 250*time.Millisecond, "")
+	// flagset.DurationVar(&cmd.Poll, "poll", 250*time.Millisecond, "")
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
 	if err := flagset.Parse(arguments); err != nil {
@@ -25,10 +24,11 @@ func parseWatchArguments(arguments ...string) WatchCommand {
 			"Try " + term.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
-	if cmd.Poll < (100*time.Millisecond) || cmd.Poll >= (10*time.Second) {
-		loggers.Stderr.Println(term.Bold("--poll") + " must be between " + term.Bold("100ms") + " and " + term.Bold("10s") + ".")
-		os.Exit(2)
-	} else if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
+	// if cmd.Poll < (100*time.Millisecond) || cmd.Poll >= (10*time.Second) {
+	// 	loggers.Stderr.Println(term.Bold("--poll") + " must be between " + term.Bold("100ms") + " and " + term.Bold("10s") + ".")
+	// 	os.Exit(2)
+	// } else if ...
+	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
 		loggers.Stderr.Println(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
 		os.Exit(2)
 	}

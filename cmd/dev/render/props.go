@@ -1,4 +1,4 @@
-package dev
+package render
 
 import (
 	"errors"
@@ -9,15 +9,17 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/run"
 )
 
-func (r Runtime) prerenderProps() error {
+func Props(runtime dev.Runtime) error {
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 // Pages
-` + strings.Join(requires(r.Router), "\n") + `
+` + strings.Join(requires(runtime.PageBasedRouter), "\n") + `
 
 async function asyncRun(requireStmtAsArray) {
 	const chain = []
@@ -41,12 +43,12 @@ async function asyncRun(requireStmtAsArray) {
 }
 
 asyncRun([
-	` + strings.Join(exports(r.Router), ",\n\t") + `
+	` + strings.Join(exports(runtime.PageBasedRouter), ",\n\t") + `
 ])
 `
 
-	src := p.Join(r.Config.CacheDirectory, "props.esbuild.js")
-	dst := p.Join(r.Config.CacheDirectory, "props.js")
+	src := p.Join(runtime.DirConfiguration.CacheDirectory, "props.esbuild.js")
+	dst := p.Join(runtime.DirConfiguration.CacheDirectory, "props.js")
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return errs.WriteFile(src, err)
@@ -63,20 +65,20 @@ asyncRun([
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+		return errors.New(FormatEsbuildMessagesAsTermString(results.Warnings))
 	} else if len(results.Errors) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+		return errors.New(FormatEsbuildMessagesAsTermString(results.Errors))
 	}
 
 	// TODO
-	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
+	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
 	if err != nil {
 		return err
 	}
 
 	contents := []byte(`// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
-export default ` + stdoutBuf.String())
+export default ` + string(stdout))
 
 	if err := ioutil.WriteFile(dst, contents, perm.File); err != nil {
 		return errs.WriteFile(dst, err)

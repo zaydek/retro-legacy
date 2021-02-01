@@ -1,63 +1,38 @@
 package dev
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	p "path"
-	"time"
 
-	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/dev/cli"
-	"github.com/zaydek/retro/pkg/events"
 	"github.com/zaydek/retro/pkg/loggers"
-	"github.com/zaydek/retro/pkg/watcher"
 )
-
-func (r *Runtime) esbuildBuild() {
-	results := api.Build(api.BuildOptions{
-		Bundle: true,
-		Define: map[string]string{
-			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
-			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
-		},
-		EntryPoints: []string{p.Join(r.Config.PagesDirectory, "index.js")},
-		Incremental: true,
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
-		Outfile:     p.Join(r.Config.BuildDirectory, "app.js"),
-		Write:       true,
-	})
-	r.esbuildResult = results
-	r.esbuildWarnings = results.Warnings
-	r.esbuildErrors = results.Errors
-}
-
-func (r *Runtime) esbuildRebuild() {
-	// start := time.Now()
-	results := r.esbuildResult.Rebuild()
-	r.esbuildResult = results
-	r.esbuildWarnings = results.Warnings
-	r.esbuildErrors = results.Errors
-	// fmt.Printf("⚡️ %0.3fs\n", time.Since(start).Seconds())
-}
 
 // TODO: prerenderServeOrBuild
 // TODO: Add --cached to watch and build.
+
+// 	results := api.Build(api.BuildOptions{
+// 		Bundle: true,
+// 		Define: map[string]string{
+// 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
+// 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
+// 		},
+// 		EntryPoints: []string{p.Join(r.Config.PagesDirectory, "index.js")},
+// 		Incremental: true,
+// 		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
+// 		Outfile:     p.Join(r.Config.BuildDirectory, "app.js"),
+// 		Write:       true,
+// 	})
 
 func (r Runtime) Watch() {
 	// // if r.WatchCommand.Cached
 	if err := r.prerenderProps(); err != nil {
 		loggers.Stderr.Fatalln(err)
 	}
-	base, err := r.parseBaseHTMLTemplate()
-	if err != nil {
-		loggers.Stderr.Fatalln(err)
-	}
 
-	srvEvents := make(chan events.SSE, 8)
+	events := make(chan string, 1)
 
-	r.esbuildBuild()
+	// r.esbuildBuild()
 
 	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
 
@@ -68,36 +43,20 @@ func (r Runtime) Watch() {
 		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
 	}
 
-	go func() {
-		// TODO: Add support for many paths.
-		cmd := r.Command.(cli.WatchCommand)
-		for range watcher.New(cmd.Paths[0], cmd.Poll) {
-			r.esbuildRebuild()
-			// TODO: Add retry here.
-			srvEvents <- events.SSE{Event: "reload"}
-		}
-	}()
+	// go func() {
+	// 	// TODO: Add support for many paths.
+	// 	cmd := r.Command.(cli.WatchCommand)
+	// 	for range watcher.New(cmd.Paths[0], cmd.Poll) {
+	// 		r.esbuildRebuild()
+	// 		// TODO: Add retry here.
+	// 		events <- events.SSE{Event: "reload"}
+	// 	}
+	// }()
 
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
-		// TODO: We probably don’t need this anymore, right?
+		// TODO
 		if ext := p.Ext(req.URL.Path); ext != "" {
 			http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
-		}
-		// TODO
-		r.esbuildRebuild()
-		if len(r.esbuildWarnings) > 0 {
-			// TODO
-			loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
-			data, _ := json.Marshal(formatEsbuildMessagesAsTermString(r.esbuildWarnings))
-			defer func() {
-				// Pause so the server-sent event does not drop on refresh:
-				time.Sleep(100 * time.Millisecond)
-				srvEvents <- events.SSE{Event: "warning", Data: string(data)}
-			}()
-		} else if len(r.esbuildErrors) > 0 {
-			loggers.Stderr.Println(formatEsbuildMessagesAsTermString(r.esbuildErrors))
-			fmt.Fprintln(wr, esbuildMessagesAsHTMLDocument(r.esbuildErrors))
-			return
 		}
 		// TODO: Add some caching layer here.
 		// TODO: Add some kind of r.Router.getRouteForPath(req.URL.Path). Non-
@@ -108,44 +67,38 @@ func (r Runtime) Watch() {
 			loggers.Stderr.Fatalln(err)
 		}
 		wr.Write(bstr)
-
-		// 		wr.Write([]byte(`<!DOCTYPE html>
-		// <html>
-		// 	<head></head>
-		// 	<body>
-		// 		<h1>Hello, world!</h1>
-		// 	</body>
-		// </html>
-		// `))
-
-		// fmt.Fprint(wr, string(bstr))
-		// return
-
-		// http.ServeFile(wr, req, p.Join(string(r.Config.BuildDirectory), req.URL.Path))
 	})
 
 	http.HandleFunc("/public/", func(w http.ResponseWriter, r *http.Request) {
 		path := fmt.Sprintf("./%s", r.URL.Path)
 		if p.Ext(r.URL.Path) == "" {
+			// NOTE: http.ServeFile only handles index.html:
+			//
+			// As another special case, ServeFile redirects any request where r.URL.Path
+			// ends in "/index.html" to the same path, without the final
+			// "index.html". To avoid such redirects either modify the path or
+			// use ServeContent.
+			//
 			path += ".html"
 		}
 		http.ServeFile(w, r, path)
 	})
 
-	http.HandleFunc("/sse", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
+		events <- "ready"
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 			// TODO: Change to a warning.
-			loggers.Stderr.Fatalln("Your browser does not support server-sent events (SSE).")
+			loggers.Stderr.Fatalln("Your browser does not support server-sent events.")
 			return
 		}
 		for {
 			select {
-			case e := <-srvEvents:
-				e.Write(w)
+			case typ := <-events:
+				fmt.Fprintf(w, "event: %s\ndata\n\n", typ)
 				flusher.Flush()
 			case <-r.Context().Done():
 				// No-op

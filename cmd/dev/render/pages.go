@@ -1,4 +1,4 @@
-package dev
+package render
 
 import (
 	"bytes"
@@ -11,26 +11,23 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/run"
 )
 
-func (r Runtime) prerenderPages() error {
-	base, err := r.parseBaseHTMLTemplate()
-	if err != nil {
-		return err
-	}
-
+func Pages(runtime dev.Runtime) error {
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
 
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Pages
-` + strings.Join(requires(r.Router), "\n") + `
+` + strings.Join(requires(runtime.PageBasedRouter), "\n") + `
 
 // Props
-` + fmt.Sprintf(`const props = require("%s").default, ../`+r.Config.CacheDirectory+"/props.js") + `
+` + fmt.Sprintf(`const props = require("%s").default, ../`+runtime.DirConfiguration.CacheDirectory+"/props.js") + `
 
 async function asyncRun(exports) {
 	const chain = []
@@ -67,11 +64,11 @@ async function asyncRun(exports) {
 }
 
 asyncRun([
-	` + strings.Join(exports(r.Router), ",\n\t") + `
+	` + strings.Join(exports(runtime.PageBasedRouter), ",\n\t") + `
 ])
 `
 
-	src := p.Join(r.Config.CacheDirectory, "pages.esbuild.js")
+	src := p.Join(runtime.DirConfiguration.CacheDirectory, "pages.esbuild.js")
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return errs.WriteFile(src, err)
@@ -88,18 +85,18 @@ asyncRun([
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+		return errors.New(FormatEsbuildMessagesAsTermString(results.Warnings))
 	} else if len(results.Errors) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+		return errors.New(FormatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
+	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
 	if err != nil {
-		return err
+		return errs.RunNode(err)
 	}
 
 	var pages []prerenderedPage
-	if err := json.Unmarshal(stdoutBuf.Bytes(), &pages); err != nil {
+	if err := json.Unmarshal(stdout, &pages); err != nil {
 		return errs.Unexpected(err)
 	}
 
@@ -110,8 +107,8 @@ asyncRun([
 			}
 		}
 		var buf bytes.Buffer
-		if err := base.Execute(&buf, each); err != nil {
-			return errs.ExecuteTemplate(base.Name(), err)
+		if err := runtime.IndexHTMLTemplate.Execute(&buf, each); err != nil {
+			return errs.ExecuteTemplate(runtime.IndexHTMLTemplate.Name(), err)
 		}
 		if err := ioutil.WriteFile(each.DstPath, buf.Bytes(), perm.File); err != nil {
 			return errs.WriteFile(each.DstPath, err)

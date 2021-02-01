@@ -1,4 +1,4 @@
-package dev
+package render
 
 import (
 	"bytes"
@@ -9,27 +9,19 @@ import (
 	"os"
 	p "path"
 	"strings"
-	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/zaydek/retro/cmd/dev"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/run"
 	"github.com/zaydek/retro/pkg/term"
 )
 
-type prerenderedPage struct {
-	SrcPath string `json:"srcPath"`
-	DstPath string `json:"dstPath"`
-	Path    string `json:"path"`
-
-	Head string `json:"head"`
-	Page string `json:"page"`
-}
-
 // TODO: May want to add some kind of scroll-restoration logic for SSE as well
 // as disconnected SSE to stop retrying. Can try retry -1 for example.
-func (r Runtime) prerenderPageAsBytes(base *template.Template, route PageBasedRoute) ([]byte, error) {
-	if _, err := os.Stat(p.Join(r.Config.CacheDirectory, "props.js")); os.IsNotExist(err) {
+func PageBytes(runtime dev.Runtime, route dev.PageBasedRoute) ([]byte, error) {
+	if _, err := os.Stat(p.Join(runtime.DirConfiguration.CacheDirectory, "props.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + term.Bold("--cached") + " and try again.")
 	}
@@ -40,7 +32,7 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 ` + fmt.Sprintf(`const %s = require("%s")`, route.Component, "../"+route.SrcPath) + `
-` + fmt.Sprintf(`const props = require("%s").default, ../`+r.Config.CacheDirectory+"/props.js") + `
+` + fmt.Sprintf(`const props = require("%s").default, ../`+runtime.DirConfiguration.CacheDirectory+"/props.js") + `
 
 function run({ path, exports }) {
 	let head = ""
@@ -65,22 +57,29 @@ function run({ path, exports }) {
 	}
 
 	page += '\n'
-	page += '		<script src="/app.js"></script>\n'
-	page += '		<script>\n'
-	page += '			const __retro_sse__ = new EventSource("/sse")\n'
-	page += '			__retro_sse__.addEventListener("reload", e => window.location.reload())\n'
-	page += '			__retro_sse__.addEventListener("warning", e => console.warn(JSON.parse(e.data)))\n'
-	page += '		</script>'
+	page += 'events.addEventListener("reload", e => {' + '\n'
+	page += '	window.location.reload()' + '\n'
+	page += '})' + '\n'
+	page += 'events.addEventListener("error", e => {' + '\n'
+	page += '	events.close()' + '\n'
+	page += '	// prettier-ignore' + '\n'
+	page += '	console.log(' + '\n'
+	page += '		"retro: Disconnected from the dev server. " +' + '\n'
+	page += '		"Try %cretro watch%c to reconnect.",' + '\n'
+	page += '		"font-weight: bold",' + '\n'
+	page += '		"none",' + '\n'
+	page += '	)' + '\n'
+	page += '})' + '\n'
 
 	console.log(JSON.stringify({ ...etc, head, page }))
 }
 
 run([
-	` + strings.Join(exports(r.Router), ",\n\t") + `
+	` + strings.Join(exports(runtime.PageBasedRouter), ",\n\t") + `
 ])
 `
 
-	src := p.Join(r.Config.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
+	src := p.Join(runtime.DirConfiguration.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return nil, errs.WriteFile(src, err)
@@ -97,26 +96,25 @@ run([
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
-		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
+		return nil, errors.New(FormatEsbuildMessagesAsTermString(results.Warnings))
 	} else if len(results.Errors) > 0 {
-		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+		return nil, errors.New(FormatEsbuildMessagesAsTermString(results.Errors))
 	}
 
 	var buf bytes.Buffer
 
-	// TODO: It would also be nice if we can automatically unmarshal the return nil, of
-	// Node since we’re only using Node for IPC processes.
 	var page prerenderedPage
-	stdoutBuf, err := runNode(results.OutputFiles[0].Contents)
+	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
 	if err != nil {
 		return nil, err
-	} else if err := json.Unmarshal(stdoutBuf.Bytes(), &page); err != nil {
+	}
+
+	if err := json.Unmarshal(stdout, &page); err != nil {
 		return nil, errs.Unexpected(err)
 	}
 
-	if err := base.Execute(&buf, page); err != nil {
-		return nil, errs.ExecuteTemplate(base.Name(), err)
+	if err := runtime.IndexHTMLTemplate.Execute(&buf, page); err != nil {
+		return nil, errs.ExecuteTemplate(runtime.IndexHTMLTemplate.Name(), err)
 	}
-
 	return buf.Bytes(), nil
 }

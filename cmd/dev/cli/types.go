@@ -1,11 +1,8 @@
 package cli
 
-import "time"
-
 type WatchCommand struct {
 	// Flags
 	Cached    bool
-	Poll      time.Duration
 	Port      int
 	SourceMap bool
 

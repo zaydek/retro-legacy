@@ -1,10 +1,10 @@
 package dev
 
 import (
-	"github.com/evanw/esbuild/pkg/api"
+	"text/template"
 )
 
-// PageBasedRoute describes a page-based route from pages/* or src/pages/*.
+// PageBasedRoute describes a page-based route.
 type PageBasedRoute struct {
 	SrcPath   string `json:"srcPath"`   // pages/path/to/component.js
 	DstPath   string `json:"dstPath"`   // build/path/to/component.html
@@ -12,27 +12,21 @@ type PageBasedRoute struct {
 	Component string `json:"component"` // Component
 }
 
-// DirConfiguration describes persistent directory configuration.
-type DirConfiguration struct {
+// DirectoryConfiguration describes persistent directory configuration.
+type DirectoryConfiguration struct {
 	AssetDirectory string
 	PagesDirectory string
 	CacheDirectory string
 	BuildDirectory string
 }
 
-// TODO: We need a way of preventing the same error from logging twice. May want
-// some kind of fingerprint for warnings and errors.
 type Runtime struct {
-	// Unexported
-	epochUUID       string
-	esbuildResult   api.BuildResult
-	esbuildWarnings []api.Message
-	esbuildErrors   []api.Message
-
-	// Exported
-	Command interface{}
-	Config  DirConfiguration
-	Router  []PageBasedRoute
+	// TODO: Remove hashes?
+	EpochUUID         string
+	IndexHTMLTemplate *template.Template
+	Command           interface{}
+	DirConfiguration  DirectoryConfiguration
+	PageBasedRouter   []PageBasedRoute
 }
 
 // ExperimentalReactSuspenseEnabled   bool // Wrap <React.Suspense>

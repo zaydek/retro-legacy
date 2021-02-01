@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Hello, world!</title>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script src="/out.js"></script>
+		<script>
+			const events = new EventSource("/events")
+			// events.addEventListener("ready", e => {
+			// 	// prettier-ignore
+			// 	console.log(
+			// 		"retro: You are connected to the dev server. " +
+			// 		"When you’re ready to build your website, run %cretro build%c. " +
+			// 		"You can then run %cretro serve%c to serve your built website. ",
+			// 		"font-weight: bold",
+			// 		"none",
+			// 		"font-weight: bold",
+			// 		"none",
+			// 	)
+			// })
+			events.addEventListener("reload", e => {
+				window.location.reload()
+			})
+			events.addEventListener("error", e => {
+				events.close()
+				// prettier-ignore
+				console.log(
+					"retro: Disconnected from the dev server. " +
+					"Try %cretro watch%c to reconnect.",
+					"font-weight: bold",
+					"none",
+				)
+			})
+		</script>
+	</body>
+</html>

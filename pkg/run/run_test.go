@@ -7,17 +7,17 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	stdout, err := Cmd("echo", "Hello, world!")
+	stdout, err := Cmd(nil, "echo", "Hello, world!")
 	if err != nil {
 		t.Error(err)
 	}
-	expect.Expect(t, string(stdout), "Hello, world!\n")
+	expect.DeepEqual(t, string(stdout), "Hello, world!\n")
 }
 
 func TestRunError(t *testing.T) {
-	_, err := Cmd("bad")
+	_, err := Cmd(nil, "bad")
 	if err == nil {
 		t.Error("expected an error")
 	}
-	expect.Expect(t, err.Error(), "exec: \"bad\": executable file not found in $PATH")
+	expect.DeepEqual(t, err.Error(), "exec: \"bad\": executable file not found in $PATH")
 }

@@ -1,0 +1,16 @@
+{
+	"name": "@zaydek/retro-store",
+	"version": "0.0.6",
+	"description": "State management for Retro React apps.",
+	"repository": "https://github.com/zaydek/retro",
+	"license": "MIT",
+	"main": "dist/router/index.js",
+	"files": [
+		"dist/"
+	],
+	"scripts": {},
+	"devDependencies": {},
+	"engines": {
+		"node": ">=14.14.0"
+	}
+}
