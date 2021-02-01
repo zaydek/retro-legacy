@@ -27,7 +27,7 @@ func (r Runtime) getCmd() string {
 
 // getPort gets the current port.
 func (r Runtime) getPort() string {
-	if cmd := r.getCmd(); cmd == "watch" {
+	if cmd := r.getCmd(); cmd == "start" {
 		return strconv.Itoa(r.Command.(cli.StartCommand).Port)
 	} else if cmd == "serve" {
 		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)

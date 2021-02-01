@@ -49,7 +49,7 @@ ReactDOM.hydrate(
 `
 
 	src := p.Join(r.DirConfiguration.CacheDirectory, "app.esbuild.js")
-	dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.EpochUUID))
+	dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochID))
 
 	var buf bytes.Buffer
 	tmpl, err := template.New(src).Parse(text)

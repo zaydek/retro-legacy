@@ -16,8 +16,8 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-// parseIndexHTMLTemplate parses public/index.html.
-func parseIndexHTMLTemplate(config DirectoryConfiguration) (*template.Template, error) {
+// parseBaseTemplate parses public/index.html.
+func parseBaseTemplate(config DirectoryConfiguration) (*template.Template, error) {
 	bstr, err := ioutil.ReadFile(p.Join(config.AssetDirectory, "index.html"))
 	if err != nil {
 		return nil, errs.ReadFile(p.Join(config.AssetDirectory, "index.html"), err)
@@ -55,7 +55,7 @@ func statOrCreateDir(dir string) error {
 
 // runServerGuards runs server guards on the configuration.
 func runServerGuards(config DirectoryConfiguration) error {
-	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.BuildDirectory}
+	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.CacheDirectory, config.BuildDirectory}
 	for _, each := range dirs {
 		if err := statOrCreateDir(each); err != nil {
 			return err
@@ -69,8 +69,10 @@ func newRuntime() Runtime {
 
 	cmd := cli.ParseCLIArguments()
 	runtime := Runtime{
-		EpochUUID: uuid.NewString(),
-		Command:   cmd,
+		// TODO: Remove hyphens?
+		epochID: uuid.NewString(),
+
+		Command: cmd,
 		DirConfiguration: DirectoryConfiguration{
 			AssetDirectory: "public",
 			PagesDirectory: "pages",
@@ -81,18 +83,18 @@ func newRuntime() Runtime {
 
 	// Get the current command:
 	cmdstr := runtime.getCmd()
-	if cmdstr == "watch" || cmdstr == "build" {
+	if cmdstr == "start" || cmdstr == "build" {
 		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {
 			loggers.Stderr.Fatalln(err)
 		}
 	}
 
-	if runtime.IndexHTMLTemplate, err = parseIndexHTMLTemplate(runtime.DirConfiguration); err != nil {
+	if runtime.baseTemplate, err = parseBaseTemplate(runtime.DirConfiguration); err != nil {
 		loggers.Stderr.Fatalln(err)
 	}
 
 	// Do not run server guards for "serve":
-	if cmdstr == "watch" || cmdstr == "build" {
+	if cmdstr == "start" || cmdstr == "build" {
 		if err := runServerGuards(runtime.DirConfiguration); err != nil {
 			loggers.Stderr.Fatalln(err)
 		}

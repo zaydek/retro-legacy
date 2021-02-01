@@ -108,8 +108,8 @@ asyncRun([
 			}
 		}
 		var buf bytes.Buffer
-		if err := r.IndexHTMLTemplate.Execute(&buf, each); err != nil {
-			return errs.ExecuteTemplate(r.IndexHTMLTemplate.Name(), err)
+		if err := r.baseTemplate.Execute(&buf, each); err != nil {
+			return errs.ExecuteTemplate(r.baseTemplate.Name(), err)
 		}
 		if err := ioutil.WriteFile(each.DstPath, buf.Bytes(), perm.File); err != nil {
 			return errs.WriteFile(each.DstPath, err)

@@ -7,8 +7,6 @@ var usage = `
 
     Creates a new Retro app at directory ` + term.Bold("app-name") + `.
 
-    Flags:
-
       --template=javascript  Use the JavaScript template (default)
       --template=typescript  Use the TypeScript template
 
@@ -17,8 +15,9 @@ var usage = `
     ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
 `
 
+// TODO: Change to loggers.Stdout.Println.
 var successFormat = `
-  👾 Successfully created ` + term.Bold("%[1]s") + `!
+  Successfully created ` + term.Bold("%[1]s") + `!
 
   ` + term.Bold("npm") + `
 
@@ -34,7 +33,7 @@ var successFormat = `
 `
 
 var successDirectoryFormat = `
-  👾 Successfully created ` + term.Bold("%[1]s") + `!
+  Successfully created ` + term.Bold("%[1]s") + `!
 
   ` + term.Bold("npm") + `
 

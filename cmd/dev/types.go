@@ -21,12 +21,14 @@ type DirectoryConfiguration struct {
 }
 
 type Runtime struct {
-	// TODO: Remove hashes?
-	EpochUUID         string
-	IndexHTMLTemplate *template.Template
-	Command           interface{}
-	DirConfiguration  DirectoryConfiguration
-	PageBasedRouter   []PageBasedRoute
+	// Unexported
+	epochID      string
+	baseTemplate *template.Template
+
+	// Exported
+	Command          interface{}
+	DirConfiguration DirectoryConfiguration
+	PageBasedRouter  []PageBasedRoute
 }
 
 // ExperimentalReactSuspenseEnabled   bool // Wrap <React.Suspense>

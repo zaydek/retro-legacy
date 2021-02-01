@@ -5,7 +5,6 @@ bin-retro:
 	go build -o=retro dev.go && mv retro /usr/local/bin/
 
 bin:
-	make test-go
 	make -j2 \
 		bin-cra \
 		bin-retro

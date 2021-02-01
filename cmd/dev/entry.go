@@ -24,8 +24,8 @@ func Run() {
 
 	runtime := newRuntime()
 	switch cmd := runtime.getCmd(); cmd {
-	case "watch":
-		runtime.Watch()
+	case "start":
+		runtime.Start()
 	case "build":
 		runtime.Build()
 	case "serve":

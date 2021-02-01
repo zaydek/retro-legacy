@@ -19,7 +19,7 @@ import (
 
 // TODO: May want to add some kind of scroll-restoration logic for SSE as well
 // as disconnected SSE to stop retrying. Can try retry -1 for example.
-func (r Runtime) RenderPageBytes(route PageBasedRoute) ([]byte, error) {
+func (r Runtime) RenderPageAsBytes(route PageBasedRoute) ([]byte, error) {
 	if _, err := os.Stat(p.Join(r.DirConfiguration.CacheDirectory, "props.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + term.Bold("--cached") + " and try again.")
@@ -113,8 +113,8 @@ run([
 	}
 
 	var buf bytes.Buffer
-	if err := r.IndexHTMLTemplate.Execute(&buf, page); err != nil {
-		return nil, errs.ExecuteTemplate(r.IndexHTMLTemplate.Name(), err)
+	if err := r.baseTemplate.Execute(&buf, page); err != nil {
+		return nil, errs.ExecuteTemplate(r.baseTemplate.Name(), err)
 	}
 	return buf.Bytes(), nil
 }

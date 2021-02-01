@@ -7,41 +7,38 @@ import (
 )
 
 var usageOnly = strings.TrimSpace(`
-retro start [flags]  Starts the dev server
-retro build [flags]  Builds the production-ready build
-retro serve [flags]  Serves the production-ready build
+retro start  Starts the dev server
+retro build  Builds the production-ready build
+retro serve  Serves the production-ready build
 `)
 
 var usage = `
   ` + term.Bold("Usage:") + `
 
-    retro start [flags]  Starts the dev server
-    retro build [flags]  Builds the production-ready build
-    retro serve [flags]  Serves the production-ready build
+    retro start        Starts the dev server
+    retro build        Builds the production-ready build
+    retro serve        Serves the production-ready build
 
-  ` + term.Bold("retro watch [flags] paths") + `
+  ` + term.Bold("retro start") + `
 
-    Starts a dev server and watches paths for changes
+    Starts the dev server
 
-    Flags:
-      --cached           Use cached resources (default false)
-      --port=<number>    Port number (default 8000)
-      --source-map       Add source maps (default false)
+      --cached         Use cached resources (default false)
+      --port=<number>  Port number (default 8000)
+      --source-map     Add source maps (default false)
 
-  ` + term.Bold("retro build [flags]") + `
+  ` + term.Bold("retro build") + `
 
     Builds the production-ready build
 
-    Flags:
-      --cached           Use cached resources (default false)
-      --source-map       Add source maps (default false)
+      --cached         Use cached resources (default false)
+      --source-map     Add source maps (default false)
 
-  ` + term.Bold("retro serve [flags]") + `
+  ` + term.Bold("retro serve") + `
 
     Serves the production-ready build
 
-    Flags:
-      --port=<number>    Port number (default 8000)
+      --port=<number>  Port number (default 8000)
 
   ` + term.Bold("Repository:") + `
 
