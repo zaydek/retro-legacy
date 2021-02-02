@@ -59,6 +59,7 @@ function run({ path, exports, ...etc }) {
 			</div>
 		)
 	}
+	page += '\n\t\t<script src="/app.js"></script>'
 	page += '\n\t\t<script>const events = new EventSource("/events"); events.addEventListener("reload", e => window.location.reload()); events.addEventListener("error", e => events.close())</script>'
 
 	console.log(JSON.stringify({ ...etc, head, page }))

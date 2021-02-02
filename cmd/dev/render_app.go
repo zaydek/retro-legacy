@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	p "path"
-	"regexp"
 	"strings"
 	"text/template"
 
@@ -16,12 +15,16 @@ import (
 	"github.com/zaydek/retro/pkg/perm"
 )
 
-// https://regex101.com/r/HPv8YP/1/
-var appRe = regexp.MustCompile(`^app\.[0-9a-f]{16}(?:\.map)?\.js$`)
+// // https://regex101.com/r/HPv8YP/1/
+// var appRe = regexp.MustCompile(`^app\.[0-9a-f]{16}(?:\.map)?\.js$`)
+
+// var appRe = regexp.MustCompile(`^app(?:\.[0-9a-f]{16})?(?:\.map)?\.js$`)
 
 func (r Runtime) RenderApp() error {
+	// dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochID))
+
 	src := p.Join(r.DirConfiguration.CacheDirectory, "app.esbuild.js")
-	dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochID))
+	dst := p.Join(r.DirConfiguration.BuildDirectory, "app.js")
 
 	// TODO: When esbuild adds support for dynamic imports, this can be changed to
 	// a pure JavaScript implementation.
@@ -94,17 +97,17 @@ ReactDOM.hydrate(
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
 
-	fs, err := os.ReadDir(r.DirConfiguration.BuildDirectory)
-	if err != nil {
-		return errs.Unexpected(err)
-	}
-	for _, f := range fs {
-		path := p.Join(r.DirConfiguration.BuildDirectory, f.Name())
-		if path != dst && appRe.MatchString(f.Name()) {
-			if err := os.Remove(path); err != nil {
-				return errs.Unexpected(err)
-			}
-		}
-	}
+	// fs, err := os.ReadDir(r.DirConfiguration.BuildDirectory)
+	// if err != nil {
+	// 	return errs.Unexpected(err)
+	// }
+	// for _, f := range fs {
+	// 	path := p.Join(r.DirConfiguration.BuildDirectory, f.Name())
+	// 	if path != dst && appRe.MatchString(f.Name()) {
+	// 		if err := os.Remove(path); err != nil {
+	// 			return errs.Unexpected(err)
+	// 		}
+	// 	}
+	// }
 	return nil
 }

@@ -74,7 +74,7 @@ func newRuntime() Runtime {
 	}
 
 	runtime := Runtime{
-		epochID:          randomHash(16),
+		// epochID: randomHash(16),
 		Command:          cli.ParseCLIArguments(),
 		DirConfiguration: dirs,
 	}

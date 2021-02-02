@@ -30,7 +30,7 @@ type DirectoryConfiguration struct {
 
 type Runtime struct {
 	// Unexported
-	epochID      string
+	// epochID string
 	baseTemplate *template.Template
 
 	// Exported

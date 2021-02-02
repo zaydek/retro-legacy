@@ -28,6 +28,8 @@ func (r Runtime) Start() {
 
 	loggers.Stdout.Println(term.Boldf("http://localhost:%s", r.getPort()))
 
+	// TODO: Can’t we serve this without writing it to disk? Then we don’t pollute
+	// build which seems right.
 	// TODO: Add support for source map here and other places.
 	result := api.Build(api.BuildOptions{
 		Bundle: true,
