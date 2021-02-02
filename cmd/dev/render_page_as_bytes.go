@@ -65,7 +65,7 @@ function run({ path, exports, ...etc }) {
 	console.log(JSON.stringify({ ...etc, head, page }))
 }
 
-run(` + node_export(route) + `)
+run(` + exportStmt(route) + `)
 `
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {

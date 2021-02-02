@@ -3,7 +3,6 @@ package dev
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	p "path"
 	"path/filepath"
@@ -22,17 +21,6 @@ func must(err error) {
 		return
 	}
 	loggers.Stderr.Fatalln(err)
-}
-
-const hex = "0123456789abcdef"
-
-// Based on https://stackoverflow.com/a/31832326.
-func randomHash(n int) string {
-	bstr := make([]byte, n)
-	for x := range bstr {
-		bstr[x] = hex[rand.Intn(len(hex))]
-	}
-	return string(bstr)
 }
 
 // getCmd gets the current command.
@@ -81,7 +69,7 @@ type rendererdPage struct {
 	Page string `json:"page"`
 }
 
-func node_requires(routes []PageBasedRoute) []string {
+func requireStmts(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
 		arr = append(arr, fmt.Sprintf(`const %s = require("%s")`,
@@ -90,15 +78,15 @@ func node_requires(routes []PageBasedRoute) []string {
 	return arr
 }
 
-func node_export(route PageBasedRoute) string {
+func exportStmt(route PageBasedRoute) string {
 	return fmt.Sprintf(`{ srcPath: %q, dstPath: %q, path: %q, component: %[4]q, exports: %[4]s }`,
 		route.SrcPath, route.DstPath, route.Path, route.Component)
 }
 
-func node_exports(routes []PageBasedRoute) []string {
+func exportStmts(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
-		arr = append(arr, node_export(each))
+		arr = append(arr, exportStmt(each))
 	}
 	return arr
 }

@@ -9,10 +9,6 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
-// func init() {
-// 	rand.Seed(time.Now().UTC().UnixNano())
-// }
-
 func Run() {
 	start := time.Now()
 	defer term.Revert(os.Stdout)

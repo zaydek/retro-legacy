@@ -74,12 +74,10 @@ func newRuntime() Runtime {
 	}
 
 	runtime := Runtime{
-		// epochID: randomHash(16),
 		Command:          cli.ParseCLIArguments(),
 		DirConfiguration: dirs,
 	}
 
-	// Get the current command:
 	cmd := runtime.getCmd()
 	if cmd == CmdStart || cmd == CmdBuild {
 		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {

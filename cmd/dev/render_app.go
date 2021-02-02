@@ -15,11 +15,6 @@ import (
 	"github.com/zaydek/retro/pkg/perm"
 )
 
-// // https://regex101.com/r/HPv8YP/1/
-// var appRe = regexp.MustCompile(`^app\.[0-9a-f]{16}(?:\.map)?\.js$`)
-
-// var appRe = regexp.MustCompile(`^app(?:\.[0-9a-f]{16})?(?:\.map)?\.js$`)
-
 func (r Runtime) RenderApp() error {
 	// dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochID))
 
@@ -36,7 +31,7 @@ import ReactDOM from "react-dom"
 import { BrowserRouter, Route, Router } from "@zaydek/retro-router"
 
 // Pages
-` + strings.Join(node_requires(r.PageBasedRouter), "\n") + `
+` + strings.Join(requireStmts(r.PageBasedRouter), "\n") + `
 
 // Page props
 const pageProps = require("./pageProps.js").default
@@ -99,18 +94,5 @@ ReactDOM.hydrate(
 	} else if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
 	}
-
-	// fs, err := os.ReadDir(r.DirConfiguration.BuildDirectory)
-	// if err != nil {
-	// 	return errs.Unexpected(err)
-	// }
-	// for _, f := range fs {
-	// 	path := p.Join(r.DirConfiguration.BuildDirectory, f.Name())
-	// 	if path != dst && appRe.MatchString(f.Name()) {
-	// 		if err := os.Remove(path); err != nil {
-	// 			return errs.Unexpected(err)
-	// 		}
-	// 	}
-	// }
 	return nil
 }
