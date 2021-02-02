@@ -1,4 +1,4 @@
-export { default as history } from "./history"
+export * from "./BrowserRouter"
 export * from "./Link"
 export * from "./Redirect"
 export * from "./Route"

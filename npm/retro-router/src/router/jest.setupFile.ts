@@ -1,16 +1,15 @@
 import React from "react"
 import renderer from "react-test-renderer"
 
-// See `renderer.create(...).toJSON()`
 type Snapshot = renderer.ReactTestRendererJSON | renderer.ReactTestRendererJSON[] | null
 
 declare namespace global {
-	function mock_location_pathname(): void
+	function mockLocationPathname(): void
 	function renderRoutedSnapshot(pathname: string, routedApp: React.ReactElement): Snapshot
 }
 
 // https://stackoverflow.com/a/54034379
-function mock_location_pathname() {
+function mockLocationPathname() {
 	Object.defineProperty(window, "location", {
 		value: { pathname: "/" },
 		writable: true,
@@ -19,9 +18,8 @@ function mock_location_pathname() {
 
 function renderRoutedSnapshot(pathname: string, app: React.ReactElement) {
 	window.location.pathname = pathname
-	const snapshot = renderer.create(app).toJSON()
-	return snapshot
+	return renderer.create(app).toJSON()
 }
 
-global.mock_location_pathname = mock_location_pathname
+global.mockLocationPathname = mockLocationPathname
 global.renderRoutedSnapshot = renderRoutedSnapshot

@@ -1,35 +1,30 @@
-import history from "./history"
 import React, { useLayoutEffect, useState } from "react"
 import { Route } from "./Route"
+import { useHistory } from "./BrowserRouter"
 
 // TODO: Propagating state between history changes (see the state parameter).
-
-// Creates a four-character hash.
-function newHash() {
-	return Math.random().toString(16).slice(2, 6)
-}
 
 // Converts React children to an array.
 function childrenToArray(children?: React.ReactNode) {
 	const childrenArr: React.ReactNode[] = []
 
-	// Use `React.Children.forEach` because `React.Children.toArray` sets keys.
+	// Use React.Children.forEach because React.Children.toArray sets keys.
 	//
 	// https://reactjs.org/docs/react-api.html#reactchildrentoarray
 	React.Children.forEach(children, each => childrenArr.push(each))
 	return childrenArr
 }
 
-// Searches routes for an route matching `page`.
+// Searches routes for an route matching path.
 //
 // prettier-ignore
-function findRoute(children: undefined | React.ReactNode, page: string) {
+function findRoute(children: undefined | React.ReactNode, path: string) {
 	const childrenArr = childrenToArray(children)
 
 	const route = childrenArr.find(each => {
 		const ok = React.isValidElement(each) &&
 			each.type === Route &&
-			each.props.page === page
+			each.props.path === path
 		return ok
 	})
 	return route
@@ -39,32 +34,27 @@ export interface RouterProps {
 	children?: React.ReactNode
 }
 
-// TODO: Add support for force rerender?
+// TODO: Add support for keys so rerenders are forced?
+// TODO: Add error for when history === undefined.
 export function Router({ children }: RouterProps) {
-	// prettier-ignore
-	const [state, setState] = useState({
-		hash: newHash(),                // A four-character hash to force rerender the same route
-		page: window.location.pathname, // The current pathname, per render
-	})
+	const history = useHistory()
+
+	if (!history) {
+		throw new Error(
+			"retro-router: It looks like you haven’t wrapped your app with <BrowserRouter>. " +
+				"<BrowserRouter> creates a new browser history, which retro-router components need to work.",
+		)
+	}
+
+	const [path, setPath] = useState(window.location.pathname)
 
 	useLayoutEffect(() => {
-		// FIXME: any
-		const defer = history.listen((e: any) => {
-			if (e.location.pathname === state.page) {
-				setState({ ...state, hash: newHash() })
-				return
-			}
-			setState({ hash: newHash(), page: e.location.pathname })
-		})
-		return defer
-	})
+		history.listen(e => setPath(e.location.pathname))
+	}, [history])
 
-	// Absolute redirect (forward the found route) or not found:
-	const route = findRoute(children, state.page)
+	const route = findRoute(children, path)
 	if (!route) {
 		return <>{findRoute(children, "/404")}</>
 	}
-
-	// return <Fragment key={state.hash}>{route}</Fragment>
 	return <>{route}</>
 }

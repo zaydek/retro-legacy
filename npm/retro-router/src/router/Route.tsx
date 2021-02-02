@@ -1,7 +1,7 @@
 import React from "react"
 
 export interface RouteProps {
-	page: string
+	path: string
 	children?: React.ReactNode
 }
 

@@ -1,5 +1,5 @@
-import history from "./history"
 import React from "react"
+import { useHistory } from "./BrowserRouter"
 
 type ScrollTo = "no-op" | number | string | HTMLElement
 
@@ -30,23 +30,24 @@ function scrollImpl(scrollTo?: ScrollTo) {
 	}
 }
 
-// TODO: Is `React.HTMLAttributes<HTMLElement>` right?
 export interface LinkProps extends React.HTMLAttributes<HTMLElement> {
-	page: string
+	path: string
 	children?: React.ReactNode
 	shouldReplaceHistory?: boolean
 	scrollTo?: ScrollTo
 }
 
-export function Link({ page, children, shouldReplaceHistory, scrollTo, ...props }: LinkProps) {
+export function Link({ path, children, shouldReplaceHistory, scrollTo, ...props }: LinkProps) {
+	const history = useHistory()!
+
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
 		const goTo = shouldReplaceHistory ? history.replace : history.push
-		goTo(page)
+		goTo(path)
 		scrollImpl(scrollTo)
 	}
 	return (
-		<a href={page} onClick={handleClick} {...props}>
+		<a href={path} onClick={handleClick} {...props}>
 			{children}
 		</a>
 	)

@@ -1,22 +1,25 @@
 import React from "react"
 import renderer from "react-test-renderer"
+import { BrowserRouter } from "./BrowserRouter"
 import { Route } from "./Route"
 import { Router } from "./Router"
 
 beforeAll(() => {
-	mock_location_pathname()
+	mockLocationPathname()
 })
 
 test("should route to /404", () => {
 	window.location.pathname = "/oops"
 	const tree = renderer.create(
-		<Router>
-			<Route page="/404">
-				<h1>
-					Hello, <code>/404</code>!
-				</h1>
-			</Route>
-		</Router>,
+		<BrowserRouter>
+			<Router>
+				<Route path="/404">
+					<h1>
+						Hello, <code>/404</code>!
+					</h1>
+				</Route>
+			</Router>
+		</BrowserRouter>,
 	)
 	expect(tree).toMatchInlineSnapshot(`
     <h1>
@@ -34,7 +37,14 @@ test("should route to /404", () => {
 
 test("should route to null; there is no /404 route", () => {
 	window.location.pathname = "/oops"
-	const tree = renderer.create(<Router>{/* Nothing to see here. */}</Router>)
+	const tree = renderer.create(
+		// prettier-ignore
+		<BrowserRouter>
+			<Router>
+				{/* Nothing to see here. */}
+			</Router>
+		</BrowserRouter>,
+	)
 	expect(tree).toMatchInlineSnapshot("null")
 
 	// Never changes:

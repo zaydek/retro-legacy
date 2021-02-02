@@ -5,12 +5,12 @@
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",
 	"main": "dist/router/index.js",
+	"types": "dist/types/index.d.ts",
 	"files": [
 		"dist/"
 	],
 	"scripts": {
-		"test": "jest",
-		"build": "rm -rf dist/ && yarn tsc --declaration --outDir dist/ --removeComments"
+		"test": "jest"
 	},
 	"devDependencies": {
 		"@types/node": "^14.14.22",
