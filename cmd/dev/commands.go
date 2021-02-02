@@ -26,7 +26,7 @@ func (r Runtime) Start() {
 		must(r.RenderPageProps())
 	}
 
-	fmt.Printf("👾 http://localhost:%s\n", r.getPort())
+	loggers.Stdout.Println(term.Boldf("http://localhost:%s", r.getPort()))
 
 	// TODO: Add support for source map here and other places.
 	result := api.Build(api.BuildOptions{
@@ -114,7 +114,7 @@ func (r Runtime) Serve() {
 			"Try " + term.Bold("retro build && retro serve") + ".")
 	}
 
-	loggers.Stdout.Println("Open " + term.Boldf("http://localhost:%s", r.getPort()) + ".")
+	loggers.Stdout.Println(term.Boldf("http://localhost:%s", r.getPort()))
 
 	http.Handle("/", http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory)))
 	must(http.ListenAndServe(":"+r.getPort(), nil))

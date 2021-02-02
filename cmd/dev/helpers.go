@@ -7,29 +7,40 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 )
 
 // getCmd gets the current command.
-func (r Runtime) getCmd() string {
+func (r Runtime) getCmd() Cmd {
 	switch r.Command.(type) {
 	case cli.StartCommand:
-		return "start"
+		return CmdStart
 	case cli.BuildCommand:
-		return "build"
+		return CmdBuild
 	case cli.ServeCommand:
-		return "serve"
+		return CmdServe
 	}
-	return ""
+	return 0
+}
+
+func (r Runtime) getSourceMap() api.SourceMap {
+	if cmd := r.getCmd(); cmd == CmdStart || cmd == CmdBuild {
+		if r.Command.(struct{ SourceMap bool }).SourceMap {
+			return api.SourceMapLinked
+		}
+		return api.SourceMapNone
+	}
+	return 0
 }
 
 // getPort gets the current port.
 func (r Runtime) getPort() string {
-	if cmd := r.getCmd(); cmd == "start" {
+	if cmd := r.getCmd(); cmd == CmdStart {
 		return strconv.Itoa(r.Command.(cli.StartCommand).Port)
-	} else if cmd == "serve" {
+	} else if cmd == CmdServe {
 		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)
 	}
 	return ""

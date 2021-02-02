@@ -4,6 +4,14 @@ import (
 	"text/template"
 )
 
+type Cmd uint8
+
+const (
+	CmdStart Cmd = iota // Zero value
+	CmdBuild
+	CmdServe
+)
+
 // PageBasedRoute describes a page-based route.
 type PageBasedRoute struct {
 	SrcPath   string `json:"srcPath"`   // pages/path/to/component.js

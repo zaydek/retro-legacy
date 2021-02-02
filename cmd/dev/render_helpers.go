@@ -2,7 +2,7 @@ package dev
 
 import "fmt"
 
-type prerenderedPage struct {
+type rendererdPage struct {
 	PageBasedRoute
 
 	Head string `json:"head"`
@@ -18,11 +18,15 @@ func requires(routes []PageBasedRoute) []string {
 	return arr
 }
 
+func export(route PageBasedRoute) string {
+	return fmt.Sprintf(`{ srcPath: %q, dstPath: %q, path: %q, component: %[4]q, exports: %[4]s }`,
+		route.SrcPath, route.DstPath, route.Path, route.Component)
+}
+
 func exports(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
-		arr = append(arr, fmt.Sprintf(`{ srcPath: %q, dstPath: %q, path: %q, component: %[4]q, exports: %[4]s }`,
-			each.SrcPath, each.DstPath, each.Path, each.Component))
+		arr = append(arr, export(each))
 	}
 	return arr
 }

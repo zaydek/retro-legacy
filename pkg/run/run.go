@@ -31,10 +31,10 @@ func Cmd(stdin []byte, arguments ...string) (stdoutBytes []byte, err error) {
 	cmd.Stderr = &stderr
 
 	// Run the command:
-	if err := cmd.Run(); err != nil {
-		return nil, err
-	} else if stderr.Len() > 0 {
+	if err := cmd.Run(); stderr.Len() > 0 {
 		return nil, fmt.Errorf("stderr: %s", stderr.String())
+	} else if err != nil {
+		return nil, err
 	}
 	return stdout.Bytes(), nil
 }

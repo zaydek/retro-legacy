@@ -24,11 +24,11 @@ func Run() {
 
 	runtime := newRuntime()
 	switch cmd := runtime.getCmd(); cmd {
-	case "start":
+	case CmdStart:
 		runtime.Start()
-	case "build":
+	case CmdBuild:
 		runtime.Build()
-	case "serve":
+	case CmdServe:
 		runtime.Serve()
 	}
 	fmt.Printf("⚡️ %0.3fs\n", time.Since(start).Seconds())

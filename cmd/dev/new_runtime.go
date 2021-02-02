@@ -67,22 +67,22 @@ func runServerGuards(config DirectoryConfiguration) error {
 func newRuntime() Runtime {
 	var err error
 
-	cmd := cli.ParseCLIArguments()
-	runtime := Runtime{
-		epochID: uuid.NewString()[:8],
+	dirs := DirectoryConfiguration{
+		AssetDirectory: "public",
+		PagesDirectory: "pages",
+		CacheDirectory: "__cache__",
+		BuildDirectory: "build",
+	}
 
-		Command: cmd,
-		DirConfiguration: DirectoryConfiguration{
-			AssetDirectory: "public",
-			PagesDirectory: "pages",
-			CacheDirectory: "__cache__",
-			BuildDirectory: "build",
-		},
+	runtime := Runtime{
+		epochID:          uuid.NewString()[:8],
+		Command:          cli.ParseCLIArguments(),
+		DirConfiguration: dirs,
 	}
 
 	// Get the current command:
-	cmdstr := runtime.getCmd()
-	if cmdstr == "start" || cmdstr == "build" {
+	cmd := runtime.getCmd()
+	if cmd == CmdStart || cmd == CmdBuild {
 		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {
 			loggers.Stderr.Fatalln(err)
 		}
@@ -92,8 +92,8 @@ func newRuntime() Runtime {
 		loggers.Stderr.Fatalln(err)
 	}
 
-	// Do not run server guards for "serve":
-	if cmdstr == "start" || cmdstr == "build" {
+	// Do not run server guards on serve:
+	if cmd == CmdStart || cmd == CmdBuild {
 		if err := runServerGuards(runtime.DirConfiguration); err != nil {
 			loggers.Stderr.Fatalln(err)
 		}

@@ -34,7 +34,8 @@ export interface RouterProps {
 	children?: React.ReactNode
 }
 
-// TODO: Add support for keys so rerenders are forced?
+// TODO: Add support for keys so rerenders are forced? It looks like React
+// Router possibly supports this use-case here: https://git.io/Jt067.
 // TODO: Add error for when history === undefined.
 export function Router({ children }: RouterProps) {
 	const history = useHistory()

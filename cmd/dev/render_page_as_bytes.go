@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	p "path"
-	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/pkg/errs"
@@ -17,6 +16,7 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
+// const pageProps = require("../{{ .DirConfiguration.CacheDirectory }}/pageProps.js").default
 func (r Runtime) RenderPageAsBytes(route PageBasedRoute) ([]byte, error) {
 	src := p.Join(r.DirConfiguration.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
 
@@ -33,12 +33,12 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Pages
-` + fmt.Sprintf(`const %s = require("%s")`, route.Component, "../"+route.SrcPath) + `
+` + fmt.Sprintf(`const %s = require("../%s")`, route.Component, route.SrcPath) + `
 
 // Page props
-` + fmt.Sprintf(`const pageProps = require("%s").default, ../`+r.DirConfiguration.CacheDirectory+"/pageProps.js") + `
+const pageProps = require("./pageProps.js").default
 
-function run({ path, exports }) {
+function run({ path, exports, ...etc }) {
 	let head = ""
 	if ("Head" in exports) {
 		const Component = exports.Head
@@ -59,28 +59,12 @@ function run({ path, exports }) {
 			</div>
 		)
 	}
-
-	page += '\n'
-	page += 'events.addEventListener("reload", e => {' + '\n'
-	page += '	window.location.reload()' + '\n'
-	page += '})' + '\n'
-	page += 'events.addEventListener("error", e => {' + '\n'
-	page += '	events.close()' + '\n'
-	page += '	// prettier-ignore' + '\n'
-	page += '	console.log(' + '\n'
-	page += '		"retro: Disconnected from the dev server. " +' + '\n'
-	page += '		"Try %cretro watch%c to reconnect.",' + '\n'
-	page += '		"font-weight: bold",' + '\n'
-	page += '		"none",' + '\n'
-	page += '	)' + '\n'
-	page += '})' + '\n'
+	page += '\n\t\t<script>const events = new EventSource("/events"); events.addEventListener("reload", e => window.location.reload()); events.addEventListener("error", e => events.close())</script>'
 
 	console.log(JSON.stringify({ ...etc, head, page }))
 }
 
-run([
-	` + strings.Join(exports(r.PageBasedRouter), ",\n\t") + `
-])
+run(` + export(route) + `)
 `
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
@@ -105,10 +89,10 @@ run([
 
 	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
 	if err != nil {
-		return nil, errs.RunNode(err)
+		return nil, errs.PipeEsbuildToNode(err)
 	}
 
-	var page prerenderedPage
+	var page rendererdPage
 	if err := json.Unmarshal(stdout, &page); err != nil {
 		return nil, errs.Unexpected(err)
 	}

@@ -33,9 +33,8 @@ func WriteFile(path string, err error) error {
 		"Error: %w", err)
 }
 
-// TODO: Pass commandStr as an argument here?
-func RunNode(err error) error {
-	return fmt.Errorf("Failed to run Node.\n\n"+
+func PipeEsbuildToNode(err error) error {
+	return fmt.Errorf("Failed to pipe esbuild to Node.js.\n\n"+
 		"Error: %w", err)
 }
 

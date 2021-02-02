@@ -30,8 +30,7 @@ import ReactDOMServer from "react-dom/server"
 ` + strings.Join(requires(r.PageBasedRouter), "\n") + `
 
 // Page props
-` + fmt.Sprintf(`const pageProps = require("%s").default`,
-		fmt.Sprintf("../%s/pageProps.js", r.DirConfiguration.CacheDirectory)) + `
+const pageProps = require("./pageProps.js").default
 
 async function asyncRun(routes) {
 	const chain = []
@@ -97,7 +96,7 @@ asyncRun([
 		return err
 	}
 
-	var pages []prerenderedPage
+	var pages []rendererdPage
 	if err := json.Unmarshal(stdout, &pages); err != nil {
 		return errs.Unexpected(err)
 	}
