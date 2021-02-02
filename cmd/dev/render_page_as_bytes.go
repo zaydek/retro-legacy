@@ -18,6 +18,8 @@ import (
 )
 
 func (r Runtime) RenderPageAsBytes(route PageBasedRoute) ([]byte, error) {
+	src := p.Join(r.DirConfiguration.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
+
 	if _, err := os.Stat(p.Join(r.DirConfiguration.CacheDirectory, "pageProps.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + term.Bold("--cached") + " and try again.")
@@ -80,8 +82,6 @@ run([
 	` + strings.Join(exports(r.PageBasedRouter), ",\n\t") + `
 ])
 `
-
-	src := p.Join(r.DirConfiguration.CacheDirectory, fmt.Sprintf("%s.esbuild.js", route.Component))
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return nil, errs.WriteFile(src, err)

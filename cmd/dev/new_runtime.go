@@ -69,8 +69,7 @@ func newRuntime() Runtime {
 
 	cmd := cli.ParseCLIArguments()
 	runtime := Runtime{
-		// TODO: Remove hyphens?
-		epochID: uuid.NewString(),
+		epochID: uuid.NewString()[:8],
 
 		Command: cmd,
 		DirConfiguration: DirectoryConfiguration{
