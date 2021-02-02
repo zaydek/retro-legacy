@@ -62,7 +62,10 @@ asyncRun([
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
 		EntryPoints: []string{src},
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
+		Loader: map[string]api.Loader{
+			".js": api.LoaderJSX,
+			".ts": api.LoaderTSX,
+		},
 	})
 	// TODO
 	if len(results.Warnings) > 0 {

@@ -58,7 +58,9 @@ ReactDOM.hydrate(
 	tmpl, err := template.New(src).Parse(text)
 	if err != nil {
 		return errs.ParseTemplate(src, err)
-	} else if err := tmpl.Execute(&buf, r); err != nil {
+	}
+
+	if err := tmpl.Execute(&buf, r); err != nil {
 		return errs.ExecuteTemplate(tmpl.Name(), err)
 	}
 
@@ -73,19 +75,19 @@ ReactDOM.hydrate(
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
 		EntryPoints: []string{src},
-		// TODO
-		Sourcemap: api.SourceMapLinked,
-		Loader:    map[string]api.Loader{".js": api.LoaderJSX, ".ts": api.LoaderTSX},
+		Loader: map[string]api.Loader{
+			".js": api.LoaderJSX,
+			".ts": api.LoaderTSX,
+		},
+		Outfile:   dst,
+		Sourcemap: r.getSourceMap(),
+		Write:     true,
 	})
 	// TODO
 	if len(results.Warnings) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
 	} else if len(results.Errors) > 0 {
 		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
-	}
-
-	if err := ioutil.WriteFile(dst, results.OutputFiles[0].Contents, perm.File); err != nil {
-		return errs.WriteFile(dst, err)
 	}
 	return nil
 }

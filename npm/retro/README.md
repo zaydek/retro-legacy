@@ -1,8 +1,4 @@
-# create-retro-app
-
-This project was bootstrapped with `npx @zaydek/create-retro-app`.
-
-Learn more about Retro: https://github.com/zaydek/retro.
+# retro
 
 ```
 

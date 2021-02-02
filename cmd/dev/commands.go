@@ -36,8 +36,11 @@ func (r Runtime) Start() {
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
 		EntryPoints: []string{p.Join(r.DirConfiguration.PagesDirectory, "index.js")},
-		Loader:      map[string]api.Loader{".js": api.LoaderJSX},
-		Outfile:     p.Join(r.DirConfiguration.BuildDirectory, "app.js"),
+		Loader: map[string]api.Loader{
+			".js": api.LoaderJSX,
+			".ts": api.LoaderTSX,
+		},
+		Outfile: p.Join(r.DirConfiguration.BuildDirectory, "app.js"),
 		Watch: &api.WatchMode{
 			OnRebuild: func(result api.BuildResult) {
 				// TODO: Don’t we want to propagate these errors to the client?

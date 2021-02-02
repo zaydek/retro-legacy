@@ -1,41 +1,50 @@
 # create-retro-app
 
-This project was bootstrapped with `npx @zaydek/create-retro-app`.
+```
 
-Learn more about Retro: https://github.com/zaydek/retro.
+  create-retro-app [flags] app-name
+
+    Creates a new Retro app at directory app-name.
+
+      --template=javascript  Use the JavaScript template (default)
+      --template=typescript  Use the TypeScript template
+
+  Repository:
+
+    https://github.com/zaydek/retro
+
+```
+
+# retro
 
 ```
 
   Usage:
 
-    retro watch [flags] paths  Starts the dev server and watches paths paths for changes
-    retro build [flags]        Builds the production-ready build
-    retro serve [flags]        Serves the production-ready build
+    retro start        Starts the dev server
+    retro build        Builds the production-ready build
+    retro serve        Serves the production-ready build
 
-  retro watch [flags] paths
+  retro start
 
-    Starts a dev server and watches paths for changes (defaults to pages)
+    Starts the dev server
 
-    Flags:
-      --cached                 Reuse cached props (default false)
-      --poll=<duration>        Poll duration (default 250ms)
-      --port=<number>          Port number (default 8000)
-      --source-map             Add source maps (default false)
+      --cached         Use cached resources (default false)
+      --port=<number>  Port number (default 8000)
+      --source-map     Add source maps (default false)
 
-  retro build [flags]
+  retro build
 
     Builds the production-ready build
 
-    Flags:
-      --cached                 Reuse cached props (default false)
-      --source-map             Add source maps (default false)
+      --cached         Use cached resources (default false)
+      --source-map     Add source maps (default false)
 
-  retro serve [flags]
+  retro serve
 
     Serves the production-ready build
 
-    Flags:
-      --port=<number>          Port number (default 8000)
+      --port=<number>  Port number (default 8000)
 
   Repository:
 
