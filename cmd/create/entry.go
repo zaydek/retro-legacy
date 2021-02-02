@@ -1,7 +1,6 @@
 package create
 
 import (
-	_ "embed"
 	"fmt"
 	"os"
 )

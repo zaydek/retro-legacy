@@ -9,7 +9,7 @@ func TestJavaScriptTemplate(t *testing.T) {
 	want := `{
 	"name": "app-name",
 	"scripts": {
-		"watch": "retro watch",
+		"start": "retro start",
 		"build": "retro build",
 		"serve": "retro serve"
 	},
@@ -23,14 +23,15 @@ func TestJavaScriptTemplate(t *testing.T) {
 `
 
 	dot := PackageDot{
-		AppName: "app-name",
+		AppName:      "app-name",
+		RetroVersion: "1.33.7",
 	}
 	var buf bytes.Buffer
 	if err := JavaScriptPackageTemplate.Execute(&buf, dot); err != nil {
 		t.Fatal(err)
 	}
 	if got := buf.String(); got != want {
-		t.Fatalf("got: %q want %q", got, want)
+		t.Fatalf("got %q want %q", got, want)
 	}
 }
 
@@ -38,7 +39,7 @@ func TestTypeScriptTemplate(t *testing.T) {
 	want := `{
 	"name": "app-name",
 	"scripts": {
-		"watch": "retro watch",
+		"start": "retro start",
 		"build": "retro build",
 		"serve": "retro serve"
 	},
@@ -57,13 +58,13 @@ func TestTypeScriptTemplate(t *testing.T) {
 
 	dot := PackageDot{
 		AppName:      "app-name",
-		RetroVersion: "^1.33.7",
+		RetroVersion: "1.33.7",
 	}
 	var buf bytes.Buffer
 	if err := TypeScriptPackageTemplate.Execute(&buf, dot); err != nil {
 		t.Fatal(err)
 	}
 	if got := buf.String(); got != want {
-		t.Fatalf("got: %q want %q", got, want)
+		t.Fatalf("got %q want %q", got, want)
 	}
 }

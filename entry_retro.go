@@ -8,10 +8,12 @@ import (
 	"github.com/zaydek/retro/cmd/dev"
 )
 
-func main() {
+func init() {
 	//go:embed version.txt
 	var v string
 	os.Setenv("RETRO_VERSION", strings.TrimSpace(v))
+}
 
+func main() {
 	dev.Run()
 }

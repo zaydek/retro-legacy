@@ -1,7 +1,6 @@
 package dev
 
 import (
-	_ "embed"
 	"fmt"
 	"os"
 	"time"

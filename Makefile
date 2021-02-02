@@ -25,9 +25,7 @@ test-pkg:
 	go test ./pkg/...
 
 test-go:
-	make test-create-retro-app
-	make test-retro
-	make test-pkg
+	go test ./...
 
 test-router:
 	cd retro-router/ && yarn test
