@@ -76,7 +76,9 @@ func ParseCLIArguments() interface{} {
 	case "version":
 		fallthrough
 	case "--version":
-		fmt.Println("TODO")
+		fallthrough
+	case "-v":
+		fmt.Println(os.Getenv("RETRO_VERSION"))
 		os.Exit(0)
 	// $ retro usage
 	case "usage":
