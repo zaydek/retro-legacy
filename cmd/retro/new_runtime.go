@@ -1,4 +1,4 @@
-package dev
+package retro
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/zaydek/retro/cmd/dev/cli"
+	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"

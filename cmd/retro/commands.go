@@ -1,4 +1,4 @@
-package dev
+package retro
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	p "path"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/cmd/dev/cli"
+	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/term"
 )

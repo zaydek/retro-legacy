@@ -1,4 +1,4 @@
-package create
+package create_retro_app
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"os"
 	p "path"
 
-	"github.com/zaydek/retro/cmd/create/embeds"
+	"github.com/zaydek/retro/cmd/create_retro_app/embeds"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"

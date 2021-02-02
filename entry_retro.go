@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/zaydek/retro/cmd/dev"
+	"github.com/zaydek/retro/cmd/retro"
 )
 
 func init() {
@@ -15,5 +15,5 @@ func init() {
 }
 
 func main() {
-	dev.Run()
+	retro.Run()
 }

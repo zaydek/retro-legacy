@@ -1,4 +1,4 @@
-package create
+package create_retro_app
 
 import "github.com/zaydek/retro/pkg/term"
 
