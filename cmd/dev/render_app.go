@@ -86,9 +86,12 @@ ReactDOM.hydrate(
 			".js": api.LoaderJSX,
 			".ts": api.LoaderTSX,
 		},
-		Outfile:   dst,
-		Sourcemap: r.getSourceMap(),
-		Write:     true,
+		MinifyIdentifiers: os.Getenv("NODE_ENV") == "production",
+		MinifySyntax:      os.Getenv("NODE_ENV") == "production",
+		MinifyWhitespace:  os.Getenv("NODE_ENV") == "production",
+		Outfile:           dst,
+		Sourcemap:         r.getSourceMap(),
+		Write:             true,
 	})
 	// TODO
 	if len(results.Warnings) > 0 {

@@ -3,16 +3,15 @@ package dev
 import (
 	_ "embed"
 	"fmt"
-	"math/rand"
 	"os"
 	"time"
 
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
+// func init() {
+// 	rand.Seed(time.Now().UTC().UnixNano())
+// }
 
 func Run() {
 	start := time.Now()
