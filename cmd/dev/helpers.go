@@ -69,11 +69,28 @@ type rendererdPage struct {
 	Page string `json:"page"`
 }
 
-func requireStmts(routes []PageBasedRoute) []string {
+func requireStmt(route PageBasedRoute) string {
+	return fmt.Sprintf(`const %s = require("%s")`,
+		route.Component, "../"+route.SrcPath)
+}
+
+func requireStmtArray(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
-		arr = append(arr, fmt.Sprintf(`const %s = require("%s")`,
-			each.Component, "../"+each.SrcPath))
+		arr = append(arr, requireStmt(each))
+	}
+	return arr
+}
+
+func requireDefaultStmt(route PageBasedRoute) string {
+	return fmt.Sprintf(`const %s = require("%s").default`,
+		route.Component, "../"+route.SrcPath)
+}
+
+func requireDefaultStmtArray(routes []PageBasedRoute) []string {
+	var arr []string
+	for _, each := range routes {
+		arr = append(arr, requireDefaultStmt(each))
 	}
 	return arr
 }
@@ -83,7 +100,7 @@ func exportStmt(route PageBasedRoute) string {
 		route.SrcPath, route.DstPath, route.Path, route.Component)
 }
 
-func exportStmts(routes []PageBasedRoute) []string {
+func exportStmtArray(routes []PageBasedRoute) []string {
 	var arr []string
 	for _, each := range routes {
 		arr = append(arr, exportStmt(each))

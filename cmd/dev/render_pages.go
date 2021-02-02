@@ -27,7 +27,7 @@ import React from "react"
 import ReactDOMServer from "react-dom/server"
 
 // Pages
-` + strings.Join(requireStmts(r.PageBasedRouter), "\n") + `
+` + strings.Join(requireStmtArray(r.PageBasedRouter), "\n") + `
 
 // Page props
 const pageProps = require("./pageProps.js").default
@@ -67,7 +67,7 @@ async function asyncRun(routes) {
 }
 
 asyncRun([
-	` + strings.Join(exportStmts(r.PageBasedRouter), ",\n\t") + `,
+	` + strings.Join(exportStmtArray(r.PageBasedRouter), ",\n\t") + `,
 ])
 `
 

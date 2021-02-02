@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	p "path"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -15,11 +16,25 @@ import (
 	"github.com/zaydek/retro/pkg/perm"
 )
 
-func (r Runtime) RenderApp() error {
-	// dst := p.Join(r.DirConfiguration.BuildDirectory, fmt.Sprintf("app.%s.js", r.epochID))
+// https://regex101.com/r/87JqEb/1
+var appRe = regexp.MustCompile(`^app(?:\.[0-9a-f]{16})?(?:\.map)?\.js$`)
 
+func (r Runtime) RenderApp() error {
 	src := p.Join(r.DirConfiguration.CacheDirectory, "app.esbuild.js")
 	dst := p.Join(r.DirConfiguration.BuildDirectory, "app.js")
+
+	fs, err := os.ReadDir(r.DirConfiguration.BuildDirectory)
+	if err != nil {
+		return errs.Unexpected(err)
+	}
+	for _, f := range fs {
+		if appRe.MatchString(f.Name()) {
+			path := p.Join(r.DirConfiguration.BuildDirectory, f.Name())
+			if err := os.Remove(path); err != nil {
+				return errs.Unexpected(err)
+			}
+		}
+	}
 
 	// TODO: When esbuild adds support for dynamic imports, this can be changed to
 	// a pure JavaScript implementation.
@@ -31,7 +46,7 @@ import ReactDOM from "react-dom"
 import { BrowserRouter, Route, Router } from "@zaydek/retro-router"
 
 // Pages
-` + strings.Join(requireStmts(r.PageBasedRouter), "\n") + `
+` + strings.Join(requireDefaultStmtArray(r.PageBasedRouter), "\n") + `
 
 // Page props
 const pageProps = require("./pageProps.js").default
