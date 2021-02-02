@@ -24,14 +24,14 @@ func (r Runtime) RenderPageProps() error {
 
 async function asyncRun(routes) {
 	const chain = []
-	for (const { path, exports } of routes) {
+	for (const { path, exports, ...etc } of routes) {
 		const promise = new Promise(async resolve => {
 			const load = exports.load
 			let props = {}
 			if (load) {
 				props = await load()
 			}
-			resolve({ path, props })
+			resolve({ ...etc, path, props })
 		})
 		chain.push(promise)
 	}

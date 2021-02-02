@@ -28,11 +28,12 @@ import ReactDOMServer from "react-dom/server"
 ` + strings.Join(requires(r.PageBasedRouter), "\n") + `
 
 // Page props
-` + fmt.Sprintf(`const pageProps = require("%s").default`, fmt.Sprintf("../%s/pageProps.js", r.DirConfiguration.CacheDirectory)) + `
+` + fmt.Sprintf(`const pageProps = require("%s").default`,
+		fmt.Sprintf("../%s/pageProps.js", r.DirConfiguration.CacheDirectory)) + `
 
 async function asyncRun(routes) {
 	const chain = []
-	for (const { path, exports } of routes) {
+	for (const { path, exports, ...etc } of routes) {
 		const promise = new Promise(async resolve => {
 			let head = ""
 			if ("Head" in exports) {
@@ -56,7 +57,7 @@ async function asyncRun(routes) {
 			}
 
 			page += '\n\t\t<script src="/app.js"></script>'
-			resolve({ path, head, page })
+			resolve({ ...etc, path, head, page })
 		})
 		chain.push(promise)
 	}
