@@ -1,5 +1,7 @@
 RETRO_VERSION = $(shell cat version.txt)
 
+################################################################################
+
 local-bin-create-retro-app:
 	go build -o=create-retro-app entry_create_retro_app.go && mv create-retro-app /usr/local/bin/
 
@@ -52,7 +54,7 @@ build:
 	make -j2 \
 		build-create-retro-app \
 		build-retro
-	cd npm/retro-router/ && yarn -s build
+	cd npm/retro-router/ && yarn build
 
 ################################################################################
 
@@ -78,4 +80,4 @@ release:
 clean:
 	rm -rf npm/create-retro-app/bin/ npm/create-retro-app/dist/
 	rm -rf npm/retro/bin/ npm/retro/dist/
-	rm -rf npm/retro-router/bin/ npm/retro-router/dist/
+	rm -rf npm/retro-router/dist/

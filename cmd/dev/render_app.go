@@ -22,23 +22,26 @@ func (r Runtime) RenderApp() error {
 
 import React from "react"
 import ReactDOM from "react-dom"
-import { Route, Router } from "../Router"
+
+import { BrowserRouter, Route, Router } from "@zaydek/retro-router"
 
 // Pages
 ` + strings.Join(requires(r.PageBasedRouter), "\n") + `
 
-// Props
-const props = require("../{{ .Config.CacheDirectory }}/props.js").default
+// Page props
+const pageProps = require("../{{ .DirConfiguration.CacheDirectory }}/pageProps.js").default
 
 export default function RoutedApp() {
 	return (
-		<Router>
-		{{ range $each := .PageBasedRouter }}
-			<Route path="{{ $each.Path }}">
-				<{{ $each.Component }} {...props["{{ $each.Path }}"]} />
-			</Route>
-		{{ end }}
-		</Router>
+		<BrowserRouter>
+			<Router>
+			{{ range $each := .PageBasedRouter }}
+				<Route path="{{ $each.Path }}">
+					<{{ $each.Component }} {...pageProps["{{ $each.Path }}"]} />
+				</Route>
+			{{ end }}
+			</Router>
+		</BrowserRouter>
 	)
 }
 

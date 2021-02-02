@@ -14,7 +14,7 @@ import (
 	"github.com/zaydek/retro/pkg/run"
 )
 
-func (r Runtime) RenderProps() error {
+func (r Runtime) RenderPageProps() error {
 	// TODO: When esbuild adds support for dynamic imports, this can be changed to
 	// a pure JavaScript implementation.
 	text := `// THIS FILE IS AUTO-GENERATED. DO NOT EDIT.
@@ -22,9 +22,9 @@ func (r Runtime) RenderProps() error {
 // Pages
 ` + strings.Join(requires(r.PageBasedRouter), "\n") + `
 
-async function asyncRun(requireStmtAsArray) {
+async function asyncRun(routes) {
 	const chain = []
-	for (const { path, exports } of requireStmtAsArray) {
+	for (const { path, exports } of routes) {
 		const promise = new Promise(async resolve => {
 			const load = exports.load
 			let props = {}
@@ -48,8 +48,8 @@ asyncRun([
 ])
 `
 
-	src := p.Join(r.DirConfiguration.CacheDirectory, "props.esbuild.js")
-	dst := p.Join(r.DirConfiguration.CacheDirectory, "props.js")
+	src := p.Join(r.DirConfiguration.CacheDirectory, "pageProps.esbuild.js")
+	dst := p.Join(r.DirConfiguration.CacheDirectory, "pageProps.js")
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
 		return errs.WriteFile(src, err)

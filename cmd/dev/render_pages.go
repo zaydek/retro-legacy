@@ -30,9 +30,9 @@ import ReactDOMServer from "react-dom/server"
 // Props
 ` + fmt.Sprintf(`const props = require("%s").default, ../`+r.DirConfiguration.CacheDirectory+"/props.js") + `
 
-async function asyncRun(exports) {
+async function asyncRun(routes) {
 	const chain = []
-	for (const { path, exports } of exports) {
+	for (const { path, exports } of routes) {
 		const promise = new Promise(async resolve => {
 			let head = ""
 			if ("Head" in exports) {

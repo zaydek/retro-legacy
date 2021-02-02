@@ -42,7 +42,7 @@ export function Router({ children }: RouterProps) {
 	if (!history) {
 		throw new Error(
 			"retro-router: It looks like you haven’t wrapped your app with <BrowserRouter>. " +
-				"<BrowserRouter> creates a new browser history, which retro-router components need to work.",
+				"<BrowserRouter> creates a new browser history, which retro-router components use.",
 		)
 	}
 

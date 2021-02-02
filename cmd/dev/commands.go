@@ -14,7 +14,7 @@ import (
 
 func (r Runtime) Build() {
 	must(copyAssetDirectoryToBuildDirectory(r.DirConfiguration))
-	must(r.RenderProps())
+	must(r.RenderPageProps())
 	must(r.RenderApp())
 	must(r.RenderPages())
 }
@@ -23,7 +23,7 @@ func (r Runtime) Start() {
 	events := make(chan string, 1)
 
 	if !r.Command.(cli.StartCommand).Cached {
-		must(r.RenderProps())
+		must(r.RenderPageProps())
 	}
 
 	fmt.Printf("👾 http://localhost:%s\n", r.getPort())

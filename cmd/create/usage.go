@@ -12,7 +12,7 @@ var usage = `
 
   ` + term.Bold("Repository:") + `
 
-    ` + term.Underline("https://github.com/zaydek/create-retro-app") + `
+    ` + term.Underline("https://github.com/zaydek/retro") + `
 `
 
 var successFormat = `Successfully created ` + term.Bold("%[1]s") + `.

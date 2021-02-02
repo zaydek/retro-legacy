@@ -18,7 +18,7 @@ import (
 )
 
 func (r Runtime) RenderPageAsBytes(route PageBasedRoute) ([]byte, error) {
-	if _, err := os.Stat(p.Join(r.DirConfiguration.CacheDirectory, "props.js")); os.IsNotExist(err) {
+	if _, err := os.Stat(p.Join(r.DirConfiguration.CacheDirectory, "pageProps.js")); os.IsNotExist(err) {
 		return nil, errors.New("It looks like your loaders have not been resolved yet. " +
 			"Remove " + term.Bold("--cached") + " and try again.")
 	}
@@ -30,15 +30,18 @@ func (r Runtime) RenderPageAsBytes(route PageBasedRoute) ([]byte, error) {
 import React from "react"
 import ReactDOMServer from "react-dom/server"
 
+// Pages
 ` + fmt.Sprintf(`const %s = require("%s")`, route.Component, "../"+route.SrcPath) + `
-` + fmt.Sprintf(`const props = require("%s").default, ../`+r.DirConfiguration.CacheDirectory+"/props.js") + `
+
+// Page props
+` + fmt.Sprintf(`const pageProps = require("%s").default, ../`+r.DirConfiguration.CacheDirectory+"/pageProps.js") + `
 
 function run({ path, exports }) {
 	let head = ""
 	if ("Head" in exports) {
 		const Component = exports.Head
 		head = ReactDOMServer.renderToStaticMarkup(
-			<Component {...props[path]} />
+			<Component {...pageProps[path]} />
 		)
 	}
 	head = head
@@ -50,7 +53,7 @@ function run({ path, exports }) {
 		const Component = exports.default
 		page = ReactDOMServer.renderToString(
 			<div id="root">
-				<Component {...props[path]} />
+				<Component {...pageProps[path]} />
 			</div>
 		)
 	}
