@@ -1,6 +1,6 @@
 import parseParts from "./parseParts"
 import { RouteInfo } from "./types"
-import { toTitleCase } from "../../utils"
+import { toTitleCase } from "../utils"
 
 function index(pageStr: string) {
 	if (pageStr.endsWith("/index")) {

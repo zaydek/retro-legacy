@@ -3,6 +3,8 @@ export type ScrollTo = "no-op" | number | string | HTMLElement
 // scrollToImpl scrolls to an offset (number) or selector (string). Use "no-op"
 // to opt out of scrolling because <Link> and <Redirect> automatically scroll to
 // the top of the page.
+//
+// TODO: We should be able to write tests for scrollTo.
 export function scrollToImpl(scrollTo?: ScrollTo) {
 	switch (typeof scrollTo) {
 		case "undefined":
