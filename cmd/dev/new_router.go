@@ -60,7 +60,7 @@ func newPageBasedRoute(config DirectoryConfiguration, path string) PageBasedRout
 	var src, dst string
 
 	// Get the basename from pages/*.
-	basename := path[len(config.PagesDirectory):]
+	basename := path[len(config.PagesDirectory+"/"):]
 
 	src = p.Join(config.PagesDirectory, basename)
 	dst = p.Join(config.BuildDirectory, basename)

@@ -2,6 +2,7 @@ package loggers
 
 import (
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/zaydek/retro/pkg/term"
@@ -23,6 +24,10 @@ var Stdout = NewTransform(os.Stdout, func(msg string) string {
 })
 
 var Stderr = NewTransform(os.Stdout, func(msg string) string {
+	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
+		msg += "\n" + string(debug.Stack())
+	}
+
 	arr := strings.Split(msg, "\n")
 	for x := range arr {
 		if arr[x] != "" {
