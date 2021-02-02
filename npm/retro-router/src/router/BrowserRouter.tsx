@@ -1,7 +1,7 @@
 import React, { createContext, useContext } from "react"
 import { BrowserHistory, createBrowserHistory } from "history"
 
-const HistoryContext = createContext<BrowserHistory<any> | undefined>(undefined)
+const HistoryContext = createContext<BrowserHistory | undefined>(undefined)
 
 interface ProviderProps {
 	children?: React.ReactNode

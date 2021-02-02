@@ -1,51 +1,27 @@
 import React from "react"
+import { ScrollTo, scrollToImpl } from "./scrollToImpl"
 import { useHistory } from "./BrowserRouter"
-
-type ScrollTo = "no-op" | number | string | HTMLElement
-
-function scrollImpl(scrollTo?: ScrollTo) {
-	let el = null
-	switch (typeof scrollTo) {
-		case "undefined":
-			window.scrollTo(0, 0)
-			break
-		case "number":
-			window.scrollTo(0, scrollTo)
-			break
-		case "string":
-			if (scrollTo === "no-op") {
-				// No-op
-				return
-			}
-			// TODO: Add support for `scroll-padding-top`?
-			el = document.querySelector(scrollTo)
-			if (!el) {
-				console.error(`Link: document.querySelector(${JSON.stringify(scrollTo)}) returned \`${el}\`.`)
-			} else {
-				window.scrollTo(0, el.getBoundingClientRect().y)
-			}
-			break
-		default:
-			break
-	}
-}
 
 export interface LinkProps extends React.HTMLAttributes<HTMLElement> {
 	path: string
-	children?: React.ReactNode
 	shouldReplaceHistory?: boolean
 	scrollTo?: ScrollTo
+	children?: React.ReactNode
 }
 
-export function Link({ path, children, shouldReplaceHistory, scrollTo, ...props }: LinkProps) {
+export function Link({ path, shouldReplaceHistory, scrollTo, children, ...props }: LinkProps) {
 	const history = useHistory()!
 
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
-		const goTo = shouldReplaceHistory ? history.replace : history.push
-		goTo(path)
-		scrollImpl(scrollTo)
+		const fn = shouldReplaceHistory ? history.replace : history.push
+		fn(path)
+
+		// TODO: We need to check whether scrollToImpl is evaluated eagerly or
+		// lazily; before or after <Router> rerenders.
+		scrollToImpl(scrollTo)
 	}
+
 	return (
 		<a href={path} onClick={handleClick} {...props}>
 			{children}

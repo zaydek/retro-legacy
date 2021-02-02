@@ -1,18 +1,20 @@
+import { ScrollTo, scrollToImpl } from "./scrollToImpl"
 import { useHistory } from "./BrowserRouter"
 
 export interface RedirectProps {
 	path: string
 	shouldReplaceHistory?: boolean
+	scrollTo?: ScrollTo
 }
 
-// Redirect is a renderless component. It delegates to history.replace or
-// history.push. This causes Router to rerender because Router is listening for
-// history changes; e.location.pathname. Router then routes to the correct
-// component or routes to /404.
-export function Redirect({ path, shouldReplaceHistory }: RedirectProps) {
+export function Redirect({ path, shouldReplaceHistory, scrollTo }: RedirectProps) {
 	const history = useHistory()!
 
 	const fn = shouldReplaceHistory ? history.replace : history.push
 	fn(path)
+
+	// TODO: We need to check whether scrollToImpl is evaluated eagerly or lazily;
+	// before or after <Router> rerenders.
+	scrollToImpl(scrollTo)
 	return null
 }
