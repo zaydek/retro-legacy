@@ -3,19 +3,15 @@ package dev
 import (
 	_ "embed"
 	"fmt"
+	"math/rand"
 	"os"
 	"time"
 
-	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func must(err error) {
-	if err == nil {
-		// No-op
-		return
-	}
-	loggers.Stderr.Fatalln(err)
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func Run() {

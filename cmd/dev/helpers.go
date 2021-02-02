@@ -1,7 +1,9 @@
 package dev
 
 import (
+	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	p "path"
 	"path/filepath"
@@ -10,8 +12,28 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/errs"
+	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
 )
+
+func must(err error) {
+	if err == nil {
+		// No-op
+		return
+	}
+	loggers.Stderr.Fatalln(err)
+}
+
+const hex = "0123456789abcdef"
+
+// Based on https://stackoverflow.com/a/31832326.
+func randomHash(n int) string {
+	bstr := make([]byte, n)
+	for x := range bstr {
+		bstr[x] = hex[rand.Intn(len(hex))]
+	}
+	return string(bstr)
+}
 
 // getCmd gets the current command.
 func (r Runtime) getCmd() Cmd {
@@ -50,6 +72,35 @@ func (r Runtime) getPort() string {
 		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)
 	}
 	return ""
+}
+
+type rendererdPage struct {
+	PageBasedRoute
+
+	Head string `json:"head"`
+	Page string `json:"page"`
+}
+
+func node_requires(routes []PageBasedRoute) []string {
+	var arr []string
+	for _, each := range routes {
+		arr = append(arr, fmt.Sprintf(`const %s = require("%s")`,
+			each.Component, "../"+each.SrcPath))
+	}
+	return arr
+}
+
+func node_export(route PageBasedRoute) string {
+	return fmt.Sprintf(`{ srcPath: %q, dstPath: %q, path: %q, component: %[4]q, exports: %[4]s }`,
+		route.SrcPath, route.DstPath, route.Path, route.Component)
+}
+
+func node_exports(routes []PageBasedRoute) []string {
+	var arr []string
+	for _, each := range routes {
+		arr = append(arr, node_export(each))
+	}
+	return arr
 }
 
 type copyPath struct {

@@ -8,7 +8,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/google/uuid"
 	"github.com/zaydek/retro/cmd/dev/cli"
 	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/loggers"
@@ -75,7 +74,7 @@ func newRuntime() Runtime {
 	}
 
 	runtime := Runtime{
-		epochID:          uuid.NewString()[:8],
+		epochID:          randomHash(16),
 		Command:          cli.ParseCLIArguments(),
 		DirConfiguration: dirs,
 	}
