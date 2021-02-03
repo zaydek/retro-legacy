@@ -20,7 +20,7 @@ func must(err error) {
 		// No-op
 		return
 	}
-	loggers.FatalError(err)
+	loggers.ErrorAndEnd(err)
 }
 
 // getCmd gets the current command.

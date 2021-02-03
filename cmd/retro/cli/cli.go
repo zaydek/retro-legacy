@@ -103,7 +103,7 @@ func ParseCLIArguments() interface{} {
 		os.Setenv("NODE_ENV", "production")
 		cmd = parseServeArguments(os.Args[2:]...)
 	default:
-		loggers.FatalError("Unrecognized command. " +
+		loggers.ErrorAndEnd("Unrecognized command. " +
 			"Try " + term.Bold("retro help") + " for help.\n\n" +
 			usageOnly)
 		os.Exit(2)

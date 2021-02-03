@@ -10,7 +10,6 @@ import (
 	p "path"
 
 	"github.com/zaydek/retro/cmd/create_retro_app/embeds"
-	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/term"
@@ -18,26 +17,21 @@ import (
 
 func (cmd Command) CreateRetroApp() {
 	if cmd.Directory != "." {
-		if info, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
-			var typ string
-			if !info.IsDir() {
-				typ = "file"
-			} else {
-				typ = "directory"
-			}
-			loggers.FatalError("Aborted. " +
-				"A " + typ + " named " + term.Bold(cmd.Directory) + " already exists.\n\n" +
-				"- " + term.Boldf("create-retro-app %s", increment(cmd.Directory)) + "\n\n" +
-				"Or\n\n" +
-				"- " + term.Boldf("rm -r %[1]s && create-retro-app %[1]s", cmd.Directory))
+		if _, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
+			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+				"Found `%[1]s`. You can:\n\n"+
+				"- create-retro-app %[1]s\n\n"+
+				"Or\n\n"+
+				"- rm -r %[1]s && create-retro-app %[1]s",
+				cmd.Directory))
 		}
-
 		if err := os.MkdirAll(cmd.Directory, perm.Directory); err != nil {
-			loggers.FatalError(errs.MkdirAll(cmd.Directory, err))
+			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+				"Error: %s.", err))
 		}
-
 		if err := os.Chdir(cmd.Directory); err != nil {
-			loggers.FatalError(errs.Chdir(cmd.Directory, err))
+			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+				"Error: %s.", err))
 		}
 		defer os.Chdir("..")
 	}
@@ -52,14 +46,13 @@ func (cmd Command) CreateRetroApp() {
 		if err != nil {
 			return err
 		}
-
 		if !dirEntry.IsDir() {
 			paths = append(paths, path)
 		}
 		return nil
 	}); err != nil {
-		path := fmt.Sprintf("<embed:%s>", cmd.Template)
-		loggers.FatalError(errs.Walk(path, err))
+		loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+			"Error: %s.", err))
 	}
 
 	var badPaths []string
@@ -78,28 +71,32 @@ func (cmd Command) CreateRetroApp() {
 			}
 			badPathsStr += sep + "- " + term.Bold(each)
 		}
-		loggers.FatalError("Aborted. " +
-			"These paths must be removed and or renamed. " +
-			"Use " + term.Bold("rm -r paths") + " to remove them or " + term.Bold("mv src dst") + " to rename them.\n\n" +
+		loggers.ErrorAndEnd("Aborted. " +
+			"These paths must be removed or renamed. " +
+			"Use `rm -r [paths]` to remove them or `mv [src] [dst]` to rename them.\n\n" +
 			badPathsStr)
 	}
 
 	for _, each := range paths {
 		if dir := p.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
-				loggers.FatalError(errs.MkdirAll(dir, err))
+				loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+					"Error: %s.", err))
 			}
 		}
 		src, err := fsys.Open(each)
 		if err != nil {
-			loggers.FatalError(errs.Unexpected(err))
+			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+				"Error: %s.", err))
 		}
 		dst, err := os.Create(each)
 		if err != nil {
-			loggers.FatalError(errs.Unexpected(err))
+			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+				"Error: %s.", err))
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			loggers.FatalError(errs.Unexpected(err))
+			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+				"Error: %s.", err))
 		}
 		src.Close()
 		dst.Close()
@@ -123,11 +120,13 @@ func (cmd Command) CreateRetroApp() {
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, dot); err != nil {
-		loggers.FatalError(errs.ExecuteTemplate(tmpl.Name(), err))
+		loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+			"Error: %s.", err))
 	}
 
 	if err := ioutil.WriteFile("package.json", buf.Bytes(), perm.File); err != nil {
-		loggers.FatalError(errs.WriteFile("package.json", err))
+		loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
+			"Error: %s", err))
 	}
 
 	if cmd.Directory == "." {

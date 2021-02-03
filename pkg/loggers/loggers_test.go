@@ -1,6 +1,7 @@
 package loggers
 
 import (
+	"os"
 	"testing"
 
 	"github.com/zaydek/retro/pkg/expect"
@@ -12,25 +13,55 @@ func TestTransformers(t *testing.T) {
 
 	out = transformOK("Description\n\n- List item\n- List item")
 	expect.DeepEqual(t, out, `
-  `+term.BoldGreen("ok:")+` Description
+  `+term.BoldGreen("ok:")+` `+term.Bold("Description")+`
 
-    - List item
-    - List item
+    `+term.Bold("- List item")+`
+    `+term.Bold("- List item")+`
 `)
 
 	out = transformWarning("Description\n\n- List item\n- List item")
 	expect.DeepEqual(t, out, `
-  `+term.BoldYellow("warning:")+` Description
+  `+term.BoldYellow("warning:")+` `+term.Bold("Description")+`
 
-    - List item
-    - List item
+    `+term.Bold("- List item")+`
+    `+term.Bold("- List item")+`
 `)
 
 	out = transformError("Description\n\n- List item\n- List item")
 	expect.DeepEqual(t, out, `
-  `+term.BoldRed("error:")+` Description
+  `+term.BoldRed("error:")+` `+term.Bold("Description")+`
 
-    - List item
-    - List item
+    `+term.Bold("- List item")+`
+    `+term.Bold("- List item")+`
+`)
+}
+
+func TestTransformersAndStackTrace(t *testing.T) {
+	os.Setenv("DEBUG_MODE", "true")
+
+	var out string
+
+	out = transformOK("Description\n\n- List item\n- List item")
+	expect.DeepEqual(t, out, `
+  `+term.BoldGreen("ok:")+` `+term.Bold("Description")+`
+
+    `+term.Bold("- List item")+`
+    `+term.Bold("- List item")+`
+`)
+
+	out = transformWarning("Description\n\n- List item\n- List item")
+	expect.DeepEqual(t, out, `
+  `+term.BoldYellow("warning:")+` `+term.Bold("Description")+`
+
+    `+term.Bold("- List item")+`
+    `+term.Bold("- List item")+`
+`)
+
+	out = transformError("Description\n\n- List item\n- List item")
+	expect.DeepEqual(t, out, `
+  `+term.BoldRed("error:")+` `+term.Bold("Description")+`
+
+    `+term.Bold("- List item")+`
+    `+term.Bold("- List item")+`
 `)
 }

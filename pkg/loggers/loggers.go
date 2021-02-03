@@ -17,10 +17,10 @@ var transformOK = func(msg string) string {
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = strings.Repeat(" ", 2) + term.BoldGreen("ok:") + " " + arr[x]
+				arr[x] = strings.Repeat(" ", 2) + term.BoldGreen("ok:") + " " + term.Bold(arr[x])
 				continue
 			}
-			arr[x] = strings.Repeat(" ", 4) + arr[x]
+			arr[x] = strings.Repeat(" ", 4) + term.Bold(arr[x])
 		}
 	}
 	transformed := "\n" + strings.Join(arr, "\n") + "\n"
@@ -28,39 +28,39 @@ var transformOK = func(msg string) string {
 }
 
 var transformWarning = func(msg string) string {
-	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
-		msg += "\n" + string(debug.Stack())
-	}
 	arr := strings.Split(msg, "\n")
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = strings.Repeat(" ", 2) + term.BoldYellow("warning:") + " " + arr[x]
+				arr[x] = strings.Repeat(" ", 2) + term.BoldYellow("warning:") + " " + term.Bold(arr[x])
 				continue
 			}
-			arr[x] = strings.Repeat(" ", 4) + arr[x]
+			arr[x] = strings.Repeat(" ", 4) + term.Bold(arr[x])
 		}
 	}
-	transformed := "\n" + strings.Join(arr, "\n") + "\n"
-	return transformed
+	out := "\n" + strings.Join(arr, "\n") + "\n"
+	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
+		out += "\n" + string(debug.Stack())
+	}
+	return out
 }
 
 var transformError = func(msg string) string {
-	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
-		msg += "\n" + string(debug.Stack())
-	}
 	arr := strings.Split(msg, "\n")
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = strings.Repeat(" ", 2) + term.BoldRed("error:") + " " + arr[x]
+				arr[x] = strings.Repeat(" ", 2) + term.BoldRed("error:") + " " + term.Bold(arr[x])
 				continue
 			}
-			arr[x] = strings.Repeat(" ", 4) + arr[x]
+			arr[x] = strings.Repeat(" ", 4) + term.Bold(arr[x])
 		}
 	}
-	transformed := "\n" + strings.Join(arr, "\n") + "\n"
-	return transformed
+	out := "\n" + strings.Join(arr, "\n") + "\n"
+	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
+		out += "\n" + string(debug.Stack())
+	}
+	return out
 }
 
 func OK(args ...interface{}) (n int, err error) {
@@ -84,7 +84,7 @@ func Error(args ...interface{}) (n int, err error) {
 	return fmt.Fprintln(os.Stderr, out)
 }
 
-func FatalError(args ...interface{}) {
+func ErrorAndEnd(args ...interface{}) {
 	mu.Lock()
 	defer mu.Unlock()
 	out := transformError(fmt.Sprint(args...))

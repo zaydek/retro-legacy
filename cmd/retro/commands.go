@@ -116,7 +116,7 @@ func (r Runtime) Start() {
 
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.DirConfiguration.BuildDirectory); os.IsNotExist(err) {
-		loggers.FatalError("Failed to stat directory " + term.Bold(r.DirConfiguration.BuildDirectory) + ". " +
+		loggers.ErrorAndEnd("Failed to stat directory " + term.Bold(r.DirConfiguration.BuildDirectory) + ". " +
 			"It looks like haven’t run " + term.Bold("retro build") + " yet. " +
 			"Try " + term.Bold("retro build && retro serve") + ".")
 	}
