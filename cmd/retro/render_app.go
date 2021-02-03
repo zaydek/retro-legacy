@@ -85,7 +85,7 @@ ReactDOM.hydrate(
 		return errs.WriteFile(src, err)
 	}
 
-	results := api.Build(api.BuildOptions{
+	result := api.Build(api.BuildOptions{
 		Bundle: true,
 		Define: map[string]string{
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
@@ -104,10 +104,10 @@ ReactDOM.hydrate(
 		Write:             true,
 	})
 	// TODO
-	if len(results.Warnings) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
-	} else if len(results.Errors) > 0 {
-		return errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+	if len(result.Errors) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(result.Errors))
+	} else if len(result.Warnings) > 0 {
+		return errors.New(formatEsbuildMessagesAsTermString(result.Warnings))
 	}
 	return nil
 }

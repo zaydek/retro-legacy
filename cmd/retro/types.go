@@ -2,6 +2,8 @@ package retro
 
 import (
 	"text/template"
+
+	"github.com/evanw/esbuild/pkg/api"
 )
 
 type Cmd uint8
@@ -30,8 +32,9 @@ type DirectoryConfiguration struct {
 
 type Runtime struct {
 	// Unexported
-	// epochID string
-	baseTemplate *template.Template
+	esbuildErrors   []api.Message
+	esbuildWarnings []api.Message
+	baseTemplate    *template.Template
 
 	// Exported
 	Command          interface{}

@@ -72,7 +72,7 @@ run(` + exportStmt(route) + `)
 		return nil, errs.WriteFile(src, err)
 	}
 
-	results := api.Build(api.BuildOptions{
+	result := api.Build(api.BuildOptions{
 		Bundle: true,
 		Define: map[string]string{
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
@@ -85,13 +85,13 @@ run(` + exportStmt(route) + `)
 		},
 	})
 	// TODO
-	if len(results.Warnings) > 0 {
-		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Warnings))
-	} else if len(results.Errors) > 0 {
-		return nil, errors.New(formatEsbuildMessagesAsTermString(results.Errors))
+	if len(result.Errors) > 0 {
+		return nil, errors.New(formatEsbuildMessagesAsTermString(result.Errors))
+	} else if len(result.Warnings) > 0 {
+		return nil, errors.New(formatEsbuildMessagesAsTermString(result.Warnings))
 	}
 
-	stdout, err := run.Cmd(results.OutputFiles[0].Contents, "node")
+	stdout, err := run.Cmd(result.OutputFiles[0].Contents, "node")
 	if err != nil {
 		return nil, errs.PipeEsbuildToNode(err)
 	}

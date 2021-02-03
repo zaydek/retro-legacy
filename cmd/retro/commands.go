@@ -22,34 +22,37 @@ func (r Runtime) Build() {
 func (r Runtime) Start() {
 	events := make(chan string, 1)
 
+	src := p.Join(r.DirConfiguration.PagesDirectory, "index.js")
+	dst := p.Join(r.DirConfiguration.BuildDirectory, "app.js")
+
 	if !r.Command.(cli.StartCommand).Cached {
 		must(r.RenderPageProps())
 	}
 
 	loggers.Stdout.Println(term.Boldf("http://localhost:%s", r.getPort()))
 
-	// TODO: Can’t we serve this without writing it to disk? Then we don’t pollute
+	// DEFER: Can’t we serve this without writing it to disk? Then we don’t pollute
 	// build which seems right.
-	// TODO: Add support for source map here and other places.
 	result := api.Build(api.BuildOptions{
 		Bundle: true,
 		Define: map[string]string{
 			"__DEV__":              fmt.Sprintf("%t", os.Getenv("NODE_ENV") == "development"),
 			"process.env.NODE_ENV": fmt.Sprintf("%q", os.Getenv("NODE_ENV")),
 		},
-		EntryPoints: []string{p.Join(r.DirConfiguration.PagesDirectory, "index.js")},
+		EntryPoints: []string{src},
 		Loader: map[string]api.Loader{
 			".js": api.LoaderJSX,
 			".ts": api.LoaderTSX,
 		},
-		Outfile: p.Join(r.DirConfiguration.BuildDirectory, "app.js"),
+		Outfile:   dst,
+		Sourcemap: r.getSourceMap(),
 		Watch: &api.WatchMode{
 			OnRebuild: func(result api.BuildResult) {
 				// TODO: Don’t we want to propagate these errors to the client?
-				if len(result.Warnings) > 0 {
-					loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Warnings))
-				} else if len(result.Errors) > 0 {
+				if len(result.Errors) > 0 {
 					loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Errors))
+				} else if len(result.Warnings) > 0 {
+					loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Warnings))
 				}
 				events <- "reload"
 			},
@@ -57,10 +60,10 @@ func (r Runtime) Start() {
 		Write: true,
 	})
 	// TODO
-	if len(result.Warnings) > 0 {
-		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Warnings))
-	} else if len(result.Errors) > 0 {
+	if len(result.Errors) > 0 {
 		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Errors))
+	} else if len(result.Warnings) > 0 {
+		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Warnings))
 	}
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
