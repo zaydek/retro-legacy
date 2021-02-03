@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/pkg/term"
 )
 
 func formatEsbuildMessagesAsTermString(msgs []api.Message) string {
@@ -18,9 +17,8 @@ func formatEsbuildMessagesAsTermString(msgs []api.Message) string {
 
 	return fmt.Sprintf("%s:%d:%d: %s", msg.Location.File, msg.Location.Line, msg.Location.Column, msg.Text) + `
 
-` + term.Boldf("%-*d | %s", gutter, msg.Location.Line+0, msg.Location.LineText) + `
-` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap) + `
-` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, msg.Text)
+` + fmt.Sprintf("%-*d | %s", gutter, msg.Location.Line+0, msg.Location.LineText) + `
+` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap)
 }
 
 func formatEsbuildMessagesAsHTMLString(msgs []api.Message) string {
@@ -32,8 +30,7 @@ func formatEsbuildMessagesAsHTMLString(msgs []api.Message) string {
 	return fmt.Sprintf("%s:%d:%d: %s", msg.Location.File, msg.Location.Line, msg.Location.Column, msg.Text) + `
 
 ` + fmt.Sprintf("<strong>%-*d | %s</strong>", gutter, msg.Location.Line+0, msg.Location.LineText) + `
-` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap) + `
-` + fmt.Sprintf("%-*d | %s%s", gutter, msg.Location.Line+2, gap, msg.Text)
+` + fmt.Sprintf("%-*d | %s^", gutter, msg.Location.Line+1, gap)
 }
 
 func esbuildMessagesAsHTMLDocument(msgs []api.Message) string {

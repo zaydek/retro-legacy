@@ -9,7 +9,6 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/loggers"
-	"github.com/zaydek/retro/pkg/term"
 )
 
 func (r Runtime) Build() {
@@ -29,7 +28,7 @@ func (r Runtime) Start() {
 		must(r.RenderPageProps())
 	}
 
-	loggers.OK(term.Boldf("http://localhost:%s", r.getPort()))
+	loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
 
 	// DEFER: Can’t we serve this without writing it to disk? Then we don’t pollute
 	// build which seems right.
@@ -96,7 +95,8 @@ func (r Runtime) Start() {
 		w.Header().Set("Connection", "keep-alive")
 		flusher, ok := w.(http.Flusher)
 		if !ok {
-			loggers.Warning("Your browser does not support server-sent events (SSE).")
+			loggers.Warning("Your browser does not support server-sent events (SSE). " +
+				"See https://caniuse.com/eventsource.")
 			return
 		}
 		for {
@@ -116,12 +116,11 @@ func (r Runtime) Start() {
 
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.DirConfiguration.BuildDirectory); os.IsNotExist(err) {
-		loggers.ErrorAndEnd("Failed to stat directory " + term.Bold(r.DirConfiguration.BuildDirectory) + ". " +
-			"It looks like haven’t run " + term.Bold("retro build") + " yet. " +
-			"Try " + term.Bold("retro build && retro serve") + ".")
+		loggers.ErrorAndEnd("It looks like you’re trying to run `retro serve` but you haven’t run `retro build` yet. " +
+			"Try `retro build && retro serve`.")
 	}
 
-	loggers.OK(term.Boldf("http://localhost:%s", r.getPort()))
+	loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
 
 	http.Handle("/", http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory)))
 	must(http.ListenAndServe(":"+r.getPort(), nil))

@@ -19,8 +19,7 @@ func must(err error) {
 		// No-op
 		return
 	}
-	loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
-		err.Error())
+	loggers.ErrorAndEnd(err)
 }
 
 // getCmd gets the current command.

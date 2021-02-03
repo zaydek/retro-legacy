@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/zaydek/retro/pkg/loggers"
-	"github.com/zaydek/retro/pkg/term"
 )
 
 func parseStartArguments(arguments ...string) StartCommand {
@@ -20,11 +19,11 @@ func parseStartArguments(arguments ...string) StartCommand {
 	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +
-			"Try " + term.Bold("retro help") + " for help.")
+			"Try `retro help` for help.")
 		os.Exit(2)
 	}
 	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
-		loggers.Error(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
+		loggers.Error("`--port` must be 3XXX or 5XXX or 8XXX.")
 		os.Exit(2)
 	}
 	return cmd
@@ -39,7 +38,7 @@ func parseBuildArguments(arguments ...string) BuildCommand {
 	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +
-			"Try " + term.Bold("retro help") + " for help.")
+			"Try `retro help` for help.")
 		os.Exit(2)
 	}
 	return cmd
@@ -53,11 +52,11 @@ func parseServeArguments(arguments ...string) ServeCommand {
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +
-			"Try " + term.Bold("retro help") + " for help.")
+			"Try `retro help` for help.")
 		os.Exit(2)
 	}
 	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
-		loggers.Error(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
+		loggers.Error("`--port` must be 3XXX or 5XXX or 8XXX.")
 		os.Exit(2)
 	}
 	return cmd
@@ -103,8 +102,8 @@ func ParseCLIArguments() interface{} {
 		os.Setenv("NODE_ENV", "production")
 		cmd = parseServeArguments(os.Args[2:]...)
 	default:
-		loggers.ErrorAndEnd("Unrecognized command. " +
-			"Try " + term.Bold("retro help") + " for help.\n\n" +
+		loggers.Error("Unrecognized command. " +
+			"Here are the available commands:\n\n" +
 			usageOnly)
 		os.Exit(2)
 	}
