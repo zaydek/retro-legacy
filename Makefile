@@ -54,6 +54,7 @@ build-retro-router:
 		--define:process.env.NODE_ENV="\"production\"" \
 		--external:react \
 		--external:react-dom \
+		--format=cjs \
 		--outfile=npm/retro-router/dist/index.js \
 		--tsconfig=npm/retro-router/tsconfig.json
 
