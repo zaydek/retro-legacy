@@ -10,7 +10,6 @@ import (
 
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
-	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
 )
@@ -20,7 +19,8 @@ func must(err error) {
 		// No-op
 		return
 	}
-	loggers.ErrorAndEnd(err)
+	loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+		err.Error())
 }
 
 // getCmd gets the current command.
@@ -112,7 +112,7 @@ func copyAssetDirectoryToBuildDirectory(config DirectoryConfiguration) error {
 	path := p.Join(config.BuildDirectory, config.AssetDirectory)
 	if _, err := os.Stat(path); os.IsExist(err) {
 		if err := os.RemoveAll(path); err != nil {
-			return errs.Unexpected(err)
+			return err
 		}
 	}
 
@@ -131,25 +131,25 @@ func copyAssetDirectoryToBuildDirectory(config DirectoryConfiguration) error {
 		}
 		return nil
 	}); err != nil {
-		errs.Walk(config.AssetDirectory, err)
+		return err
 	}
 
 	for _, each := range paths {
 		if dir := p.Dir(each.dst); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
-				return errs.MkdirAll(dir, err)
+				return err
 			}
 		}
 		src, err := os.Open(each.src)
 		if err != nil {
-			return errs.Unexpected(err)
+			return err
 		}
 		dst, err := os.Create(each.dst)
 		if err != nil {
-			return errs.Unexpected(err)
+			return err
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			return errs.Unexpected(err)
+			return err
 		}
 		src.Close()
 		dst.Close()

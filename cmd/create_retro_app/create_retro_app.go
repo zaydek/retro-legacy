@@ -17,21 +17,28 @@ import (
 
 func (cmd Command) CreateRetroApp() {
 	if cmd.Directory != "." {
-		if _, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
+		if info, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
+			var typ string
+			if !info.IsDir() {
+				typ = "file"
+			} else {
+				typ = "directory"
+			}
 			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"Found `%[1]s`. You can:\n\n"+
-				"- create-retro-app %[1]s\n\n"+
+				"A %s named `%[2]s` already exists. "+
+				"Here’s what you can do:\n\n"+
+				"- create-retro-app %[2]s\n\n"+
 				"Or\n\n"+
-				"- rm -r %[1]s && create-retro-app %[1]s",
-				cmd.Directory))
+				"- rm -r %[2]s && create-retro-app %[2]s",
+				typ, cmd.Directory))
 		}
 		if err := os.MkdirAll(cmd.Directory, perm.Directory); err != nil {
-			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"Error: %s.", err))
+			loggers.ErrorAndEnd("Aborted.\n\n" +
+				err.Error())
 		}
 		if err := os.Chdir(cmd.Directory); err != nil {
-			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"Error: %s.", err))
+			loggers.ErrorAndEnd("Aborted.\n\n" +
+				err.Error())
 		}
 		defer os.Chdir("..")
 	}
@@ -51,8 +58,8 @@ func (cmd Command) CreateRetroApp() {
 		}
 		return nil
 	}); err != nil {
-		loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-			"Error: %s.", err))
+		loggers.ErrorAndEnd("Aborted.\n\n" +
+			err.Error())
 	}
 
 	var badPaths []string
@@ -80,23 +87,23 @@ func (cmd Command) CreateRetroApp() {
 	for _, each := range paths {
 		if dir := p.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
-				loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-					"Error: %s.", err))
+				loggers.ErrorAndEnd("Aborted.\n\n" +
+					err.Error())
 			}
 		}
 		src, err := fsys.Open(each)
 		if err != nil {
-			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"Error: %s.", err))
+			loggers.ErrorAndEnd("Aborted.\n\n" +
+				err.Error())
 		}
 		dst, err := os.Create(each)
 		if err != nil {
-			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"Error: %s.", err))
+			loggers.ErrorAndEnd("Aborted.\n\n" +
+				err.Error())
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"Error: %s.", err))
+			loggers.ErrorAndEnd("Aborted.\n\n" +
+				err.Error())
 		}
 		src.Close()
 		dst.Close()
@@ -120,13 +127,13 @@ func (cmd Command) CreateRetroApp() {
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, dot); err != nil {
-		loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-			"Error: %s.", err))
+		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+			err.Error())
 	}
 
 	if err := ioutil.WriteFile("package.json", buf.Bytes(), perm.File); err != nil {
-		loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-			"Error: %s", err))
+		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+			err.Error())
 	}
 
 	if cmd.Directory == "." {

@@ -5,8 +5,6 @@ import (
 	p "path"
 	"path/filepath"
 	"strings"
-
-	"github.com/zaydek/retro/pkg/errs"
 )
 
 var supported = map[string]bool{
@@ -91,7 +89,7 @@ func newRouter(config DirectoryConfiguration) ([]PageBasedRoute, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, errs.Walk(config.PagesDirectory, err)
+		return nil, err
 	}
 	return routes, nil
 }

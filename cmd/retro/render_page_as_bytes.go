@@ -10,7 +10,6 @@ import (
 	p "path"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/run"
 	"github.com/zaydek/retro/pkg/term"
@@ -69,7 +68,7 @@ run(` + exportStmt(route) + `)
 `
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
-		return nil, errs.WriteFile(src, err)
+		return nil, err
 	}
 
 	result := api.Build(api.BuildOptions{
@@ -93,17 +92,17 @@ run(` + exportStmt(route) + `)
 
 	stdout, err := run.Cmd(result.OutputFiles[0].Contents, "node")
 	if err != nil {
-		return nil, errs.PipeEsbuildToNode(err)
+		return nil, err
 	}
 
 	var page rendererdPage
 	if err := json.Unmarshal(stdout, &page); err != nil {
-		return nil, errs.Unexpected(err)
+		return nil, err
 	}
 
 	var buf bytes.Buffer
 	if err := r.baseTemplate.Execute(&buf, page); err != nil {
-		return nil, errs.ExecuteTemplate(r.baseTemplate.Name(), err)
+		return nil, err
 	}
 	return buf.Bytes(), nil
 }

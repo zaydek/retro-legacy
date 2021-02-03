@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/run"
 )
@@ -72,7 +71,7 @@ asyncRun([
 `
 
 	if err := ioutil.WriteFile(src, []byte(text), perm.File); err != nil {
-		return errs.WriteFile(src, err)
+		return err
 	}
 
 	result := api.Build(api.BuildOptions{
@@ -101,21 +100,21 @@ asyncRun([
 
 	var pages []rendererdPage
 	if err := json.Unmarshal(stdout, &pages); err != nil {
-		return errs.Unexpected(err)
+		return err
 	}
 
 	for _, each := range pages {
 		if dir := p.Dir(each.DstPath); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
-				return errs.MkdirAll(dir, err)
+				return err
 			}
 		}
 		var buf bytes.Buffer
 		if err := r.baseTemplate.Execute(&buf, each); err != nil {
-			return errs.ExecuteTemplate(r.baseTemplate.Name(), err)
+			return err
 		}
 		if err := ioutil.WriteFile(each.DstPath, buf.Bytes(), perm.File); err != nil {
-			return errs.WriteFile(each.DstPath, err)
+			return err
 		}
 	}
 	return nil

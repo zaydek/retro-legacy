@@ -12,7 +12,8 @@ func Run() {
 	start := time.Now()
 	defer term.Revert(os.Stdout)
 
-	runtime := newRuntime()
+	runtime, err := newRuntime()
+	must(err)
 	switch cmd := runtime.getCmd(); cmd {
 	case CmdStart:
 		runtime.Start()
@@ -21,5 +22,5 @@ func Run() {
 	case CmdServe:
 		runtime.Serve()
 	}
-	fmt.Printf("⚡️ %0.3fs\n", time.Since(start).Seconds())
+	fmt.Println(term.Boldf("⚡️ %0.3fs", time.Since(start).Seconds()))
 }

@@ -9,35 +9,32 @@ import (
 	"text/template"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
-	"github.com/zaydek/retro/pkg/errs"
-	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
-	"github.com/zaydek/retro/pkg/term"
 )
 
 // parseBaseTemplate parses public/index.html.
 func parseBaseTemplate(config DirectoryConfiguration) (*template.Template, error) {
 	bstr, err := ioutil.ReadFile(p.Join(config.AssetDirectory, "index.html"))
 	if err != nil {
-		return nil, errs.ReadFile(p.Join(config.AssetDirectory, "index.html"), err)
+		return nil, err
 	}
 
 	text := string(bstr)
 	if !strings.Contains(text, "{{ .Head }}") {
-		return nil, errors.New("No such template tag " + term.Bold("{{ .Head }}") + ". " +
-			"This is the entry point for the " + term.Bold("<Head>") + " component in your page components. " +
-			"Add " + term.Bold("{{ .Head }}") + " to " + term.Bold("<head>") + ".")
+		return nil, errors.New("No such template tag `{{ .Head }}`. " +
+			"This is the entry point for the `<Head>` component in your page components. " +
+			"Add `{{ .Head }}` to `<head>`.")
 	}
 
 	if !strings.Contains(text, "{{ .Page }}") {
-		return nil, errors.New("No such template tag " + term.Bold("{{ .Page }}") + ". " +
-			"This is the entry point for the " + term.Bold("<Page>") + " component in your page components. " +
-			"Add " + term.Bold("{{ .Page }}") + " to " + term.Bold("<body>") + ".")
+		return nil, errors.New("No such template tag `{{ .Page }}`. " +
+			"This is the entry point for the `<Page>` component in your page components. " +
+			"Add `{{ .Page }}` to `<body>`.")
 	}
 
 	base, err := template.New(p.Join(config.AssetDirectory, "index.html")).Parse(text)
 	if err != nil {
-		return nil, errs.ParseTemplate(base.Name(), err)
+		return nil, err
 	}
 	return base, nil
 }
@@ -46,7 +43,7 @@ func parseBaseTemplate(config DirectoryConfiguration) (*template.Template, error
 func statOrCreateDir(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, perm.Directory); err != nil {
-			return errs.MkdirAll(dir, err)
+			return err
 		}
 	}
 	return nil
@@ -63,37 +60,35 @@ func runServerGuards(config DirectoryConfiguration) error {
 	return nil
 }
 
-func newRuntime() Runtime {
+func newRuntime() (Runtime, error) {
 	var err error
 
-	dirs := DirectoryConfiguration{
-		AssetDirectory: "public",
-		PagesDirectory: "pages",
-		CacheDirectory: "__cache__",
-		BuildDirectory: "build",
-	}
-
 	runtime := Runtime{
-		Command:          cli.ParseCLIArguments(),
-		DirConfiguration: dirs,
+		Command: cli.ParseCLIArguments(),
+		DirConfiguration: DirectoryConfiguration{
+			AssetDirectory: "public",
+			PagesDirectory: "pages",
+			CacheDirectory: "__cache__",
+			BuildDirectory: "build",
+		},
 	}
 
 	cmd := runtime.getCmd()
 	if cmd == CmdStart || cmd == CmdBuild {
 		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {
-			loggers.ErrorAndEnd(err)
+			return Runtime{}, err
 		}
 	}
 
 	if runtime.baseTemplate, err = parseBaseTemplate(runtime.DirConfiguration); err != nil {
-		loggers.ErrorAndEnd(err)
+		return Runtime{}, err
 	}
 
 	// Do not run server guards on serve:
 	if cmd == CmdStart || cmd == CmdBuild {
 		if err := runServerGuards(runtime.DirConfiguration); err != nil {
-			loggers.ErrorAndEnd(err)
+			return Runtime{}, err
 		}
 	}
-	return runtime
+	return runtime, nil
 }

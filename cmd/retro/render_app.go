@@ -12,7 +12,6 @@ import (
 	"text/template"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/retro/pkg/errs"
 	"github.com/zaydek/retro/pkg/perm"
 )
 
@@ -25,13 +24,13 @@ func (r Runtime) RenderApp() error {
 
 	fs, err := os.ReadDir(r.DirConfiguration.BuildDirectory)
 	if err != nil {
-		return errs.Unexpected(err)
+		return err
 	}
 	for _, f := range fs {
 		if appRe.MatchString(f.Name()) {
 			path := p.Join(r.DirConfiguration.BuildDirectory, f.Name())
 			if err := os.Remove(path); err != nil {
-				return errs.Unexpected(err)
+				return err
 			}
 		}
 	}
@@ -74,15 +73,15 @@ ReactDOM.hydrate(
 	var buf bytes.Buffer
 	tmpl, err := template.New(src).Parse(text)
 	if err != nil {
-		return errs.ParseTemplate(src, err)
+		return err
 	}
 
 	if err := tmpl.Execute(&buf, r); err != nil {
-		return errs.ExecuteTemplate(tmpl.Name(), err)
+		return err
 	}
 
 	if err := ioutil.WriteFile(src, buf.Bytes(), perm.File); err != nil {
-		return errs.WriteFile(src, err)
+		return err
 	}
 
 	result := api.Build(api.BuildOptions{
