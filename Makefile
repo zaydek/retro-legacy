@@ -51,7 +51,6 @@ build-retro:
 build-retro-router:
 	rm -rf npm/retro-router/dist
 
-	# JavaScript
 	./node_modules/.bin/esbuild npm/retro-router/src/router/index.ts \
 		--bundle \
 		--define:process.env.NODE_ENV="\"production\"" \
@@ -61,14 +60,7 @@ build-retro-router:
 		--outfile=npm/retro-router/dist/index.js \
 		--tsconfig=npm/retro-router/tsconfig.json
 
-	# TypeScript
-	cd npm/retro-router && \
-		./node_modules/.bin/tsc src/router/index.ts \
-			--declaration \
-			--emitDeclarationOnly \
-			--esModuleInterop \
-			--jsx react \
-			--outDir dist
+	cd npm/retro-router && cp src/router/types.ts dist/index.d.ts
 
 build:
 	make -j3 \

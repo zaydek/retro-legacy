@@ -1,6 +1,6 @@
 {
 	"name": "@zaydek/retro-router",
-	"version": "0.0.18",
+	"version": "0.0.19",
 	"description": "Router for Retro React apps.",
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",

@@ -1,6 +1,6 @@
 {
 	"name": "@zaydek/create-retro-app",
-	"version": "0.0.18",
+	"version": "0.0.19",
 	"description": "Command-line interface for creating Retro React apps.",
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",

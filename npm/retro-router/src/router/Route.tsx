@@ -1,10 +1,6 @@
 import React from "react"
+import * as types from "./types"
 
-export interface RouteProps {
-	path: string
-	children?: React.ReactNode
-}
-
-export function Route({ children }: RouteProps) {
+export const Route: typeof types.Route = ({ children }) => {
 	return <>{children}</>
 }

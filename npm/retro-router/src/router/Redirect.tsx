@@ -1,13 +1,8 @@
-import { ScrollTo, scrollToImpl } from "./scrollToImpl"
+import * as types from "./types"
+import { scrollToImpl } from "./scrollToImpl"
 import { useHistory } from "./BrowserRouter"
 
-export interface RedirectProps {
-	path: string
-	shouldReplaceHistory?: boolean
-	scrollTo?: ScrollTo
-}
-
-export function Redirect({ path, shouldReplaceHistory, scrollTo }: RedirectProps) {
+export const Redirect: typeof types.Redirect = ({ path, shouldReplaceHistory, scrollTo }) => {
 	const history = useHistory()!
 
 	const fn = shouldReplaceHistory ? history.replace : history.push

@@ -44,7 +44,7 @@ func (cmd Command) CreateRetroApp() {
 	}
 
 	fsys := embeds.JavaScriptFS
-	if cmd.Template == "ts" {
+	if cmd.Template == "typescript" {
 		fsys = embeds.TypeScriptFS
 	}
 

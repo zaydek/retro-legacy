@@ -1,3 +1,4 @@
+import * as types from "./types"
 import React, { useLayoutEffect, useState } from "react"
 import { Route } from "./Route"
 import { useHistory } from "./BrowserRouter"
@@ -26,14 +27,10 @@ function findRoute(children: undefined | React.ReactNode, path: string) {
 	return route
 }
 
-export interface RouterProps {
-	children?: React.ReactNode
-}
-
 // TODO: Add support for keys so rerenders are forced? It looks like React
 // Router possibly supports this use-case here: https://git.io/Jt067.
 // TODO: Add error for when history === undefined.
-export function Router({ children }: RouterProps) {
+export const Router: typeof types.Router = ({ children }) => {
 	const history = useHistory()
 
 	if (!history) {

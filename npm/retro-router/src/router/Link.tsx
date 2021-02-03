@@ -1,15 +1,9 @@
+import * as types from "./types"
 import React from "react"
-import { ScrollTo, scrollToImpl } from "./scrollToImpl"
+import { scrollToImpl } from "./scrollToImpl"
 import { useHistory } from "./BrowserRouter"
 
-export interface LinkProps extends React.HTMLAttributes<HTMLElement> {
-	path: string
-	shouldReplaceHistory?: boolean
-	scrollTo?: ScrollTo
-	children?: React.ReactNode
-}
-
-export function Link({ path, shouldReplaceHistory, scrollTo, children, ...props }: LinkProps) {
+export const Link: typeof types.Link = ({ path, shouldReplaceHistory, scrollTo, children, ...props }) => {
 	const history = useHistory()!
 
 	function handleClick(e: React.MouseEvent) {

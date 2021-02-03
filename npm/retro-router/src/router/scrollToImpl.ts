@@ -1,11 +1,6 @@
-export type ScrollTo = "no-op" | number | string | HTMLElement
+import * as types from "./types"
 
-// scrollToImpl scrolls to an offset (number) or selector (string). Use "no-op"
-// to opt out of scrolling because <Link> and <Redirect> automatically scroll to
-// the top of the page.
-//
-// TODO: Add unit tests.
-export function scrollToImpl(scrollTo?: ScrollTo) {
+export function scrollToImpl(scrollTo?: types.ScrollTo) {
 	switch (typeof scrollTo) {
 		case "undefined":
 			window.scrollTo(0, 0)
