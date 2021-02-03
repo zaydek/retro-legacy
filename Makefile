@@ -28,7 +28,7 @@ test-go:
 	go test ./...
 
 test-router:
-	cd retro-router/ && yarn test
+	cd retro-router && yarn test
 
 test:
 	make test-go
@@ -49,6 +49,9 @@ build-retro:
 	touch npm/retro/bin/retro
 
 build-retro-router:
+	rm -rf npm/retro-router/dist
+
+	# JavaScript
 	./node_modules/.bin/esbuild npm/retro-router/src/router/index.ts \
 		--bundle \
 		--define:process.env.NODE_ENV="\"production\"" \
@@ -57,6 +60,15 @@ build-retro-router:
 		--format=cjs \
 		--outfile=npm/retro-router/dist/index.js \
 		--tsconfig=npm/retro-router/tsconfig.json
+
+	# TypeScript
+	cd npm/retro-router && \
+		./node_modules/.bin/tsc src/router/index.ts \
+			--declaration \
+			--emitDeclarationOnly \
+			--esModuleInterop \
+			--jsx react \
+			--outDir dist
 
 build:
 	make -j3 \
@@ -67,25 +79,25 @@ build:
 ################################################################################
 
 version:
-	cd npm/create-retro-app/ && npm version "$(RETRO_VERSION)" --allow-same-version
-	cd npm/retro/ && npm version "$(RETRO_VERSION)" --allow-same-version
-	cd npm/retro-router/ && npm version "$(RETRO_VERSION)" --allow-same-version
+	cd npm/create-retro-app && npm version "$(RETRO_VERSION)" --allow-same-version
+	cd npm/retro && npm version "$(RETRO_VERSION)" --allow-same-version
+	cd npm/retro-router && npm version "$(RETRO_VERSION)" --allow-same-version
 
 ################################################################################
 
 release-dry-run:
-	cd npm/create-retro-app/ && npm publish --dry-run
-	cd npm/retro/ && npm publish --dry-run
-	cd npm/retro-router/ && npm publish --dry-run
+	cd npm/create-retro-app && npm publish --dry-run
+	cd npm/retro && npm publish --dry-run
+	cd npm/retro-router && npm publish --dry-run
 
 release:
-	cd npm/create-retro-app/ && npm publish
-	cd npm/retro/ && npm publish
-	cd npm/retro-router/ && npm publish
+	cd npm/create-retro-app && npm publish
+	cd npm/retro && npm publish
+	cd npm/retro-router && npm publish
 
 ################################################################################
 
 clean:
-	rm -rf npm/create-retro-app/bin/ npm/create-retro-app/dist/
-	rm -rf npm/retro/bin/ npm/retro/dist/
-	rm -rf npm/retro-router/dist/
+	rm -rf npm/create-retro-app/bin npm/create-retro-app/dist
+	rm -rf npm/retro/bin npm/retro/dist
+	rm -rf npm/retro-router/dist

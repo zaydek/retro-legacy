@@ -6,7 +6,7 @@
 	"license": "MIT",
 	"main": "dist/router/index.js",
 	"files": [
-		"dist/"
+		"dist"
 	],
 	"scripts": {},
 	"devDependencies": {},

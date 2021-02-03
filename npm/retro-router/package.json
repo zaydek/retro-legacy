@@ -1,17 +1,16 @@
 {
 	"name": "@zaydek/retro-router",
-	"version": "0.0.16",
+	"version": "0.0.18",
 	"description": "Router for Retro React apps.",
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"files": [
-		"dist/"
+		"dist"
 	],
 	"scripts": {
-		"test": "jest",
-		"build": "rm -rf dist/ && yarn tsc src/router/index.ts --esModuleInterop --declaration --jsx react --outDir dist/ --removeComments"
+		"test": "jest"
 	},
 	"devDependencies": {
 		"@types/node": "^14.14.22",

@@ -1,6 +1,6 @@
 {
 	"name": "@zaydek/retro",
-	"version": "0.0.16",
+	"version": "0.0.18",
 	"description": "Command-line interface for Retro React apps.",
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",
@@ -8,7 +8,7 @@
 		"retro": "bin/retro"
 	},
 	"files": [
-		"bin/",
+		"bin",
 		"postinstall.js"
 	],
 	"scripts": {
