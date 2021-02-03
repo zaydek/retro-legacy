@@ -19,12 +19,12 @@ func parseStartArguments(arguments ...string) StartCommand {
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
 	if err := flagset.Parse(arguments); err != nil {
-		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
+		loggers.Error("Unrecognized flags and or arguments. " +
 			"Try " + term.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
 	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
-		loggers.Stderr.Println(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
+		loggers.Error(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
 	return cmd
@@ -38,7 +38,7 @@ func parseBuildArguments(arguments ...string) BuildCommand {
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
 	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
 	if err := flagset.Parse(arguments); err != nil {
-		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
+		loggers.Error("Unrecognized flags and or arguments. " +
 			"Try " + term.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
@@ -52,12 +52,12 @@ func parseServeArguments(arguments ...string) ServeCommand {
 	cmd := ServeCommand{}
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	if err := flagset.Parse(arguments); err != nil {
-		loggers.Stderr.Println("Unrecognized flags and or arguments. " +
+		loggers.Error("Unrecognized flags and or arguments. " +
 			"Try " + term.Bold("retro help") + " for help.")
 		os.Exit(2)
 	}
 	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
-		loggers.Stderr.Println(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
+		loggers.Error(term.Bold("--port") + " must be be " + term.Bold("3XXX") + " or " + term.Bold("5XXX") + " or " + term.Bold("8XXX") + ".")
 		os.Exit(2)
 	}
 	return cmd
@@ -103,7 +103,7 @@ func ParseCLIArguments() interface{} {
 		os.Setenv("NODE_ENV", "production")
 		cmd = parseServeArguments(os.Args[2:]...)
 	default:
-		loggers.Stderr.Println("Unrecognized command. " +
+		loggers.FatalError("Unrecognized command. " +
 			"Try " + term.Bold("retro help") + " for help.\n\n" +
 			usageOnly)
 		os.Exit(2)

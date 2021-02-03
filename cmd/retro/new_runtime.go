@@ -81,18 +81,18 @@ func newRuntime() Runtime {
 	cmd := runtime.getCmd()
 	if cmd == CmdStart || cmd == CmdBuild {
 		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {
-			loggers.Stderr.Fatalln(err)
+			loggers.FatalError(err)
 		}
 	}
 
 	if runtime.baseTemplate, err = parseBaseTemplate(runtime.DirConfiguration); err != nil {
-		loggers.Stderr.Fatalln(err)
+		loggers.FatalError(err)
 	}
 
 	// Do not run server guards on serve:
 	if cmd == CmdStart || cmd == CmdBuild {
 		if err := runServerGuards(runtime.DirConfiguration); err != nil {
-			loggers.Stderr.Fatalln(err)
+			loggers.FatalError(err)
 		}
 	}
 	return runtime

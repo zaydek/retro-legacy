@@ -25,7 +25,7 @@ func (cmd Command) CreateRetroApp() {
 			} else {
 				typ = "directory"
 			}
-			loggers.Stderr.Fatalln("Aborted. " +
+			loggers.FatalError("Aborted. " +
 				"A " + typ + " named " + term.Bold(cmd.Directory) + " already exists.\n\n" +
 				"- " + term.Boldf("create-retro-app %s", increment(cmd.Directory)) + "\n\n" +
 				"Or\n\n" +
@@ -33,11 +33,11 @@ func (cmd Command) CreateRetroApp() {
 		}
 
 		if err := os.MkdirAll(cmd.Directory, perm.Directory); err != nil {
-			loggers.Stderr.Fatalln(errs.MkdirAll(cmd.Directory, err))
+			loggers.FatalError(errs.MkdirAll(cmd.Directory, err))
 		}
 
 		if err := os.Chdir(cmd.Directory); err != nil {
-			loggers.Stderr.Fatalln(errs.Chdir(cmd.Directory, err))
+			loggers.FatalError(errs.Chdir(cmd.Directory, err))
 		}
 		defer os.Chdir("..")
 	}
@@ -59,7 +59,7 @@ func (cmd Command) CreateRetroApp() {
 		return nil
 	}); err != nil {
 		path := fmt.Sprintf("<embed:%s>", cmd.Template)
-		loggers.Stderr.Fatalln(errs.Walk(path, err))
+		loggers.FatalError(errs.Walk(path, err))
 	}
 
 	var badPaths []string
@@ -78,7 +78,7 @@ func (cmd Command) CreateRetroApp() {
 			}
 			badPathsStr += sep + "- " + term.Bold(each)
 		}
-		loggers.Stderr.Fatalln("Aborted. " +
+		loggers.FatalError("Aborted. " +
 			"These paths must be removed and or renamed. " +
 			"Use " + term.Bold("rm -r paths") + " to remove them or " + term.Bold("mv src dst") + " to rename them.\n\n" +
 			badPathsStr)
@@ -87,19 +87,19 @@ func (cmd Command) CreateRetroApp() {
 	for _, each := range paths {
 		if dir := p.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
-				loggers.Stderr.Fatalln(errs.MkdirAll(dir, err))
+				loggers.FatalError(errs.MkdirAll(dir, err))
 			}
 		}
 		src, err := fsys.Open(each)
 		if err != nil {
-			loggers.Stderr.Fatalln(errs.Unexpected(err))
+			loggers.FatalError(errs.Unexpected(err))
 		}
 		dst, err := os.Create(each)
 		if err != nil {
-			loggers.Stderr.Fatalln(errs.Unexpected(err))
+			loggers.FatalError(errs.Unexpected(err))
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			loggers.Stderr.Fatalln(errs.Unexpected(err))
+			loggers.FatalError(errs.Unexpected(err))
 		}
 		src.Close()
 		dst.Close()
@@ -123,16 +123,16 @@ func (cmd Command) CreateRetroApp() {
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, dot); err != nil {
-		loggers.Stderr.Fatalln(errs.ExecuteTemplate(tmpl.Name(), err))
+		loggers.FatalError(errs.ExecuteTemplate(tmpl.Name(), err))
 	}
 
 	if err := ioutil.WriteFile("package.json", buf.Bytes(), perm.File); err != nil {
-		loggers.Stderr.Fatalln(errs.WriteFile("package.json", err))
+		loggers.FatalError(errs.WriteFile("package.json", err))
 	}
 
 	if cmd.Directory == "." {
-		loggers.Stdout.Println(fmt.Sprintf(successFormat, appName))
+		loggers.OK(fmt.Sprintf(successFormat, appName))
 	} else {
-		loggers.Stdout.Println(fmt.Sprintf(successDirectoryFormat, appName))
+		loggers.OK(fmt.Sprintf(successDirectoryFormat, appName))
 	}
 }

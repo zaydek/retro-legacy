@@ -29,7 +29,7 @@ func (r Runtime) Start() {
 		must(r.RenderPageProps())
 	}
 
-	loggers.Stdout.Println(term.Boldf("http://localhost:%s", r.getPort()))
+	loggers.OK(term.Boldf("http://localhost:%s", r.getPort()))
 
 	// DEFER: Can’t we serve this without writing it to disk? Then we don’t pollute
 	// build which seems right.
@@ -49,10 +49,11 @@ func (r Runtime) Start() {
 		Watch: &api.WatchMode{
 			OnRebuild: func(result api.BuildResult) {
 				// TODO: Don’t we want to propagate these errors to the client?
+				// TODO: What about preventing repeat errors?
 				if len(result.Errors) > 0 {
-					loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Errors))
+					loggers.Error(formatEsbuildMessagesAsTermString(result.Errors))
 				} else if len(result.Warnings) > 0 {
-					loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Warnings))
+					loggers.Warning(formatEsbuildMessagesAsTermString(result.Warnings))
 				}
 				events <- "reload"
 			},
@@ -61,9 +62,9 @@ func (r Runtime) Start() {
 	})
 	// TODO
 	if len(result.Errors) > 0 {
-		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Errors))
+		loggers.Error(formatEsbuildMessagesAsTermString(result.Errors))
 	} else if len(result.Warnings) > 0 {
-		loggers.Stderr.Println(formatEsbuildMessagesAsTermString(result.Warnings))
+		loggers.Warning(formatEsbuildMessagesAsTermString(result.Warnings))
 	}
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
@@ -78,13 +79,13 @@ func (r Runtime) Start() {
 		// matches should defer to ServeFile logic.
 		bstr, err := r.RenderPageAsBytes(r.PageBasedRouter[0])
 		if err != nil {
-			// TODO
-			loggers.Stderr.Fatalln(err)
+			// TODO: Should this be a fatal error?
+			loggers.Error(err)
 		}
 		rw.Write(bstr)
 	})
 
-	http.HandleFunc("/public/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(fmt.Sprintf("/%s/", r.DirConfiguration.AssetDirectory), func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, fmt.Sprintf("./%s", r.URL.Path))
 	})
 
@@ -95,9 +96,7 @@ func (r Runtime) Start() {
 		w.Header().Set("Connection", "keep-alive")
 		flusher, ok := w.(http.Flusher)
 		if !ok {
-			// TODO: We don’t support warnings yet, but when we do, this should be
-			// logged as a warning.
-			loggers.Stderr.Fatalln("Your browser does not support server-sent events.")
+			loggers.Warning("Your browser does not support server-sent events (SSE).")
 			return
 		}
 		for {
@@ -117,12 +116,12 @@ func (r Runtime) Start() {
 
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.DirConfiguration.BuildDirectory); os.IsNotExist(err) {
-		loggers.Stderr.Fatalln("Failed to stat directory " + term.Bold(r.DirConfiguration.BuildDirectory) + ". " +
+		loggers.FatalError("Failed to stat directory " + term.Bold(r.DirConfiguration.BuildDirectory) + ". " +
 			"It looks like haven’t run " + term.Bold("retro build") + " yet. " +
 			"Try " + term.Bold("retro build && retro serve") + ".")
 	}
 
-	loggers.Stdout.Println(term.Boldf("http://localhost:%s", r.getPort()))
+	loggers.OK(term.Boldf("http://localhost:%s", r.getPort()))
 
 	http.Handle("/", http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory)))
 	must(http.ListenAndServe(":"+r.getPort(), nil))

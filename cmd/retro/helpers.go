@@ -20,7 +20,7 @@ func must(err error) {
 		// No-op
 		return
 	}
-	loggers.Stderr.Fatalln(err)
+	loggers.FatalError(err)
 }
 
 // getCmd gets the current command.
@@ -60,13 +60,6 @@ func (r Runtime) getPort() string {
 		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)
 	}
 	return ""
-}
-
-type rendererdPage struct {
-	PageBasedRoute
-
-	Head string `json:"head"`
-	Page string `json:"page"`
 }
 
 func requireStmt(route PageBasedRoute) string {

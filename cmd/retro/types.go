@@ -22,6 +22,13 @@ type PageBasedRoute struct {
 	Component string `json:"component"` // Component
 }
 
+// rendererdPage describes a rendered page-based route.
+type rendererdPage struct {
+	PageBasedRoute
+	Head string `json:"head"`
+	Page string `json:"page"`
+}
+
 // DirectoryConfiguration describes persistent directory configuration.
 type DirectoryConfiguration struct {
 	AssetDirectory string
