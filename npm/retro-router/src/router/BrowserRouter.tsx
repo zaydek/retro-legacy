@@ -1,21 +1,16 @@
 import React, { createContext, useContext } from "react"
 import { BrowserHistory, createBrowserHistory } from "history"
 
-const HistoryContext = createContext<BrowserHistory | undefined>(undefined)
+const Context = createContext<BrowserHistory | undefined>(undefined)
 
 interface ProviderProps {
 	children?: React.ReactNode
 }
 
 export function useHistory() {
-	return useContext(HistoryContext)
+	return useContext(Context)
 }
 
 export function BrowserRouter({ children }: ProviderProps) {
-	return (
-		// prettier-ignore
-		<HistoryContext.Provider value={createBrowserHistory()}>
-			{children}
-		</HistoryContext.Provider>
-	)
+	return <Context.Provider value={createBrowserHistory()}>{children}</Context.Provider>
 }

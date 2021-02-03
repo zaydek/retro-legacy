@@ -4,7 +4,7 @@ export type ScrollTo = "no-op" | number | string | HTMLElement
 // to opt out of scrolling because <Link> and <Redirect> automatically scroll to
 // the top of the page.
 //
-// TODO: We should be able to write tests for scrollTo.
+// TODO: Add unit tests.
 export function scrollToImpl(scrollTo?: ScrollTo) {
 	switch (typeof scrollTo) {
 		case "undefined":
@@ -18,11 +18,9 @@ export function scrollToImpl(scrollTo?: ScrollTo) {
 				// No-op
 				return
 			}
-			// TODO: Add support for scroll-padding-top.
+			// TODO: Add support for scroll-padding-top for element types?
 			const el = document.querySelector(scrollTo)
-			if (!el) {
-				console.error(`Link: document.querySelector(${JSON.stringify(scrollTo)}) returned \`${el}\`.`)
-			} else {
+			if (el) {
 				window.scrollTo(0, el.getBoundingClientRect().y)
 			}
 			break

@@ -6,13 +6,9 @@ import { useHistory } from "./BrowserRouter"
 
 // Converts React children to an array.
 function childrenToArray(children?: React.ReactNode) {
-	const childrenArr: React.ReactNode[] = []
-
-	// Use React.Children.forEach because React.Children.toArray sets keys.
-	//
-	// https://reactjs.org/docs/react-api.html#reactchildrentoarray
-	React.Children.forEach(children, each => childrenArr.push(each))
-	return childrenArr
+	const childrenAsArray: React.ReactNode[] = []
+	React.Children.forEach(children, each => childrenAsArray.push(each))
+	return childrenAsArray
 }
 
 // Searches routes for an route matching path.
@@ -42,8 +38,8 @@ export function Router({ children }: RouterProps) {
 
 	if (!history) {
 		throw new Error(
-			"retro-router: It looks like you haven’t wrapped your app with <BrowserRouter>. " +
-				"<BrowserRouter> creates a new browser history, which retro-router components use.",
+			"retro-router: It looks like you haven’t wrapped your app with `<BrowserRouter>`. " +
+				"`<BrowserRouter>` creates a new browser history, which retro-router components use.",
 		)
 	}
 

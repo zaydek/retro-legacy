@@ -48,11 +48,20 @@ build-retro:
 	GOOS=windows GOARCH=amd64 go build "-ldflags=-s -w" -o=npm/retro/bin/windows-64.exe entry_retro.go
 	touch npm/retro/bin/retro
 
+build-retro-router:
+	./node_modules/.bin/esbuild npm/retro-router/src/router/index.ts \
+		--bundle \
+		--define:process.env.NODE_ENV="\"production\"" \
+		--external:react \
+		--external:react-dom \
+		--outfile=npm/retro-router/dist/index.js \
+		--tsconfig=npm/retro-router/tsconfig.json
+
 build:
-	make -j2 \
+	make -j3 \
 		build-create-retro-app \
-		build-retro
-	cd npm/retro-router/ && yarn build
+		build-retro \
+		build-retro-router
 
 ################################################################################
 

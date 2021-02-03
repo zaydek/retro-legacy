@@ -41,7 +41,7 @@ test("should route to null; there is no /404 route", () => {
 		// prettier-ignore
 		<BrowserRouter>
 			<Router>
-				{/* Nothing to see here. */}
+				{/* 👻 */}
 			</Router>
 		</BrowserRouter>,
 	)
