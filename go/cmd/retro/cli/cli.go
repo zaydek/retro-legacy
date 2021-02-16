@@ -9,33 +9,39 @@ import (
 	"github.com/zaydek/retro/pkg/loggers"
 )
 
-func parseStartArguments(arguments ...string) StartCommand {
+func parseDevArguments(arguments ...string) DevCommand {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
-	cmd := StartCommand{}
+	cmd := DevCommand{}
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
+	flagset.BoolVar(&cmd.Purged, "purged", true, "")
+	// TODO: Use XOR operator to invalidate when both cached and purged are true
+	// or false.
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
-	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
+	flagset.BoolVar(&cmd.SourceMap, "source-map", true, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +
 			"Try `retro help` for help.")
 		os.Exit(2)
 	}
-	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
-		loggers.Error("`--port` must be 3XXX or 5XXX or 8XXX.")
+	if cmd.Port < 1e3 || cmd.Port >= 1e4 {
+		loggers.Error("`--port` must be 1XXX through 9XXX.")
 		os.Exit(2)
 	}
 	return cmd
 }
 
-func parseBuildArguments(arguments ...string) BuildCommand {
+func parseExportArguments(arguments ...string) ExportCommand {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
-	cmd := BuildCommand{}
+	cmd := ExportCommand{}
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	flagset.BoolVar(&cmd.SourceMap, "source-map", false, "")
+	flagset.BoolVar(&cmd.Purged, "purged", true, "")
+	// TODO: Use XOR operator to invalidate when both cached and purged are true
+	// or false.
+	flagset.BoolVar(&cmd.SourceMap, "source-map", true, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +
 			"Try `retro help` for help.")
@@ -55,8 +61,8 @@ func parseServeArguments(arguments ...string) ServeCommand {
 			"Try `retro help` for help.")
 		os.Exit(2)
 	}
-	if (cmd.Port < 3e3 || cmd.Port >= 4e3) && (cmd.Port < 5e3 || cmd.Port >= 6e3) && (cmd.Port < 8e3 || cmd.Port >= 9e3) {
-		loggers.Error("`--port` must be 3XXX or 5XXX or 8XXX.")
+	if cmd.Port < 1e3 || cmd.Port >= 1e4 {
+		loggers.Error("`--port` must be 1XXX through 9XXX.")
 		os.Exit(2)
 	}
 	return cmd
@@ -70,38 +76,25 @@ func ParseCLIArguments() interface{} {
 	}
 
 	var cmd interface{}
-	switch os.Args[1] {
-	// $ retro version
-	case "version":
-		fallthrough
-	case "--version":
-		fallthrough
-	case "-v":
+	if arg := os.Args[1]; arg == "version" || arg == "--version" || arg == "--v" {
 		fmt.Println(os.Getenv("RETRO_VERSION"))
 		os.Exit(0)
-	// $ retro usage
-	case "usage":
-		fallthrough
-	case "--usage":
-		fallthrough
-	case "help":
-		fallthrough
-	case "--help":
+	} else if arg == "usage" || arg == "--usage" || arg == "help" || arg == "--help" {
 		fmt.Println(usage)
 		os.Exit(0)
-	// $ retro start
-	case "start":
+	} else if arg == "dev" {
+		os.Setenv("__DEV__", "true")
 		os.Setenv("NODE_ENV", "development")
-		cmd = parseStartArguments(os.Args[2:]...)
-	// $ retro build
-	case "build":
+		cmd = parseDevArguments(os.Args[2:]...)
+	} else if arg == "export" {
+		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseBuildArguments(os.Args[2:]...)
-	// $ retro serve
-	case "serve":
+		cmd = parseExportArguments(os.Args[2:]...)
+	} else if arg == "serve" {
+		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
 		cmd = parseServeArguments(os.Args[2:]...)
-	default:
+	} else {
 		loggers.Error("Unrecognized command. " +
 			"Here are the available commands:\n\n" +
 			usageOnly)

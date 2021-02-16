@@ -6,68 +6,92 @@ import (
 	"github.com/zaydek/retro/pkg/expect"
 )
 
-func TestWatch(t *testing.T) {
-	var cmd StartCommand
+func TestDev(t *testing.T) {
+	var cmd DevCommand
 
-	cmd = parseStartArguments()
-	expect.DeepEqual(t, cmd, StartCommand{
-		Cached:    false,
-		Port:      8000,
-		SourceMap: false,
-	})
-
-	cmd = parseStartArguments("--cached")
-	expect.DeepEqual(t, cmd, StartCommand{
-		Cached:    true,
-		Port:      8000,
-		SourceMap: false,
-	})
-
-	cmd = parseStartArguments("--port=8080")
-	expect.DeepEqual(t, cmd, StartCommand{
-		Cached:    false,
-		Port:      8080,
-		SourceMap: false,
-	})
-
-	cmd = parseStartArguments("--source-map")
-	expect.DeepEqual(t, cmd, StartCommand{
+	cmd = parseDevArguments()
+	expect.DeepEqual(t, cmd, DevCommand{
+		Purged:    false,
 		Cached:    false,
 		Port:      8000,
 		SourceMap: true,
 	})
 
-	cmd = parseStartArguments("--cached", "--port=8080", "--source-map")
-	expect.DeepEqual(t, cmd, StartCommand{
+	cmd = parseDevArguments("--cached")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Purged:    true,
+		Cached:    true,
+		Port:      8000,
+		SourceMap: true,
+	})
+
+	cmd = parseDevArguments("--port=8080")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Purged:    false,
+		Cached:    false,
+		Port:      8080,
+		SourceMap: true,
+	})
+
+	cmd = parseDevArguments("--prettier")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Purged:    false,
+		Cached:    false,
+		Port:      8000,
+		SourceMap: true,
+	})
+
+	cmd = parseDevArguments("--source-map")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Purged:    false,
+		Cached:    false,
+		Port:      8000,
+		SourceMap: true,
+	})
+
+	cmd = parseDevArguments("--cached", "--port=8080", "--prettier", "source-map")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Purged:    true,
 		Cached:    true,
 		Port:      8080,
 		SourceMap: true,
 	})
 }
 
-func TestBuild(t *testing.T) {
-	var cmd BuildCommand
+func TestExport(t *testing.T) {
+	var cmd ExportCommand
 
-	cmd = parseBuildArguments()
-	expect.DeepEqual(t, cmd, BuildCommand{
-		Cached:    false,
-		SourceMap: false,
-	})
-
-	cmd = parseBuildArguments("--cached")
-	expect.DeepEqual(t, cmd, BuildCommand{
-		Cached:    true,
-		SourceMap: false,
-	})
-
-	cmd = parseBuildArguments("--source-map")
-	expect.DeepEqual(t, cmd, BuildCommand{
+	cmd = parseExportArguments()
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Purged:    false,
 		Cached:    false,
 		SourceMap: true,
 	})
 
-	cmd = parseBuildArguments("--cached", "--source-map")
-	expect.DeepEqual(t, cmd, BuildCommand{
+	cmd = parseExportArguments("--cached")
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Purged:    true,
+		Cached:    true,
+		SourceMap: true,
+	})
+
+	cmd = parseExportArguments("--prettier")
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Purged:    false,
+		Cached:    false,
+		SourceMap: true,
+	})
+
+	cmd = parseExportArguments("--source-map")
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Purged:    false,
+		Cached:    false,
+		SourceMap: true,
+	})
+
+	cmd = parseExportArguments("--cached", "--prettier", "--source-map")
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Purged:    true,
 		Cached:    true,
 		SourceMap: true,
 	})

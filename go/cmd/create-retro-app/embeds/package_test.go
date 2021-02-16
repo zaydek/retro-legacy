@@ -52,7 +52,7 @@ func TestTypeScriptTemplate(t *testing.T) {
 	},
 	"devDependencies": {
 		"@types/react": "^17.0.0",
-		"@types/react-dom": "^17.0.0"
+		"@types/react-dom": "^17.0.0",
 		"esbuild": "^0.8.46"
 	}
 }

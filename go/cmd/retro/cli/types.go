@@ -1,18 +1,18 @@
 package cli
 
-// TODO: Add command enum.
-
-type StartCommand struct {
-	Cached    bool
-	Port      int
-	SourceMap bool
+type DevCommand struct {
+	Cached    bool `json:"cached"`
+	Purged    bool `json:"purged"`
+	Port      int  `json:"port"`
+	SourceMap bool `json:"source_map"`
 }
 
-type BuildCommand struct {
-	Cached    bool
-	SourceMap bool
+type ExportCommand struct {
+	Cached    bool `json:"cached"`
+	Purged    bool `json:"purged"`
+	SourceMap bool `json:"source_map"`
 }
 
 type ServeCommand struct {
-	Port int
+	Port int `json:"port"`
 }
