@@ -3,7 +3,7 @@ package run
 import (
 	"testing"
 
-	"github.com/zaydek/svetlana/pkg/expect"
+	"github.com/zaydek/retro/pkg/expect"
 )
 
 func TestRun(t *testing.T) {

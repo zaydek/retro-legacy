@@ -15,17 +15,17 @@ type Test struct {
 
 func TestVersion(t *testing.T) {
 	text := `
-+-----------------+
-| RETRO |  v0.0.1 |
-| REACT | v17.0.1 |
-+-----------------+
++-------------------------+
+| RETRO_VERSION |  v0.0.1 |
+| REACT_VERSION | v17.0.1 |
++-------------------------+
 `
 
 	SetEnvVars(text)
 
 	tests := []Test{
-		{got: os.Getenv("RETRO"), want: "v0.0.1"},
-		{got: os.Getenv("REACT"), want: "v17.0.1"},
+		{got: os.Getenv("RETRO_VERSION"), want: "v0.0.1"},
+		{got: os.Getenv("REACT_VERSION"), want: "v17.0.1"},
 	}
 	for _, test := range tests {
 		expect.DeepEqual(t, test.got, test.want)
@@ -34,17 +34,17 @@ func TestVersion(t *testing.T) {
 
 func TestLatest(t *testing.T) {
 	text := `
-+----------------+
-| RETRO | latest |
-| REACT | latest |
-+----------------+
++------------------------+
+| RETRO_VERSION | latest |
+| REACT_VERSION | latest |
++------------------------+
 `
 
 	SetEnvVars(text)
 
 	tests := []Test{
-		{got: os.Getenv("RETRO"), want: "latest"},
-		{got: os.Getenv("REACT"), want: "latest"},
+		{got: os.Getenv("RETRO_VERSION"), want: "latest"},
+		{got: os.Getenv("REACT_VERSION"), want: "latest"},
 	}
 	for _, test := range tests {
 		expect.DeepEqual(t, test.got, test.want)
