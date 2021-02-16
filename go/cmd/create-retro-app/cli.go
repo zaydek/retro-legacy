@@ -20,7 +20,7 @@ func parseArguments(arguments ...string) Command {
 		os.Exit(2)
 	}
 	if cmd.Template != "javascript" && cmd.Template != "typescript" {
-		loggers.Error("`--template` must be `javascript` or `typescript`. " +
+		loggers.Error("--template must be javascript or typescript. " +
 			"Here’s what you can do:\n\n" +
 			"- create-retro-app --template=javascript app-name\n\n" +
 			"Or\n\n" +
@@ -28,8 +28,8 @@ func parseArguments(arguments ...string) Command {
 		os.Exit(2)
 	}
 	if len(flagset.Args()) == 0 {
-		loggers.Error("It looks like you’re trying to run `create-retro-app` in the current directory. " +
-			"In that case, use `.` explicitly.\n\n" +
+		loggers.Error("It looks like you’re trying to run create-retro-app in the current directory. " +
+			"In that case, use '.' explicitly.\n\n" +
 			"- create-retro-app .\n\n" +
 			"Or\n\n" +
 			"- create-retro-app app-name")

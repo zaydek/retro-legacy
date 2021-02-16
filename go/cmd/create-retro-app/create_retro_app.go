@@ -41,7 +41,7 @@ func (cmd Command) CreateApp() {
 				typ = "directory"
 			}
 			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"A %[1]s named `%[3]s` already exists. "+
+				"A %[1]s named %[3]s already exists. "+
 				"Here’s what you can do:\n\n"+
 				"- create-retro-app %[2]s\n\n"+
 				"Or\n\n"+
@@ -91,7 +91,7 @@ func (cmd Command) CreateApp() {
 		}
 		loggers.ErrorAndEnd("Aborted. " +
 			"These paths must be removed or renamed. " +
-			"Use `rm -r [paths]` to remove them or `mv [src] [dst]` to rename them.\n\n" +
+			"Use rm -r [paths] to remove them or mv [src] [dst] to rename them.\n\n" +
 			badPathsStr)
 	}
 

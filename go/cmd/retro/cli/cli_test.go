@@ -11,50 +11,67 @@ func TestDev(t *testing.T) {
 
 	cmd = parseDevArguments()
 	expect.DeepEqual(t, cmd, DevCommand{
-		Purged:    false,
-		Cached:    false,
-		Port:      8000,
-		SourceMap: true,
+		Cache: false,
+		Purge: true,
+		Port:  8000,
+		// SourceMap: true,
 	})
 
-	cmd = parseDevArguments("--cached")
+	cmd = parseDevArguments("--cache")
 	expect.DeepEqual(t, cmd, DevCommand{
-		Purged:    true,
-		Cached:    true,
-		Port:      8000,
-		SourceMap: true,
+		Cache: true,
+		Purge: false,
+		Port:  8000,
+		// SourceMap: true,
+	})
+
+	cmd = parseDevArguments("--purge")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Cache: false,
+		Purge: true,
+		Port:  8000,
+		// SourceMap: true,
+	})
+
+	// TODO: This should error.
+	cmd = parseDevArguments("--cache", "--purge")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Cache: true,
+		Purge: true,
+		Port:  8000,
+		// SourceMap: true,
 	})
 
 	cmd = parseDevArguments("--port=8080")
 	expect.DeepEqual(t, cmd, DevCommand{
-		Purged:    false,
-		Cached:    false,
-		Port:      8080,
-		SourceMap: true,
-	})
-
-	cmd = parseDevArguments("--prettier")
-	expect.DeepEqual(t, cmd, DevCommand{
-		Purged:    false,
-		Cached:    false,
-		Port:      8000,
-		SourceMap: true,
+		Cache: false,
+		Purge: true,
+		Port:  8080,
+		// SourceMap: true,
 	})
 
 	cmd = parseDevArguments("--source-map")
 	expect.DeepEqual(t, cmd, DevCommand{
-		Purged:    false,
-		Cached:    false,
-		Port:      8000,
-		SourceMap: true,
+		Cache: false,
+		Purge: true,
+		Port:  8000,
+		// SourceMap: true,
 	})
 
-	cmd = parseDevArguments("--cached", "--port=8080", "--prettier", "source-map")
+	cmd = parseDevArguments("--cache", "--port=8080", "source-map")
 	expect.DeepEqual(t, cmd, DevCommand{
-		Purged:    true,
-		Cached:    true,
-		Port:      8080,
-		SourceMap: true,
+		Cache: true,
+		Purge: false,
+		Port:  8080,
+		// SourceMap: true,
+	})
+
+	cmd = parseDevArguments("--purge", "--port=8080", "source-map")
+	expect.DeepEqual(t, cmd, DevCommand{
+		Cache: false,
+		Purge: true,
+		Port:  8080,
+		// SourceMap: true,
 	})
 }
 
@@ -63,36 +80,51 @@ func TestExport(t *testing.T) {
 
 	cmd = parseExportArguments()
 	expect.DeepEqual(t, cmd, ExportCommand{
-		Purged:    false,
-		Cached:    false,
+		Cache:     false,
+		Purge:     true,
 		SourceMap: true,
 	})
 
-	cmd = parseExportArguments("--cached")
+	cmd = parseExportArguments("--cache")
 	expect.DeepEqual(t, cmd, ExportCommand{
-		Purged:    true,
-		Cached:    true,
+		Cache:     true,
+		Purge:     false,
 		SourceMap: true,
 	})
 
-	cmd = parseExportArguments("--prettier")
+	cmd = parseExportArguments("--purge")
 	expect.DeepEqual(t, cmd, ExportCommand{
-		Purged:    false,
-		Cached:    false,
+		Cache:     false,
+		Purge:     true,
+		SourceMap: true,
+	})
+
+	// TODO: This should error.
+	cmd = parseExportArguments("--cache", "--purge")
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Cache:     true,
+		Purge:     true,
 		SourceMap: true,
 	})
 
 	cmd = parseExportArguments("--source-map")
 	expect.DeepEqual(t, cmd, ExportCommand{
-		Purged:    false,
-		Cached:    false,
+		Cache:     false,
+		Purge:     true,
 		SourceMap: true,
 	})
 
-	cmd = parseExportArguments("--cached", "--prettier", "--source-map")
+	cmd = parseExportArguments("--cache", "--port=8080", "source-map")
 	expect.DeepEqual(t, cmd, ExportCommand{
-		Purged:    true,
-		Cached:    true,
+		Cache:     true,
+		Purge:     false,
+		SourceMap: true,
+	})
+
+	cmd = parseExportArguments("--purge", "--port=8080", "source-map")
+	expect.DeepEqual(t, cmd, ExportCommand{
+		Cache:     false,
+		Purge:     true,
 		SourceMap: true,
 	})
 }
