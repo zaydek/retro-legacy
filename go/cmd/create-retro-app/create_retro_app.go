@@ -9,13 +9,29 @@ import (
 	"os"
 	p "path"
 
-	"github.com/zaydek/retro/cmd/create_retro_app/embeds"
+	"github.com/zaydek/retro/cmd/create-retro-app/embeds"
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/term"
 )
 
-func (cmd Command) CreateRetroApp() {
+func (cmd Command) CreateApp() {
+	fsys := embeds.JavaScriptFS
+	if cmd.Template == "typescript" {
+		fsys = embeds.TypeScriptFS
+	}
+
+	tmpl := embeds.JavaScriptPackageTemplate
+	if cmd.Template == "typescript" {
+		tmpl = embeds.TypeScriptPackageTemplate
+	}
+
+	appName := cmd.Directory
+	if cmd.Directory == "." {
+		cwd, _ := os.Getwd()
+		appName = p.Base(cwd)
+	}
+
 	if cmd.Directory != "." {
 		if info, err := os.Stat(cmd.Directory); !os.IsNotExist(err) {
 			var typ string
@@ -25,12 +41,12 @@ func (cmd Command) CreateRetroApp() {
 				typ = "directory"
 			}
 			loggers.ErrorAndEnd(fmt.Sprintf("Aborted. "+
-				"A %s named `%[2]s` already exists. "+
+				"A %[1]s named `%[3]s` already exists. "+
 				"Here’s what you can do:\n\n"+
 				"- create-retro-app %[2]s\n\n"+
 				"Or\n\n"+
-				"- rm -r %[2]s && create-retro-app %[2]s",
-				typ, cmd.Directory))
+				"- rm -r %[3]s && create-retro-app %[3]s",
+				typ, increment(cmd.Directory), cmd.Directory))
 		}
 		if err := os.MkdirAll(cmd.Directory, perm.Directory); err != nil {
 			loggers.ErrorAndEnd("Aborted.\n\n" +
@@ -41,11 +57,6 @@ func (cmd Command) CreateRetroApp() {
 				err.Error())
 		}
 		defer os.Chdir("..")
-	}
-
-	fsys := embeds.JavaScriptFS
-	if cmd.Template == "typescript" {
-		fsys = embeds.TypeScriptFS
 	}
 
 	var paths []string
@@ -87,42 +98,31 @@ func (cmd Command) CreateRetroApp() {
 	for _, each := range paths {
 		if dir := p.Dir(each); dir != "." {
 			if err := os.MkdirAll(dir, perm.Directory); err != nil {
-				loggers.ErrorAndEnd("Aborted.\n\n" +
+				loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 					err.Error())
 			}
 		}
 		src, err := fsys.Open(each)
 		if err != nil {
-			loggers.ErrorAndEnd("Aborted.\n\n" +
+			loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 				err.Error())
 		}
 		dst, err := os.Create(each)
 		if err != nil {
-			loggers.ErrorAndEnd("Aborted.\n\n" +
+			loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 				err.Error())
 		}
 		if _, err := io.Copy(dst, src); err != nil {
-			loggers.ErrorAndEnd("Aborted.\n\n" +
+			loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 				err.Error())
 		}
 		src.Close()
 		dst.Close()
 	}
 
-	appName := cmd.Directory
-	if cmd.Directory == "." {
-		cwd, _ := os.Getwd()
-		appName = p.Base(cwd)
-	}
-
-	tmpl := embeds.JavaScriptPackageTemplate
-	if cmd.Template == "typescript" {
-		tmpl = embeds.TypeScriptPackageTemplate
-	}
-
 	dot := embeds.PackageDot{
-		AppName:      appName,
-		RetroVersion: os.Getenv("RETRO_VERSION"),
+		APP_NAME:      appName,
+		RETRO_VERSION: os.Getenv("RETRO_VERSION"),
 	}
 
 	var buf bytes.Buffer

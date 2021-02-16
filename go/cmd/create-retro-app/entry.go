@@ -13,25 +13,14 @@ func Run() {
 	}
 
 	var cmd Command
-	switch os.Args[1] {
-	case "version":
-		fallthrough
-	case "--version":
-		fallthrough
-	case "-v":
-		fmt.Println(os.Getenv("RETRO_VERSION"))
+	if arg := os.Args[1]; arg == "version" || arg == "--version" || arg == "-v" {
+		fmt.Println(os.Getenv("retro_VERSION"))
 		os.Exit(0)
-	case "help":
-		fallthrough
-	case "--help":
-		fallthrough
-	case "usage":
-		fallthrough
-	case "--usage":
+	} else if arg == "help" || arg == "--help" || arg == "usage" || arg == "--usage" {
 		fmt.Println(usage)
 		os.Exit(0)
-	default:
+	} else {
 		cmd = parseArguments(os.Args[1:]...)
 	}
-	cmd.CreateRetroApp()
+	cmd.CreateApp()
 }

@@ -11,7 +11,6 @@ func increment(str string) string {
 	if str == "" {
 		return ""
 	}
-
 	matches := incrementRe.FindStringSubmatch(str)
 	if matches == nil {
 		return str + "2"

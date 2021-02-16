@@ -3,6 +3,8 @@ package embeds
 import (
 	"bytes"
 	"testing"
+
+	"github.com/zaydek/retro/pkg/expect"
 )
 
 func TestJavaScriptTemplate(t *testing.T) {
@@ -17,6 +19,9 @@ func TestJavaScriptTemplate(t *testing.T) {
 		"@zaydek/retro": "^1.33.7",
 		"react": "^17.0.1",
 		"react-dom": "^17.0.1"
+	},
+	"devDependencies": {
+		"esbuild": "^0.8.46"
 	}
 }
 `
@@ -29,9 +34,7 @@ func TestJavaScriptTemplate(t *testing.T) {
 	if err := JavaScriptPackageTemplate.Execute(&buf, dot); err != nil {
 		t.Fatal(err)
 	}
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
-	}
+	expect.DeepEqual(t, buf.String(), want)
 }
 
 func TestTypeScriptTemplate(t *testing.T) {
@@ -50,6 +53,7 @@ func TestTypeScriptTemplate(t *testing.T) {
 	"devDependencies": {
 		"@types/react": "^17.0.0",
 		"@types/react-dom": "^17.0.0"
+		"esbuild": "^0.8.46"
 	}
 }
 `
@@ -62,7 +66,5 @@ func TestTypeScriptTemplate(t *testing.T) {
 	if err := TypeScriptPackageTemplate.Execute(&buf, dot); err != nil {
 		t.Fatal(err)
 	}
-	if got := buf.String(); got != want {
-		t.Fatalf("got %q want %q", got, want)
-	}
+	expect.DeepEqual(t, buf.String(), want)
 }

@@ -9,5 +9,8 @@
 		"@zaydek/retro": "^{{ .RETRO_VERSION }}",
 		"react": "^17.0.1",
 		"react-dom": "^17.0.1"
+	},
+	"devDependencies": {
+		"esbuild": "^0.8.46"
 	}
 }

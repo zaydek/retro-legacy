@@ -10,7 +10,7 @@ func TestParseArguments(t *testing.T) {
 	var cmd Command
 
 	cmd = parseArguments(".")
-	expect.DeepEqual(t, cmd, Command{Template: "javascript", Directory: "."})
+	expect.DeepEqual(t, cmd, Command{Directory: "."})
 
 	cmd = parseArguments("--template=javascript", ".")
 	expect.DeepEqual(t, cmd, Command{Template: "javascript", Directory: "."})
@@ -19,7 +19,7 @@ func TestParseArguments(t *testing.T) {
 	expect.DeepEqual(t, cmd, Command{Template: "typescript", Directory: "."})
 
 	cmd = parseArguments("app-name")
-	expect.DeepEqual(t, cmd, Command{Template: "javascript", Directory: "app-name"})
+	expect.DeepEqual(t, cmd, Command{Directory: "app-name"})
 
 	cmd = parseArguments("--template=javascript", "app-name")
 	expect.DeepEqual(t, cmd, Command{Template: "javascript", Directory: "app-name"})
