@@ -1,7 +1,4 @@
-# macOS
 .DS_Store
-
-# NPM
 node_modules
 
 bin

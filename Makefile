@@ -3,10 +3,10 @@ RETRO_VERSION = $(shell cat version.txt)
 ################################################################################
 
 local-bin-create-retro-app:
-	go build -o=create-retro-app entry_create_retro_app.go && mv create-retro-app /usr/local/bin/
+	go build -o=create-retro-app entry_create_retro_app.go && mv create-retro-app /usr/local/bin
 
 local-bin-retro:
-	go build -o=retro entry_retro.go && mv retro /usr/local/bin/
+	go build -o=retro entry_retro.go && mv retro /usr/local/bin
 
 local-bin:
 	make -j2 \
@@ -50,7 +50,6 @@ build-retro:
 
 build-retro-router:
 	rm -rf npm/retro-router/dist
-
 	./node_modules/.bin/esbuild npm/retro-router/src/router/index.ts \
 		--bundle \
 		--define:process.env.NODE_ENV="\"production\"" \
@@ -59,7 +58,6 @@ build-retro-router:
 		--format=cjs \
 		--outfile=npm/retro-router/dist/index.js \
 		--tsconfig=npm/retro-router/tsconfig.json
-
 	cd npm/retro-router && cp src/router/types.ts dist/index.d.ts
 
 build:

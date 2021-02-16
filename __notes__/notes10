@@ -1,0 +1,26 @@
+unsolved problems:
+
+automatic document title and css linking
+router store (extracts params)
+
+what problems does retro not solve?
+
+the way to think about retro is that it aims to be the slimmest implementation possible to:
+
+descriptive cli experience
+provide an integrated store
+provide an integrated router
+watch, build, and serve your projects
+ssg support
+
+ssr support is
+
+provide a clear cli experience
+provide a store and router
+watch, build, and serve react projects
+
+retro does not attempt to solve the following problems:
+
+1:1 feature parity with create-react-app
+integrate babel support
+print eslint warnings in the console (you should use this vscode extension for eslint support)
