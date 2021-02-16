@@ -1,8 +1,0 @@
-# macOS
-.DS_Store
-
-# NPM
-/node_modules
-
-/__cache__
-/build

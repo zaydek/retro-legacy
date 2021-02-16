@@ -1,0 +1,13 @@
+{
+	"name": "{{ .APP_NAME }}",
+	"scripts": {
+		"dev": "retro dev",
+		"export": "retro export",
+		"serve": "retro serve"
+	},
+	"dependencies": {
+		"@zaydek/retro": "^{{ .RETRO_VERSION }}",
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1"
+	}
+}

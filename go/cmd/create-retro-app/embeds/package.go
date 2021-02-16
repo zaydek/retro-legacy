@@ -6,8 +6,8 @@ import (
 )
 
 type PackageDot struct {
-	AppName      string
-	RetroVersion string
+	APP_NAME      string
+	RETRO_VERSION string
 }
 
 //go:embed package.javascript.json

@@ -57,7 +57,7 @@ var transformError = func(msg string) string {
 		}
 	}
 	out := "\n" + strings.Join(arr, "\n") + "\n"
-	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
+	if mode := os.Getenv("DEBUG_MODE"); mode == "true" { // TODO: Test output.
 		out += "\n" + string(debug.Stack())
 	}
 	return out
