@@ -1,10 +1,10 @@
 package cli
 
 type DevCommand struct {
-	Cache bool `json:"cache"`
-	Purge bool `json:"purge"`
-	Port  int  `json:"port"`
-	// SourceMap bool `json:"source_map"`
+	Cache     bool `json:"cache"`
+	Purge     bool `json:"purge"`
+	SourceMap bool `json:"source_map"`
+	Port      int  `json:"port"`
 }
 
 type ExportCommand struct {

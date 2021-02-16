@@ -25,6 +25,7 @@ var usage = `
 
       --cache          Use cached resources (default false)
       --purge          Purge cached resources (default true)
+      --source-map     Add source maps (default true)
       --port=<number>  Port number (default 8000)
 
   ` + term.Bold("retro export") + `
