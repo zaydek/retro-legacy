@@ -1,14 +1,14 @@
 {
 	"name": "@zaydek/create-retro-app",
 	"version": "0.0.19",
-	"description": "Command-line interface for creating Retro React apps.",
+	"description": "Back to the future web apps. ⚡️",
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",
 	"bin": {
 		"create-retro-app": "bin/create-retro-app"
 	},
 	"files": [
-		"bin",
+		"bin/",
 		"postinstall.js"
 	],
 	"scripts": {

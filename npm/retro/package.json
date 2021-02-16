@@ -1,14 +1,15 @@
 {
 	"name": "@zaydek/retro",
 	"version": "0.0.19",
-	"description": "Command-line interface for Retro React apps.",
+	"description": "Back to the future web apps. ⚡️",
 	"repository": "https://github.com/zaydek/retro",
 	"license": "MIT",
 	"bin": {
 		"retro": "bin/retro"
 	},
 	"files": [
-		"bin",
+		"bin/",
+		"build/",
 		"postinstall.js"
 	],
 	"scripts": {

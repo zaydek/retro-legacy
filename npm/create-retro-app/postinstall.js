@@ -1,9 +1,7 @@
-const fs = require("fs")
-const os = require("os")
-const path = require("path")
+const CANONICAL_BINARY = Object.keys(require("./package.json")["bin"])[0]
 
-const CANONICAL_BINARY = "create-retro-app"
-
+// Maps platform keys to binary names where where platform keys are described by
+// `${process.platform} ${os.arch()} ${os.endianness()}` (see run).
 const supported = {
 	"darwin arm64 LE": "darwin-64",
 	"darwin x64 LE": "darwin-64",
@@ -11,24 +9,34 @@ const supported = {
 	"win32 x64 LE": "windows-64.exe",
 }
 
-function copyBinaryToCanonicalBinary(binary) {
+async function copyToCanonicalBinaryFilename(binary) {
+	const fs = require("fs/promises")
+	const path = require("path")
+
 	const src = path.join(__dirname, "bin", binary)
 	const dst = path.join(__dirname, "bin", CANONICAL_BINARY)
-	fs.copyFileSync(src, dst)
-	fs.chmodSync(dst, 0o755)
+	await fs.copyFile(src, dst)
+	await fs.chmod(dst, 0o755)
 }
 
-function run() {
+async function run() {
+	const os = require("os")
+
 	const platformKey = `${process.platform} ${os.arch()} ${os.endianness()}`
 	const binary = supported[platformKey]
 	if (!binary) {
-		console.error(`Your platform is not yet supported: platformKey=${JSON.stringify(platformKey)}`)
+		console.error(
+			`[create-retro-retro]: Your platform is not yet supported; platformKey=${JSON.stringify(platformKey)}. ` +
+				`To add support for your platform, open https://github.com/zaydek/retro/issues/new?title=${encodeURIComponent(
+					`[Feature] Add support for platformKey=${JSON.stringify(platformKey)}`,
+				)}.`,
+		)
 		process.exit(1)
 	}
 	try {
-		copyBinaryToCanonicalBinary(binary)
+		await copyToCanonicalBinaryFilename(binary)
 	} catch (err) {
-		throw new Error(`An unexpected error occurred: err=${JSON.stringify(err.message)}`)
+		throw new Error(`[create-retro-retro]: An unexpected error occurred; err.message=${JSON.stringify(err.message)}.`)
 	}
 }
 
