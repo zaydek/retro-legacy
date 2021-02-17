@@ -15,7 +15,7 @@ func parseDevArguments(arguments ...string) DevCommand {
 
 	cmd := DevCommand{}
 	flagset.BoolVar(&cmd.Cache, "cache", false, "") // XOR
-	flagset.BoolVar(&cmd.Purge, "purge", false, "") // XOR
+	// flagset.BoolVar(&cmd.Purge, "purge", false, "") // XOR
 	flagset.BoolVar(&cmd.SourceMap, "source-map", true, "")
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	if err := flagset.Parse(arguments); err != nil {
@@ -23,16 +23,16 @@ func parseDevArguments(arguments ...string) DevCommand {
 			"Try retro help for help.")
 		os.Exit(2)
 	}
-	if !cmd.Cache && !cmd.Purge {
-		cmd.Purge = true
-	}
-	if cmd.Cache && cmd.Purge {
-		loggers.Error("--cache and --purge are mutually exclusive; choose one.\n\n" +
-			"- Use --cache to use cached resources\n\n" +
-			"Or\n\n" +
-			"- Use --purge to purge cached resources (default)")
-		os.Exit(2)
-	}
+	// if !cmd.Cache && !cmd.Purge {
+	// 	cmd.Purge = true
+	// }
+	// if cmd.Cache && cmd.Purge {
+	// 	loggers.Error("--cache and --purge are mutually exclusive; choose one.\n\n" +
+	// 		"- Use --cache to use cached resources\n\n" +
+	// 		"Or\n\n" +
+	// 		"- Use --purge to purge cached resources (default)")
+	// 	os.Exit(2)
+	// }
 	if cmd.Port < 1e3 || cmd.Port >= 1e4 {
 		loggers.Error("--port must be between 1XXX and 9XXX.")
 		os.Exit(2)
@@ -46,23 +46,23 @@ func parseExportArguments(arguments ...string) ExportCommand {
 
 	cmd := ExportCommand{}
 	flagset.BoolVar(&cmd.Cache, "cache", false, "") // XOR
-	flagset.BoolVar(&cmd.Purge, "purge", false, "") // XOR
+	// flagset.BoolVar(&cmd.Purge, "purge", false, "") // XOR
 	flagset.BoolVar(&cmd.SourceMap, "source-map", true, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +
 			"Try retro help for help.")
 		os.Exit(2)
 	}
-	if !cmd.Cache && !cmd.Purge {
-		cmd.Purge = true
-	}
-	if cmd.Cache && cmd.Purge {
-		loggers.Error("--cache and --purge are mutually exclusive; choose one.\n\n" +
-			"- Use --cache to use cached resources\n\n" +
-			"Or\n\n" +
-			"- Use --purge to purge cached resources (default)")
-		os.Exit(2)
-	}
+	// if !cmd.Cache && !cmd.Purge {
+	// 	cmd.Purge = true
+	// }
+	// if cmd.Cache && cmd.Purge {
+	// 	loggers.Error("--cache and --purge are mutually exclusive; choose one.\n\n" +
+	// 		"- Use --cache to use cached resources\n\n" +
+	// 		"Or\n\n" +
+	// 		"- Use --purge to purge cached resources (default)")
+	// 	os.Exit(2)
+	// }
 	return cmd
 }
 

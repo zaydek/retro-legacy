@@ -23,8 +23,7 @@ var usage = `
 
     Starts the dev server
 
-      --cache          Use cached resources (default false)
-      --purge          Purge cached resources (default true)
+      --cached         Use cached resources (default false)
       --source-map     Add source maps (default true)
       --port=<number>  Port number (default 8000)
 
@@ -32,8 +31,7 @@ var usage = `
 
     Exports the production-ready build (SSG)
 
-      --cache          Use cached resources (default false)
-      --purge          Purge cached resources (default true)
+      --cached         Use cached resources (default false)
       --source-map     Add source maps (default true)
 
   ` + term.Bold("retro serve") + `

@@ -1,4 +1,4 @@
-package svetlana
+package retro
 
 import (
 	"fmt"
@@ -6,13 +6,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/zaydek/svetlana/pkg/loggers"
+	"github.com/zaydek/retro/pkg/loggers"
 )
 
 func (r Runtime) Serve() {
 	if _, err := os.Stat(r.DirConfiguration.BuildDirectory); os.IsNotExist(err) {
-		loggers.ErrorAndEnd("It looks like you’re trying to run `svetlana serve` but you haven’t run `svetlana build` yet. " +
-			"Try `svetlana build && svetlana serve`.")
+		loggers.ErrorAndEnd("It looks like you’re trying to run retro serve but you haven’t run retro export yet. " +
+			"Try retro export && retro serve.")
 	}
 
 	go func() {

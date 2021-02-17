@@ -1,4 +1,4 @@
-package svetlana
+package retro
 
 import (
 	"bytes"
@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/zaydek/svetlana/pkg/loggers"
-	"github.com/zaydek/svetlana/pkg/perm"
-	"github.com/zaydek/svetlana/pkg/run"
+	"github.com/zaydek/retro/pkg/loggers"
+	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/run"
 )
 
 type pages map[string]struct {

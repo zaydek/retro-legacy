@@ -1,4 +1,4 @@
-package svetlana
+package retro
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 	p "path"
 	"strings"
 
-	"github.com/zaydek/svetlana/cmd/svetlana/cli"
-	"github.com/zaydek/svetlana/pkg/perm"
+	"github.com/zaydek/retro/cmd/retro/cli"
+	"github.com/zaydek/retro/pkg/perm"
 )
 
 func readBaseHTML(config DirectoryConfiguration) (string, error) {
@@ -19,15 +19,15 @@ func readBaseHTML(config DirectoryConfiguration) (string, error) {
 
 	base := string(bstr)
 	if !strings.Contains(base, "%head%") {
-		return "", errors.New("No such template tag `%head%`. " +
-			"This is the entry point for the `<Head>` component in your page components. " +
-			"Add `%head%` to `<head>`.")
+		return "", errors.New("No such template tag %head%. " +
+			"This is the entry point for the <Head> component in your page components. " +
+			"Add %head% to <head>.")
 	}
 
 	if !strings.Contains(base, "%page%") {
-		return "", errors.New("No such template tag `%page%`. " +
-			"This is the entry point for the `<Page>` component in your page components. " +
-			"Add `%page%` to `<body>`.")
+		return "", errors.New("No such template tag %page%. " +
+			"This is the entry point for the <Page> component in your page components. " +
+			"Add %page% to <body>.")
 	}
 	return base, nil
 }

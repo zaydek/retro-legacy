@@ -1,4 +1,4 @@
-package svetlana
+package retro
 
 import (
 	"io/ioutil"
@@ -6,7 +6,7 @@ import (
 	p "path"
 	"path/filepath"
 
-	"github.com/zaydek/svetlana/pkg/perm"
+	"github.com/zaydek/retro/pkg/perm"
 )
 
 type copyPath struct {

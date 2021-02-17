@@ -1,53 +1,30 @@
 package retro
 
-import (
-	"text/template"
-
-	"github.com/evanw/esbuild/pkg/api"
-)
-
 type Cmd uint8
 
 const (
-	CmdStart Cmd = iota // Zero value
+	CmdStart Cmd = iota
 	CmdBuild
 	CmdServe
 )
 
-// PageBasedRoute describes a page-based route.
+type DirectoryConfiguration struct {
+	AssetDirectory string `json:"asset_dir"`
+	PagesDirectory string `json:"pages_dir"`
+	CacheDirectory string `json:"cache_dir"`
+	BuildDirectory string `json:"build_dir"`
+}
+
 type PageBasedRoute struct {
-	SrcPath   string `json:"srcPath"`   // pages/path/to/component.js
-	DstPath   string `json:"dstPath"`   // build/path/to/component.html
+	SrcPath   string `json:"src_path"`  // pages/path/to/component.js
+	DstPath   string `json:"dst_path"`  // build/path/to/component.html
 	Path      string `json:"path"`      // path/to/component
 	Component string `json:"component"` // Component
 }
 
-// rendererdPage describes a rendered page-based route.
-type rendererdPage struct {
-	PageBasedRoute
-	Head string `json:"head"`
-	Page string `json:"page"`
-}
-
-// DirectoryConfiguration describes persistent directory configuration.
-type DirectoryConfiguration struct {
-	AssetDirectory string
-	PagesDirectory string
-	CacheDirectory string
-	BuildDirectory string
-}
-
 type Runtime struct {
-	// Unexported
-	esbuildErrors   []api.Message
-	esbuildWarnings []api.Message
-	baseTemplate    *template.Template
-
-	// Exported
-	Command          interface{}
-	DirConfiguration DirectoryConfiguration
-	PageBasedRouter  []PageBasedRoute
+	Command          interface{}            `json:"command"`
+	DirConfiguration DirectoryConfiguration `json:"dir_config"`
+	BasePage         string                 `json:"base_page"`
+	PageBasedRouter  []PageBasedRoute       `json:"page_based_router"`
 }
-
-// ExperimentalReactSuspenseEnabled   bool // Wrap <React.Suspense>
-// ExperimentalReactStrictModeEnabled bool // Wrap <React.StrictMode>

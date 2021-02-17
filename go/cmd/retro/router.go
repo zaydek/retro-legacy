@@ -10,18 +10,16 @@ import (
 var supported = map[string]bool{
 	".js":  true,
 	".jsx": true,
-	".ts":  true,
+	".ts":  true, // TODO?
 	".tsx": true,
-	".md":  true,
-	".mdx": true,
 }
 
 func name(basename string) string {
 	return basename[:len(basename)-len(p.Ext(basename))]
 }
 
-// pathCase returns the page case for a path.
-func pathCase(basename string) string {
+// pathSyntax returns the page syntax for a path.
+func pathSyntax(basename string) string {
 	var str string
 
 	str = "/" + name(basename)
@@ -29,8 +27,10 @@ func pathCase(basename string) string {
 	return str
 }
 
-// componentCase returns the component case for a path.
-func componentCase(basename string) string {
+// componentSyntax returns the component syntax for a path.
+//
+// TODO: Edge cases: -- (two or more) and spaces.
+func componentSyntax(basename string) string {
 	var str string
 
 	for x := 0; x < len(name(basename)); x++ {
@@ -53,11 +53,10 @@ func componentCase(basename string) string {
 	return str
 }
 
-// Creates a new page-baed route.
 func newPageBasedRoute(config DirectoryConfiguration, path string) PageBasedRoute {
-	var src, dst string
+	var src string
+	var dst string
 
-	// Get the basename from pages/*.
 	basename := path[len(config.PagesDirectory+"/"):]
 
 	src = p.Join(config.PagesDirectory, basename)
@@ -67,24 +66,22 @@ func newPageBasedRoute(config DirectoryConfiguration, path string) PageBasedRout
 	route := PageBasedRoute{
 		SrcPath:   src,
 		DstPath:   dst,
-		Path:      pathCase(basename),
-		Component: componentCase(basename),
+		Path:      pathSyntax(basename),
+		Component: componentSyntax(basename),
 	}
 	return route
 }
 
-// newRouter creates a new page-based router.
 func newRouter(config DirectoryConfiguration) ([]PageBasedRoute, error) {
 	var routes []PageBasedRoute
 	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		if info.IsDir() && info.Name() == "internal" {
-			return filepath.SkipDir
-		}
-		if ext := p.Ext(path); supported[ext] != false {
+		// if info.IsDir() && info.Name() == "internal" {
+		// 	return filepath.SkipDir
+		// }
+		if ext := p.Ext(path); supported[ext] {
 			routes = append(routes, newPageBasedRoute(config, path))
 		}
 		return nil
