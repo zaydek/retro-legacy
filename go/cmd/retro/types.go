@@ -15,7 +15,8 @@ type DirectoryConfiguration struct {
 	BuildDirectory string `json:"build_dir"`
 }
 
-// TODO: Expand PageBasedRoute to support CSS, etc.
+// TODO: Expand PageBasedRoute to support <Layout> components and CSS assets.
+// TODO: Add support for dynamic routes.
 type PageBasedRoute struct {
 	SrcPath   string `json:"src_path"`  // pages/path/to/component.js
 	DstPath   string `json:"dst_path"`  // build/path/to/component.html

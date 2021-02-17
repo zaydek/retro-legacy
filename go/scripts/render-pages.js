@@ -44,7 +44,7 @@ async function run(runtime) {
 			})
 			// TODO: Handle warnings and hints.
 
-			const mod = require("./" + dst)
+			const mod = require("../" + dst)
 
 			let head = "<!-- <Head> -->"
 			if (mod.Head !== undefined) {
@@ -64,9 +64,9 @@ async function run(runtime) {
 			await fs.writeFile(route.dst_path, html)
 		}
 	} catch (err) {
-		console.log(err.message)
+		console.error(err.message)
 		process.exit(1)
 	}
 }
 
-run(require("./__cache__/runtime.js"))
+run(require("../__cache__/runtime.js"))

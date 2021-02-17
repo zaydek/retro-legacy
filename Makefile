@@ -3,9 +3,11 @@ RETRO_VERSION = $(shell cat version.txt)
 ################################################################################
 
 bin-create-retro-app:
+	cd go
 	go build -o=create-retro-app entry_create_retro_app.go && mv create-retro-app /usr/local/bin
 
 bin-retro:
+	cd go
 	go build -o=retro entry_retro.go && mv retro /usr/local/bin
 
 bin:

@@ -1,5 +1,8 @@
 .DS_Store
 node_modules/
 
+__cache__/
 bin/
+build/
 dist/
+export/
