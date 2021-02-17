@@ -1084,7 +1084,7 @@
           var dispatcher = resolveDispatcher();
           return dispatcher.useCallback(callback, deps);
         }
-        function useMemo(create, deps) {
+        function useMemo2(create, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useMemo(create, deps);
         }
@@ -1645,7 +1645,7 @@
         exports.useEffect = useEffect3;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useLayoutEffect = useLayoutEffect;
-        exports.useMemo = useMemo;
+        exports.useMemo = useMemo2;
         exports.useReducer = useReducer;
         exports.useRef = useRef;
         exports.useState = useState2;
@@ -20630,34 +20630,35 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
 
   // router/index.tsx
   var import_react = __toModule(require_react());
+  function Link({path, children, ...props}) {
+    function handleClick(e) {
+      e.preventDefault();
+      window.history.replaceState({}, "", path);
+    }
+    const scoped = typeof path === "string" && !/^https?:\/\//.test(path);
+    return /* @__PURE__ */ import_react.default.createElement("a", {
+      href: path,
+      target: scoped ? void 0 : "_blank",
+      rel: scoped ? void 0 : "noreferrer noopener",
+      onClick: scoped ? handleClick : void 0,
+      ...props
+    }, children);
+  }
   function Route({children}) {
     return children;
   }
-  function cleanPath(pathname) {
+  function convertPath(pathname) {
     let path = pathname;
     if (path.endsWith(".html")) {
       path = path.slice(0, -5);
     }
     return path;
   }
-  function childrenToArray(children) {
-    const childrenAsArray = [];
-    import_react.default.Children.forEach(children, (each) => childrenAsArray.push(each));
-    return childrenAsArray;
-  }
-  function findRoute(children, path) {
-    const childrenArr = childrenToArray(children);
-    const route = childrenArr.find((each) => {
-      const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.path === path;
-      return ok;
-    });
-    return route;
-  }
   function Router({children}) {
-    const [path, setPath] = import_react.useState(() => cleanPath(window.location.pathname));
+    const [path, setPath] = import_react.useState(() => convertPath(typeof window === "undefined" ? "/" : window.location.pathname));
     import_react.useEffect(() => {
-      function handlePopState(e) {
-        const path2 = cleanPath(window.location.pathname);
+      function handlePopState(_) {
+        const path2 = convertPath(window.location.pathname);
         setPath(path2);
         window.history.pushState({}, "", path2);
         window.scrollTo(0, 0);
@@ -20665,10 +20666,18 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       window.addEventListener("popstate", handlePopState);
       return () => window.removeEventListener("popstate", handlePopState);
     }, []);
-    const route = findRoute(children, path);
-    if (!route) {
-      return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, findRoute(children, "/404"));
-    }
+    const cachedRouteMap = import_react.useMemo(() => {
+      const routeMap = {};
+      import_react.default.Children.forEach(children, (child) => {
+        if (!import_react.default.isValidElement(child))
+          return;
+        if (child !== void 0 && child.props !== void 0 && child.props.path !== "") {
+          routeMap[child.props.path] = child;
+        }
+      });
+      return routeMap;
+    }, [children]);
+    const route = cachedRouteMap[path] || cachedRouteMap["/404"];
     return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, route);
   }
 
@@ -20682,14 +20691,25 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   }
 
   // src/pages/pokemon.js
+  function Nav() {
+    return /* @__PURE__ */ import_react3.default.createElement("ul", null, /* @__PURE__ */ import_react3.default.createElement("li", null, /* @__PURE__ */ import_react3.default.createElement(Link, {
+      path: "/bulbasaur"
+    }, "Open bulbasaur")), /* @__PURE__ */ import_react3.default.createElement("li", null, /* @__PURE__ */ import_react3.default.createElement(Link, {
+      path: "/charmander"
+    }, "Open charmander")), /* @__PURE__ */ import_react3.default.createElement("li", null, /* @__PURE__ */ import_react3.default.createElement(Link, {
+      path: "/pikachu"
+    }, "Open pikachu")), /* @__PURE__ */ import_react3.default.createElement("li", null, /* @__PURE__ */ import_react3.default.createElement(Link, {
+      path: "/squirtle"
+    }, "Open squirtle")));
+  }
   function Page({name, ...props}) {
     import_react3.useEffect(() => {
       console.log(`Hello, world! you are rendering the ${name} page!`);
     }, [name]);
-    return /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react3.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react3.default.createElement(Component, null));
+    return /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement(Nav, null), /* @__PURE__ */ import_react3.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react3.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react3.default.createElement(Component, null));
   }
 
-  // __cache__/paths.json
+  // __cache__/resolvedRouter.json
   var _bulbasaur = {
     route: {
       src_path: "src/pages/pokemon.js",
@@ -20746,7 +20766,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       type: "\u{1F4A7}"
     }
   };
-  var paths_default = {
+  var resolvedRouter_default = {
     "/bulbasaur": _bulbasaur,
     "/charmander": _charmander,
     "/pikachu": _pikachu,
@@ -20760,28 +20780,28 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/bulbasaur",
-        ...paths_default["/bulbasaur"].props
+        ...resolvedRouter_default["/bulbasaur"].props
       }
     })), /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/charmander"
     }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/charmander",
-        ...paths_default["/charmander"].props
+        ...resolvedRouter_default["/charmander"].props
       }
     })), /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/pikachu"
     }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/pikachu",
-        ...paths_default["/pikachu"].props
+        ...resolvedRouter_default["/pikachu"].props
       }
     })), /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/squirtle"
     }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/squirtle",
-        ...paths_default["/squirtle"].props
+        ...resolvedRouter_default["/squirtle"].props
       }
     })));
   }

@@ -1,11 +1,37 @@
-import React, { useState, useEffect } from "react"
+import React, { useEffect, useState, useMemo } from "react"
 
-export function Route({ children }) {
+interface LinkProps {
+	path: string
+	children?: React.ReactNode
+}
+
+export function Link({ path, children, ...props }: LinkProps) {
+	function handleClick(e: React.MouseEvent) {
+		e.preventDefault()
+		window.history.replaceState({}, "", path)
+	}
+
+	const scoped = typeof path === "string" && !/^https?:\/\//.test(path)
+	return (
+		// prettier-ignore
+		<a href={path} target={scoped ? undefined : "_blank"} rel={scoped ? undefined : "noreferrer noopener"}
+				onClick={scoped ? handleClick : undefined} {...props}>
+			{children}
+		</a>
+	)
+}
+
+interface RouteProps {
+	path: string
+	children?: React.ReactNode
+}
+
+export function Route({ children }: RouteProps) {
 	return children
 }
 
 // Converts a pathname (window.history.pathname) to a path.
-function cleanPath(pathname: string): string {
+function convertPath(pathname: string): string {
 	let path = pathname
 	if (path.endsWith(".html")) {
 		path = path.slice(0, -5)
@@ -13,35 +39,13 @@ function cleanPath(pathname: string): string {
 	return path
 }
 
-// Converts React children to an array.
-function childrenToArray(children?: React.ReactNode): React.ReactNode[] {
-	const childrenAsArray: React.ReactNode[] = []
-	React.Children.forEach(children, each => childrenAsArray.push(each))
-	return childrenAsArray
-}
-
-// Searches routes for an route matching path.
-//
-// prettier-ignore
-function findRoute(children: undefined | React.ReactNode, path: string): React.ReactNode  {
-	const childrenArr = childrenToArray(children)
-
-	const route = childrenArr.find(each => {
-		const ok = React.isValidElement(each) &&
-			each.type === Route &&
-			each.props.path === path
-		return ok
-	})
-	return route
-}
-
 // TODO: Add support for key-based rerenders.
 export function Router({ children }) {
-	const [path, setPath] = useState(() => cleanPath("undefined" ? "/" : window.location.pathname))
+	const [path, setPath] = useState(() => convertPath(typeof window === "undefined" ? "/" : window.location.pathname))
 
 	useEffect(() => {
-		function handlePopState(e) {
-			const path = cleanPath(window.location.pathname)
+		function handlePopState(_: PopStateEvent) {
+			const path = convertPath(window.location.pathname)
 			setPath(path)
 			window.history.pushState({}, "", path)
 			window.scrollTo(0, 0) // TODO
@@ -50,10 +54,18 @@ export function Router({ children }) {
 		return () => window.removeEventListener("popstate", handlePopState)
 	}, [])
 
-	// TODO: We should be able to cache routes based on the path prop.
-	const route = findRoute(children, path)
-	if (!route) {
-		return <>{findRoute(children, "/404")}</>
-	}
+	const cachedRouteMap = useMemo(() => {
+		const routeMap = {}
+		React.Children.forEach(children, child => {
+			if (!React.isValidElement(child)) return
+
+			if (child !== undefined && child.props !== undefined && (child.props as RouteProps).path !== "") {
+				routeMap[(child.props as RouteProps).path] = child
+			}
+		})
+		return routeMap
+	}, [children])
+
+	const route = cachedRouteMap[path] || cachedRouteMap["/404"]
 	return <>{route}</>
 }

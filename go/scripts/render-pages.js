@@ -5,13 +5,13 @@ const React = require("react")
 const ReactDOMServer = require("react-dom/server")
 
 async function renderPage(runtime, mod, { props, dst }) {
-	let head = "<!-- <Head {...serverProps}> -->"
+	let head = "<!-- <Head {...resolvedProps}> -->"
 	if (typeof mod.Head === "function") {
 		// TODO: Warn on non-functions.
 		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, props))
 	}
 
-	let page = "<!-- <Head {...serverProps}> -->"
+	let page = "<!-- <Head {...resolvedProps}> -->"
 	// TODO: Warn on non-functions.
 	page = ReactDOMServer.renderToString(React.createElement(mod.default, props))
 
@@ -61,15 +61,15 @@ async function run(runtime) {
 
 			// TODO: Add cache check here.
 
-			let serverProps
+			let resolvedProps
 			if (typeof mod.resolveServerProps === "function") {
-				serverProps = await mod.resolveServerProps()
+				resolvedProps = await mod.resolveServerProps()
 			}
 
-			let routes
+			let resolvedPaths
 			if (typeof mod.resolveServerPaths === "function") {
-				serverPaths = await mod.resolveServerPaths(serverProps)
-				routes = serverPaths.reduce((accum, each) => {
+				const resolvedPathsArray = await mod.resolveServerPaths(resolvedProps)
+				resolvedPaths = resolvedPathsArray.reduce((accum, each) => {
 					accum[each.path] = {
 						route,
 						props: each.props,
@@ -77,11 +77,11 @@ async function run(runtime) {
 					return accum
 				}, {})
 
-				// Cache routes for --cached:
-				const pathsPath = path.join(runtime.dir_config.cache_dir, "routes.json")
-				await fs.writeFile(pathsPath, JSON.stringify(routes, null, "\t") + "\n")
+				// Cache resolvedPaths for --cached:
+				const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedPaths.json")
+				await fs.writeFile(resolvedPathsPath, JSON.stringify(resolvedPaths, null, "\t") + "\n")
 
-				for (const [path_, props] of Object.entries(routes)) {
+				for (const [path_, props] of Object.entries(resolvedPaths)) {
 					dst = path.join(...[...dst.split(path.sep).slice(0, -1), path_ + ".html"])
 					await renderPage(runtime, mod, { props: { path: path_, ...props }, dst })
 				}
