@@ -3,7 +3,8 @@ import Component from "./Component"
 
 // resolveServerProps resolves props on the server. Props are cached for retro
 // dev --cached and retro export --cached. Props are then forwarded as
-// resolveServerPaths(srvProps), <Head {...srvProps}>, and <Page {...srvProps}>.
+// resolveServerPaths(serverProps), <Head {...serverProps}>, and
+// <Page {...serverProps}>.
 export async function resolveServerProps() {
 	return new Promise(resolve => {
 		setTimeout(() => {
@@ -17,15 +18,15 @@ export async function resolveServerProps() {
 
 // resolveServerProps resolves paths on the server for dynamic pages. The
 // returned array describes { path, props }, where path creates a page and props
-// are forwarded as <Head {...srvProps}> and <Page {...srvProps}>.
+// are forwarded as <Head {...serverProps}> and <Page {...serverProps}>.
 //
 // prettier-ignore
-export async function resolveServerPaths(srvProps) {
+export async function resolveServerPaths(serverProps) {
 	return [
-		{ path: "/bulbasaur",  props: { ...srvProps, name: "Bulbasaur",  type: "🌱" } },
-		{ path: "/charmander", props: { ...srvProps, name: "Charmander", type: "🔥" } },
-		{ path: "/pikachu",    props: { ...srvProps, name: "Pikachu",    type: "⚡️" } },
-		{ path: "/squirtle",   props: { ...srvProps, name: "Squirtle",   type: "💧" } },
+		{ path: "/bulbasaur",  props: { ...serverProps, name: "Bulbasaur",  type: "🌱" } },
+		{ path: "/charmander", props: { ...serverProps, name: "Charmander", type: "🔥" } },
+		{ path: "/pikachu",    props: { ...serverProps, name: "Pikachu",    type: "⚡️" } },
+		{ path: "/squirtle",   props: { ...serverProps, name: "Squirtle",   type: "💧" } },
 	]
 }
 
@@ -41,8 +42,8 @@ export function Head({ type, name }) {
 
 export default function Page({ name, ...props }) {
 	useEffect(() => {
-		console.log("Hello, world!")
-	}, [])
+		console.log(`Hello, world! you are rendering the ${name} page!`)
+	}, [name])
 
 	return (
 		<div>

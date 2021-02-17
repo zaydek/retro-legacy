@@ -1,20 +1,14 @@
 const esbuild = require("esbuild")
 const fs = require("fs/promises")
 const path = require("path")
-// const React = require("react")
-// const ReactDOMServer = require("react-dom/server")
 
-// ${Object.keys(routes).map(key => (
-// 	`import ${routes[key].route.component} from "${routes[key].route.src_path}"`
-// )).join("\n")}
-
-// prettier-ignore
-function prettyJSON(data) {
-	return JSON.stringify(data)
-		.replace(/^{"/, '{ "')
-		.replace(/"}$/, '" }')
-		.replace(/"(:|,)"/g, '"$1 "')
-}
+// // prettier-ignore
+// function prettyJSON(data) {
+// 	return JSON.stringify(data)
+// 		.replace(/^{"/, '{ "')
+// 		.replace(/"}$/, '" }')
+// 		.replace(/"(:|,)"/g, '"$1 "')
+// }
 
 async function run(runtime) {
 	try {
@@ -24,7 +18,7 @@ async function run(runtime) {
 		const componentSetKeys = [...new Set(Object.keys(paths).map(key => paths[key].route.component))]
 
 		const sharedPaths = {}
-		for (const [path_, meta] of Object.entries(paths)) {
+		for (const [, meta] of Object.entries(paths)) {
 			if (componentSetKeys.includes(meta.route.component) && sharedPaths[meta.route.component] === undefined) {
 				sharedPaths[meta.route.component] = meta
 			}

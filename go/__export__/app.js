@@ -1060,7 +1060,7 @@
           }
           return dispatcher.useContext(Context, unstable_observedBits);
         }
-        function useState(initialState) {
+        function useState2(initialState) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useState(initialState);
         }
@@ -1072,7 +1072,7 @@
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
-        function useEffect2(create, deps) {
+        function useEffect3(create, deps) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useEffect(create, deps);
         }
@@ -1642,13 +1642,13 @@
         exports.useCallback = useCallback;
         exports.useContext = useContext;
         exports.useDebugValue = useDebugValue;
-        exports.useEffect = useEffect2;
+        exports.useEffect = useEffect3;
         exports.useImperativeHandle = useImperativeHandle;
         exports.useLayoutEffect = useLayoutEffect;
         exports.useMemo = useMemo;
         exports.useReducer = useReducer;
         exports.useRef = useRef;
-        exports.useState = useState;
+        exports.useState = useState2;
         exports.version = ReactVersion;
       })();
     }
@@ -2635,11 +2635,11 @@
     if (true) {
       (function() {
         "use strict";
-        var React4 = require_react();
+        var React5 = require_react();
         var _assign = require_object_assign();
         var Scheduler = require_scheduler();
         var tracing = require_tracing();
-        var ReactSharedInternals = React4.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React5.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -2671,7 +2671,7 @@
             Function.prototype.apply.call(console[level], console, argsWithFormat);
           }
         }
-        if (!React4) {
+        if (!React5) {
           {
             throw Error("ReactDOM was loaded before React. Make sure you load the React package before loading ReactDOM.");
           }
@@ -3887,7 +3887,7 @@
         var didWarnInvalidChild = false;
         function flattenChildren(children) {
           var content = "";
-          React4.Children.forEach(children, function(child) {
+          React5.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -3898,7 +3898,7 @@
         function validateProps(element, props) {
           {
             if (typeof props.children === "object" && props.children !== null) {
-              React4.Children.forEach(props.children, function(child) {
+              React5.Children.forEach(props.children, function(child) {
                 if (child == null) {
                   return;
                 }
@@ -11104,7 +11104,7 @@
         }
         var fakeInternalInstance = {};
         var isArray = Array.isArray;
-        var emptyRefsObject = new React4.Component().refs;
+        var emptyRefsObject = new React5.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -20625,32 +20625,68 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   });
 
   // __cache__/app.js
-  var import_react3 = __toModule(require_react());
+  var import_react4 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
-  // router/index.js
+  // router/index.tsx
+  var import_react = __toModule(require_react());
   function Route({children}) {
     return children;
   }
+  function cleanPath(pathname) {
+    let path = pathname;
+    if (path.endsWith(".html")) {
+      path = path.slice(0, -5);
+    }
+    return path;
+  }
+  function childrenToArray(children) {
+    const childrenAsArray = [];
+    import_react.default.Children.forEach(children, (each) => childrenAsArray.push(each));
+    return childrenAsArray;
+  }
+  function findRoute(children, path) {
+    const childrenArr = childrenToArray(children);
+    const route = childrenArr.find((each) => {
+      const ok = import_react.default.isValidElement(each) && each.type === Route && each.props.path === path;
+      return ok;
+    });
+    return route;
+  }
   function Router({children}) {
-    return children;
+    const [path, setPath] = import_react.useState(() => cleanPath(window.location.pathname));
+    import_react.useEffect(() => {
+      function handlePopState(e) {
+        const path2 = cleanPath(window.location.pathname);
+        setPath(path2);
+        window.history.pushState({}, "", path2);
+        window.scrollTo(0, 0);
+      }
+      window.addEventListener("popstate", handlePopState);
+      return () => window.removeEventListener("popstate", handlePopState);
+    }, []);
+    const route = findRoute(children, path);
+    if (!route) {
+      return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, findRoute(children, "/404"));
+    }
+    return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, route);
   }
 
   // src/pages/pokemon.js
-  var import_react2 = __toModule(require_react());
+  var import_react3 = __toModule(require_react());
 
   // src/pages/Component.js
-  var import_react = __toModule(require_react());
+  var import_react2 = __toModule(require_react());
   function Component() {
-    return /* @__PURE__ */ import_react.default.createElement("h1", null, "Hello, world!");
+    return /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, world!");
   }
 
   // src/pages/pokemon.js
   function Page({name, ...props}) {
-    import_react2.useEffect(() => {
-      console.log("Hello, world!");
-    }, []);
-    return /* @__PURE__ */ import_react2.default.createElement("div", null, /* @__PURE__ */ import_react2.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react2.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react2.default.createElement(Component, null));
+    import_react3.useEffect(() => {
+      console.log(`Hello, world! you are rendering the ${name} page!`);
+    }, [name]);
+    return /* @__PURE__ */ import_react3.default.createElement("div", null, /* @__PURE__ */ import_react3.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react3.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react3.default.createElement(Component, null));
   }
 
   // __cache__/paths.json
@@ -20719,35 +20755,35 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
 
   // __cache__/app.js
   function App() {
-    return /* @__PURE__ */ import_react3.default.createElement(Router, null, /* @__PURE__ */ import_react3.default.createElement(Route, {
+    return /* @__PURE__ */ import_react4.default.createElement(Router, null, /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/bulbasaur"
-    }, /* @__PURE__ */ import_react3.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/bulbasaur",
         ...paths_default["/bulbasaur"].props
       }
-    })), /* @__PURE__ */ import_react3.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/charmander"
-    }, /* @__PURE__ */ import_react3.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/charmander",
         ...paths_default["/charmander"].props
       }
-    })), /* @__PURE__ */ import_react3.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/pikachu"
-    }, /* @__PURE__ */ import_react3.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/pikachu",
         ...paths_default["/pikachu"].props
       }
-    })), /* @__PURE__ */ import_react3.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react4.default.createElement(Route, {
       path: "/squirtle"
-    }, /* @__PURE__ */ import_react3.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react4.default.createElement(Page, {
       ...{
         path: "/squirtle",
         ...paths_default["/squirtle"].props
       }
     })));
   }
-  import_react_dom.default.hydrate(/* @__PURE__ */ import_react3.default.createElement(App, null), document.getElementById("root"));
+  import_react_dom.default.hydrate(/* @__PURE__ */ import_react4.default.createElement(App, null), document.getElementById("root"));
 })();

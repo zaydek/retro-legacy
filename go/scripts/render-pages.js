@@ -5,12 +5,14 @@ const React = require("react")
 const ReactDOMServer = require("react-dom/server")
 
 async function renderPage(runtime, mod, { props, dst }) {
-	let head = "<!-- <Head> -->"
+	let head = "<!-- <Head {...serverProps}> -->"
 	if (typeof mod.Head === "function") {
+		// TODO: Warn on non-functions.
 		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, props))
 	}
 
-	let page = "<!-- <Page> -->"
+	let page = "<!-- <Head {...serverProps}> -->"
+	// TODO: Warn on non-functions.
 	page = ReactDOMServer.renderToString(React.createElement(mod.default, props))
 
 	// prettier-ignore
