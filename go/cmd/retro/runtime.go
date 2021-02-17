@@ -64,7 +64,7 @@ func newRuntime() (Runtime, error) {
 			AssetDirectory: "public",
 			PagesDirectory: "src/pages",
 			CacheDirectory: "__cache__",
-			BuildDirectory: "export",
+			BuildDirectory: "__export__",
 		},
 	}
 

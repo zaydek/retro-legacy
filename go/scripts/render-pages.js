@@ -44,6 +44,8 @@ async function run(runtime) {
 			})
 			// TODO: Handle warnings and hints.
 
+			// TODO: Resolve server props and paths.
+
 			const mod = require("../" + dst)
 
 			let head = "<!-- <Head> -->"
@@ -69,4 +71,4 @@ async function run(runtime) {
 	}
 }
 
-run(require("../__cache__/runtime.js"))
+run(require("../__cache__/runtime.json"))

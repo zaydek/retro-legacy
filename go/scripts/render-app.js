@@ -85,4 +85,4 @@ ${
 	}
 }
 
-run(require("../__cache__/runtime.js"))
+run(require("../__cache__/runtime.json"))
