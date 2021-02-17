@@ -21,10 +21,10 @@ export async function resolveServerProps() {
 // prettier-ignore
 export async function resolveServerPaths(srvProps) {
 	return [
-		{ path: "bulbasaur",  props: { ...srvProps, name: "Bulbasaur",  type: "grass"    } },
-		{ path: "charmander", props: { ...srvProps, name: "Charmander", type: "fire"     } },
-		{ path: "pikachu",    props: { ...srvProps, name: "Pikachu",    type: "electric" } },
-		{ path: "squirtle",   props: { ...srvProps, name: "Squirtle",   type: "water"    } },
+		{ path: "bulbasaur",  props: { ...srvProps, name: "Bulbasaur",  type: "🌱" } },
+		{ path: "charmander", props: { ...srvProps, name: "Charmander", type: "🔥" } },
+		{ path: "pikachu",    props: { ...srvProps, name: "Pikachu",    type: "⚡️" } },
+		{ path: "squirtle",   props: { ...srvProps, name: "Squirtle",   type: "💧" } },
 	]
 }
 
