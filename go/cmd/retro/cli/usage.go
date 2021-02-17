@@ -6,6 +6,7 @@ import (
 	"github.com/zaydek/retro/pkg/term"
 )
 
+// TODO: Flags should be order-independent.
 var usageOnly = strings.TrimSpace(`
 retro dev     Starts the dev server
 retro export  Exports the production-ready build (SSG)

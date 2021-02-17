@@ -3,8 +3,8 @@ package retro
 type Cmd uint8
 
 const (
-	CmdStart Cmd = iota
-	CmdBuild
+	CmdDev Cmd = iota
+	CmdExport
 	CmdServe
 )
 

@@ -15,10 +15,10 @@ func Run() {
 	runtime, err := newRuntime()
 	must(err)
 	switch cmd := runtime.getCmd(); cmd {
-	case CmdStart:
-		runtime.Start()
-	case CmdBuild:
-		runtime.Build()
+	case CmdDev:
+		runtime.Dev()
+	case CmdExport:
+		runtime.Export()
 	case CmdServe:
 		runtime.Serve()
 	}

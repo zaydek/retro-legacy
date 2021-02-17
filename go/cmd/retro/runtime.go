@@ -60,15 +60,15 @@ func newRuntime() (Runtime, error) {
 		Command: cli.ParseCLIArguments(),
 		DirConfiguration: DirectoryConfiguration{
 			AssetDirectory: "public",
-			PagesDirectory: "pages",
+			PagesDirectory: "src/pages",
 			CacheDirectory: "__cache__",
-			BuildDirectory: "build",
+			BuildDirectory: "export",
 		},
 	}
 
 	// Do not run server guards on serve:
 	cmd := runtime.getCmd()
-	if cmd == CmdStart || cmd == CmdBuild {
+	if cmd == CmdDev || cmd == CmdExport {
 		if err := runServerGuards(runtime.DirConfiguration); err != nil {
 			return Runtime{}, err
 		}
@@ -78,7 +78,7 @@ func newRuntime() (Runtime, error) {
 		return Runtime{}, err
 	}
 
-	if cmd == CmdStart || cmd == CmdBuild {
+	if cmd == CmdDev || cmd == CmdExport {
 		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {
 			return Runtime{}, err
 		}

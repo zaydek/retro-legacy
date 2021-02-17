@@ -14,8 +14,7 @@ func parseDevArguments(arguments ...string) DevCommand {
 	flagset.SetOutput(ioutil.Discard)
 
 	cmd := DevCommand{}
-	flagset.BoolVar(&cmd.Cache, "cache", false, "") // XOR
-	// flagset.BoolVar(&cmd.Purge, "purge", false, "") // XOR
+	flagset.BoolVar(&cmd.Cached, "cached", false, "")
 	flagset.BoolVar(&cmd.SourceMap, "source-map", true, "")
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	if err := flagset.Parse(arguments); err != nil {
@@ -45,8 +44,7 @@ func parseExportArguments(arguments ...string) ExportCommand {
 	flagset.SetOutput(ioutil.Discard)
 
 	cmd := ExportCommand{}
-	flagset.BoolVar(&cmd.Cache, "cache", false, "") // XOR
-	// flagset.BoolVar(&cmd.Purge, "purge", false, "") // XOR
+	flagset.BoolVar(&cmd.Cached, "cached", false, "")
 	flagset.BoolVar(&cmd.SourceMap, "source-map", true, "")
 	if err := flagset.Parse(arguments); err != nil {
 		loggers.Error("Unrecognized flags and or arguments. " +

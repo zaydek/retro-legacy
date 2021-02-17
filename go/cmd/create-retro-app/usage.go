@@ -2,10 +2,14 @@ package create_retro_app
 
 import "github.com/zaydek/retro/pkg/term"
 
+// TODO: Flags should be order-independent.
 var usage = `
   ` + term.Bold("create-retro-app app-name") + `
 
     Creates a new Retro app at directory app-name.
+
+      --template=javascript  Use the JavaScript template (default)
+      --template=typescript  Use the TypeScript template
 
   ` + term.Bold("Repository:") + `
 
