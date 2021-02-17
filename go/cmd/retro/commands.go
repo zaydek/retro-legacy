@@ -19,7 +19,10 @@ import (
 // 	Errors   []api.Message `json:"errors"`
 // }
 
-func cacheRuntime(runtime Runtime) error {
+// Caches the runtime to disk as resources.json for --cached.
+
+// serializeRuntime serializes runtime for Node-based scripts.
+func serializeRuntime(runtime Runtime) error {
 	bstr, err := json.MarshalIndent(runtime, "", "\t")
 	if err != nil {
 		return err
@@ -33,7 +36,7 @@ func cacheRuntime(runtime Runtime) error {
 }
 
 func (r Runtime) Dev() {
-	if err := cacheRuntime(r); err != nil {
+	if err := serializeRuntime(r); err != nil {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
@@ -59,13 +62,15 @@ func (r Runtime) Serve() {
 		loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
 	}()
 
-	// fs := http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory))
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	if p.Ext(r.URL.Path) == "" {
-	// 		r.URL.Path += ".html"
-	// 	}
-	// 	fs.ServeHTTP(w, r)
-	// })
-	// must(http.ListenAndServe(":"+r.getPort(), nil))
-	must(http.ListenAndServe(":"+r.getPort(), http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory))))
+	fs := http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if p.Ext(r.URL.Path) == "" {
+			r.URL.Path += ".html"
+		}
+		fs.ServeHTTP(w, r)
+	})
+	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
+		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+			err.Error())
+	}
 }

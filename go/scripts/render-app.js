@@ -1,42 +1,60 @@
-async function run(runtime) {
-	const esbuild = require("esbuild")
-	const fs = require("fs/promises")
-	const path = require("path")
-	// const React = require("react")
-	// const ReactDOMServer = require("react-dom/server")
+const esbuild = require("esbuild")
+const fs = require("fs/promises")
+const path = require("path")
+// const React = require("react")
+// const ReactDOMServer = require("react-dom/server")
 
+// ${Object.keys(routes).map(key => (
+// 	`import ${routes[key].route.component} from "${routes[key].route.src_path}"`
+// )).join("\n")}
+
+// prettier-ignore
+function prettyJSON(data) {
+	return JSON.stringify(data)
+		.replace(/^{"/, '{ "')
+		.replace(/"}$/, '" }')
+		.replace(/"(:|,)"/g, '"$1 "')
+}
+
+async function run(runtime) {
 	try {
-		const App = false
+		const pathsPath = path.join(runtime.dir_config.cache_dir, "paths.json")
+		const paths = require("../" + pathsPath)
+
+		const componentSetKeys = [...new Set(Object.keys(paths).map(key => paths[key].route.component))]
+
+		const sharedPaths = {}
+		for (const [path_, meta] of Object.entries(paths)) {
+			if (componentSetKeys.includes(meta.route.component) && sharedPaths[meta.route.component] === undefined) {
+				sharedPaths[meta.route.component] = meta
+			}
+		}
 
 		const data = `import React from "react"
 import ReactDOM from "react-dom"
 import { Route, Router } from "../router"
 
-// App
-// TODO
+// Shared components
+${Object.entries(sharedPaths)
+	.map(([, meta]) => `import ${meta.route.component} from "../${meta.route.src_path}"`)
+	.join("\n")}
 
-// Pages
-${runtime.page_based_router.map(route => `import ${route.component} from "../${route.src_path}"`).join("\n")}
+// Cached paths / props
+import cachedPaths from "./paths.json"
 
-// Cached props
-// TODO
-
-export default function RoutedApp() {
+export default function App() {
 	return (
 		<Router>
-			${runtime.page_based_router
-				.map(route =>
-					!App
-						? `
-			<Route path="${route.path}">
-				<${route.component} {...cachedProps["${route.path}"]} />
-			</Route>`
-						: `
-			<Route path="${route.path}">
-				<App {...cachedProps["${route.path}"]}>
-					<${route.component} {...cachedProps["${route.path}"]} />
-				</App>
-			</Route>`,
+			${Object.entries(paths)
+				.map(
+					([path_, meta]) =>
+						`
+				<Route path="${path_}">
+					<${meta.route.component} {...{
+						path: "${path_}",
+						...cachedPaths["${path_}"].props,
+					}} />
+				</Route>`,
 				)
 				.join("\n")}
 
@@ -44,19 +62,10 @@ export default function RoutedApp() {
 	)
 }
 
-${
-	true // TODO
-		? `ReactDOM.hydrate(
-	<RoutedApp />,
-	document.getElementById("react-root"),
-)`
-		: `ReactDOM.hydrate(
-	<React.StrictMode>
-		<RoutedApp />
-	</React.StrictMode>,
-	document.getElementById("react-root"),
-)`
-}
+ReactDOM.hydrate(
+	<App />,
+	document.getElementById("root"),
+)
 `
 
 		const src = path.join(runtime.dir_config.cache_dir, "app.js")
@@ -80,7 +89,8 @@ ${
 			// plugins: [...configs.retro.plugins],
 		})
 	} catch (err) {
-		console.error(err.message)
+		// console.error(err.message)
+		throw err
 		process.exit(1)
 	}
 }
