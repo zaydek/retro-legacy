@@ -1,0 +1,28 @@
+{
+	"compilerOptions": {
+		"target": "es2017", // Changed from `"es5"`
+		"module": "commonjs",
+		"lib": ["dom", "esnext"], // Added
+		"jsx": "react", // Added
+
+		"strict": true,
+		"noImplicitAny": true, // Added
+		"strictNullChecks": true, // Added
+		"strictFunctionTypes": true, // Added
+		"strictBindCallApply": true, // Added
+		"strictPropertyInitialization": true, // Added
+		"noImplicitThis": true, // Added
+		"alwaysStrict": true, // Added
+
+		"noUnusedLocals": true, // Added
+		"noUnusedParameters": true, // Added
+		"noImplicitReturns": true, // Added
+		"noFallthroughCasesInSwitch": true, // Added
+		"noUncheckedIndexedAccess": true, // Added
+
+		"esModuleInterop": true,
+
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true
+	}
+}
