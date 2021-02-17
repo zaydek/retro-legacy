@@ -3,7 +3,6 @@ package retro
 import (
 	"strconv"
 
-	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/loggers"
 )
@@ -29,21 +28,34 @@ func (r Runtime) getCmd() Cmd {
 	return 0
 }
 
-// getSourceMap gets the current source map enum.
-func (r Runtime) getSourceMap() api.SourceMap {
-	if cmd := r.getCmd(); cmd == CmdDev {
-		if r.Command.(cli.DevCommand).SourceMap {
-			return api.SourceMapLinked
-		}
-		return api.SourceMapNone
-	} else if cmd == CmdExport {
-		if r.Command.(cli.ExportCommand).SourceMap {
-			return api.SourceMapLinked
-		}
-		return api.SourceMapNone
+// getCmdName gets the current command name.
+func (r Runtime) getCmdName() string {
+	switch r.getCmd() {
+	case CmdDev:
+		return "dev"
+	case CmdExport:
+		return "export"
+	case CmdServe:
+		return "serve"
 	}
-	return 0
+	return ""
 }
+
+// // getSourceMap gets the current source map enum.
+// func (r Runtime) getSourceMap() api.SourceMap {
+// 	if cmd := r.getCmd(); cmd == CmdDev {
+// 		if r.Command.(cli.DevCommand).SourceMap {
+// 			return api.SourceMapLinked
+// 		}
+// 		return api.SourceMapNone
+// 	} else if cmd == CmdExport {
+// 		if r.Command.(cli.ExportCommand).SourceMap {
+// 			return api.SourceMapLinked
+// 		}
+// 		return api.SourceMapNone
+// 	}
+// 	return 0
+// }
 
 // getPort gets the current port.
 func (r Runtime) getPort() string {

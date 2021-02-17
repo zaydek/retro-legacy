@@ -50,6 +50,7 @@ func runServerGuards(config DirectoryConfiguration) error {
 			return err
 		}
 	}
+	// TODO: Assert the presence of config.PagesDirectory/index.js.
 	return nil
 }
 
@@ -57,6 +58,7 @@ func newRuntime() (Runtime, error) {
 	var err error
 
 	runtime := Runtime{
+		Version: os.Getenv("RETRO_VERSION"),
 		Command: cli.ParseCLIArguments(),
 		DirConfiguration: DirectoryConfiguration{
 			AssetDirectory: "public",

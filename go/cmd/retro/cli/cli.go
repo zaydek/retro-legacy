@@ -22,16 +22,6 @@ func parseDevArguments(arguments ...string) DevCommand {
 			"Try retro help for help.")
 		os.Exit(2)
 	}
-	// if !cmd.Cache && !cmd.Purge {
-	// 	cmd.Purge = true
-	// }
-	// if cmd.Cache && cmd.Purge {
-	// 	loggers.Error("--cache and --purge are mutually exclusive; choose one.\n\n" +
-	// 		"- Use --cache to use cached resources\n\n" +
-	// 		"Or\n\n" +
-	// 		"- Use --purge to purge cached resources (default)")
-	// 	os.Exit(2)
-	// }
 	if cmd.Port < 1e3 || cmd.Port >= 1e4 {
 		loggers.Error("--port must be between 1XXX and 9XXX.")
 		os.Exit(2)
@@ -51,16 +41,6 @@ func parseExportArguments(arguments ...string) ExportCommand {
 			"Try retro help for help.")
 		os.Exit(2)
 	}
-	// if !cmd.Cache && !cmd.Purge {
-	// 	cmd.Purge = true
-	// }
-	// if cmd.Cache && cmd.Purge {
-	// 	loggers.Error("--cache and --purge are mutually exclusive; choose one.\n\n" +
-	// 		"- Use --cache to use cached resources\n\n" +
-	// 		"Or\n\n" +
-	// 		"- Use --purge to purge cached resources (default)")
-	// 	os.Exit(2)
-	// }
 	return cmd
 }
 
