@@ -2,16 +2,16 @@ RETRO_VERSION = $(shell cat version.txt)
 
 ################################################################################
 
-local-bin-create-retro-app:
+bin-create-retro-app:
 	go build -o=create-retro-app entry_create_retro_app.go && mv create-retro-app /usr/local/bin
 
-local-bin-retro:
+bin-retro:
 	go build -o=retro entry_retro.go && mv retro /usr/local/bin
 
-local-bin:
+bin:
 	make -j2 \
-		local-bin-create-retro-app \
-		local-bin-retro
+		bin-create-retro-app \
+		bin-retro
 
 ################################################################################
 
