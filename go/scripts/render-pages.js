@@ -18,7 +18,7 @@ const ReactDOMServer = require("react-dom/server")
 // 	return acc
 // }, {})
 
-async function renderPage(runtime, mod, props) {
+async function renderPage(runtime, mod, { props, dst }) {
 	let head = "<!-- <Head> -->"
 	if (typeof mod.Head === "function") {
 		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, props))
@@ -34,9 +34,7 @@ async function renderPage(runtime, mod, props) {
 		<div id="react-root">${page}</div>
 		<script src="/app.js"></script>`)
 
-	console.log(html)
-
-	// await fs.writeFile(route.dst_path, html)
+	await fs.writeFile(dst, html)
 }
 
 async function run(runtime) {
@@ -45,8 +43,8 @@ async function run(runtime) {
 	try {
 		// TODO: Upgrade to Promise.all (maybe add --concurrent?).
 		for (const route of runtime.page_based_router) {
-			const src = route.src_path
-			const dst = path.join(runtime.dir_config.cache_dir, src.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
+			let src = route.src_path
+			let dst = path.join(runtime.dir_config.cache_dir, src.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
 
 			await service.build({
 				bundle: true,
@@ -65,9 +63,10 @@ async function run(runtime) {
 			})
 			// TODO: Handle warnings and hints.
 
-			// TODO: Resolve server props and paths.
-
 			const mod = require("../" + dst)
+
+			// Update dst:
+			dst = route.dst_path
 
 			let serverProps
 			if (typeof mod.resolveServerProps === "function") {
@@ -81,11 +80,12 @@ async function run(runtime) {
 
 			if (serverPaths !== undefined) {
 				for (const serverInfo of serverPaths) {
-					const { path, props } = serverInfo
-					await renderPage(runtime, mod, { path, ...props })
+					const { path: path_, props } = serverInfo
+					const dst2 = path.join(...[...dst.split(path.sep).slice(0, -1), path_ + ".html"])
+					await renderPage(runtime, mod, { props: { path: path_, ...props }, dst: dst2 })
 				}
 			} else {
-				await renderPage(runtime, mod)
+				await renderPage(runtime, mod, { dst })
 			}
 		}
 	} catch (err) {
