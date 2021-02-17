@@ -1670,9 +1670,19 @@ var require_react = __commonJS((exports2, module2) => {
 // src/pages/bulbasaur.js
 __markAsModule(exports);
 __export(exports, {
-  default: () => App
+  Head: () => Head,
+  default: () => Page
 });
 var import_react = __toModule(require_react());
-function App() {
+function Head() {
+  return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, /* @__PURE__ */ import_react.default.createElement("title", null, "Hello, Bulbasaur!"), /* @__PURE__ */ import_react.default.createElement("meta", {
+    type: "title",
+    value: "Hello, Bulbasaur!"
+  }), /* @__PURE__ */ import_react.default.createElement("meta", {
+    type: "description",
+    value: "This is a page about Bulbasaur."
+  }));
+}
+function Page() {
   return /* @__PURE__ */ import_react.default.createElement("h1", null, "Hello, Bulbasaur!");
 }
