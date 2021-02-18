@@ -1060,7 +1060,7 @@
           }
           return dispatcher.useContext(Context, unstable_observedBits);
         }
-        function useState3(initialState) {
+        function useState2(initialState) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useState(initialState);
         }
@@ -1068,7 +1068,7 @@
           var dispatcher = resolveDispatcher();
           return dispatcher.useReducer(reducer, initialArg, init);
         }
-        function useRef(initialValue) {
+        function useRef2(initialValue) {
           var dispatcher = resolveDispatcher();
           return dispatcher.useRef(initialValue);
         }
@@ -1647,8 +1647,8 @@
         exports.useLayoutEffect = useLayoutEffect;
         exports.useMemo = useMemo3;
         exports.useReducer = useReducer;
-        exports.useRef = useRef;
-        exports.useState = useState3;
+        exports.useRef = useRef2;
+        exports.useState = useState2;
         exports.version = ReactVersion;
       })();
     }
@@ -20713,14 +20713,44 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     return useStore(store)[1];
   }
 
+  // router/utils.ts
+  function scrollToImpl(scrollTo) {
+    if (typeof scrollTo === "number") {
+      window.scrollTo(0, scrollTo);
+      return;
+    }
+    if (Array.isArray(scrollTo) && scrollTo.length === 2 && typeof scrollTo[0] === "number" && typeof scrollTo[1] === "number") {
+      window.scrollTo(...scrollTo);
+      return;
+    }
+  }
+  function convertPath(pathname) {
+    let path = pathname;
+    if (path.endsWith(".html")) {
+      path = path.slice(0, -5);
+    }
+    return path;
+  }
+  function getPath() {
+    const pathname = typeof window === "undefined" ? "/" : window.location.pathname;
+    return convertPath(pathname);
+  }
+
   // router/index.tsx
-  var pathStore = createStore(getPath());
-  function Link({path, children, ...props}) {
-    const setPath = useStoreSetState(pathStore);
+  var routerStore = createStore({
+    path: getPath(),
+    type: "PUSH",
+    scrollTo: [0, 0]
+  });
+  function Link({path, scrollTo, children, ...props}) {
+    const setRouter = useStoreSetState(routerStore);
     function handleClick(e) {
       e.preventDefault();
-      setPath(path);
-      window.scrollTo(0, 0);
+      setRouter({
+        type: "PUSH",
+        path,
+        scrollTo
+      });
     }
     const scoped = !/^https?:\/\//.test(path);
     return /* @__PURE__ */ import_react2.default.createElement("a", {
@@ -20734,29 +20764,36 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function Route({children}) {
     return children;
   }
-  function convertPath(pathname) {
-    let path = pathname;
-    if (path.endsWith(".html")) {
-      path = path.slice(0, -5);
-    }
-    return path;
-  }
-  function getPath() {
-    const pathname = typeof window === "undefined" ? "/" : window.location.pathname;
-    return convertPath(pathname);
-  }
   function Router({children}) {
-    const [path, setPath] = useStore(pathStore);
+    const [router, setRouter] = useStore(routerStore);
     import_react2.useEffect(() => {
       function handlePopState(_) {
-        const path2 = getPath();
-        setPath(path2);
-        window.history.pushState({}, "", path2);
-        window.scrollTo(0, 0);
+        setRouter({
+          type: "REPLACE",
+          path: getPath(),
+          scrollTo: [0, 0]
+        });
       }
       window.addEventListener("popstate", handlePopState);
       return () => window.removeEventListener("popstate", handlePopState);
     }, []);
+    let onceRef = import_react2.useRef(false);
+    import_react2.useEffect(() => {
+      if (!onceRef.current) {
+        onceRef.current = true;
+        return;
+      }
+      if (router.path !== getPath()) {
+        let report;
+        if (router.type === "PUSH") {
+          report = () => window.history.pushState({}, "", router.path);
+        } else if (router.type === "REPLACE") {
+          report = () => window.history.replaceState({}, "", router.path);
+        }
+        report();
+      }
+      scrollToImpl(router.scrollTo);
+    }, [router]);
     const cachedRouteMap = import_react2.useMemo(() => {
       const routeMap = {};
       import_react2.default.Children.forEach(children, (child) => {
@@ -20768,7 +20805,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       });
       return routeMap;
     }, [children]);
-    const route = cachedRouteMap[path] || cachedRouteMap["/404"];
+    const route = cachedRouteMap[router.path] || cachedRouteMap["/404"];
     return /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, route);
   }
 

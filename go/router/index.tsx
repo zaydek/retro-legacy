@@ -1,20 +1,34 @@
-import React, { useEffect, useState, useMemo } from "react"
+import * as types from "./types"
+import React, { useEffect, useMemo, useRef } from "react"
 import { createStore, useStore, useStoreSetState } from "../store"
+import { getPath, scrollToImpl } from "./utils"
 
-interface LinkProps {
-	path: string
-	children?: React.ReactNode
+type NavigationType = "PUSH" | "REPLACE"
+
+// prettier-ignore
+interface RouterStore {
+	type:     NavigationType
+	path:     string
+	scrollTo: undefined | number | [number, number]
 }
 
-const pathStore = createStore(getPath())
+// TODO: Add support for generics; createStore<RouterStore>.
+const routerStore = createStore({
+	path: getPath(),
+	type: "PUSH",
+	scrollTo: [0, 0],
+})
 
-export function Link({ path, children, ...props }: LinkProps) {
-	const setPath = useStoreSetState(pathStore)
+export function Link({ path, scrollTo, children, ...props }: types.LinkProps) {
+	const setRouter = useStoreSetState(routerStore)
 
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
-		setPath(path)
-		window.scrollTo(0, 0) // TODO
+		setRouter({
+			type: "PUSH",
+			path,
+			scrollTo,
+		})
 	}
 
 	const scoped = !/^https?:\/\//.test(path)
@@ -27,56 +41,57 @@ export function Link({ path, children, ...props }: LinkProps) {
 	)
 }
 
-interface RouteProps {
-	path: string
-	children?: React.ReactNode
-}
-
-export function Route({ children }: RouteProps) {
+export function Route({ children }: types.RouteProps) {
 	return children
-}
-
-// Converts a pathname (window.history.pathname) to a path.
-function convertPath(pathname: string): string {
-	let path = pathname
-	if (path.endsWith(".html")) {
-		path = path.slice(0, -5)
-	}
-	return path
-}
-
-function getPath() {
-	const pathname = typeof window === "undefined" ? "/" : window.location.pathname
-	return convertPath(pathname)
 }
 
 // TODO: Add support for key-based rerenders.
 export function Router({ children }) {
-	const [path, setPath] = useStore(pathStore)
+	const [router, setRouter] = useStore(routerStore)
 
 	useEffect(() => {
 		function handlePopState(_: PopStateEvent) {
-			const path = getPath()
-			setPath(path)
-			window.history.pushState({}, "", path)
-			window.scrollTo(0, 0) // TODO
+			setRouter({
+				type: "REPLACE",
+				path: getPath(),
+				scrollTo: [0, 0],
+			})
 		}
 		window.addEventListener("popstate", handlePopState)
 		return () => window.removeEventListener("popstate", handlePopState)
 	}, [])
+
+	let onceRef = useRef(false)
+	useEffect(() => {
+		if (!onceRef.current) {
+			onceRef.current = true
+			return
+		}
+		// Dedupe:
+		if (router.path !== getPath()) {
+			let report: Function
+			if (router.type === "PUSH") {
+				report = () => window.history.pushState({}, "", router.path)
+			} else if (router.type === "REPLACE") {
+				report = () => window.history.replaceState({}, "", router.path)
+			}
+			report()
+		}
+		scrollToImpl(router.scrollTo)
+	}, [router])
 
 	const cachedRouteMap = useMemo(() => {
 		const routeMap = {}
 		React.Children.forEach(children, child => {
 			if (!React.isValidElement(child)) return
 
-			if (child !== undefined && child.props !== undefined && (child.props as RouteProps).path !== "") {
-				routeMap[(child.props as RouteProps).path] = child
+			if (child !== undefined && child.props !== undefined && (child.props as types.RouteProps).path !== "") {
+				routeMap[(child.props as types.RouteProps).path] = child
 			}
 		})
 		return routeMap
 	}, [children])
 
-	const route = cachedRouteMap[path] || cachedRouteMap["/404"]
+	const route = cachedRouteMap[router.path] || cachedRouteMap["/404"]
 	return <>{route}</>
 }
