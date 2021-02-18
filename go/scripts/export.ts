@@ -22,8 +22,8 @@ function pathToHTML(path: string): string {
 	return path + "index.html"
 }
 
-// renderToDisk renders a render payload to disk.
-async function renderToDisk(runtime: types.Runtime, render: RenderPayload): Promise<void> {
+// exportPage exports a page to disk.
+async function exportPage(runtime: types.Runtime, render: RenderPayload): Promise<void> {
 	let head = "<!-- <Head {...{ path, ...props }}> -->"
 	if (typeof render.module.Head === "function") {
 		head = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.serverProps))
@@ -52,8 +52,9 @@ async function renderToDisk(runtime: types.Runtime, render: RenderPayload): Prom
 	await fs.writeFile(render.outputPath, html)
 }
 
-async function run(runtime: types.Runtime): Promise<void> {
-	const cachedSrvRouter: types.ServerRouter = {}
+// exportPages exports pages to disk.
+async function exportPages(runtime: types.Runtime): Promise<types.ServerRouter> {
+	const appRouter: types.ServerRouter = {}
 
 	const service = await esbuild.startService()
 
@@ -103,9 +104,9 @@ async function run(runtime: types.Runtime): Promise<void> {
 		if (typeof mod.serverPaths === "function") {
 			const descriptServerPaths: types.DescriptiveServerPaths = await mod.serverPaths(serverProps)
 
-			let srvRouter: types.ServerRouter = {}
+			let router: types.ServerRouter = {}
 			for (const serverPath of descriptServerPaths) {
-				srvRouter[serverPath.path] = {
+				router[serverPath.path] = {
 					filesystemRoute,
 					serverProps: {
 						path: serverPath.path,
@@ -114,18 +115,18 @@ async function run(runtime: types.Runtime): Promise<void> {
 				}
 			}
 
-			for (const [path_, meta] of Object.entries(srvRouter)) {
+			for (const [path_, meta] of Object.entries(router)) {
 				// Cache meta:
 				//
 				// TODO: Warn here for repeat paths.
-				cachedSrvRouter[path_] = meta
+				appRouter[path_] = meta
 				const render: RenderPayload = {
 					outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
 					path: path_,
 					module: mod,
 					serverProps: meta.serverProps,
 				}
-				await renderToDisk(runtime, render)
+				await exportPage(runtime, render)
 			}
 			continue
 		}
@@ -143,7 +144,7 @@ async function run(runtime: types.Runtime): Promise<void> {
 		// Cache meta:
 		//
 		// TODO: Warn here for repeat paths.
-		cachedSrvRouter[path_] = meta
+		appRouter[path_] = meta
 
 		const render: RenderPayload = {
 			outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
@@ -151,13 +152,106 @@ async function run(runtime: types.Runtime): Promise<void> {
 			module: mod,
 			serverProps: serverProps,
 		}
-		await renderToDisk(runtime, render)
+		await exportPage(runtime, render)
 	}
 
-	// Cache cachedSrvRouter for --cached:
-	const dst = path.join(runtime.directoryConfiguration.cacheDir, "cachedServerRouter.json")
-	const data = JSON.stringify(cachedSrvRouter, null, "\t") + "\n" // EOF
+	return appRouter
+}
+
+// renderAppSource renders the App source code (before esbuild).
+//
+// TODO: Write tests (pure function).
+export async function renderAppSource(router: types.ServerRouter): Promise<string> {
+	// Get the shared components:
+	const sharedComponents = [...new Set(Object.keys(router).map(keys => router[keys]!.filesystemRoute.component))]
+
+	// Create a shared server router based on shared component keys:
+	const sharedRouter: types.ServerRouter = {}
+
+	// prettier-ignore
+	for (const [, meta] of Object.entries(router)) {
+		const comp = meta.filesystemRoute.component
+		if (sharedComponents.includes(comp) &&
+				sharedRouter[comp] === undefined) {
+			sharedRouter[comp] = meta
+		}
+	}
+
+	return `import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "../router"
+
+// Shared components
+${Object.entries(sharedRouter)
+	.map(([, { filesystemRoute }]) => `import ${filesystemRoute.component} from "../${filesystemRoute.inputPath}"`)
+	.join("\n")}
+
+import router from "./router.json"
+
+export default function App() {
+	return (
+		<Router>
+${
+	Object.entries(router)
+		.map(
+			([path_, meta]) => `
+			<Route path="${path_}">
+				<${meta.filesystemRoute.component} {...{
+					path: "${path_}",
+					...router["${path_}"].serverProps,
+				}} />
+			</Route>`,
+		)
+		.join("\n") + "\n"
+}
+		</Router>
+	)
+}
+
+ReactDOM.hydrate(
+	// <React.StrictMode> // TODO
+	<App />,
+	// </React.StrictMode>
+	document.getElementById("root"),
+)
+`
+}
+
+async function run(runtime: types.Runtime): Promise<void> {
+	const appRouter = await exportPages(runtime)
+
+	// Cache appRouter for --cached:
+	const dst = path.join(runtime.directoryConfiguration.cacheDir, "router.json")
+	const data = JSON.stringify(appRouter, null, "\t") + "\n" // EOF
 	await fs.writeFile(dst, data)
+
+	const appSource = await renderAppSource(appRouter)
+	const appSourcePath = path.join(runtime.directoryConfiguration.cacheDir, "app.js")
+	await fs.writeFile(appSourcePath, appSource)
+
+	// Generate paths for esbuild:
+	const entryPoints = [appSourcePath]
+	const outfile = entryPoints[0]!.replace(
+		new RegExp("^" + runtime.directoryConfiguration.cacheDir.replace("/", "\\/")), // TODO
+		runtime.directoryConfiguration.exportDir,
+	)
+
+	await esbuild.build({
+		bundle: true,
+		define: {
+			__DEV__: "true", // TODO
+			"process.env.NODE_ENV": JSON.stringify("development"), // TODO
+		},
+		entryPoints,
+		format: "iife", // DOM
+		loader: {
+			".js": "jsx",
+		},
+		logLevel: "silent", // TODO
+		outfile,
+		// TODO: We should probably only need to resolve plugins once.
+		// plugins: [...configs.retro.plugins],
+	})
 }
 
 ;(async () => {

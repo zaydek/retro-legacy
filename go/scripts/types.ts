@@ -1,11 +1,8 @@
-// Path describes the current path.
-type Path = `/${string}`
-
 // Props describes props ambiguously.
 export type Props = any
 
 // ServerProps describes props ambiguously and the current path.
-export type ServerProps = Props & { path: Path }
+export type ServerProps = Props & { path: string }
 
 // ServerRouter describes the server-resolved router.
 //
@@ -35,7 +32,7 @@ export interface StaticPageModule extends PageModule {
 	serverProps: Promise<ServerProps>
 }
 
-export type DescriptiveServerPaths = { path: Path; props?: Props }[]
+export type DescriptiveServerPaths = { path: string; props?: Props }[]
 
 // DynamicPageModule describes a dynamic page module.
 export interface DynamicPageModule extends PageModule {
@@ -77,7 +74,7 @@ interface DirectoryConfiguration {
 interface FilesystemRoute {
 	inputPath:  string  // e.g. "src/pages/index.js"
 	outputPath: string  // e.g. "index.html"
-	path:       Path    // e.g. "/"
+	path:       string    // e.g. "/"
 	component:  string  // e.g. "PageIndex"
 }
 
