@@ -82,9 +82,8 @@ async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types
 			entryPoints,
 			external: ["react", "react-dom"],
 			format: "cjs", // Node.js
-			loader: {
-				".js": "jsx",
-			},
+			inject: ["./react-shim.js"],
+			loader: { ".js": "jsx" },
 			logLevel: "silent", // TODO
 			outfile,
 			// plugins: [...configs.retro.plugins], // TODO
@@ -242,12 +241,11 @@ async function run(runtime: types.Runtime): Promise<void> {
 		},
 		entryPoints,
 		format: "iife", // DOM
-		loader: {
-			".js": "jsx",
-		},
+		inject: ["./react-shim.js"],
+		loader: { ".js": "jsx" },
 		logLevel: "silent", // TODO
-		outfile,
 		minify: true,
+		outfile,
 		// TODO: We should probably only need to resolve plugins once.
 		// plugins: [...configs.retro.plugins],
 	})

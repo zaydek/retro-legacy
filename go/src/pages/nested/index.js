@@ -1,5 +1,4 @@
 import Nav from "../Nav_"
-import React from "react"
 
 export function Head() {
 	return <title>Welcome to my wonderful website. (nested)</title>

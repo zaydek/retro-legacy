@@ -1,6 +1,6 @@
 import Component from "./component"
 import Nav from "./Nav_"
-import React, { useEffect } from "react"
+import { useEffect } from "react"
 
 // serverProps resolves props on the server. Props are cached for
 // retro dev --cached and retro export --cached. Props are then forwarded as

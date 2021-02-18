@@ -70,9 +70,8 @@ async function exportPagesAndCreateRouter(runtime) {
       entryPoints,
       external: ["react", "react-dom"],
       format: "cjs",
-      loader: {
-        ".js": "jsx"
-      },
+      inject: ["./react-shim.js"],
+      loader: {".js": "jsx"},
       logLevel: "silent",
       outfile
     });
@@ -181,12 +180,11 @@ async function run(runtime) {
     },
     entryPoints,
     format: "iife",
-    loader: {
-      ".js": "jsx"
-    },
+    inject: ["./react-shim.js"],
+    loader: {".js": "jsx"},
     logLevel: "silent",
-    outfile,
-    minify: true
+    minify: true,
+    outfile
   });
 }
 ;
