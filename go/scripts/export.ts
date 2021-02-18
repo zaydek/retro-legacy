@@ -191,11 +191,11 @@ export default function App() {
 ${
 	Object.entries(router)
 		.map(
-			([path_, meta]) => `
-			<Route path="${path_}">
+			([path, meta]) => `
+			<Route path="${path}">
 				<${meta.route.component} {...{
-					path: "${path_}",
-					...router["${path_}"].props,
+					path: "${path}",
+					...router["${path}"].props,
 				}} />
 			</Route>`,
 		)
@@ -205,13 +205,20 @@ ${
 	)
 }
 
-ReactDOM.hydrate(
-	// <React.StrictMode> // TODO
-	<App />,
-	// </React.StrictMode>
+${
+	JSON.parse(process.env.STRICT_MODE || "true")
+		? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
 	document.getElementById("root"),
-)
-`
+)`
+		: `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`
+}
+` // EOF
 }
 
 async function run(runtime: types.Runtime): Promise<void> {

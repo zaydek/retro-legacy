@@ -143,23 +143,26 @@ import router from "./router.json"
 export default function App() {
 	return (
 		<Router>
-${Object.entries(router).map(([path_, meta]) => `
-			<Route path="${path_}">
+${Object.entries(router).map(([path, meta]) => `
+			<Route path="${path}">
 				<${meta.route.component} {...{
-					path: "${path_}",
-					...router["${path_}"].props,
+					path: "${path}",
+					...router["${path}"].props,
 				}} />
 			</Route>`).join("\n") + "\n"}
 		</Router>
 	)
 }
 
-ReactDOM.hydrate(
-	// <React.StrictMode> // TODO
-	<App />,
-	// </React.StrictMode>
+${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
 	document.getElementById("root"),
-)
+)` : `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`}
 `;
 }
 async function run(runtime) {
