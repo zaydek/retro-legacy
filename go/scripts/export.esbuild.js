@@ -70,7 +70,7 @@ async function exportPagesAndCreateRouter(runtime) {
       entryPoints,
       external: ["react", "react-dom"],
       format: "cjs",
-      inject: ["./react-shim.js"],
+      inject: ["scripts/react-shim.js"],
       loader: {".js": "jsx"},
       logLevel: "silent",
       outfile
@@ -145,10 +145,9 @@ export default function App() {
 		<Router>
 ${Object.entries(router).map(([path, meta]) => `
 			<Route path="${path}">
-				<${meta.route.component} {...{
-					path: "${path}",
-					...router["${path}"].props,
-				}} />
+				<${meta.route.component} {
+					...router["${path}"].props
+				} />
 			</Route>`).join("\n") + "\n"}
 		</Router>
 	)
@@ -183,7 +182,7 @@ async function run(runtime) {
     },
     entryPoints,
     format: "iife",
-    inject: ["./react-shim.js"],
+    inject: ["scripts/react-shim.js"],
     loader: {".js": "jsx"},
     logLevel: "silent",
     minify: true,

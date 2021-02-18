@@ -82,7 +82,7 @@ async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types
 			entryPoints,
 			external: ["react", "react-dom"],
 			format: "cjs", // Node.js
-			inject: ["./react-shim.js"],
+			inject: ["scripts/react-shim.js"],
 			loader: { ".js": "jsx" },
 			logLevel: "silent", // TODO
 			outfile,
@@ -193,10 +193,9 @@ ${
 		.map(
 			([path, meta]) => `
 			<Route path="${path}">
-				<${meta.route.component} {...{
-					path: "${path}",
-					...router["${path}"].props,
-				}} />
+				<${meta.route.component} {
+					...router["${path}"].props
+				} />
 			</Route>`,
 		)
 		.join("\n") + "\n"
@@ -248,7 +247,7 @@ async function run(runtime: types.Runtime): Promise<void> {
 		},
 		entryPoints,
 		format: "iife", // DOM
-		inject: ["./react-shim.js"],
+		inject: ["scripts/react-shim.js"],
 		loader: { ".js": "jsx" },
 		logLevel: "silent", // TODO
 		minify: true,

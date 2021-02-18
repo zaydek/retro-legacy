@@ -22,10 +22,8 @@ import (
 // 	Errors   []api.Message `json:"errors"`
 // }
 
-// Caches the runtime to disk as resources.json for --cached.
-
-// serializeRuntime serializes runtime for Node.js-based scripts.
-func serializeRuntime(runtime Runtime) error {
+// stashRuntime stashes the runtime for Node.js scripts.
+func stashRuntime(runtime Runtime) error {
 	bstr, err := json.MarshalIndent(runtime, "", "\t")
 	if err != nil {
 		return err
@@ -39,7 +37,7 @@ func serializeRuntime(runtime Runtime) error {
 }
 
 func (r Runtime) Dev() {
-	if err := serializeRuntime(r); err != nil {
+	if err := stashRuntime(r); err != nil {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
@@ -51,7 +49,7 @@ func (r Runtime) Export() {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
-	if err := serializeRuntime(r); err != nil {
+	if err := stashRuntime(r); err != nil {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
@@ -59,7 +57,7 @@ func (r Runtime) Export() {
 		loggers.ErrorAndEnd(err)
 	}
 
-	// TODO: Make this log more descriptive.
+	// TODO: Make this log more descriptive; add an export summary.
 	fmt.Println(fmt.Sprintf("⚡️ (%0.3fs) Success! "+
 		"You can run retro serve when you’re ready to serve your web app.",
 		time.Since(start).Seconds()))
@@ -73,9 +71,7 @@ func (r Runtime) Serve() {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		// loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
-
-		// TODO: How do we clear the terminal?
+		// // loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
 		fmt.Println(fmt.Sprintf("📡 http://localhost:%s", r.getPort()))
 	}()
 
