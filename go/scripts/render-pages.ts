@@ -13,6 +13,8 @@ interface Meta {
 	exports: types.StaticPage | types.DynamicPage
 }
 
+const resolvedRouter: types.ResolvedPaths = {}
+
 async function renderPage(runtime: types.Runtime, meta: Meta) {
 	let head = "<!-- <Head {...resolvedProps}> -->"
 	if (typeof meta.exports.Head === "function") {
@@ -75,13 +77,12 @@ async function run(runtime: types.Runtime) {
 
 			let resolvedProps: types.ResolvedProps
 			if (typeof exports.serverProps === "function") {
-				resolvedProps = await exports.serverProps()
+				props = await exports.serverProps()
 			}
 
-			let resolvedPaths: types.ResolvedPaths
 			if (typeof exports.serverPaths === "function") {
-				const resolvedPathsArray: types.ResolvedPathsArray = await exports.serverPaths(resolvedProps)
-				resolvedPaths = resolvedPathsArray.reduce((accum, each) => {
+				const resolvedPathsArray: types.ResolvedPathsArray = await exports.serverPaths(props)
+				const routeInfos = resolvedPathsArray.reduce<types.ResolvedPaths>((accum, each) => {
 					accum[each.path] = {
 						route,
 						props: each.props,
@@ -89,21 +90,35 @@ async function run(runtime: types.Runtime) {
 					return accum
 				}, {})
 
-				// Cache resolvedPaths for --cached:
-				const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedPaths.json")
-				await fs.writeFile(resolvedPathsPath, JSON.stringify(resolvedPaths, null, "\t") + "\n")
+				if (routeInfos !== undefined) {
+					for (const [path_, routeInfo] of Object.entries(routeInfos)) {
+						// TODO: Warn here for repeat paths.
+						const decoratedProps = { path: path_, ...routeInfo.props }
+						resolvedRouter[path_] = { route, props: decoratedProps }
+					}
+				}
 
-				for (const [path_, routeMeta] of Object.entries(resolvedPaths)) {
+				for (const [path_, routeInfo] of Object.entries(routeInfos)) {
 					const fs_path = path.join(runtime.dir_config.build_dir, path_) + ".html"
-					const meta: Meta = { fs_path, path: path_, props: { path: path_, ...routeMeta.props }, exports }
+					const decoratedProps = { path: path_, ...routeInfo.props }
+					const meta: Meta = { fs_path, path: path_, props: decoratedProps, exports }
 					await renderPage(runtime, meta)
 				}
 				continue
 			}
 
-			const meta: Meta = { fs_path: dst, path: route.path, props: resolvedProps, exports }
+			// TODO: Warn here for repeat paths.
+			const path_ = route.path
+			const decoratedProps = { path: path_, ...resolvedProps }
+			resolvedRouter[path_] = { route, props: decoratedProps }
+
+			const meta: Meta = { fs_path: dst, path: route.path, props: decoratedProps, exports }
 			await renderPage(runtime, meta)
 		}
+
+		// Cache resolvedRouter for --cached:
+		const resolvedRouterPath = path.join(runtime.dir_config.cache_dir, "resolvedRouter.json")
+		await fs.writeFile(resolvedRouterPath, JSON.stringify(resolvedRouter, null, "\t") + "\n")
 	} catch (err) {
 		// console.error(err.message)
 		throw err

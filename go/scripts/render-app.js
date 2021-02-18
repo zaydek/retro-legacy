@@ -12,13 +12,13 @@ const path = require("path")
 
 async function run(runtime) {
 	try {
-		const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedPaths.json")
-		const resolvedPaths = require("../" + resolvedPathsPath)
+		const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedRouter.json")
+		const resolvedRouter = require("../" + resolvedPathsPath)
 
-		const componentSetKeys = [...new Set(Object.keys(resolvedPaths).map(key => resolvedPaths[key].route.component))]
+		const componentSetKeys = [...new Set(Object.keys(resolvedRouter).map(key => resolvedRouter[key].route.component))]
 
 		const sharedPaths = {}
-		for (const [, meta] of Object.entries(resolvedPaths)) {
+		for (const [, meta] of Object.entries(resolvedRouter)) {
 			if (componentSetKeys.includes(meta.route.component) && sharedPaths[meta.route.component] === undefined) {
 				sharedPaths[meta.route.component] = meta
 			}
@@ -33,21 +33,21 @@ ${Object.entries(sharedPaths)
 	.map(([, meta]) => `import ${meta.route.component} from "../${meta.route.src_path}"`)
 	.join("\n")}
 
-import resolvedPaths from "./resolvedPaths.json"
+import resolvedRouter from "./resolvedRouter.json"
 
 export default function App() {
 	return (
 		<Router>
-			${Object.entries(resolvedPaths)
+			${Object.entries(resolvedRouter)
 				.map(
 					([path_, meta]) =>
 						`
-				<Route path="${path_}">
-					<${meta.route.component} {...{
-						path: "${path_}",
-						...resolvedPaths["${path_}"].props,
-					}} />
-				</Route>`,
+			<Route path="${path_}">
+				<${meta.route.component} {...{
+					path: "${path_}",
+					...resolvedRouter["${path_}"].props,
+				}} />
+			</Route>`,
 				)
 				.join("\n")}
 

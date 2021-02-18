@@ -10,6 +10,11 @@ export interface ResolvedPaths {
 	[key: string]: ResolvedProps
 }
 
+export interface RouteInfo {
+	route: PageBasedRoute
+	props: ResolvedProps
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // prettier-ignore

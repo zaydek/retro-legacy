@@ -2635,11 +2635,11 @@
     if (true) {
       (function() {
         "use strict";
-        var React5 = require_react();
+        var React7 = require_react();
         var _assign = require_object_assign();
         var Scheduler = require_scheduler();
         var tracing = require_tracing();
-        var ReactSharedInternals = React5.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React7.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -2671,7 +2671,7 @@
             Function.prototype.apply.call(console[level], console, argsWithFormat);
           }
         }
-        if (!React5) {
+        if (!React7) {
           {
             throw Error("ReactDOM was loaded before React. Make sure you load the React package before loading ReactDOM.");
           }
@@ -3887,7 +3887,7 @@
         var didWarnInvalidChild = false;
         function flattenChildren(children) {
           var content = "";
-          React5.Children.forEach(children, function(child) {
+          React7.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -3898,7 +3898,7 @@
         function validateProps(element, props) {
           {
             if (typeof props.children === "object" && props.children !== null) {
-              React5.Children.forEach(props.children, function(child) {
+              React7.Children.forEach(props.children, function(child) {
                 if (child == null) {
                   return;
                 }
@@ -11104,7 +11104,7 @@
         }
         var fakeInternalInstance = {};
         var isArray = Array.isArray;
-        var emptyRefsObject = new React5.Component().refs;
+        var emptyRefsObject = new React7.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -20625,7 +20625,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   });
 
   // __cache__/app.js
-  var import_react5 = __toModule(require_react());
+  var import_react7 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
   // router/index.tsx
@@ -20809,33 +20809,69 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     return /* @__PURE__ */ import_react2.default.createElement(import_react2.default.Fragment, null, route);
   }
 
-  // src/pages/component.js
+  // src/pages/404.js
   var import_react3 = __toModule(require_react());
+  function Page() {
+    return /* @__PURE__ */ import_react3.default.createElement("h1", null, "Oops, this is the wrong page");
+  }
+
+  // src/pages/component.js
+  var import_react4 = __toModule(require_react());
   function Component() {
-    return /* @__PURE__ */ import_react3.default.createElement("h1", null, "Hello, world!");
+    return /* @__PURE__ */ import_react4.default.createElement("h1", null, "Hello, world!");
+  }
+
+  // src/pages/Nav_.js
+  var import_react5 = __toModule(require_react());
+  var paths = [
+    {path: "/bulbasaur", children: "Open bulbasaur"},
+    {path: "/charmander", children: "Open charmander"},
+    {path: "/pikachu", children: "Open pikachu"},
+    {path: "/squirtle", children: "Open squirtle"},
+    {path: "/oops", children: "Open oops"},
+    {path: "/404", children: "Open 404"},
+    {path: "https://google.com", children: "Open google"}
+  ];
+  function Nav() {
+    return /* @__PURE__ */ import_react5.default.createElement("ul", null, paths.map(({path, children}) => /* @__PURE__ */ import_react5.default.createElement("li", {
+      key: path
+    }, /* @__PURE__ */ import_react5.default.createElement(Link, {
+      path
+    }, children))));
   }
 
   // src/pages/pokemon.js
-  var import_react4 = __toModule(require_react());
-  function Nav() {
-    return /* @__PURE__ */ import_react4.default.createElement("ul", null, /* @__PURE__ */ import_react4.default.createElement("li", null, /* @__PURE__ */ import_react4.default.createElement(Link, {
-      path: "/bulbasaur"
-    }, "Open bulbasaur")), /* @__PURE__ */ import_react4.default.createElement("li", null, /* @__PURE__ */ import_react4.default.createElement(Link, {
-      path: "/charmander"
-    }, "Open charmander")), /* @__PURE__ */ import_react4.default.createElement("li", null, /* @__PURE__ */ import_react4.default.createElement(Link, {
-      path: "/pikachu"
-    }, "Open pikachu")), /* @__PURE__ */ import_react4.default.createElement("li", null, /* @__PURE__ */ import_react4.default.createElement(Link, {
-      path: "/squirtle"
-    }, "Open squirtle")));
-  }
-  function Page({name, ...props}) {
-    import_react4.useEffect(() => {
+  var import_react6 = __toModule(require_react());
+  function Page2({name, ...props}) {
+    import_react6.useEffect(() => {
       console.log(`Hello, world! you are rendering the ${name} page!`);
     }, [name]);
-    return /* @__PURE__ */ import_react4.default.createElement("div", null, /* @__PURE__ */ import_react4.default.createElement(Nav, null), /* @__PURE__ */ import_react4.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react4.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react4.default.createElement(Component, null));
+    return /* @__PURE__ */ import_react6.default.createElement("div", null, /* @__PURE__ */ import_react6.default.createElement(Nav, null), /* @__PURE__ */ import_react6.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react6.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react6.default.createElement(Component, null));
   }
 
-  // __cache__/resolvedPaths.json
+  // __cache__/resolvedRouter.json
+  var _404 = {
+    route: {
+      src_path: "src/pages/404.js",
+      dst_path: "__export__/404.html",
+      path: "/404",
+      component: "Page404"
+    },
+    props: {
+      path: "/404"
+    }
+  };
+  var _component = {
+    route: {
+      src_path: "src/pages/component.js",
+      dst_path: "__export__/component.html",
+      path: "/component",
+      component: "PageComponent"
+    },
+    props: {
+      path: "/component"
+    }
+  };
   var _bulbasaur = {
     route: {
       src_path: "src/pages/pokemon.js",
@@ -20844,6 +20880,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       component: "PagePokemon"
     },
     props: {
+      path: "/bulbasaur",
       title: "Hello, world!",
       description: "This page was made using Retro.",
       name: "Bulbasaur",
@@ -20858,6 +20895,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       component: "PagePokemon"
     },
     props: {
+      path: "/charmander",
       title: "Hello, world!",
       description: "This page was made using Retro.",
       name: "Charmander",
@@ -20872,6 +20910,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       component: "PagePokemon"
     },
     props: {
+      path: "/pikachu",
       title: "Hello, world!",
       description: "This page was made using Retro.",
       name: "Pikachu",
@@ -20886,13 +20925,16 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       component: "PagePokemon"
     },
     props: {
+      path: "/squirtle",
       title: "Hello, world!",
       description: "This page was made using Retro.",
       name: "Squirtle",
       type: "\u{1F4A7}"
     }
   };
-  var resolvedPaths_default = {
+  var resolvedRouter_default = {
+    "/404": _404,
+    "/component": _component,
     "/bulbasaur": _bulbasaur,
     "/charmander": _charmander,
     "/pikachu": _pikachu,
@@ -20901,35 +20943,49 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
 
   // __cache__/app.js
   function App() {
-    return /* @__PURE__ */ import_react5.default.createElement(Router, null, /* @__PURE__ */ import_react5.default.createElement(Route, {
+    return /* @__PURE__ */ import_react7.default.createElement(Router, null, /* @__PURE__ */ import_react7.default.createElement(Route, {
+      path: "/404"
+    }, /* @__PURE__ */ import_react7.default.createElement(Page, {
+      ...{
+        path: "/404",
+        ...resolvedRouter_default["/404"].props
+      }
+    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
+      path: "/component"
+    }, /* @__PURE__ */ import_react7.default.createElement(Component, {
+      ...{
+        path: "/component",
+        ...resolvedRouter_default["/component"].props
+      }
+    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
       path: "/bulbasaur"
-    }, /* @__PURE__ */ import_react5.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
       ...{
         path: "/bulbasaur",
-        ...resolvedPaths_default["/bulbasaur"].props
+        ...resolvedRouter_default["/bulbasaur"].props
       }
-    })), /* @__PURE__ */ import_react5.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
       path: "/charmander"
-    }, /* @__PURE__ */ import_react5.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
       ...{
         path: "/charmander",
-        ...resolvedPaths_default["/charmander"].props
+        ...resolvedRouter_default["/charmander"].props
       }
-    })), /* @__PURE__ */ import_react5.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
       path: "/pikachu"
-    }, /* @__PURE__ */ import_react5.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
       ...{
         path: "/pikachu",
-        ...resolvedPaths_default["/pikachu"].props
+        ...resolvedRouter_default["/pikachu"].props
       }
-    })), /* @__PURE__ */ import_react5.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
       path: "/squirtle"
-    }, /* @__PURE__ */ import_react5.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
       ...{
         path: "/squirtle",
-        ...resolvedPaths_default["/squirtle"].props
+        ...resolvedRouter_default["/squirtle"].props
       }
     })));
   }
-  import_react_dom.default.hydrate(/* @__PURE__ */ import_react5.default.createElement(App, null), document.getElementById("root"));
+  import_react_dom.default.hydrate(/* @__PURE__ */ import_react7.default.createElement(App, null), document.getElementById("root"));
 })();

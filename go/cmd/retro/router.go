@@ -78,9 +78,20 @@ func newRouter(config DirectoryConfiguration) ([]PageBasedRoute, error) {
 		if err != nil {
 			return err
 		}
-		// if info.IsDir() && info.Name() == "internal" {
-		// 	return filepath.SkipDir
-		// }
+		// Step over:
+		//
+		// - _page.js
+		// - page_.js
+		//
+		// - $page.js
+		// - page$.js
+		//
+		base := p.Base(path)
+		name := base[:len(base)-len(p.Ext(base))]
+		if strings.HasPrefix(name, "_") || strings.HasSuffix(name, "_") ||
+			strings.HasPrefix(name, "$") || strings.HasSuffix(name, "$") {
+			return nil
+		}
 		if ext := p.Ext(path); supported[ext] {
 			routes = append(routes, newPageBasedRoute(config, path))
 		}

@@ -23,6 +23,7 @@ var fs = __toModule(require("fs/promises"));
 var path = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
+const resolvedRouter = {};
 async function renderPage(runtime, meta) {
   let head = "<!-- <Head {...resolvedProps}> -->";
   if (typeof meta.exports.Head === "function") {
@@ -60,33 +61,43 @@ async function run(runtime) {
       const exports2 = require("../" + src_esbuild);
       let resolvedProps;
       if (typeof exports2.serverProps === "function") {
-        resolvedProps = await exports2.serverProps();
+        props = await exports2.serverProps();
       }
-      let resolvedPaths;
       if (typeof exports2.serverPaths === "function") {
-        const resolvedPathsArray = await exports2.serverPaths(resolvedProps);
-        resolvedPaths = resolvedPathsArray.reduce((accum, each) => {
+        const resolvedPathsArray = await exports2.serverPaths(props);
+        const routeInfos = resolvedPathsArray.reduce((accum, each) => {
           accum[each.path] = {
             route,
             props: each.props
           };
           return accum;
         }, {});
-        const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedPaths.json");
-        await fs.writeFile(resolvedPathsPath, JSON.stringify(resolvedPaths, null, "	") + "\n");
-        for (const [path_, routeMeta] of Object.entries(resolvedPaths)) {
-          const fs_path = path.join(runtime.dir_config.build_dir, path_) + ".html";
-          const meta2 = {fs_path, path: path_, props: {path: path_, ...routeMeta.props}, exports: exports2};
+        if (routeInfos !== void 0) {
+          for (const [path_2, routeInfo] of Object.entries(routeInfos)) {
+            const decoratedProps2 = {path: path_2, ...routeInfo.props};
+            resolvedRouter[path_2] = {route, props: decoratedProps2};
+          }
+        }
+        for (const [path_2, routeInfo] of Object.entries(routeInfos)) {
+          const fs_path = path.join(runtime.dir_config.build_dir, path_2) + ".html";
+          const decoratedProps2 = {path: path_2, ...routeInfo.props};
+          const meta2 = {fs_path, path: path_2, props: decoratedProps2, exports: exports2};
           await renderPage(runtime, meta2);
         }
         continue;
       }
-      const meta = {fs_path: dst, path: route.path, props: resolvedProps, exports: exports2};
+      const path_ = route.path;
+      const decoratedProps = {path: path_, ...resolvedProps};
+      resolvedRouter[path_] = {route, props: decoratedProps};
+      const meta = {fs_path: dst, path: route.path, props: decoratedProps, exports: exports2};
       await renderPage(runtime, meta);
     }
+    const resolvedRouterPath = path.join(runtime.dir_config.cache_dir, "resolvedRouter.json");
+    await fs.writeFile(resolvedRouterPath, JSON.stringify(resolvedRouter, null, "	") + "\n");
   } catch (err) {
     throw err;
     process.exit(1);
   }
 }
 run(require("../__cache__/runtime.json"));
+//# sourceMappingURL=render-pages.esbuild.js.map

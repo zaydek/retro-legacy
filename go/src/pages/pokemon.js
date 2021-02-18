@@ -1,6 +1,6 @@
 import Component from "./component"
+import Nav from "./Nav_"
 import React, { useEffect } from "react"
-import { Link } from "../../router"
 
 // serverProps resolves props on the server. Props are cached for retro
 // dev --cached and retro export --cached. Props are then forwarded as
@@ -38,18 +38,6 @@ export function Head({ type, name }) {
 			<meta type="title" value={`Hello, ${name}!`} />
 			<meta type="description" value={`This is a page about ${name} -- a ${type} type Pokémon!`} />
 		</>
-	)
-}
-
-function Nav() {
-	return (
-		// prettier-ignore
-		<ul>
-			<li><Link path="/bulbasaur">Open bulbasaur</Link></li>
-			<li><Link path="/charmander">Open charmander</Link></li>
-			<li><Link path="/pikachu">Open pikachu</Link></li>
-			<li><Link path="/squirtle">Open squirtle</Link></li>
-		</ul>
 	)
 }
 
