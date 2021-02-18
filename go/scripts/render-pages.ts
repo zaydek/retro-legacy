@@ -1,9 +1,9 @@
+import * as esbuild from "esbuild"
+import * as fs from "fs/promises"
+import * as path from "path"
+import * as React from "react"
+import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
-import esbuild from "esbuild"
-import fs from "fs/promises"
-import path from "path"
-import React from "react"
-import ReactDOMServer from "react-dom/server"
 
 // prettier-ignore
 interface Meta {
@@ -43,8 +43,11 @@ async function run(runtime: types.Runtime) {
 	try {
 		// TODO: Upgrade to Promise.all (maybe add --concurrent?).
 		for (const route of runtime.page_based_router) {
-			let srcPath = route.src_path
-			let dst = path.join(runtime.dir_config.cache_dir, srcPath.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
+			const src = route.src_path
+			const src_esbuild = path.join(runtime.dir_config.cache_dir, src.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
+			const dst = src
+				.replace(runtime.dir_config.pages_dir, runtime.dir_config.build_dir)
+				.replace(/\.(jsx?|tsx?)$/, ".html")
 
 			await service.build({
 				bundle: true,
@@ -52,7 +55,7 @@ async function run(runtime: types.Runtime) {
 					__DEV__: "true",
 					"process.env.NODE_ENV": JSON.stringify("development"),
 				},
-				entryPoints: [srcPath],
+				entryPoints: [src],
 				// NOTE: Use "external" to prevent a React error: You might have
 				// mismatching versions of React and the renderer (such as React DOM).
 				external: ["react", "react-dom"],
@@ -61,23 +64,23 @@ async function run(runtime: types.Runtime) {
 					".js": "jsx",
 				},
 				logLevel: "silent", // TODO
-				outfile: dst,
+				outfile: src_esbuild,
 				// plugins: [...configs.retro.plugins],
 			})
 			// TODO: Handle warnings and hints.
 
-			const mod = require("../" + dst)
+			const exports = require("../" + src_esbuild)
 
 			// TODO: Add cache check here.
 
 			let resolvedProps: types.ResolvedProps
-			if (typeof mod.resolveServerProps === "function") {
-				resolvedProps = await mod.resolveServerProps()
+			if (typeof exports.serverProps === "function") {
+				resolvedProps = await exports.serverProps()
 			}
 
 			let resolvedPaths: types.ResolvedPaths
-			if (typeof mod.resolveServerPaths === "function") {
-				const resolvedPathsArray: types.ResolvedPathsArray = await mod.resolveServerPaths(resolvedProps)
+			if (typeof exports.serverPaths === "function") {
+				const resolvedPathsArray: types.ResolvedPathsArray = await exports.serverPaths(resolvedProps)
 				resolvedPaths = resolvedPathsArray.reduce((accum, each) => {
 					accum[each.path] = {
 						route,
@@ -90,15 +93,15 @@ async function run(runtime: types.Runtime) {
 				const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedPaths.json")
 				await fs.writeFile(resolvedPathsPath, JSON.stringify(resolvedPaths, null, "\t") + "\n")
 
-				for (const [path_, props] of Object.entries(resolvedPaths)) {
-					const fs_path = path.join(...[...dst.split(path.sep).slice(0, -1), path_ + ".html"])
-					const meta: Meta = { fs_path, path: path_, props, exports }
+				for (const [path_, routeMeta] of Object.entries(resolvedPaths)) {
+					const fs_path = path.join(runtime.dir_config.build_dir, path_) + ".html"
+					const meta: Meta = { fs_path, path: path_, props: { path: path_, ...routeMeta.props }, exports }
 					await renderPage(runtime, meta)
 				}
 				continue
 			}
 
-			const meta: Meta = { fs_path: route.dst_path, path: route.path, exports }
+			const meta: Meta = { fs_path: dst, path: route.path, props: resolvedProps, exports }
 			await renderPage(runtime, meta)
 		}
 	} catch (err) {

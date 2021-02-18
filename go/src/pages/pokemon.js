@@ -1,5 +1,5 @@
+// import Component from "../../Component"
 import React, { useEffect } from "react"
-import Component from "./Component"
 import { Link } from "../../router"
 
 // serverProps resolves props on the server. Props are cached for retro
@@ -63,7 +63,7 @@ export default function Page({ name, ...props }) {
 			<Nav />
 			<h1>Hello, {name}!</h1>
 			<pre>{JSON.stringify(props, null, 2)}</pre>
-			<Component />
+			{/* <Component /> */}
 		</div>
 	)
 }

@@ -26,7 +26,7 @@ async function run(runtime) {
 
 		const data = `import React from "react"
 import ReactDOM from "react-dom"
-import { Route, Router } from "../resolvedPaths"
+import { Route, Router } from "../router"
 
 // Shared components
 ${Object.entries(sharedPaths)
