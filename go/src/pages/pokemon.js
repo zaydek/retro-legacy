@@ -1,4 +1,4 @@
-// import Component from "../../Component"
+import Component from "./component"
 import React, { useEffect } from "react"
 import { Link } from "../../router"
 
@@ -63,7 +63,7 @@ export default function Page({ name, ...props }) {
 			<Nav />
 			<h1>Hello, {name}!</h1>
 			<pre>{JSON.stringify(props, null, 2)}</pre>
-			{/* <Component /> */}
+			<Component />
 		</div>
 	)
 }

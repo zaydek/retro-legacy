@@ -1,17 +1,23 @@
 import React, { useEffect, useState, useMemo } from "react"
+import { createStore, useStore, useStoreSetState } from "../store"
 
 interface LinkProps {
 	path: string
 	children?: React.ReactNode
 }
 
+const pathStore = createStore(getPath())
+
 export function Link({ path, children, ...props }: LinkProps) {
+	const setPath = useStoreSetState(pathStore)
+
 	function handleClick(e: React.MouseEvent) {
 		e.preventDefault()
-		window.history.replaceState({}, "", path)
+		setPath(path)
+		window.scrollTo(0, 0) // TODO
 	}
 
-	const scoped = typeof path === "string" && !/^https?:\/\//.test(path)
+	const scoped = !/^https?:\/\//.test(path)
 	return (
 		// prettier-ignore
 		<a href={path} target={scoped ? undefined : "_blank"} rel={scoped ? undefined : "noreferrer noopener"}
@@ -39,13 +45,18 @@ function convertPath(pathname: string): string {
 	return path
 }
 
+function getPath() {
+	const pathname = typeof window === "undefined" ? "/" : window.location.pathname
+	return convertPath(pathname)
+}
+
 // TODO: Add support for key-based rerenders.
 export function Router({ children }) {
-	const [path, setPath] = useState(() => convertPath(typeof window === "undefined" ? "/" : window.location.pathname))
+	const [path, setPath] = useStore(pathStore)
 
 	useEffect(() => {
 		function handlePopState(_: PopStateEvent) {
-			const path = convertPath(window.location.pathname)
+			const path = getPath()
 			setPath(path)
 			window.history.pushState({}, "", path)
 			window.scrollTo(0, 0) // TODO
