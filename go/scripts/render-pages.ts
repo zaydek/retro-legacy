@@ -1,19 +1,28 @@
-const esbuild = require("esbuild")
-const fs = require("fs/promises")
-const path = require("path")
-const React = require("react")
-const ReactDOMServer = require("react-dom/server")
+import * as types from "./types"
+import esbuild from "esbuild"
+import fs from "fs/promises"
+import path from "path"
+import React from "react"
+import ReactDOMServer from "react-dom/server"
 
-async function renderPage(runtime, mod, { props, dst }) {
+// prettier-ignore
+interface Meta {
+	fs_path: string // Filesystem path
+	path:    string
+	props?:  types.ResolvedProps
+	exports: types.StaticPage | types.DynamicPage
+}
+
+async function renderPage(runtime: types.Runtime, meta: Meta) {
 	let head = "<!-- <Head {...resolvedProps}> -->"
-	if (typeof mod.Head === "function") {
+	if (typeof meta.exports.Head === "function") {
 		// TODO: Warn on non-functions.
-		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, props))
+		head = ReactDOMServer.renderToStaticMarkup(React.createElement(meta.exports.Head, meta.props))
 	}
 
 	let page = "<!-- <Head {...resolvedProps}> -->"
 	// TODO: Warn on non-functions.
-	page = ReactDOMServer.renderToString(React.createElement(mod.default, props))
+	page = ReactDOMServer.renderToString(React.createElement(meta.exports.default, meta.props))
 
 	// prettier-ignore
 	const html = runtime.base_page
@@ -25,25 +34,25 @@ async function renderPage(runtime, mod, { props, dst }) {
 		<div id="root">${page}</div>
 		<script src="/app.js"></script>`)
 
-	await fs.writeFile(dst, html)
+	await fs.writeFile(meta.fs_path, html)
 }
 
-async function run(runtime) {
+async function run(runtime: types.Runtime) {
 	const service = await esbuild.startService()
 
 	try {
 		// TODO: Upgrade to Promise.all (maybe add --concurrent?).
 		for (const route of runtime.page_based_router) {
-			let src = route.src_path
-			let dst = path.join(runtime.dir_config.cache_dir, src.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
+			let srcPath = route.src_path
+			let dst = path.join(runtime.dir_config.cache_dir, srcPath.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
 
 			await service.build({
 				bundle: true,
 				define: {
-					__DEV__: true,
+					__DEV__: "true",
 					"process.env.NODE_ENV": JSON.stringify("development"),
 				},
-				entryPoints: [src],
+				entryPoints: [srcPath],
 				// NOTE: Use "external" to prevent a React error: You might have
 				// mismatching versions of React and the renderer (such as React DOM).
 				external: ["react", "react-dom"],
@@ -61,14 +70,14 @@ async function run(runtime) {
 
 			// TODO: Add cache check here.
 
-			let resolvedProps
+			let resolvedProps: types.ResolvedProps
 			if (typeof mod.resolveServerProps === "function") {
 				resolvedProps = await mod.resolveServerProps()
 			}
 
-			let resolvedPaths
+			let resolvedPaths: types.ResolvedPaths
 			if (typeof mod.resolveServerPaths === "function") {
-				const resolvedPathsArray = await mod.resolveServerPaths(resolvedProps)
+				const resolvedPathsArray: types.ResolvedPathsArray = await mod.resolveServerPaths(resolvedProps)
 				resolvedPaths = resolvedPathsArray.reduce((accum, each) => {
 					accum[each.path] = {
 						route,
@@ -82,13 +91,15 @@ async function run(runtime) {
 				await fs.writeFile(resolvedPathsPath, JSON.stringify(resolvedPaths, null, "\t") + "\n")
 
 				for (const [path_, props] of Object.entries(resolvedPaths)) {
-					dst = path.join(...[...dst.split(path.sep).slice(0, -1), path_ + ".html"])
-					await renderPage(runtime, mod, { props: { path: path_, ...props }, dst })
+					const fs_path = path.join(...[...dst.split(path.sep).slice(0, -1), path_ + ".html"])
+					const meta: Meta = { fs_path, path: path_, props, exports }
+					await renderPage(runtime, meta)
 				}
 				continue
 			}
 
-			await renderPage(runtime, mod, { dst: route.dst_path })
+			const meta: Meta = { fs_path: route.dst_path, path: route.path, exports }
+			await renderPage(runtime, meta)
 		}
 	} catch (err) {
 		// console.error(err.message)
