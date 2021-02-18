@@ -2,8 +2,8 @@ import Component from "./component"
 import Nav from "./Nav_"
 import React, { useEffect } from "react"
 
-// serverProps resolves props on the server. Props are cached for retro
-// dev --cached and retro export --cached. Props are then forwarded as
+// serverProps resolves props on the server. Props are cached for
+// retro dev --cached and retro export --cached. Props are then forwarded as
 // serverPaths(serverProps), <Head {...{ path, ...props }}>, and
 // <Page {...{ path, ...props }}>.
 export async function serverProps() {
