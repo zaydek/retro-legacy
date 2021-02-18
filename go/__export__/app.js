@@ -2635,11 +2635,11 @@
     if (true) {
       (function() {
         "use strict";
-        var React9 = require_react();
+        var React10 = require_react();
         var _assign = require_object_assign();
         var Scheduler = require_scheduler();
         var tracing = require_tracing();
-        var ReactSharedInternals = React9.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React10.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -2671,7 +2671,7 @@
             Function.prototype.apply.call(console[level], console, argsWithFormat);
           }
         }
-        if (!React9) {
+        if (!React10) {
           {
             throw Error("ReactDOM was loaded before React. Make sure you load the React package before loading ReactDOM.");
           }
@@ -3887,7 +3887,7 @@
         var didWarnInvalidChild = false;
         function flattenChildren(children) {
           var content = "";
-          React9.Children.forEach(children, function(child) {
+          React10.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -3898,7 +3898,7 @@
         function validateProps(element, props) {
           {
             if (typeof props.children === "object" && props.children !== null) {
-              React9.Children.forEach(props.children, function(child) {
+              React10.Children.forEach(props.children, function(child) {
                 if (child == null) {
                   return;
                 }
@@ -11104,7 +11104,7 @@
         }
         var fakeInternalInstance = {};
         var isArray = Array.isArray;
-        var emptyRefsObject = new React9.Component().refs;
+        var emptyRefsObject = new React10.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -20625,7 +20625,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   });
 
   // __cache__/app.js
-  var import_react9 = __toModule(require_react());
+  var import_react10 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
   // router/index.tsx
@@ -20863,6 +20863,12 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     return /* @__PURE__ */ import_react8.default.createElement("div", null, /* @__PURE__ */ import_react8.default.createElement(Nav, null), /* @__PURE__ */ import_react8.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react8.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react8.default.createElement(Component, null));
   }
 
+  // src/pages/yubin.tsx
+  var import_react9 = __toModule(require_react());
+  function Yubin() {
+    return /* @__PURE__ */ import_react9.default.createElement("h1", null, "Hello Yubin!");
+  }
+
   // __cache__/resolvedRouter.json
   var _404 = {
     route: {
@@ -20968,6 +20974,17 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
       type: "\u{1F4A7}"
     }
   };
+  var _yubin = {
+    route: {
+      src_path: "src/pages/yubin.tsx",
+      dst_path: "__export__/yubin.html",
+      path: "/yubin",
+      component: "PageYubin"
+    },
+    props: {
+      path: "/yubin"
+    }
+  };
   var resolvedRouter_default = {
     "/404": _404,
     "/component": _component,
@@ -20976,68 +20993,76 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     "/bulbasaur": _bulbasaur,
     "/charmander": _charmander,
     "/pikachu": _pikachu,
-    "/squirtle": _squirtle
+    "/squirtle": _squirtle,
+    "/yubin": _yubin
   };
 
   // __cache__/app.js
   function App() {
-    return /* @__PURE__ */ import_react9.default.createElement(Router, null, /* @__PURE__ */ import_react9.default.createElement(Route, {
+    return /* @__PURE__ */ import_react10.default.createElement(Router, null, /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/404"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page, {
       ...{
         path: "/404",
         ...resolvedRouter_default["/404"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/component"
-    }, /* @__PURE__ */ import_react9.default.createElement(Component, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Component, {
       ...{
         path: "/component",
         ...resolvedRouter_default["/component"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page2, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page2, {
       ...{
         path: "/",
         ...resolvedRouter_default["/"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/nested/"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page3, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page3, {
       ...{
         path: "/nested/",
         ...resolvedRouter_default["/nested/"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/bulbasaur"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page4, {
       ...{
         path: "/bulbasaur",
         ...resolvedRouter_default["/bulbasaur"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/charmander"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page4, {
       ...{
         path: "/charmander",
         ...resolvedRouter_default["/charmander"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/pikachu"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page4, {
       ...{
         path: "/pikachu",
         ...resolvedRouter_default["/pikachu"].props
       }
-    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
       path: "/squirtle"
-    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
+    }, /* @__PURE__ */ import_react10.default.createElement(Page4, {
       ...{
         path: "/squirtle",
         ...resolvedRouter_default["/squirtle"].props
       }
+    })), /* @__PURE__ */ import_react10.default.createElement(Route, {
+      path: "/yubin"
+    }, /* @__PURE__ */ import_react10.default.createElement(Yubin, {
+      ...{
+        path: "/yubin",
+        ...resolvedRouter_default["/yubin"].props
+      }
     })));
   }
-  import_react_dom.default.hydrate(/* @__PURE__ */ import_react9.default.createElement(App, null), document.getElementById("root"));
+  import_react_dom.default.hydrate(/* @__PURE__ */ import_react10.default.createElement(App, null), document.getElementById("root"));
 })();
