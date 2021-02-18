@@ -1,58 +1,92 @@
-export type ResolvedProps = any
+// Path describes the current path.
+type Path = `/${string}`
 
+// Props describes props ambiguously.
+export type Props = any
+
+// ServerProps describes props ambiguously and the current path.
+export type ServerProps = Props & { path: Path }
+
+// ServerRouter describes the server-resolved router.
+//
 // prettier-ignore
-export type ResolvedPathsArray = {
-	path:   string
-	props?: ResolvedProps
-}[]
-
-export interface ResolvedPaths {
-	[key: string]: ResolvedProps
-}
-
-export interface RouteInfo {
-	route: PageBasedRoute
-	props: ResolvedProps
+export interface ServerRouter {
+	// The static or server-resolved dynamic path. Static paths are inferred from
+	// filenames and dynamic paths are inferred by [dynamic] filenames and
+	// resolving serverPaths.
+	[key: string]: {
+		filesystemRoute: FilesystemRoute
+		serverProps:     ServerProps
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// PageModule ambiguously describes a page module.
+//
 // prettier-ignore
-export interface StaticPage {
-	Head?:    (resolvedProps: ResolvedProps) => JSX.Element
-	default?: (resolvedProps: { path: string } & ResolvedProps) => JSX.Element
+interface PageModule {
+	Head?:    (resolvedProps: ServerProps) => JSX.Element
+	default?: (resolvedProps: { path: string } & ServerProps) => JSX.Element
 }
 
-export interface DynamicPage extends StaticPage {
-	serverProps: ResolvedProps
-	serverPaths: ResolvedPaths
+// StaticPageModule describes a static page module.
+export interface StaticPageModule extends PageModule {
+	serverProps: Promise<ServerProps>
+}
+
+export type DescriptiveServerPaths = { path: Path; props?: Props }[]
+
+// DynamicPageModule describes a dynamic page module.
+export interface DynamicPageModule extends PageModule {
+	serverPaths: Promise<DescriptiveServerPaths>
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// DevCommand describes 'retro dev ...'.
+//
 // prettier-ignore
-interface PageBasedRoute {
-	src_path:  string // src/pages/path/to/component.js
-	dst_path:  string // path/to/component.html
-	path:      string // /path/to/component
-	component: string // PagePathToComponent
+interface DevCommand {
+	cached:     boolean // retro dev --cached
+	sourcemap:  boolean // retro dev --sourcemap
+	port:       number  // retro dev --port
 }
 
+// ExportCommand describes 'retro export ...'.
+//
+// prettier-ignore
+interface ExportCommand {
+	cached:     boolean // retro export --cached
+	sourcemap:  boolean // retro export --sourcemap
+}
+
+// DirConfiguration describes directory configuration.
+//
+// prettier-ignore
+interface DirectoryConfiguration {
+	publicDir:  string  // e.g. "public"
+	pagesDir:   string  // e.g. "src/pages"
+	cacheDir:   string  // e.g. "__cache__"
+	exportDir:  string  // e.g. "__export__"
+}
+
+// FilesystemRoute describes a page-based route.
+//
+// prettier-ignore
+interface FilesystemRoute {
+	inputPath:  string  // e.g. "src/pages/index.js"
+	outputPath: string  // e.g. "index.html"
+	path:       Path    // e.g. "/"
+	component:  string  // e.g. "PageIndex"
+}
+
+// Runtime describes the runtime emitted from the Go backend.
+//
 // prettier-ignore
 export interface Runtime {
-	version: string
-	command: {
-		// type: string     // TODO
-		cached: boolean     // --cached
-		source_map: boolean // --source-map
-		port: number        // --port
-	}
-	dir_config: {
-		asset_dir: string
-		pages_dir: string
-		cache_dir: string
-		build_dir: string
-	}
-	base_page: string
-	page_based_router: PageBasedRoute[]
+	command:                DevCommand | ExportCommand
+	directoryConfiguration: DirectoryConfiguration
+	filesystemRouter:       FilesystemRoute[]
+	baseHTML:               string
 }

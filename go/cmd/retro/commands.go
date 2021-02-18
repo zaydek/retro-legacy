@@ -28,7 +28,7 @@ func serializeRuntime(runtime Runtime) error {
 		return err
 	}
 	bstr = append(bstr, '\n') // EOF
-	dst := p.Join(runtime.DirConfiguration.CacheDirectory, "runtime.json")
+	dst := p.Join(runtime.DirectoryConfiguration.CacheDir, "runtime.json")
 	if err := ioutil.WriteFile(dst, bstr, perm.File); err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (r Runtime) Dev() {
 }
 
 func (r Runtime) Export() {
-	if err := copyAssetDirToBuildDir(r.DirConfiguration); err != nil {
+	if err := copyAssetDirToBuildDir(r.DirectoryConfiguration); err != nil {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
@@ -52,7 +52,7 @@ func (r Runtime) Export() {
 }
 
 func (r Runtime) Serve() {
-	if _, err := os.Stat(r.DirConfiguration.BuildDirectory); os.IsNotExist(err) {
+	if _, err := os.Stat(r.DirectoryConfiguration.ExportDir); os.IsNotExist(err) {
 		loggers.ErrorAndEnd("It looks like you’re trying to run retro serve but you haven’t run retro export yet. " +
 			"Try retro export && retro serve.")
 	}
@@ -62,7 +62,7 @@ func (r Runtime) Serve() {
 		loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
 	}()
 
-	fs := http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory))
+	fs := http.FileServer(http.Dir(r.DirectoryConfiguration.ExportDir))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if p.Ext(r.URL.Path) == "" {
 			if r.URL.Path != "/" { // TODO

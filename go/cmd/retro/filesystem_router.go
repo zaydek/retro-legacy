@@ -53,28 +53,28 @@ func componentSyntax(basename string) string {
 	return str
 }
 
-func newPageBasedRoute(config DirectoryConfiguration, path string) PageBasedRoute {
+func newPageBasedRoute(config DirectoryConfiguration, path string) FilesystemRoute {
 	var src string
 	var dst string
 
-	basename := path[len(config.PagesDirectory+"/"):]
+	basename := path[len(config.PagesDir+"/"):]
 
-	src = p.Join(config.PagesDirectory, basename)
-	dst = p.Join(config.BuildDirectory, basename)
+	src = p.Join(config.PagesDir, basename)
+	dst = p.Join(config.ExportDir, basename)
 	dst = dst[:len(dst)-len(p.Ext(dst))] + ".html"
 
-	route := PageBasedRoute{
-		SrcPath:   src,
-		DstPath:   dst,
-		Path:      pathSyntax(basename),
-		Component: componentSyntax(basename),
+	route := FilesystemRoute{
+		InputPath:  src,
+		OutputPath: dst,
+		Path:       pathSyntax(basename),
+		Component:  componentSyntax(basename),
 	}
 	return route
 }
 
-func newRouter(config DirectoryConfiguration) ([]PageBasedRoute, error) {
-	var routes []PageBasedRoute
-	if err := filepath.Walk(config.PagesDirectory, func(path string, info os.FileInfo, err error) error {
+func newFilesystemRoutere(config DirectoryConfiguration) ([]FilesystemRoute, error) {
+	var routes []FilesystemRoute
+	if err := filepath.Walk(config.PagesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

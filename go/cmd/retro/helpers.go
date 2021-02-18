@@ -15,8 +15,8 @@ func must(err error) {
 	loggers.ErrorAndEnd(err)
 }
 
-// getCmd gets the current command.
-func (r Runtime) getCmd() Cmd {
+// getCmd gets the current command type.
+func (r Runtime) getCmd() CmdType {
 	switch r.Command.(type) {
 	case cli.DevCommand:
 		return CmdDev

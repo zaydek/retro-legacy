@@ -5,126 +5,160 @@ import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
 
+// RenderPayload describes a render payload (page metadata).
+//
 // prettier-ignore
-interface Meta {
-	fs_path: string // Filesystem path
-	path:    string
-	props?:  types.ResolvedProps
-	exports: types.StaticPage | types.DynamicPage
+interface RenderPayload {
+	outputPath:   string
+	path:         string
+	module:       types.StaticPageModule | types.DynamicPageModule
+	serverProps?: types.ServerProps
 }
 
-const resolvedRouter: types.ResolvedPaths = {}
+const cachedServerRouter: types.ServerRouter = {}
 
-async function renderPage(runtime: types.Runtime, meta: Meta) {
-	let head = "<!-- <Head {...resolvedProps}> -->"
-	if (typeof meta.exports.Head === "function") {
-		// TODO: Warn on non-functions.
-		head = ReactDOMServer.renderToStaticMarkup(React.createElement(meta.exports.Head, meta.props))
+// "/" -> "/index.html"
+// "/nested/" -> "/nested/index.html"
+function pathToHTML(path: string): string {
+	if (!path.endsWith("/")) return path + ".html"
+	return path + "index.html"
+}
+
+// renderToDisk renders a render payload to disk.
+async function renderToDisk(runtime: types.Runtime, render: RenderPayload): void {
+	let head = "<!-- <Head {...props}> -->"
+	if (typeof render.module.Head === "function") {
+		head = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.serverProps))
 	}
 
-	let page = "<!-- <Head {...resolvedProps}> -->"
-	// TODO: Warn on non-functions.
-	page = ReactDOMServer.renderToString(React.createElement(meta.exports.default, meta.props))
+	let page = "<!-- <Page {...props}> -->"
+	if (typeof render.module.default === "function") {
+		page = ReactDOMServer.renderToString(React.createElement(render.module.default, render.serverProps))
+	}
 
 	// prettier-ignore
-	const html = runtime.base_page
-		.replace("%head%", head
-			.replace(/></g, ">\n\t\t<")
-			.replace(/\/>/g, " />"),
-		)
-		.replace("%page%", `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root">${page}</div>
-		<script src="/app.js"></script>`)
+	head = head
+		.replace(/></g, ">\n\t\t<")
+		.replace(/\/>/g, " />")
 
-	await fs.mkdir(path.dirname(meta.fs_path), { recursive: true })
-	await fs.writeFile(meta.fs_path, html)
+	page = `<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root">${page}</div>
+		<script src="/app.js"></script>`
+
+	// prettier-ignore
+	const html = runtime.baseHTML
+		.replace("%head%", head)
+		.replace("%page%", page)
+
+	await fs.mkdir(path.dirname(render.outputPath), { recursive: true })
+	await fs.writeFile(render.outputPath, html)
 }
 
-async function run(runtime: types.Runtime) {
+async function run(runtime: types.Runtime): Promise<void> {
 	const service = await esbuild.startService()
 
-	try {
-		// TODO: Upgrade to Promise.all (maybe add --concurrent?).
-		for (const route of runtime.page_based_router) {
-			const src = route.src_path
-			const src_esbuild = path.join(runtime.dir_config.cache_dir, src.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"))
-			const dst = src
-				.replace(runtime.dir_config.pages_dir, runtime.dir_config.build_dir)
-				.replace(/\.(jsx?|tsx?)$/, ".html")
+	// TODO: Upgrade to Promise.all (add --concurrent?).
+	for (const filesystemRoute of runtime.filesystemRouter) {
+		// Generate paths for esbuild:
+		const entryPoints = [filesystemRoute.inputPath]
+		const outfile = path.join(
+			runtime.directoryConfiguration.cacheDir,
+			entryPoints[0]!.replace(/\.(jsx?|tsx?)$/, ".esbuild.$1"),
+		)
 
-			await service.build({
-				bundle: true,
-				define: {
-					__DEV__: "true",
-					"process.env.NODE_ENV": JSON.stringify("development"),
-				},
-				entryPoints: [src],
-				// NOTE: Use "external" to prevent a React error: You might have
-				// mismatching versions of React and the renderer (such as React DOM).
-				external: ["react", "react-dom"],
-				format: "cjs",
-				loader: {
-					".js": "jsx",
-				},
-				logLevel: "silent", // TODO
-				outfile: src_esbuild,
-				// plugins: [...configs.retro.plugins],
-			})
-			// TODO: Handle warnings and hints.
+		await service.build({
+			bundle: true,
+			define: {
+				__DEV__: "true",
+				"process.env.NODE_ENV": JSON.stringify("development"),
+			},
+			entryPoints,
+			// NOTE: Use "external" to prevent a React error: You might have
+			// mismatching versions of React and the renderer (such as React DOM).
+			external: ["react", "react-dom"],
+			format: "cjs",
+			loader: {
+				".js": "jsx",
+			},
+			logLevel: "silent", // TODO
+			outfile,
+			// plugins: [...configs.retro.plugins], // TODO
+		})
+		// TODO: Handle warnings and hints.
 
-			const exports = require("../" + src_esbuild)
+		const mod = require("../" + outfile)
 
-			// TODO: Add cache check here.
+		// TODO: Add cache check here.
+		// TODO: Add cache serverProps here.
 
-			let resolvedProps: types.ResolvedProps
-			if (typeof exports.serverProps === "function") {
-				resolvedProps = await exports.serverProps()
+		let serverProps: types.ServerProps
+		if (typeof exports.serverProps === "function") {
+			serverProps = await exports.serverProps()
+			serverProps = {
+				path: filesystemRoute.path, // Add path
+				...serverProps,
 			}
-
-			if (typeof exports.serverPaths === "function") {
-				const resolvedPathsArray: types.ResolvedPathsArray = await exports.serverPaths(resolvedProps)
-				const routeInfos = resolvedPathsArray.reduce<types.ResolvedPaths>((accum, each) => {
-					accum[each.path] = {
-						route,
-						props: each.props,
-					}
-					return accum
-				}, {})
-
-				if (routeInfos !== undefined) {
-					for (const [path_, routeInfo] of Object.entries(routeInfos)) {
-						// TODO: Warn here for repeat paths.
-						const decoratedProps = { path: path_, ...routeInfo.props }
-						resolvedRouter[path_] = { route, props: decoratedProps }
-					}
-				}
-
-				for (const [path_, routeInfo] of Object.entries(routeInfos)) {
-					const fs_path = path.join(runtime.dir_config.build_dir, path_) + ".html"
-					const decoratedProps = { path: path_, ...routeInfo.props }
-					const meta: Meta = { fs_path, path: path_, props: decoratedProps, exports }
-					await renderPage(runtime, meta)
-				}
-				continue
-			}
-
-			// TODO: Warn here for repeat paths.
-			const path_ = route.path
-			const decoratedProps = { path: path_, ...resolvedProps }
-			resolvedRouter[path_] = { route, props: decoratedProps }
-
-			const meta: Meta = { fs_path: dst, path: route.path, props: decoratedProps, exports }
-			await renderPage(runtime, meta)
 		}
 
-		// Cache resolvedRouter for --cached:
-		const resolvedRouterPath = path.join(runtime.dir_config.cache_dir, "resolvedRouter.json")
-		await fs.writeFile(resolvedRouterPath, JSON.stringify(resolvedRouter, null, "\t") + "\n")
-	} catch (err) {
-		// console.error(err.message)
-		throw err
-		process.exit(1)
+		if (typeof exports.serverPaths === "function") {
+			const descriptServerPaths: types.DescriptiveServerPaths = await exports.serverPaths(serverProps)
+			const serverRouter = descriptServerPaths.reduce<types.ServerRouter>((accum, serverProps) => {
+				accum[filesystemRoute.path] = {
+					filesystemRoute,
+					serverProps,
+				}
+				return accum
+			}, {})
+
+			// if (serverRouter !== undefined) {
+			for (const [path_, meta] of Object.entries(serverRouter)) {
+				// TODO: Warn here for repeat paths.
+				cachedServerRouter[path_] = meta
+			}
+			// }
+
+			for (const [path_, meta] of Object.entries(serverRouter)) {
+				const render: RenderPayload = {
+					outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
+					path: path_,
+					module: mod,
+					serverProps: meta.serverProps,
+				}
+				// TODO: What the hell?
+				await renderToDisk(runtime, render)
+			}
+			continue
+		}
+
+		// TODO: Warn here for repeat paths.
+		const path_ = filesystemRoute.path
+		const render: RenderPayload = {
+			outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
+			path: path_,
+			module: mod,
+			serverProps: serverProps,
+		}
+		// TODO: What the hell?
+		await renderToDisk(runtime, render)
 	}
+
+	// Cache cachedServerRouter for --cached:
+	const cachedServerRouterPath = path.join(runtime.directoryConfiguration.cacheDir, "serverRouter.json")
+	const data = JSON.stringify(cachedServerRouter, null, "\t") + "\n" // EOF
+	await fs.writeFile(cachedServerRouterPath, data)
 }
 
-run(require("../__cache__/runtime.json"))
+;(async () => {
+	try {
+		await run(require("../__cache__/runtime.json"))
+	} catch (error) {
+		console.error(error.stack)
+		// console.error({
+		// 	stack: error.stack,
+		// 	errno: error.errno,
+		// 	code: error.code,
+		// 	syscall: error.syscall,
+		// 	path: error.path,
+		// })
+	}
+})()

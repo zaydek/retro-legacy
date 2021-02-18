@@ -12,7 +12,7 @@ import (
 )
 
 func readBaseHTML(config DirectoryConfiguration) (string, error) {
-	bstr, err := ioutil.ReadFile(p.Join(config.AssetDirectory, "index.html"))
+	bstr, err := ioutil.ReadFile(p.Join(config.PublicDir, "index.html"))
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +44,7 @@ func statOrCreateDir(dir string) error {
 
 // runServerGuards runs server guards on the configuration.
 func runServerGuards(config DirectoryConfiguration) error {
-	dirs := []string{config.AssetDirectory, config.PagesDirectory, config.CacheDirectory, config.BuildDirectory}
+	dirs := []string{config.PublicDir, config.PagesDir, config.CacheDir, config.ExportDir}
 	for _, each := range dirs {
 		if err := statOrCreateDir(each); err != nil {
 			return err
@@ -58,32 +58,28 @@ func newRuntime() (Runtime, error) {
 	var err error
 
 	runtime := Runtime{
-		Version: os.Getenv("RETRO_VERSION"),
 		Command: cli.ParseCLIArguments(),
-		DirConfiguration: DirectoryConfiguration{
-			AssetDirectory: "public",
-			PagesDirectory: "src/pages",
-			CacheDirectory: "__cache__",
-			BuildDirectory: "__export__",
+		DirectoryConfiguration: DirectoryConfiguration{
+			PublicDir: "public", PagesDir: "src/pages", CacheDir: "__cache__", ExportDir: "__export__",
 		},
 	}
 
 	// Do not run server guards on serve:
 	cmd := runtime.getCmd()
 	if cmd == CmdDev || cmd == CmdExport {
-		if err := runServerGuards(runtime.DirConfiguration); err != nil {
+		if err := runServerGuards(runtime.DirectoryConfiguration); err != nil {
 			return Runtime{}, err
 		}
-	}
-
-	if runtime.BasePage, err = readBaseHTML(runtime.DirConfiguration); err != nil {
-		return Runtime{}, err
 	}
 
 	if cmd == CmdDev || cmd == CmdExport {
-		if runtime.PageBasedRouter, err = newRouter(runtime.DirConfiguration); err != nil {
+		if runtime.FilesystemRouter, err = newFilesystemRoutere(runtime.DirectoryConfiguration); err != nil {
 			return Runtime{}, err
 		}
+	}
+
+	if runtime.BaseHTML, err = readBaseHTML(runtime.DirectoryConfiguration); err != nil {
+		return Runtime{}, err
 	}
 	return runtime, nil
 }

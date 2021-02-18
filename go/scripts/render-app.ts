@@ -1,6 +1,7 @@
-const esbuild = require("esbuild")
-const fs = require("fs/promises")
-const path = require("path")
+import * as esbuild from "esbuild"
+import * as fs from "fs/promises"
+import * as path from "path"
+import * as types from "./types"
 
 // // prettier-ignore
 // function prettyJSON(data) {
@@ -10,7 +11,7 @@ const path = require("path")
 // 		.replace(/"(:|,)"/g, '"$1 "')
 // }
 
-async function run(runtime) {
+async function run(runtime: types.Runtime) {
 	try {
 		const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedRouter.json")
 		const resolvedRouter = require("../" + resolvedPathsPath)

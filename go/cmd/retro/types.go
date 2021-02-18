@@ -1,33 +1,32 @@
 package retro
 
-type Cmd uint8
+type CmdType uint8
 
 const (
-	CmdDev Cmd = iota
+	CmdDev CmdType = iota
 	CmdExport
 	CmdServe
 )
 
 type DirectoryConfiguration struct {
-	AssetDirectory string `json:"asset_dir"`
-	PagesDirectory string `json:"pages_dir"`
-	CacheDirectory string `json:"cache_dir"`
-	BuildDirectory string `json:"build_dir"`
+	PublicDir string `json:"publicDir"` // e.g. "public"
+	PagesDir  string `json:"pagesDir"`  // e.g. "src/pages"
+	CacheDir  string `json:"cacheDir"`  // e.g. "__cache__"
+	ExportDir string `json:"exportDir"` // e.g. "__export__"
 }
 
-// TODO: Expand PageBasedRoute to support <Layout> components and CSS assets.
+// TODO: Expand FilesystemRoute to support <Layout> components and CSS assets.
 // TODO: Add support for dynamic routes.
-type PageBasedRoute struct {
-	SrcPath   string `json:"src_path"`  // pages/path/to/component.js
-	DstPath   string `json:"dst_path"`  // build/path/to/component.html
-	Path      string `json:"path"`      // path/to/component
-	Component string `json:"component"` // Component
+type FilesystemRoute struct {
+	InputPath  string `json:"inputPath"`  // e.g. "src/pages/index.js"
+	OutputPath string `json:"outputPath"` // e.g. "__export__/index.html"
+	Path       string `json:"path"`       // e.g. "/"
+	Component  string `json:"component"`  // e.g. "PageComponent"
 }
 
 type Runtime struct {
-	Version          string                 `json:"version"`
-	Command          interface{}            `json:"command"`
-	DirConfiguration DirectoryConfiguration `json:"dir_config"`
-	BasePage         string                 `json:"base_page"`
-	PageBasedRouter  []PageBasedRoute       `json:"page_based_router"`
+	Command                interface{}            `json:"command"`
+	DirectoryConfiguration DirectoryConfiguration `json:"directoryConfiguration"`
+	FilesystemRouter       []FilesystemRoute      `json:"filesystemRouter"`
+	BaseHTML               string                 `json:"baseHTML"`
 }

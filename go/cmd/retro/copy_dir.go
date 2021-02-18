@@ -17,7 +17,7 @@ type copyPath struct {
 // copyAssetDirToBuildDir destructively and recursively copies the asset
 // directory to the build directory.
 func copyAssetDirToBuildDir(config DirectoryConfiguration) error {
-	path := p.Join(config.BuildDirectory, config.AssetDirectory)
+	path := p.Join(config.ExportDir, config.PublicDir)
 	if _, err := os.Stat(path); os.IsExist(err) {
 		if err := os.RemoveAll(path); err != nil {
 			return err
@@ -25,7 +25,7 @@ func copyAssetDirToBuildDir(config DirectoryConfiguration) error {
 	}
 
 	var paths []copyPath
-	if err := filepath.Walk(config.AssetDirectory, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(config.PublicDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -34,7 +34,7 @@ func copyAssetDirToBuildDir(config DirectoryConfiguration) error {
 				return nil
 			}
 			src := path
-			dst := p.Join(config.BuildDirectory, path)
+			dst := p.Join(config.ExportDir, path)
 			paths = append(paths, copyPath{src: src, dst: dst})
 		}
 		return nil

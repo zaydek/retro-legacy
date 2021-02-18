@@ -13,6 +13,7 @@ interface RouterStore {
 }
 
 // TODO: Add support for generics; createStore<RouterStore>.
+// TODO: Export synthetic pushState and replaceState functions.
 const routerStore = createStore({
 	path: getPath(),
 	type: "PUSH",
