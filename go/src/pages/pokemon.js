@@ -10,8 +10,8 @@ export async function serverProps() {
 	return new Promise(resolve => {
 		setTimeout(() => {
 			resolve({
-				title: "Hello, world!",
-				description: "This page was made using Retro.",
+				title: "Hello, world! (from promise)",
+				description: "This page was made using Retro. (from promise)",
 			})
 		}, 1e3)
 	})

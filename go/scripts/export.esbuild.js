@@ -28,42 +28,44 @@ __export(exports, {
 });
 var esbuild = __toModule(require("esbuild"));
 var fs = __toModule(require("fs/promises"));
-var path = __toModule(require("path"));
+var p = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-function pathToHTML(path2) {
-  if (!path2.endsWith("/"))
-    return path2 + ".html";
-  return path2 + "index.html";
+function pathToHTML(path) {
+  if (!path.endsWith("/"))
+    return path + ".html";
+  return path + "index.html";
 }
 async function exportPage(runtime, render) {
-  let head = "<!-- <Head {...{ path, ...props }}> -->";
+  let head = "<!-- <Head> -->";
   if (typeof render.module.Head === "function") {
-    head = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.serverProps));
+    const markup = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.props));
+    head = markup.replace(/></g, ">\n		<").replace(/\/>/g, " />");
   }
-  let page = "<!-- <Page {...{ path, ...props }}> -->";
+  let page = `
+		<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root"></div>
+		<script src="/app.js"></script>
+	`.trim();
   if (typeof render.module.default === "function") {
-    page = ReactDOMServer.renderToString(React.createElement(render.module.default, render.serverProps));
+    const str = ReactDOMServer.renderToString(React.createElement(render.module.default, render.props));
+    page = page.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`);
   }
-  head = head.replace(/></g, ">\n		<").replace(/\/>/g, " />");
-  page = `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root">${page}</div>
-		<script src="/app.js"></script>`;
-  const html = runtime.baseHTML.replace("%head%", head).replace("%page%", page);
-  await fs.mkdir(path.dirname(render.outputPath), {recursive: true});
-  await fs.writeFile(render.outputPath, html);
+  const data = runtime.baseHTML.replace("%head%", head).replace("%page%", page);
+  await fs.mkdir(p.dirname(render.outputPath), {recursive: true});
+  await fs.writeFile(render.outputPath, data);
 }
-async function exportPages(runtime) {
-  const appRouter = {};
+async function exportPagesAndCreateRouter(runtime) {
+  const router = {};
   const service = await esbuild.startService();
-  for (const filesystemRoute of runtime.filesystemRouter) {
-    const entryPoints = [filesystemRoute.inputPath];
-    const outfile = path.join(runtime.directoryConfiguration.cacheDir, entryPoints[0].replace(/\.(jsx?|tsx?)$/, ".esbuild.js"));
+  for (const route of runtime.filesystemRouter) {
+    const entryPoints = [route.inputPath];
+    const outfile = p.join(runtime.directoryConfiguration.cacheDir, entryPoints[0].replace(/\.(jsx?|tsx?)$/, ".esbuild.js"));
     await service.build({
       bundle: true,
       define: {
-        __DEV__: "true",
-        "process.env.NODE_ENV": JSON.stringify("development")
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
       },
       entryPoints,
       external: ["react", "react-dom"],
@@ -75,63 +77,58 @@ async function exportPages(runtime) {
       outfile
     });
     const mod = require("../" + outfile);
-    let serverProps;
+    let descriptProps;
     if (typeof mod.serverProps === "function") {
-      serverProps = await mod.serverProps();
-      serverProps = {
-        path: filesystemRoute.path,
-        ...serverProps
+      const props = await mod.serverProps();
+      descriptProps = {
+        path: route.path,
+        ...props
       };
     }
     if (typeof mod.serverPaths === "function") {
-      const descriptServerPaths = await mod.serverPaths(serverProps);
-      let router = {};
-      for (const serverPath of descriptServerPaths) {
-        router[serverPath.path] = {
-          filesystemRoute,
-          serverProps: {
-            path: serverPath.path,
-            ...serverPath.props
+      const srvPaths = await mod.serverPaths(descriptProps);
+      const compRouter = {};
+      for (const {path: path2, props} of srvPaths) {
+        compRouter[path2] = {
+          route,
+          props: {
+            path: path2,
+            ...props
           }
         };
       }
-      for (const [path_2, meta2] of Object.entries(router)) {
-        appRouter[path_2] = meta2;
+      for (const [path2, {props}] of Object.entries(compRouter)) {
+        router[path2] = {route, props};
+        const outputPath2 = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path2));
         const render2 = {
-          outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_2)),
-          path: path_2,
+          outputPath: outputPath2,
+          path: path2,
           module: mod,
-          serverProps: meta2.serverProps
+          props
         };
         await exportPage(runtime, render2);
       }
       continue;
     }
-    const path_ = filesystemRoute.path;
-    const meta = {
-      filesystemRoute,
-      serverProps: {
-        path: path_,
-        ...serverProps
-      }
-    };
-    appRouter[path_] = meta;
+    const path = route.path;
+    router[path] = {route, props: descriptProps};
+    const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path));
     const render = {
-      outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
-      path: path_,
+      outputPath,
+      path,
       module: mod,
-      serverProps
+      props: descriptProps
     };
     await exportPage(runtime, render);
   }
-  return appRouter;
+  return router;
 }
 async function renderAppSource(router) {
-  const sharedComponents = [...new Set(Object.keys(router).map((keys) => router[keys].filesystemRoute.component))];
+  const sharedComps = [...new Set(Object.keys(router).map((keys) => router[keys].route.component))];
   const sharedRouter = {};
   for (const [, meta] of Object.entries(router)) {
-    const comp = meta.filesystemRoute.component;
-    if (sharedComponents.includes(comp) && sharedRouter[comp] === void 0) {
+    const comp = meta.route.component;
+    if (sharedComps.includes(comp) && sharedRouter[comp] === void 0) {
       sharedRouter[comp] = meta;
     }
   }
@@ -140,7 +137,7 @@ import ReactDOM from "react-dom"
 import { Route, Router } from "../router"
 
 // Shared components
-${Object.entries(sharedRouter).map(([, {filesystemRoute}]) => `import ${filesystemRoute.component} from "../${filesystemRoute.inputPath}"`).join("\n")}
+${Object.entries(sharedRouter).map(([, {route}]) => `import ${route.component} from "../${route.inputPath}"`).join("\n")}
 
 import router from "./router.json"
 
@@ -149,7 +146,7 @@ export default function App() {
 		<Router>
 ${Object.entries(router).map(([path_, meta]) => `
 			<Route path="${path_}">
-				<${meta.filesystemRoute.component} {...{
+				<${meta.route.component} {...{
 					path: "${path_}",
 					...router["${path_}"].serverProps,
 				}} />
@@ -167,20 +164,20 @@ ReactDOM.hydrate(
 `;
 }
 async function run(runtime) {
-  const appRouter = await exportPages(runtime);
-  const dst = path.join(runtime.directoryConfiguration.cacheDir, "router.json");
-  const data = JSON.stringify(appRouter, null, "	") + "\n";
+  const router = await exportPagesAndCreateRouter(runtime);
+  const dst = p.join(runtime.directoryConfiguration.cacheDir, "router.json");
+  const data = JSON.stringify(router, null, "	") + "\n";
   await fs.writeFile(dst, data);
-  const appSource = await renderAppSource(appRouter);
-  const appSourcePath = path.join(runtime.directoryConfiguration.cacheDir, "app.js");
+  const appSource = await renderAppSource(router);
+  const appSourcePath = p.join(runtime.directoryConfiguration.cacheDir, "app.js");
   await fs.writeFile(appSourcePath, appSource);
   const entryPoints = [appSourcePath];
   const outfile = entryPoints[0].replace(new RegExp("^" + runtime.directoryConfiguration.cacheDir.replace("/", "\\/")), runtime.directoryConfiguration.exportDir);
   await esbuild.build({
     bundle: true,
     define: {
-      __DEV__: "true",
-      "process.env.NODE_ENV": JSON.stringify("development")
+      __DEV__: process.env.__DEV__,
+      "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
     },
     entryPoints,
     format: "iife",
@@ -188,7 +185,8 @@ async function run(runtime) {
       ".js": "jsx"
     },
     logLevel: "silent",
-    outfile
+    outfile,
+    minify: true
   });
 }
 ;

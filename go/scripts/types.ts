@@ -5,25 +5,21 @@ export type Props = any
 export type ServerProps = Props & { path: string }
 
 // ServerRouter describes the server-resolved router.
-//
-// prettier-ignore
 export interface ServerRouter {
 	// The static or server-resolved dynamic path. Static paths are inferred from
 	// filenames and dynamic paths are inferred by [dynamic] filenames and
 	// resolving serverPaths.
 	[key: string]: {
-		filesystemRoute: FilesystemRoute
-		serverProps:     ServerProps
+		route: FilesystemRoute
+		props: ServerProps
 	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // PageModule ambiguously describes a page module.
-//
-// prettier-ignore
 interface PageModule {
-	Head?:    (resolvedProps: ServerProps) => JSX.Element
+	Head?: (resolvedProps: ServerProps) => JSX.Element
 	default?: (resolvedProps: { path: string } & ServerProps) => JSX.Element
 }
 
@@ -42,48 +38,42 @@ export interface DynamicPageModule extends PageModule {
 ////////////////////////////////////////////////////////////////////////////////
 
 // DevCommand describes 'retro dev ...'.
-//
 // prettier-ignore
 interface DevCommand {
-	cached:     boolean // retro dev --cached
-	sourcemap:  boolean // retro dev --sourcemap
-	port:       number  // retro dev --port
+	cached: boolean    // retro dev --cached
+	sourcemap: boolean // retro dev --sourcemap
+	port: number       // retro dev --port
 }
 
 // ExportCommand describes 'retro export ...'.
-//
 // prettier-ignore
 interface ExportCommand {
-	cached:     boolean // retro export --cached
-	sourcemap:  boolean // retro export --sourcemap
+	cached: boolean    // retro export --cached
+	sourcemap: boolean // retro export --sourcemap
 }
 
 // DirConfiguration describes directory configuration.
-//
 // prettier-ignore
 interface DirectoryConfiguration {
-	publicDir:  string  // e.g. "public"
-	pagesDir:   string  // e.g. "src/pages"
-	cacheDir:   string  // e.g. "__cache__"
-	exportDir:  string  // e.g. "__export__"
+	publicDir: string // e.g. "public"
+	pagesDir: string  // e.g. "src/pages"
+	cacheDir: string  // e.g. "__cache__"
+	exportDir: string // e.g. "__export__"
 }
 
 // FilesystemRoute describes a page-based route.
-//
 // prettier-ignore
 interface FilesystemRoute {
-	inputPath:  string  // e.g. "src/pages/index.js"
-	outputPath: string  // e.g. "index.html"
-	path:       string    // e.g. "/"
-	component:  string  // e.g. "PageIndex"
+	inputPath: string  // e.g. "src/pages/index.js"
+	outputPath: string // e.g. "index.html"
+	path: string       // e.g. "/"
+	component: string  // e.g. "PageIndex"
 }
 
 // Runtime describes the runtime emitted from the Go backend.
-//
-// prettier-ignore
 export interface Runtime {
-	command:                DevCommand | ExportCommand
+	command: DevCommand | ExportCommand
 	directoryConfiguration: DirectoryConfiguration
-	filesystemRouter:       FilesystemRoute[]
-	baseHTML:               string
+	filesystemRouter: FilesystemRoute[]
+	baseHTML: string
 }

@@ -14,9 +14,9 @@ type copyPath struct {
 	dst string
 }
 
-// copyAssetDirToBuildDir destructively and recursively copies the asset
-// directory to the build directory.
-func copyAssetDirToBuildDir(config DirectoryConfiguration) error {
+// copyPublicDirToExportDir destructively and recursively copies the public
+// directory to the export directory.
+func copyPublicDirToExportDir(config DirectoryConfiguration) error {
 	path := p.Join(config.ExportDir, config.PublicDir)
 	if _, err := os.Stat(path); os.IsExist(err) {
 		if err := os.RemoveAll(path); err != nil {

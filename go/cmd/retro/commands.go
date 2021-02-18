@@ -12,6 +12,7 @@ import (
 
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
+	"github.com/zaydek/retro/pkg/run"
 )
 
 // type srvResponse struct {
@@ -22,7 +23,7 @@ import (
 
 // Caches the runtime to disk as resources.json for --cached.
 
-// serializeRuntime serializes runtime for Node-based scripts.
+// serializeRuntime serializes runtime for Node.js-based scripts.
 func serializeRuntime(runtime Runtime) error {
 	bstr, err := json.MarshalIndent(runtime, "", "\t")
 	if err != nil {
@@ -45,11 +46,18 @@ func (r Runtime) Dev() {
 }
 
 func (r Runtime) Export() {
-	if err := copyAssetDirToBuildDir(r.DirectoryConfiguration); err != nil {
+	if err := copyPublicDirToExportDir(r.DirectoryConfiguration); err != nil {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
-	fmt.Println("TODO")
+	if err := serializeRuntime(r); err != nil {
+		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+			err.Error())
+	}
+	if _, err := run.Cmd("node", "scripts/export.esbuild.js"); err != nil {
+		loggers.ErrorAndEnd(err)
+	}
+	fmt.Println("done")
 }
 
 func (r Runtime) Serve() {

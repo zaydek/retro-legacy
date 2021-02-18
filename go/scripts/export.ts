@@ -1,18 +1,16 @@
 import * as esbuild from "esbuild"
 import * as fs from "fs/promises"
-import * as path from "path"
+import * as p from "path"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
 
 // RenderPayload describes a render payload (page metadata).
-//
-// prettier-ignore
 interface RenderPayload {
-	outputPath:   string
-	path:         string
-	module:       types.StaticPageModule | types.DynamicPageModule
-	serverProps?: types.ServerProps
+	outputPath: string
+	path: string
+	module: types.StaticPageModule | types.DynamicPageModule
+	props?: types.ServerProps
 }
 
 // "/" -> "/index.html"
@@ -22,62 +20,68 @@ function pathToHTML(path: string): string {
 	return path + "index.html"
 }
 
-// exportPage exports a page to disk.
+// exportPage exports a page.
 async function exportPage(runtime: types.Runtime, render: RenderPayload): Promise<void> {
-	let head = "<!-- <Head {...{ path, ...props }}> -->"
+	// Render head:
+	let head = "<!-- <Head> -->"
 	if (typeof render.module.Head === "function") {
-		head = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.serverProps))
+		const markup = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.props))
+		head = markup.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 	}
 
-	let page = "<!-- <Page {...{ path, ...props }}> -->"
+	// Render page:
+	let page = `
+		<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root"></div>
+		<script src="/app.js"></script>
+	`.trim()
+
+	// prettier-ignore
 	if (typeof render.module.default === "function") {
-		page = ReactDOMServer.renderToString(React.createElement(render.module.default, render.serverProps))
+		const str = ReactDOMServer.renderToString(React.createElement(render.module.default, render.props))
+		page = page.replace(
+			`<div id="root"></div>`,
+			`<div id="root">${str}</div>`,
+		)
 	}
 
 	// prettier-ignore
-	head = head
-		.replace(/></g, ">\n\t\t<")
-		.replace(/\/>/g, " />")
-
-	page = `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root">${page}</div>
-		<script src="/app.js"></script>`
-
-	// prettier-ignore
-	const html = runtime.baseHTML
+	const data = runtime.baseHTML
 		.replace("%head%", head)
 		.replace("%page%", page)
 
-	await fs.mkdir(path.dirname(render.outputPath), { recursive: true })
-	await fs.writeFile(render.outputPath, html)
+	// Export:
+	await fs.mkdir(p.dirname(render.outputPath), { recursive: true })
+	await fs.writeFile(render.outputPath, data)
 }
 
-// exportPages exports pages to disk.
-async function exportPages(runtime: types.Runtime): Promise<types.ServerRouter> {
-	const appRouter: types.ServerRouter = {}
+// exportPagesAndCreateRouter exports pages and creates a router from the return
+// of mod.serverProps and mod.serverPaths.
+async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types.ServerRouter> {
+	const router: types.ServerRouter = {}
 
 	const service = await esbuild.startService()
 
-	// TODO: Upgrade to Promise.all (add --concurrent?).
-	for (const filesystemRoute of runtime.filesystemRouter) {
+	// TODO: Add --concurrent?
+	for (const route of runtime.filesystemRouter) {
 		// Generate paths for esbuild:
-		const entryPoints = [filesystemRoute.inputPath]
-		const outfile = path.join(
+		const entryPoints = [route.inputPath]
+		const outfile = p.join(
 			runtime.directoryConfiguration.cacheDir,
 			entryPoints[0]!.replace(/\.(jsx?|tsx?)$/, ".esbuild.js"),
 		)
 
+		// Use external: ["react", "react-dom"] to prevent a React error: You might
+		// have mismatching versions of React and the renderer (such as React DOM).
 		await service.build({
 			bundle: true,
 			define: {
-				__DEV__: "true", // TODO
-				"process.env.NODE_ENV": JSON.stringify("development"), // TODO
+				__DEV__: process.env.__DEV__!,
+				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
 			},
 			entryPoints,
-			// NOTE: Use "external" to prevent a React error: You might have
-			// mismatching versions of React and the renderer (such as React DOM).
 			external: ["react", "react-dom"],
-			format: "cjs",
+			format: "cjs", // Node.js
 			loader: {
 				".js": "jsx",
 			},
@@ -85,77 +89,74 @@ async function exportPages(runtime: types.Runtime): Promise<types.ServerRouter> 
 			outfile,
 			// plugins: [...configs.retro.plugins], // TODO
 		})
-		// TODO: Handle warnings and hints.
+		// TODO: Handle warnings, error, and hints.
 
 		const mod = require("../" + outfile)
 
 		// TODO: Add cache check here.
 
-		let serverProps: types.ServerProps
+		let descriptProps: types.ServerProps
 		if (typeof mod.serverProps === "function") {
-			serverProps = await mod.serverProps()
-			serverProps = {
-				path: filesystemRoute.path, // Add path
-				...serverProps,
+			const props = await mod.serverProps()
+			descriptProps = {
+				path: route.path, // Add path
+				...props,
 			}
 		}
 
 		// TODO: Warn here for non-dynamic filesystem routes.
 		if (typeof mod.serverPaths === "function") {
-			const descriptServerPaths: types.DescriptiveServerPaths = await mod.serverPaths(serverProps)
+			const srvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptProps)
 
-			let router: types.ServerRouter = {}
-			for (const serverPath of descriptServerPaths) {
-				router[serverPath.path] = {
-					filesystemRoute,
-					serverProps: {
-						path: serverPath.path,
-						...serverPath.props,
+			// Generate a component router:
+			const compRouter: types.ServerRouter = {}
+			for (const { path, props } of srvPaths) {
+				compRouter[path] = {
+					route,
+					props: {
+						path,
+						...props,
 					},
 				}
 			}
 
-			for (const [path_, meta] of Object.entries(router)) {
-				// Cache meta:
+			for (const [path, { props }] of Object.entries(compRouter)) {
+				// Merge the component router to the app router:
 				//
 				// TODO: Warn here for repeat paths.
-				appRouter[path_] = meta
+				router[path] = { route, props }
+
+				// Create a renderPayload for exportPage:
+				const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
 				const render: RenderPayload = {
-					outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
-					path: path_,
+					outputPath,
+					path,
 					module: mod,
-					serverProps: meta.serverProps,
+					props,
 				}
 				await exportPage(runtime, render)
 			}
 			continue
 		}
 
-		const path_ = filesystemRoute.path
-
-		const meta = {
-			filesystemRoute,
-			serverProps: {
-				path: path_,
-				...serverProps,
-			},
-		}
-
-		// Cache meta:
+		// Merge the route to the app router:
 		//
 		// TODO: Warn here for repeat paths.
-		appRouter[path_] = meta
+		const path = route.path
+		router[path] = { route, props: descriptProps }
 
+		// Create a renderPayload for exportPage:
+		const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
 		const render: RenderPayload = {
-			outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
-			path: path_,
+			outputPath,
+			path,
 			module: mod,
-			serverProps: serverProps,
+			props: descriptProps,
 		}
 		await exportPage(runtime, render)
 	}
 
-	return appRouter
+	return router
 }
 
 // renderAppSource renders the App source code (before esbuild).
@@ -163,16 +164,13 @@ async function exportPages(runtime: types.Runtime): Promise<types.ServerRouter> 
 // TODO: Write tests (pure function).
 export async function renderAppSource(router: types.ServerRouter): Promise<string> {
 	// Get the shared components:
-	const sharedComponents = [...new Set(Object.keys(router).map(keys => router[keys]!.filesystemRoute.component))]
+	const sharedComps = [...new Set(Object.keys(router).map(keys => router[keys]!.route.component))]
 
 	// Create a shared server router based on shared component keys:
 	const sharedRouter: types.ServerRouter = {}
-
-	// prettier-ignore
 	for (const [, meta] of Object.entries(router)) {
-		const comp = meta.filesystemRoute.component
-		if (sharedComponents.includes(comp) &&
-				sharedRouter[comp] === undefined) {
+		const comp = meta.route.component
+		if (sharedComps.includes(comp) && sharedRouter[comp] === undefined) {
 			sharedRouter[comp] = meta
 		}
 	}
@@ -183,7 +181,7 @@ import { Route, Router } from "../router"
 
 // Shared components
 ${Object.entries(sharedRouter)
-	.map(([, { filesystemRoute }]) => `import ${filesystemRoute.component} from "../${filesystemRoute.inputPath}"`)
+	.map(([, { route }]) => `import ${route.component} from "../${route.inputPath}"`)
 	.join("\n")}
 
 import router from "./router.json"
@@ -196,7 +194,7 @@ ${
 		.map(
 			([path_, meta]) => `
 			<Route path="${path_}">
-				<${meta.filesystemRoute.component} {...{
+				<${meta.route.component} {...{
 					path: "${path_}",
 					...router["${path_}"].serverProps,
 				}} />
@@ -218,29 +216,29 @@ ReactDOM.hydrate(
 }
 
 async function run(runtime: types.Runtime): Promise<void> {
-	const appRouter = await exportPages(runtime)
+	const router = await exportPagesAndCreateRouter(runtime)
 
-	// Cache appRouter for --cached:
-	const dst = path.join(runtime.directoryConfiguration.cacheDir, "router.json")
-	const data = JSON.stringify(appRouter, null, "\t") + "\n" // EOF
+	// Cache router for --cached:
+	const dst = p.join(runtime.directoryConfiguration.cacheDir, "router.json")
+	const data = JSON.stringify(router, null, "\t") + "\n" // EOF
 	await fs.writeFile(dst, data)
 
-	const appSource = await renderAppSource(appRouter)
-	const appSourcePath = path.join(runtime.directoryConfiguration.cacheDir, "app.js")
+	const appSource = await renderAppSource(router)
+	const appSourcePath = p.join(runtime.directoryConfiguration.cacheDir, "app.js")
 	await fs.writeFile(appSourcePath, appSource)
 
 	// Generate paths for esbuild:
 	const entryPoints = [appSourcePath]
 	const outfile = entryPoints[0]!.replace(
-		new RegExp("^" + runtime.directoryConfiguration.cacheDir.replace("/", "\\/")), // TODO
+		new RegExp("^" + runtime.directoryConfiguration.cacheDir.replace("/", "\\/")),
 		runtime.directoryConfiguration.exportDir,
 	)
 
 	await esbuild.build({
 		bundle: true,
 		define: {
-			__DEV__: "true", // TODO
-			"process.env.NODE_ENV": JSON.stringify("development"), // TODO
+			__DEV__: process.env.__DEV__!,
+			"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
 		},
 		entryPoints,
 		format: "iife", // DOM
@@ -249,9 +247,11 @@ async function run(runtime: types.Runtime): Promise<void> {
 		},
 		logLevel: "silent", // TODO
 		outfile,
+		minify: true,
 		// TODO: We should probably only need to resolve plugins once.
 		// plugins: [...configs.retro.plugins],
 	})
+	// TODO: Handle warnings, error, and hints.
 }
 
 ;(async () => {

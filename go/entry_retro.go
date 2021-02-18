@@ -19,6 +19,7 @@ func init() {
 	os.Setenv("RETRO_VERSION", strings.TrimSpace(v))
 }
 
+//go:generate ../node_modules/.bin/esbuild scripts/export.ts --format=cjs --outfile=scripts/export.esbuild.js --sourcemap
 func main() {
 	retro.Run()
 }
