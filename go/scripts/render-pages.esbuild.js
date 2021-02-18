@@ -34,6 +34,7 @@ async function renderPage(runtime, meta) {
   const html = runtime.base_page.replace("%head%", head.replace(/></g, ">\n		<").replace(/\/>/g, " />")).replace("%page%", `<noscript>You need to enable JavaScript to run this app.</noscript>
 		<div id="root">${page}</div>
 		<script src="/app.js"></script>`);
+  await fs.mkdir(path.dirname(meta.fs_path), {recursive: true});
   await fs.writeFile(meta.fs_path, html);
 }
 async function run(runtime) {
@@ -61,10 +62,10 @@ async function run(runtime) {
       const exports2 = require("../" + src_esbuild);
       let resolvedProps;
       if (typeof exports2.serverProps === "function") {
-        props = await exports2.serverProps();
+        resolvedProps = await exports2.serverProps();
       }
       if (typeof exports2.serverPaths === "function") {
-        const resolvedPathsArray = await exports2.serverPaths(props);
+        const resolvedPathsArray = await exports2.serverPaths(resolvedProps);
         const routeInfos = resolvedPathsArray.reduce((accum, each) => {
           accum[each.path] = {
             route,

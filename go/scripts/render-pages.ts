@@ -36,6 +36,7 @@ async function renderPage(runtime: types.Runtime, meta: Meta) {
 		<div id="root">${page}</div>
 		<script src="/app.js"></script>`)
 
+	await fs.mkdir(path.dirname(meta.fs_path), { recursive: true })
 	await fs.writeFile(meta.fs_path, html)
 }
 
@@ -77,11 +78,11 @@ async function run(runtime: types.Runtime) {
 
 			let resolvedProps: types.ResolvedProps
 			if (typeof exports.serverProps === "function") {
-				props = await exports.serverProps()
+				resolvedProps = await exports.serverProps()
 			}
 
 			if (typeof exports.serverPaths === "function") {
-				const resolvedPathsArray: types.ResolvedPathsArray = await exports.serverPaths(props)
+				const resolvedPathsArray: types.ResolvedPathsArray = await exports.serverPaths(resolvedProps)
 				const routeInfos = resolvedPathsArray.reduce<types.ResolvedPaths>((accum, each) => {
 					accum[each.path] = {
 						route,

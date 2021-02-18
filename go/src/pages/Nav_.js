@@ -2,6 +2,8 @@ import React from "react"
 import { Link } from "../../router"
 
 const paths = [
+	{ path: "/", children: "Open home" },
+	{ path: "/nested/", children: "Open nested home" },
 	{ path: "/bulbasaur", children: "Open bulbasaur" },
 	{ path: "/charmander", children: "Open charmander" },
 	{ path: "/pikachu", children: "Open pikachu" },

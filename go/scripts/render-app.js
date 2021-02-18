@@ -38,19 +38,19 @@ import resolvedRouter from "./resolvedRouter.json"
 export default function App() {
 	return (
 		<Router>
-			${Object.entries(resolvedRouter)
-				.map(
-					([path_, meta]) =>
-						`
+${
+	Object.entries(resolvedRouter)
+		.map(
+			([path_, meta]) => `
 			<Route path="${path_}">
 				<${meta.route.component} {...{
 					path: "${path_}",
 					...resolvedRouter["${path_}"].props,
 				}} />
 			</Route>`,
-				)
-				.join("\n")}
-
+		)
+		.join("\n") + "\n"
+}
 		</Router>
 	)
 }

@@ -65,7 +65,10 @@ func (r Runtime) Serve() {
 	fs := http.FileServer(http.Dir(r.DirConfiguration.BuildDirectory))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if p.Ext(r.URL.Path) == "" {
-			r.URL.Path += ".html"
+			if r.URL.Path != "/" { // TODO
+				r.URL.Path += ".html"
+			}
+			fmt.Println(r.URL.Path)
 		}
 		fs.ServeHTTP(w, r)
 	})

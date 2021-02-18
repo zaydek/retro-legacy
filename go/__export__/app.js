@@ -2635,11 +2635,11 @@
     if (true) {
       (function() {
         "use strict";
-        var React7 = require_react();
+        var React9 = require_react();
         var _assign = require_object_assign();
         var Scheduler = require_scheduler();
         var tracing = require_tracing();
-        var ReactSharedInternals = React7.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        var ReactSharedInternals = React9.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         function warn(format) {
           {
             for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -2671,7 +2671,7 @@
             Function.prototype.apply.call(console[level], console, argsWithFormat);
           }
         }
-        if (!React7) {
+        if (!React9) {
           {
             throw Error("ReactDOM was loaded before React. Make sure you load the React package before loading ReactDOM.");
           }
@@ -3887,7 +3887,7 @@
         var didWarnInvalidChild = false;
         function flattenChildren(children) {
           var content = "";
-          React7.Children.forEach(children, function(child) {
+          React9.Children.forEach(children, function(child) {
             if (child == null) {
               return;
             }
@@ -3898,7 +3898,7 @@
         function validateProps(element, props) {
           {
             if (typeof props.children === "object" && props.children !== null) {
-              React7.Children.forEach(props.children, function(child) {
+              React9.Children.forEach(props.children, function(child) {
                 if (child == null) {
                   return;
                 }
@@ -4339,7 +4339,7 @@
           var warnedForNaNValue = false;
           var warnedForInfinityValue = false;
           var camelize = function(string) {
-            return string.replace(hyphenPattern, function(_, character) {
+            return string.replace(hyphenPattern, function(_2, character) {
               return character.toUpperCase();
             });
           };
@@ -11104,7 +11104,7 @@
         }
         var fakeInternalInstance = {};
         var isArray = Array.isArray;
-        var emptyRefsObject = new React7.Component().refs;
+        var emptyRefsObject = new React9.Component().refs;
         var didWarnAboutStateAssignmentForComponent;
         var didWarnAboutUninitializedState;
         var didWarnAboutGetSnapshotBeforeUpdateWithoutDidUpdate;
@@ -20625,7 +20625,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   });
 
   // __cache__/app.js
-  var import_react7 = __toModule(require_react());
+  var import_react9 = __toModule(require_react());
   var import_react_dom = __toModule(require_react_dom());
 
   // router/index.tsx
@@ -20767,7 +20767,7 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   function Router({children}) {
     const [router, setRouter] = useStore(routerStore);
     import_react2.useEffect(() => {
-      function handlePopState(_) {
+      function handlePopState(_2) {
         setRouter({
           type: "REPLACE",
           path: getPath(),
@@ -20824,6 +20824,8 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   // src/pages/Nav_.js
   var import_react5 = __toModule(require_react());
   var paths = [
+    {path: "/", children: "Open home"},
+    {path: "/nested/", children: "Open nested home"},
     {path: "/bulbasaur", children: "Open bulbasaur"},
     {path: "/charmander", children: "Open charmander"},
     {path: "/pikachu", children: "Open pikachu"},
@@ -20840,13 +20842,25 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     }, children))));
   }
 
-  // src/pages/pokemon.js
+  // src/pages/index.js
   var import_react6 = __toModule(require_react());
-  function Page2({name, ...props}) {
-    import_react6.useEffect(() => {
+  function Page2() {
+    return /* @__PURE__ */ import_react6.default.createElement("div", null, /* @__PURE__ */ import_react6.default.createElement(Nav, null), /* @__PURE__ */ import_react6.default.createElement("h1", null, "My website"));
+  }
+
+  // src/pages/nested/index.js
+  var import_react7 = __toModule(require_react());
+  function Page3() {
+    return /* @__PURE__ */ import_react7.default.createElement("div", null, /* @__PURE__ */ import_react7.default.createElement(Nav, null), /* @__PURE__ */ import_react7.default.createElement("h1", null, "My website (nested)"));
+  }
+
+  // src/pages/pokemon.js
+  var import_react8 = __toModule(require_react());
+  function Page4({name, ...props}) {
+    import_react8.useEffect(() => {
       console.log(`Hello, world! you are rendering the ${name} page!`);
     }, [name]);
-    return /* @__PURE__ */ import_react6.default.createElement("div", null, /* @__PURE__ */ import_react6.default.createElement(Nav, null), /* @__PURE__ */ import_react6.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react6.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react6.default.createElement(Component, null));
+    return /* @__PURE__ */ import_react8.default.createElement("div", null, /* @__PURE__ */ import_react8.default.createElement(Nav, null), /* @__PURE__ */ import_react8.default.createElement("h1", null, "Hello, ", name, "!"), /* @__PURE__ */ import_react8.default.createElement("pre", null, JSON.stringify(props, null, 2)), /* @__PURE__ */ import_react8.default.createElement(Component, null));
   }
 
   // __cache__/resolvedRouter.json
@@ -20870,6 +20884,28 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
     },
     props: {
       path: "/component"
+    }
+  };
+  var _ = {
+    route: {
+      src_path: "src/pages/index.js",
+      dst_path: "__export__/index.html",
+      path: "/",
+      component: "PageIndex"
+    },
+    props: {
+      path: "/"
+    }
+  };
+  var _nested_ = {
+    route: {
+      src_path: "src/pages/nested/index.js",
+      dst_path: "__export__/nested/index.html",
+      path: "/nested/",
+      component: "PageNestedIndex"
+    },
+    props: {
+      path: "/nested/"
     }
   };
   var _bulbasaur = {
@@ -20935,6 +20971,8 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
   var resolvedRouter_default = {
     "/404": _404,
     "/component": _component,
+    "/": _,
+    "/nested/": _nested_,
     "/bulbasaur": _bulbasaur,
     "/charmander": _charmander,
     "/pikachu": _pikachu,
@@ -20943,49 +20981,63 @@ For more info, visit https://reactjs.org/link/mock-scheduler`);
 
   // __cache__/app.js
   function App() {
-    return /* @__PURE__ */ import_react7.default.createElement(Router, null, /* @__PURE__ */ import_react7.default.createElement(Route, {
+    return /* @__PURE__ */ import_react9.default.createElement(Router, null, /* @__PURE__ */ import_react9.default.createElement(Route, {
       path: "/404"
-    }, /* @__PURE__ */ import_react7.default.createElement(Page, {
+    }, /* @__PURE__ */ import_react9.default.createElement(Page, {
       ...{
         path: "/404",
         ...resolvedRouter_default["/404"].props
       }
-    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
       path: "/component"
-    }, /* @__PURE__ */ import_react7.default.createElement(Component, {
+    }, /* @__PURE__ */ import_react9.default.createElement(Component, {
       ...{
         path: "/component",
         ...resolvedRouter_default["/component"].props
       }
-    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+      path: "/"
+    }, /* @__PURE__ */ import_react9.default.createElement(Page2, {
+      ...{
+        path: "/",
+        ...resolvedRouter_default["/"].props
+      }
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
+      path: "/nested/"
+    }, /* @__PURE__ */ import_react9.default.createElement(Page3, {
+      ...{
+        path: "/nested/",
+        ...resolvedRouter_default["/nested/"].props
+      }
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
       path: "/bulbasaur"
-    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
+    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
       ...{
         path: "/bulbasaur",
         ...resolvedRouter_default["/bulbasaur"].props
       }
-    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
       path: "/charmander"
-    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
+    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
       ...{
         path: "/charmander",
         ...resolvedRouter_default["/charmander"].props
       }
-    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
       path: "/pikachu"
-    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
+    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
       ...{
         path: "/pikachu",
         ...resolvedRouter_default["/pikachu"].props
       }
-    })), /* @__PURE__ */ import_react7.default.createElement(Route, {
+    })), /* @__PURE__ */ import_react9.default.createElement(Route, {
       path: "/squirtle"
-    }, /* @__PURE__ */ import_react7.default.createElement(Page2, {
+    }, /* @__PURE__ */ import_react9.default.createElement(Page4, {
       ...{
         path: "/squirtle",
         ...resolvedRouter_default["/squirtle"].props
       }
     })));
   }
-  import_react_dom.default.hydrate(/* @__PURE__ */ import_react7.default.createElement(App, null), document.getElementById("root"));
+  import_react_dom.default.hydrate(/* @__PURE__ */ import_react9.default.createElement(App, null), document.getElementById("root"));
 })();
