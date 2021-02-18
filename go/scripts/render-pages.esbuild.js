@@ -23,18 +23,18 @@ var fs = __toModule(require("fs/promises"));
 var path = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-const cachedServerRouter = {};
+const cachedSrvRouter = {};
 function pathToHTML(path2) {
   if (!path2.endsWith("/"))
     return path2 + ".html";
   return path2 + "index.html";
 }
 async function renderToDisk(runtime, render) {
-  let head = "<!-- <Head {...props}> -->";
+  let head = "<!-- <Head {...{ path, ...props }}> -->";
   if (typeof render.module.Head === "function") {
     head = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.serverProps));
   }
-  let page = "<!-- <Page {...props}> -->";
+  let page = "<!-- <Page {...{ path, ...props }}> -->";
   if (typeof render.module.default === "function") {
     page = ReactDOMServer.renderToString(React.createElement(render.module.default, render.serverProps));
   }
@@ -68,37 +68,46 @@ async function run(runtime) {
     });
     const mod = require("../" + outfile);
     let serverProps;
-    if (typeof exports.serverProps === "function") {
-      serverProps = await exports.serverProps();
+    if (typeof mod.serverProps === "function") {
+      serverProps = await mod.serverProps();
       serverProps = {
         path: filesystemRoute.path,
         ...serverProps
       };
     }
-    if (typeof exports.serverPaths === "function") {
-      const descriptServerPaths = await exports.serverPaths(serverProps);
-      const serverRouter = descriptServerPaths.reduce((accum, serverProps2) => {
-        accum[filesystemRoute.path] = {
+    if (typeof mod.serverPaths === "function") {
+      const descriptServerPaths = await mod.serverPaths(serverProps);
+      let srvRouter = {};
+      for (const serverPath of descriptServerPaths) {
+        srvRouter[serverPath.path] = {
           filesystemRoute,
-          serverProps: serverProps2
+          serverProps: {
+            path: serverPath.path,
+            ...serverPath.props
+          }
         };
-        return accum;
-      }, {});
-      for (const [path_2, meta] of Object.entries(serverRouter)) {
-        cachedServerRouter[path_2] = meta;
       }
-      for (const [path_2, meta] of Object.entries(serverRouter)) {
+      for (const [path_2, meta2] of Object.entries(srvRouter)) {
+        cachedSrvRouter[path_2] = meta2;
         const render2 = {
           outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_2)),
           path: path_2,
           module: mod,
-          serverProps: meta.serverProps
+          serverProps: meta2.serverProps
         };
         await renderToDisk(runtime, render2);
       }
       continue;
     }
     const path_ = filesystemRoute.path;
+    const meta = {
+      filesystemRoute,
+      serverProps: {
+        path: path_,
+        ...serverProps
+      }
+    };
+    cachedSrvRouter[path_] = meta;
     const render = {
       outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
       path: path_,
@@ -107,9 +116,9 @@ async function run(runtime) {
     };
     await renderToDisk(runtime, render);
   }
-  const cachedServerRouterPath = path.join(runtime.directoryConfiguration.cacheDir, "serverRouter.json");
-  const data = JSON.stringify(cachedServerRouter, null, "	") + "\n";
-  await fs.writeFile(cachedServerRouterPath, data);
+  const dst = path.join(runtime.directoryConfiguration.cacheDir, "cachedServerRouter.json");
+  const data = JSON.stringify(cachedSrvRouter, null, "	") + "\n";
+  await fs.writeFile(dst, data);
 }
 ;
 (async () => {

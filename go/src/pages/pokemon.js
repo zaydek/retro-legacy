@@ -4,8 +4,8 @@ import React, { useEffect } from "react"
 
 // serverProps resolves props on the server. Props are cached for retro
 // dev --cached and retro export --cached. Props are then forwarded as
-// serverPaths(serverProps), <Head {...serverProps}>, and
-// <Page {...serverProps}>.
+// serverPaths(serverProps), <Head {...{ path, ...props }}>, and
+// <Page {...{ path, ...props }}>.
 export async function serverProps() {
 	return new Promise(resolve => {
 		setTimeout(() => {
@@ -19,7 +19,8 @@ export async function serverProps() {
 
 // serverProps resolves paths on the server for dynamic pages. The returned
 // array describes { path, props }, where path creates a page and props are
-// forwarded as <Head {...serverProps}> and <Page {...serverProps}>.
+// forwarded as <Head {...{ path, ...props }}> and
+// <Page {...{ path, ...props }}>.
 //
 // prettier-ignore
 export async function serverPaths(serverProps) {

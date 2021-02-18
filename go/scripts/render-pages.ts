@@ -15,7 +15,7 @@ interface RenderPayload {
 	serverProps?: types.ServerProps
 }
 
-const cachedServerRouter: types.ServerRouter = {}
+const cachedSrvRouter: types.ServerRouter = {}
 
 // "/" -> "/index.html"
 // "/nested/" -> "/nested/index.html"
@@ -25,13 +25,13 @@ function pathToHTML(path: string): string {
 }
 
 // renderToDisk renders a render payload to disk.
-async function renderToDisk(runtime: types.Runtime, render: RenderPayload): void {
-	let head = "<!-- <Head {...props}> -->"
+async function renderToDisk(runtime: types.Runtime, render: RenderPayload): Promise<void> {
+	let head = "<!-- <Head {...{ path, ...props }}> -->"
 	if (typeof render.module.Head === "function") {
 		head = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.serverProps))
 	}
 
-	let page = "<!-- <Page {...props}> -->"
+	let page = "<!-- <Page {...{ path, ...props }}> -->"
 	if (typeof render.module.default === "function") {
 		page = ReactDOMServer.renderToString(React.createElement(render.module.default, render.serverProps))
 	}
@@ -89,63 +89,74 @@ async function run(runtime: types.Runtime): Promise<void> {
 		const mod = require("../" + outfile)
 
 		// TODO: Add cache check here.
-		// TODO: Add cache serverProps here.
 
 		let serverProps: types.ServerProps
-		if (typeof exports.serverProps === "function") {
-			serverProps = await exports.serverProps()
+		if (typeof mod.serverProps === "function") {
+			serverProps = await mod.serverProps()
 			serverProps = {
 				path: filesystemRoute.path, // Add path
 				...serverProps,
 			}
 		}
 
-		if (typeof exports.serverPaths === "function") {
-			const descriptServerPaths: types.DescriptiveServerPaths = await exports.serverPaths(serverProps)
-			const serverRouter = descriptServerPaths.reduce<types.ServerRouter>((accum, serverProps) => {
-				accum[filesystemRoute.path] = {
+		if (typeof mod.serverPaths === "function") {
+			const descriptServerPaths: types.DescriptiveServerPaths = await mod.serverPaths(serverProps)
+
+			let srvRouter: types.ServerRouter = {}
+			for (const serverPath of descriptServerPaths) {
+				srvRouter[serverPath.path] = {
 					filesystemRoute,
-					serverProps,
+					serverProps: {
+						path: serverPath.path,
+						...serverPath.props,
+					},
 				}
-				return accum
-			}, {})
-
-			// if (serverRouter !== undefined) {
-			for (const [path_, meta] of Object.entries(serverRouter)) {
-				// TODO: Warn here for repeat paths.
-				cachedServerRouter[path_] = meta
 			}
-			// }
 
-			for (const [path_, meta] of Object.entries(serverRouter)) {
+			for (const [path_, meta] of Object.entries(srvRouter)) {
+				// Cache meta:
+				//
+				// TODO: Warn here for repeat paths.
+				cachedSrvRouter[path_] = meta
 				const render: RenderPayload = {
 					outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
 					path: path_,
 					module: mod,
 					serverProps: meta.serverProps,
 				}
-				// TODO: What the hell?
 				await renderToDisk(runtime, render)
 			}
 			continue
 		}
 
-		// TODO: Warn here for repeat paths.
 		const path_ = filesystemRoute.path
+
+		const meta = {
+			filesystemRoute,
+			serverProps: {
+				path: path_,
+				...serverProps,
+			},
+		}
+
+		// Cache meta:
+		//
+		// TODO: Warn here for repeat paths.
+		cachedSrvRouter[path_] = meta
+
 		const render: RenderPayload = {
 			outputPath: path.join(runtime.directoryConfiguration.exportDir, pathToHTML(path_)),
 			path: path_,
 			module: mod,
 			serverProps: serverProps,
 		}
-		// TODO: What the hell?
 		await renderToDisk(runtime, render)
 	}
 
-	// Cache cachedServerRouter for --cached:
-	const cachedServerRouterPath = path.join(runtime.directoryConfiguration.cacheDir, "serverRouter.json")
-	const data = JSON.stringify(cachedServerRouter, null, "\t") + "\n" // EOF
-	await fs.writeFile(cachedServerRouterPath, data)
+	// Cache cachedSrvRouter for --cached:
+	const dst = path.join(runtime.directoryConfiguration.cacheDir, "cachedServerRouter.json")
+	const data = JSON.stringify(cachedSrvRouter, null, "\t") + "\n" // EOF
+	await fs.writeFile(dst, data)
 }
 
 ;(async () => {
@@ -153,12 +164,13 @@ async function run(runtime: types.Runtime): Promise<void> {
 		await run(require("../__cache__/runtime.json"))
 	} catch (error) {
 		console.error(error.stack)
-		// console.error({
-		// 	stack: error.stack,
-		// 	errno: error.errno,
-		// 	code: error.code,
-		// 	syscall: error.syscall,
-		// 	path: error.path,
-		// })
 	}
 })()
+
+// console.error({
+// 	stack: error.stack,
+// 	errno: error.errno,
+// 	code: error.code,
+// 	syscall: error.syscall,
+// 	path: error.path,
+// })
