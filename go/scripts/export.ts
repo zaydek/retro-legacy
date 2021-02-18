@@ -10,7 +10,7 @@ interface RenderPayload {
 	outputPath: string
 	path: string
 	module: types.StaticPageModule | types.DynamicPageModule
-	props?: types.ServerProps
+	props?: types.DescriptiveServerProps
 }
 
 // "/" -> "/index.html"
@@ -95,10 +95,10 @@ async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types
 
 		// TODO: Add cache check here.
 
-		let descriptProps: types.ServerProps
+		let descriptSrvProps: types.DescriptiveServerProps = { path: route.path }
 		if (typeof mod.serverProps === "function") {
 			const props = await mod.serverProps()
-			descriptProps = {
+			descriptSrvProps = {
 				path: route.path, // Add path
 				...props,
 			}
@@ -106,11 +106,11 @@ async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types
 
 		// TODO: Warn here for non-dynamic filesystem routes.
 		if (typeof mod.serverPaths === "function") {
-			const srvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptProps)
+			const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
 
 			// Generate a component router:
 			const compRouter: types.ServerRouter = {}
-			for (const { path, props } of srvPaths) {
+			for (const { path, props } of descriptSrvPaths) {
 				compRouter[path] = {
 					route,
 					props: {
@@ -143,7 +143,7 @@ async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types
 		//
 		// TODO: Warn here for repeat paths.
 		const path = route.path
-		router[path] = { route, props: descriptProps }
+		router[path] = { route, props: descriptSrvProps }
 
 		// Create a renderPayload for exportPage:
 		const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
@@ -151,7 +151,7 @@ async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types
 			outputPath,
 			path,
 			module: mod,
-			props: descriptProps,
+			props: descriptSrvProps,
 		}
 		await exportPage(runtime, render)
 	}
@@ -196,7 +196,7 @@ ${
 			<Route path="${path_}">
 				<${meta.route.component} {...{
 					path: "${path_}",
-					...router["${path_}"].serverProps,
+					...router["${path_}"].props,
 				}} />
 			</Route>`,
 		)

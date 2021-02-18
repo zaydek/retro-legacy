@@ -1,8 +1,8 @@
 // Props describes props ambiguously.
-export type Props = any
+export type Props = { [key: string]: any }
 
-// ServerProps describes props ambiguously and the current path.
-export type ServerProps = Props & { path: string }
+// DescriptiveServerProps describes props ambiguously and the current path.
+export type DescriptiveServerProps = Props & { path: string }
 
 // ServerRouter describes the server-resolved router.
 export interface ServerRouter {
@@ -11,7 +11,7 @@ export interface ServerRouter {
 	// resolving serverPaths.
 	[key: string]: {
 		route: FilesystemRoute
-		props: ServerProps
+		props: DescriptiveServerProps
 	}
 }
 
@@ -19,13 +19,13 @@ export interface ServerRouter {
 
 // PageModule ambiguously describes a page module.
 interface PageModule {
-	Head?: (resolvedProps: ServerProps) => JSX.Element
-	default?: (resolvedProps: { path: string } & ServerProps) => JSX.Element
+	Head?: (resolvedProps: DescriptiveServerProps) => JSX.Element
+	default?: (resolvedProps: DescriptiveServerProps) => JSX.Element
 }
 
 // StaticPageModule describes a static page module.
 export interface StaticPageModule extends PageModule {
-	serverProps: Promise<ServerProps>
+	serverProps: Promise<DescriptiveServerProps>
 }
 
 export type DescriptiveServerPaths = { path: string; props?: Props }[]

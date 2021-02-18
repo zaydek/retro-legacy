@@ -3,7 +3,6 @@ package loggers
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
 	"strings"
 	"sync"
 
@@ -17,13 +16,13 @@ var transformOK = func(msg string) string {
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = strings.Repeat(" ", 2) + term.BoldGreen("ok:") + " " + term.Bold(arr[x])
+				arr[x] = term.BoldGreen("ok:") + " " + /* term.Bold( */ arr[x] /* ) */
 				continue
 			}
-			arr[x] = strings.Repeat(" ", 4) + term.Bold(arr[x])
+			arr[x] = /* term.Bold( */ arr[x] /* ) */
 		}
 	}
-	transformed := "\n" + strings.Join(arr, "\n") + "\n"
+	transformed := strings.Join(arr, "\n")
 	return transformed
 }
 
@@ -32,17 +31,18 @@ var transformWarning = func(msg string) string {
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = strings.Repeat(" ", 2) + term.BoldYellow("warning:") + " " + term.Bold(arr[x])
+				arr[x] = term.BoldYellow("warning:") + " " + /* term.Bold( */ arr[x] /* ) */
 				continue
 			}
-			arr[x] = strings.Repeat(" ", 4) + term.Bold(arr[x])
+			arr[x] = /* term.Bold( */ arr[x] /* ) */
 		}
 	}
-	out := "\n" + strings.Join(arr, "\n") + "\n"
-	if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
-		out += "\n" + string(debug.Stack())
-	}
-	return out
+	// out := "\n" + strings.Join(arr, "\n") + "\n"
+	// if mode := os.Getenv("DEBUG_MODE"); mode == "true" {
+	// 	out += "\n" + string(debug.Stack())
+	// }
+	transformed := strings.Join(arr, "\n")
+	return transformed
 }
 
 var transformError = func(msg string) string {
@@ -50,17 +50,18 @@ var transformError = func(msg string) string {
 	for x := range arr {
 		if arr[x] != "" {
 			if x == 0 {
-				arr[x] = strings.Repeat(" ", 2) + term.BoldRed("error:") + " " + term.Bold(arr[x])
+				arr[x] = term.BoldRed("error:") + " " + /* term.Bold( */ arr[x] /* ) */
 				continue
 			}
-			arr[x] = strings.Repeat(" ", 4) + term.Bold(arr[x])
+			arr[x] = /* term.Bold( */ arr[x] /* ) */
 		}
 	}
-	out := "\n" + strings.Join(arr, "\n") + "\n"
-	if mode := os.Getenv("DEBUG_MODE"); mode == "true" { // TODO: Test output.
-		out += "\n" + string(debug.Stack())
-	}
-	return out
+	// out := "\n" + strings.Join(arr, "\n") + "\n"
+	// if mode := os.Getenv("DEBUG_MODE"); mode == "true" { // TODO: Test output.
+	// 	out += "\n" + string(debug.Stack())
+	// }
+	transformed := strings.Join(arr, "\n")
+	return transformed
 }
 
 func OK(args ...interface{}) (n int, err error) {

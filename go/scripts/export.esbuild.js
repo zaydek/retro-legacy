@@ -77,18 +77,18 @@ async function exportPagesAndCreateRouter(runtime) {
       outfile
     });
     const mod = require("../" + outfile);
-    let descriptProps;
+    let descriptSrvProps = {path: route.path};
     if (typeof mod.serverProps === "function") {
       const props = await mod.serverProps();
-      descriptProps = {
+      descriptSrvProps = {
         path: route.path,
         ...props
       };
     }
     if (typeof mod.serverPaths === "function") {
-      const srvPaths = await mod.serverPaths(descriptProps);
+      const descriptSrvPaths = await mod.serverPaths(descriptSrvProps);
       const compRouter = {};
-      for (const {path: path2, props} of srvPaths) {
+      for (const {path: path2, props} of descriptSrvPaths) {
         compRouter[path2] = {
           route,
           props: {
@@ -111,13 +111,13 @@ async function exportPagesAndCreateRouter(runtime) {
       continue;
     }
     const path = route.path;
-    router[path] = {route, props: descriptProps};
+    router[path] = {route, props: descriptSrvProps};
     const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path));
     const render = {
       outputPath,
       path,
       module: mod,
-      props: descriptProps
+      props: descriptSrvProps
     };
     await exportPage(runtime, render);
   }
@@ -148,7 +148,7 @@ ${Object.entries(router).map(([path_, meta]) => `
 			<Route path="${path_}">
 				<${meta.route.component} {...{
 					path: "${path_}",
-					...router["${path_}"].serverProps,
+					...router["${path_}"].props,
 				}} />
 			</Route>`).join("\n") + "\n"}
 		</Router>

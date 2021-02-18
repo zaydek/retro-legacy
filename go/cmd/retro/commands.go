@@ -13,6 +13,7 @@ import (
 	"github.com/zaydek/retro/pkg/loggers"
 	"github.com/zaydek/retro/pkg/perm"
 	"github.com/zaydek/retro/pkg/run"
+	"github.com/zaydek/retro/pkg/term"
 )
 
 // type srvResponse struct {
@@ -42,7 +43,7 @@ func (r Runtime) Dev() {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
 			err.Error())
 	}
-	// ...
+	fmt.Println(term.Boldf("⚡️ %0.3fs", time.Since(start).Seconds()))
 }
 
 func (r Runtime) Export() {
@@ -57,7 +58,11 @@ func (r Runtime) Export() {
 	if _, err := run.Cmd("node", "scripts/export.esbuild.js"); err != nil {
 		loggers.ErrorAndEnd(err)
 	}
-	fmt.Println("done")
+
+	// TODO: Make this log more descriptive.
+	fmt.Println(fmt.Sprintf("⚡️ (%0.3fs) Success! "+
+		"You can run retro serve when you’re ready to serve your web app.",
+		time.Since(start).Seconds()))
 }
 
 func (r Runtime) Serve() {
@@ -68,7 +73,10 @@ func (r Runtime) Serve() {
 
 	go func() {
 		time.Sleep(100 * time.Millisecond)
-		loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
+		// loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
+
+		// TODO: How do we clear the terminal?
+		fmt.Println(fmt.Sprintf("📡 http://localhost:%s", r.getPort()))
 	}()
 
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {

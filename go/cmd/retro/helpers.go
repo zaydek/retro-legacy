@@ -1,6 +1,8 @@
 package retro
 
 import (
+	"os"
+	p "path"
 	"strconv"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
@@ -13,6 +15,12 @@ func must(err error) {
 		return
 	}
 	loggers.ErrorAndEnd(err)
+}
+
+// getAppName gets the CWD app name.
+func getAppName() string {
+	cwd, _ := os.Getwd()
+	return p.Base(cwd)
 }
 
 // getCmdType gets the current command type.
