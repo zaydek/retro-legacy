@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	p "path"
+	"strings"
 	"time"
 
 	"github.com/zaydek/retro/pkg/loggers"
@@ -62,15 +63,16 @@ func (r Runtime) Serve() {
 		loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
 	}()
 
-	fs := http.FileServer(http.Dir(r.DirectoryConfiguration.ExportDir))
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if p.Ext(r.URL.Path) == "" {
-			if r.URL.Path != "/" { // TODO
-				r.URL.Path += ".html"
+	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
+		path := req.URL.Path
+		if p.Ext(path) == "" {
+			if strings.HasSuffix(path, "/") {
+				path += "index.html"
+			} else {
+				path += ".html"
 			}
-			fmt.Println(r.URL.Path)
 		}
-		fs.ServeHTTP(w, r)
+		http.ServeFile(wr, req, p.Join(r.DirectoryConfiguration.ExportDir, path))
 	})
 	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +

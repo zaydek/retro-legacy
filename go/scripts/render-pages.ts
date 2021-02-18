@@ -15,8 +15,6 @@ interface RenderPayload {
 	serverProps?: types.ServerProps
 }
 
-const cachedSrvRouter: types.ServerRouter = {}
-
 // "/" -> "/index.html"
 // "/nested/" -> "/nested/index.html"
 function pathToHTML(path: string): string {
@@ -55,6 +53,8 @@ async function renderToDisk(runtime: types.Runtime, render: RenderPayload): Prom
 }
 
 async function run(runtime: types.Runtime): Promise<void> {
+	const cachedSrvRouter: types.ServerRouter = {}
+
 	const service = await esbuild.startService()
 
 	// TODO: Upgrade to Promise.all (add --concurrent?).
@@ -69,8 +69,8 @@ async function run(runtime: types.Runtime): Promise<void> {
 		await service.build({
 			bundle: true,
 			define: {
-				__DEV__: "true",
-				"process.env.NODE_ENV": JSON.stringify("development"),
+				__DEV__: "true", // TODO
+				"process.env.NODE_ENV": JSON.stringify("development"), // TODO
 			},
 			entryPoints,
 			// NOTE: Use "external" to prevent a React error: You might have
@@ -99,6 +99,7 @@ async function run(runtime: types.Runtime): Promise<void> {
 			}
 		}
 
+		// TODO: Warn here for non-dynamic filesystem routes.
 		if (typeof mod.serverPaths === "function") {
 			const descriptServerPaths: types.DescriptiveServerPaths = await mod.serverPaths(serverProps)
 
@@ -166,11 +167,3 @@ async function run(runtime: types.Runtime): Promise<void> {
 		console.error(error.stack)
 	}
 })()
-
-// console.error({
-// 	stack: error.stack,
-// 	errno: error.errno,
-// 	code: error.code,
-// 	syscall: error.syscall,
-// 	path: error.path,
-// })

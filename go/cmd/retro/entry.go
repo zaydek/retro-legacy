@@ -14,7 +14,7 @@ func Run() {
 
 	runtime, err := newRuntime()
 	must(err)
-	switch cmd := runtime.getCmd(); cmd {
+	switch typ := runtime.getCmdType(); typ {
 	case CmdDev:
 		runtime.Dev()
 	case CmdExport:

@@ -65,14 +65,14 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Do not run server guards on serve:
-	cmd := runtime.getCmd()
-	if cmd == CmdDev || cmd == CmdExport {
+	typ := runtime.getCmdType()
+	if typ == CmdDev || typ == CmdExport {
 		if err := runServerGuards(runtime.DirectoryConfiguration); err != nil {
 			return Runtime{}, err
 		}
 	}
 
-	if cmd == CmdDev || cmd == CmdExport {
+	if typ == CmdDev || typ == CmdExport {
 		if runtime.FilesystemRouter, err = newFilesystemRoutere(runtime.DirectoryConfiguration); err != nil {
 			return Runtime{}, err
 		}

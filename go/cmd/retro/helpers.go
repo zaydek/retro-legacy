@@ -15,8 +15,8 @@ func must(err error) {
 	loggers.ErrorAndEnd(err)
 }
 
-// getCmd gets the current command type.
-func (r Runtime) getCmd() CmdType {
+// getCmdType gets the current command type.
+func (r Runtime) getCmdType() CmdType {
 	switch r.Command.(type) {
 	case cli.DevCommand:
 		return CmdDev
@@ -30,7 +30,7 @@ func (r Runtime) getCmd() CmdType {
 
 // getCmdName gets the current command name.
 func (r Runtime) getCmdName() string {
-	switch r.getCmd() {
+	switch r.getCmdType() {
 	case CmdDev:
 		return "dev"
 	case CmdExport:
@@ -43,7 +43,7 @@ func (r Runtime) getCmdName() string {
 
 // // getSourceMap gets the current source map enum.
 // func (r Runtime) getSourceMap() api.SourceMap {
-// 	if cmd := r.getCmd(); cmd == CmdDev {
+// 	if cmd := r.getCmdType(); cmd == CmdDev {
 // 		if r.Command.(cli.DevCommand).SourceMap {
 // 			return api.SourceMapLinked
 // 		}
@@ -59,7 +59,7 @@ func (r Runtime) getCmdName() string {
 
 // getPort gets the current port.
 func (r Runtime) getPort() string {
-	if cmd := r.getCmd(); cmd == CmdDev {
+	if cmd := r.getCmdType(); cmd == CmdDev {
 		return strconv.Itoa(r.Command.(cli.DevCommand).Port)
 	} else if cmd == CmdServe {
 		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)

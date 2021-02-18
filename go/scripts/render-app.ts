@@ -3,50 +3,50 @@ import * as fs from "fs/promises"
 import * as path from "path"
 import * as types from "./types"
 
-// // prettier-ignore
-// function prettyJSON(data) {
-// 	return JSON.stringify(data)
-// 		.replace(/^{"/, '{ "')
-// 		.replace(/"}$/, '" }')
-// 		.replace(/"(:|,)"/g, '"$1 "')
-// }
+async function run(runtime: types.Runtime): Promise<void> {
+	const srvRouterPath = path.join(runtime.directoryConfiguration.cacheDir, "cachedServerRouter.json")
+	const srvRouter: types.ServerRouter = require("../" + srvRouterPath)
 
-async function run(runtime: types.Runtime) {
-	try {
-		const resolvedPathsPath = path.join(runtime.dir_config.cache_dir, "resolvedRouter.json")
-		const resolvedRouter = require("../" + resolvedPathsPath)
+	// Get a set of component keys:
+	const compKeys = [...new Set(Object.keys(srvRouter).map(keys => srvRouter[keys]!.filesystemRoute.component))]
 
-		const componentSetKeys = [...new Set(Object.keys(resolvedRouter).map(key => resolvedRouter[key].route.component))]
+	// Create a shared server router based on shared component keys:
+	const sharedSrvRouter: types.ServerRouter = {}
 
-		const sharedPaths = {}
-		for (const [, meta] of Object.entries(resolvedRouter)) {
-			if (componentSetKeys.includes(meta.route.component) && sharedPaths[meta.route.component] === undefined) {
-				sharedPaths[meta.route.component] = meta
-			}
+	// prettier-ignore
+	for (const [, meta] of Object.entries(srvRouter)) {
+		const comp = meta.filesystemRoute.component
+		if (compKeys.includes(comp) &&
+				sharedSrvRouter[comp] === undefined) {
+			sharedSrvRouter[comp] = meta
 		}
+	}
 
-		const data = `import React from "react"
+	const cachePath = path.join(runtime.directoryConfiguration.cacheDir, "app.js")
+	const exportPath = path.join(runtime.directoryConfiguration.exportDir, "app.js")
+
+	const data = `import React from "react"
 import ReactDOM from "react-dom"
 import { Route, Router } from "../router"
 
 // Shared components
-${Object.entries(sharedPaths)
-	.map(([, meta]) => `import ${meta.route.component} from "../${meta.route.src_path}"`)
+${Object.entries(sharedSrvRouter)
+	.map(([, { filesystemRoute }]) => `import ${filesystemRoute.component} from "../${filesystemRoute.inputPath}"`)
 	.join("\n")}
 
-import resolvedRouter from "./resolvedRouter.json"
+import srvRouter from "./cachedServerRouter.json"
 
 export default function App() {
 	return (
 		<Router>
 ${
-	Object.entries(resolvedRouter)
+	Object.entries(srvRouter)
 		.map(
 			([path_, meta]) => `
 			<Route path="${path_}">
-				<${meta.route.component} {...{
+				<${meta.filesystemRoute.component} {...{
 					path: "${path_}",
-					...resolvedRouter["${path_}"].props,
+					...srvRouter["${path_}"].serverProps,
 				}} />
 			</Route>`,
 		)
@@ -57,36 +57,35 @@ ${
 }
 
 ReactDOM.hydrate(
+	// <React.StrictMode> // TODO
 	<App />,
+	// </React.StrictMode>
 	document.getElementById("root"),
 )
 `
+	await fs.writeFile(cachePath, data)
 
-		const src = path.join(runtime.dir_config.cache_dir, "app.js")
-		const dst = path.join(runtime.dir_config.build_dir, "app.js")
-
-		await fs.writeFile(src, data)
-
-		await esbuild.build({
-			bundle: true,
-			define: {
-				__DEV__: true,
-				"process.env.NODE_ENV": JSON.stringify("development"),
-			},
-			entryPoints: [src],
-			// format: "cjs",
-			loader: {
-				".js": "jsx",
-			},
-			logLevel: "silent", // TODO
-			outfile: dst,
-			// plugins: [...configs.retro.plugins],
-		})
-	} catch (err) {
-		// console.error(err.message)
-		throw err
-		process.exit(1)
-	}
+	await esbuild.build({
+		bundle: true,
+		define: {
+			__DEV__: "true", // TODO
+			"process.env.NODE_ENV": JSON.stringify("development"), // TODO
+		},
+		entryPoints: [cachePath],
+		// format: "cjs",
+		loader: {
+			".js": "jsx",
+		},
+		logLevel: "silent", // TODO
+		outfile: exportPath,
+		// plugins: [...configs.retro.plugins],
+	})
 }
 
-run(require("../__cache__/runtime.json"))
+;(async () => {
+	try {
+		await run(require("../__cache__/runtime.json"))
+	} catch (error) {
+		console.error(error.stack)
+	}
+})()

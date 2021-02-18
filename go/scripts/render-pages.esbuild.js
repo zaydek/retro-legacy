@@ -23,7 +23,6 @@ var fs = __toModule(require("fs/promises"));
 var path = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-const cachedSrvRouter = {};
 function pathToHTML(path2) {
   if (!path2.endsWith("/"))
     return path2 + ".html";
@@ -47,6 +46,7 @@ async function renderToDisk(runtime, render) {
   await fs.writeFile(render.outputPath, html);
 }
 async function run(runtime) {
+  const cachedSrvRouter = {};
   const service = await esbuild.startService();
   for (const filesystemRoute of runtime.filesystemRouter) {
     const entryPoints = [filesystemRoute.inputPath];
