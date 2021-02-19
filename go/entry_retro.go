@@ -15,6 +15,7 @@ func init() {
 }
 
 //go:generate ../node_modules/.bin/esbuild scripts/export.ts --format=cjs --outfile=scripts/export.esbuild.js --sourcemap
+//go:generate ../node_modules/.bin/esbuild dev.ts --format=cjs --outfile=dev.esbuild.js --sourcemap
 func main() {
 	retro.Run()
 }
