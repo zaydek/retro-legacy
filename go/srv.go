@@ -11,11 +11,24 @@ import (
 	"github.com/zaydek/retro/pkg/run"
 )
 
-// func sendMessage(data map[string]interface{}) ([]byte, error) {
-// 	bstr, err := json.Marshal(data)
-// }
-
 type JSON map[string]interface{}
+
+// Sends a POST request to the Node.js server.
+func POST(in []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	buf.Write(in)
+
+	res, err := http.Post("http://localhost:8000", "application/json", &buf)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	out, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
 
 //go:generate ../node_modules/.bin/esbuild srv.ts --format=cjs --outfile=srv.js
 func main() {
@@ -26,37 +39,42 @@ func main() {
 		close(ch)
 	}()
 
-	// Response:
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-
-		for data := range ch {
-			var buf bytes.Buffer
-			buf.Write(data)
-			res, err := http.Post("http://localhost:8000", "application/json", &buf)
-			if err != nil {
-				panic(err)
-			}
-			body, err := ioutil.ReadAll(res.Body)
-			res.Body.Close()
-			if err != nil {
-				panic(err)
-			}
-			log.Printf("recv: %s\n", body)
-		}
-	}()
+	// // Response:
+	// go func() {
+	// 	time.Sleep(100 * time.Millisecond)
+	//
+	// 	for data := range ch {
+	// 		var buf bytes.Buffer
+	// 		buf.Write(data)
+	// 		res, err := http.Post("http://localhost:8000", "application/json", &buf)
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		body, err := ioutil.ReadAll(res.Body)
+	// 		res.Body.Close()
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+	// 		log.Printf("recv: %s\n", body)
+	// 	}
+	// }()
 
 	// Request:
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 
-		msg := JSON{
-			"type": "greet",
-			"data": "Zaydek",
+		// First request:
+		payload := JSON{"type": "ping"}
+		in, _ := json.Marshal(payload)
+
+		log.Printf("sent: %s\n", in)
+		out, err := POST(in)
+		if err != nil {
+			panic(err)
 		}
-		bstr, _ := json.Marshal(msg)
-		log.Printf("sent: %s\n", bstr)
-		ch <- bstr
+		log.Printf("recv: %s\n", out)
+
+		// ...
 	}()
 
 	if _, err := run.Cmd("node", "srv.js"); err != nil {

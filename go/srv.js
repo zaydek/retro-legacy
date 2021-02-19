@@ -19,10 +19,6 @@ var __toModule = (module2) => {
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", {value: module2, enumerable: true})), module2);
 };
 var http = __toModule(require("http"));
-function handlePing() {
-}
-function handlePong() {
-}
 async function run() {
   const srv = http.createServer((req, res) => {
     let body = "";
@@ -32,8 +28,10 @@ async function run() {
     req.on("end", function() {
       res.writeHead(200);
       const data = JSON.parse(body);
-      if (data.type === "greet") {
-        res.end(`Hello, ${data.data}!`);
+      switch (data.type) {
+        case "ping":
+          res.end("pong");
+          break;
       }
     });
   });

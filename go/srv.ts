@@ -5,13 +5,13 @@ interface Payload {
 	data: string
 }
 
-function handlePing() {
-	// ...
-}
-
-function handlePong() {
-	// ...
-}
+// function handlePing() {
+// 	// ...
+// }
+//
+// function handlePong() {
+// 	// ...
+// }
 
 async function run(): Promise<void> {
 	const srv = http.createServer((req, res) => {
@@ -22,8 +22,10 @@ async function run(): Promise<void> {
 		req.on("end", function () {
 			res.writeHead(200)
 			const data: Payload = JSON.parse(body)
-			if (data.type === "greet") {
-				res.end(`Hello, ${data.data}!`)
+			switch (data.type) {
+				case "ping":
+					res.end("pong")
+					break
 			}
 		})
 	})
