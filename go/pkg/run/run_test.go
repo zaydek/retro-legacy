@@ -7,7 +7,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	stdout, err := Cmd(nil, "echo", "Hello, world!")
+	stdout, err := Cmd("echo", "Hello, world!")
 	if err != nil {
 		t.Error(err)
 	}
@@ -15,7 +15,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunError(t *testing.T) {
-	_, err := Cmd(nil, "bad")
+	_, err := Cmd("bad")
 	if err == nil {
 		t.Error("expected an error")
 	}

@@ -58,9 +58,10 @@ func (r Runtime) Export() {
 	}
 
 	// TODO: Make this log more descriptive; add an export summary.
-	fmt.Println(fmt.Sprintf("⚡️ (%0.3fs) Success! "+
-		"You can run retro serve when you’re ready to serve your web app.",
-		time.Since(start).Seconds()))
+	// fmt.Println(fmt.Sprintf("⚡️ (%0.3fs) Success! "+
+	// 	"You can run retro serve when you’re ready to serve your web app.",
+	// 	time.Since(start).Seconds()))
+	fmt.Println(fmt.Sprintf("⚡️ Success! (%0.3fs)", time.Since(start).Seconds()))
 }
 
 func (r Runtime) Serve() {
@@ -72,7 +73,7 @@ func (r Runtime) Serve() {
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		// // loggers.OK(fmt.Sprintf("http://localhost:%s", r.getPort()))
-		fmt.Println(fmt.Sprintf("📡 http://localhost:%s", r.getPort()))
+		fmt.Println(fmt.Sprintf("📡 Serving on port %[1]s; http://localhost:%[1]s", r.getPort()))
 	}()
 
 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
