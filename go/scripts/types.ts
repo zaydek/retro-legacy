@@ -39,7 +39,7 @@ export interface DynamicPageModule extends PageModule {
 
 // DevCommand describes 'retro dev ...'.
 // prettier-ignore
-interface DevCommand {
+export interface DevCommand {
 	cached: boolean    // retro dev --cached
 	sourcemap: boolean // retro dev --sourcemap
 	port: number       // retro dev --port
@@ -47,14 +47,14 @@ interface DevCommand {
 
 // ExportCommand describes 'retro export ...'.
 // prettier-ignore
-interface ExportCommand {
+export interface ExportCommand {
 	cached: boolean    // retro export --cached
 	sourcemap: boolean // retro export --sourcemap
 }
 
 // DirConfiguration describes directory configuration.
 // prettier-ignore
-interface DirectoryConfiguration {
+export interface DirectoryConfiguration {
 	publicDir: string // e.g. "public"
 	pagesDir: string  // e.g. "src/pages"
 	cacheDir: string  // e.g. "__cache__"
@@ -63,7 +63,7 @@ interface DirectoryConfiguration {
 
 // FilesystemRoute describes a page-based route.
 // prettier-ignore
-interface FilesystemRoute {
+export interface FilesystemRoute {
 	inputPath: string  // e.g. "src/pages/index.js"
 	outputPath: string // e.g. "index.html"
 	path: string       // e.g. "/"

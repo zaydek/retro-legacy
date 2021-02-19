@@ -30,7 +30,7 @@ func POST(in []byte) ([]byte, error) {
 	return out, nil
 }
 
-//go:generate ../node_modules/.bin/esbuild srv.ts --format=cjs --outfile=srv.js
+//go:generate ../../node_modules/.bin/esbuild dev.ts --format=cjs --outfile=dev.esbuild.js
 func main() {
 	log.SetFlags(log.Lmicroseconds)
 
@@ -70,6 +70,7 @@ func main() {
 		log.Printf("sent: %s\n", in)
 		out, err := POST(in)
 		if err != nil {
+			// TODO: The Go <-> Node.js "pong" request errored: ...
 			panic(err)
 		}
 		log.Printf("recv: %s\n", out)
@@ -77,7 +78,7 @@ func main() {
 		// ...
 	}()
 
-	if _, err := run.Cmd("node", "srv.js"); err != nil {
+	if _, err := run.Cmd("node", "scripts/dev.esbuild.js"); err != nil {
 		panic(err)
 	}
 }

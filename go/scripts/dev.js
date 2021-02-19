@@ -19,6 +19,7 @@ var __toModule = (module2) => {
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", {value: module2, enumerable: true})), module2);
 };
 var http = __toModule(require("http"));
+let runtime;
 async function handlePing(req, res, body) {
   res.end("pong");
 }
@@ -40,22 +41,25 @@ async function run() {
     req.on("end", async () => {
       res.writeHead(200);
       const e = JSON.parse(body);
-      switch (e.type) {
-        case "ping":
-          await handlePing(req, res, body);
-          break;
-        case "start":
-          await handleStart(req, res, body);
-          break;
-        case "rebuild":
-          await handleRebuild(req, res, body);
-          break;
-        case "end":
-          await handleEnd(req, res, body);
-          break;
+      if (e.type === "ping") {
+        await handlePing(req, res, body);
+      } else if (e.type === "start") {
+        await handleStart(req, res, body);
+      } else if (e.type === "rebuild") {
+        await handleRebuild(req, res, body);
+      } else if (e.type === "end") {
+        await handleEnd(req, res, body);
       }
     });
   });
   srv.listen(8e3);
 }
-run();
+;
+(async () => {
+  try {
+    runtime = require("../__cache__/runtime.json");
+    await run();
+  } catch (error) {
+    console.error(error.stack);
+  }
+})();

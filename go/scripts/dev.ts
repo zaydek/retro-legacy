@@ -1,13 +1,5 @@
 import * as http from "http"
-
-// FilesystemRoute describes a page-based route.
-// prettier-ignore
-interface FilesystemRoute {
-	inputPath: string  // e.g. "src/pages/index.js"
-	outputPath: string // e.g. "index.html"
-	path: string       // e.g. "/"
-	component: string  // e.g. "PageIndex"
-}
+import * as types from "./types"
 
 // Pong!
 interface PingEvent {
@@ -23,7 +15,7 @@ interface StartEvent {
 interface RebuildEvent {
 	type: "rebuild"
 	data: {
-		filesystemRoute: FilesystemRoute
+		filesystemRoute: types.FilesystemRoute
 	}
 }
 
@@ -32,12 +24,9 @@ interface EndEvent {
 	type: "end"
 }
 
-// prettier-ignore
-type Event =
-	| PingEvent
-	| StartEvent
-	| RebuildEvent
-	| EndEvent
+type Event = PingEvent | StartEvent | RebuildEvent | EndEvent
+
+let runtime: types.Runtime
 
 async function handlePing(
 	// prettier-ignore
@@ -98,4 +87,11 @@ async function run(): Promise<void> {
 	srv.listen(8000)
 }
 
-run()
+;(async () => {
+	try {
+		runtime = require("../__cache__/runtime.json")
+		await run()
+	} catch (error) {
+		console.error(error.stack)
+	}
+})()
