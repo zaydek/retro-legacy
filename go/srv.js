@@ -19,23 +19,43 @@ var __toModule = (module2) => {
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", {value: module2, enumerable: true})), module2);
 };
 var http = __toModule(require("http"));
+async function handlePing(req, res, body) {
+  res.end("pong");
+}
+async function handleStart(req, res, body) {
+  res.end("TODO");
+}
+async function handleRebuild(req, res, body) {
+  res.end("TODO");
+}
+async function handleEnd(req, res, body) {
+  res.end("TODO");
+}
 async function run() {
   const srv = http.createServer((req, res) => {
     let body = "";
     req.on("data", (chunk) => {
       body += chunk;
     });
-    req.on("end", function() {
+    req.on("end", async () => {
       res.writeHead(200);
-      const data = JSON.parse(body);
-      switch (data.type) {
+      const e = JSON.parse(body);
+      switch (e.type) {
         case "ping":
-          res.end("pong");
+          await handlePing(req, res, body);
+          break;
+        case "start":
+          await handleStart(req, res, body);
+          break;
+        case "rebuild":
+          await handleRebuild(req, res, body);
+          break;
+        case "end":
+          await handleEnd(req, res, body);
           break;
       }
     });
   });
-  console.log("Serving on port 8000");
   srv.listen(8e3);
 }
 run();
