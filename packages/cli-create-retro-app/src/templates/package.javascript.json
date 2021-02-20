@@ -1,0 +1,16 @@
+{
+	"name": "%APP-NAME%",
+	"scripts": {
+		"dev": "retro dev",
+		"export": "retro export",
+		"serve": "retro serve"
+	},
+	"dependencies": {
+		"@zaydek/retro": "^%RETRO-VERSION%",
+		"react": "^17.0.1",
+		"react-dom": "^17.0.1"
+	},
+	"devDependencies": {
+		"esbuild": "^0.8.46"
+	}
+}

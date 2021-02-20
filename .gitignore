@@ -1,8 +1,6 @@
 .DS_Store
-node_modules/
+node_modules
 
-__cache__/
-bin/
-build/
-dist/
-export/
+__cache__
+__dist__
+__export__
