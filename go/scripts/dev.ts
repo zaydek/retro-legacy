@@ -1,66 +1,56 @@
+import * as esbuild from "esbuild"
+import * as fs from "fs"
+import * as fsPromises from "fs/promises"
 import * as http from "http"
+import * as p from "path"
+import * as process from "process"
 import * as types from "./types"
 
-// Pong!
-interface PingEvent {
-	type: "ping"
-}
+////////////////////////////////////////////////////////////////////////////////
 
-// StartEvent generates app.js (no page).
-interface StartEvent {
-	type: "start"
-}
+type EventType = "ping" | "build-page" | "rebuild-app" | "shutdown"
 
-// RebuildEvent regenerates app.js and render the current page.
-interface RebuildEvent {
-	type: "rebuild"
-	data: {
-		filesystemRoute: types.FilesystemRoute
-	}
-}
+type Handler = (req: http.IncomingMessage, res: http.ServerResponse, body: string) => Promise<void>
 
-// EndEvent ends the server.
-interface EndEvent {
-	type: "end"
-}
-
-type Event = PingEvent | StartEvent | RebuildEvent | EndEvent
+////////////////////////////////////////////////////////////////////////////////
 
 let runtime: types.Runtime
+let incrementalEsbuildResult: esbuild.BuildResult
 
-async function handlePing(
-	// prettier-ignore
-	req: http.IncomingMessage,
-	res: http.ServerResponse,
-	body: string,
-): Promise<void> {
-	res.end("pong")
-}
-
-async function handleStart(
-	// prettier-ignore
-	req: http.IncomingMessage,
-	res: http.ServerResponse,
-	body: string,
-): Promise<void> {
+// handleRebuildApp rebuilds __cache__/app.js to __export__.
+//
+// TODO: If a user adds a page during retro dev, Retro does not recreate the
+// filesystem router.
+//
+// NOTE: The leverage Go is providing is the filesystem router, colored-terminal
+// output (CLI is non-interactive), server guards, an HTTP server for serve, and
+// server sent events for dev.
+//
+// The problem this introduces is that it makes it harder to regenerate the
+// filesystem router at runtime. In theory we can increase the scope of our
+// Node.js implementation to support more server types, but then we have to ask
+// whether it’s better to implement the whole system in TypeScript or just a
+// subsystem.
+//
+// The point about server sent events is interesting because in order to do this
+// with a coupled Go and Node.js architecture, we have to create an HTTP server
+// in Go that Node.js can request. This increases the complexity scope of what
+// we’re trying to achieve.
+//
+// It may very well be better to implement the whole system in TypeScript to
+// avoid doubly engineering Retro.
+const buildRebuildApp: Handler = async (req, res, body) => {
 	res.end("TODO")
 }
 
-async function handleRebuild(
-	// prettier-ignore
-	req: http.IncomingMessage,
-	res: http.ServerResponse,
-	body: string,
-): Promise<void> {
+// handleBuildPage builds an intermediary page __cache__/src/pages and then
+// builds the final page to __export__. The intermediary step is because
+// React.renderToString cannot parse JSX or TypeScript.
+const handleBuildPage: Handler = async (req, res, body) => {
 	res.end("TODO")
 }
 
-async function handleEnd(
-	// prettier-ignore
-	req: http.IncomingMessage,
-	res: http.ServerResponse,
-	body: string,
-): Promise<void> {
+const handleEnd: Handler = async (req, res, body) => {
 	res.end("TODO")
 }
 
@@ -72,24 +62,37 @@ async function run(): Promise<void> {
 		})
 		req.on("end", async () => {
 			res.writeHead(200)
-			const e: Event = JSON.parse(body)
-			if (e.type === "ping") {
-				await handlePing(req, res, body)
-			} else if (e.type === "start") {
-				await handleStart(req, res, body)
-			} else if (e.type === "rebuild") {
-				await handleRebuild(req, res, body)
-			} else if (e.type === "end") {
-				await handleEnd(req, res, body)
+			const e: { type: EventType } = JSON.parse(body)
+			switch (e.type) {
+				case "ping":
+					res.end("pong")
+					return
+				case "rebuild-app":
+					await buildRebuildApp(req, res, body)
+					return
+				case "build-page":
+					await handleBuildPage(req, res, body)
+					return
+				case "shutdown":
+					await handleEnd(req, res, body)
+					return
 			}
 		})
 	})
-	srv.listen(8000)
+	srv.listen(8033) // TODO
 }
 
 ;(async () => {
 	try {
-		runtime = require("../__cache__/runtime.json")
+		// Read stdin and parse the runtime:
+		const stdin = fs.readFileSync(process.stdin.fd).toString()
+		runtime = JSON.parse(stdin)
+
+		// Save the runtime to __cache__/runtime.debug.json:
+		const path = p.join(runtime.directoryConfiguration.cacheDir, "runtime.debug.json")
+		await fsPromises.mkdir(p.dirname(path), { recursive: true })
+		await fsPromises.writeFile(path, stdin + "\n") // EOF
+
 		await run()
 	} catch (error) {
 		console.error(error.stack)
