@@ -1,11 +1,18 @@
 import * as constants from "constants"
 import * as fs from "fs"
 import * as http from "http"
+import * as log from "../lib/log"
 import * as p from "path"
 import * as term from "../lib/term"
 import * as utils from "./utils"
 
 const PORT = 3000
+
+let errored = false
+
+function didError(): boolean {
+	return errored
+}
 
 // convertToFilesystemPath converts a browser path to a filesystem path.
 export function convertToFilesystemPath(path: string) {
@@ -53,8 +60,12 @@ function serve() {
 	})
 
 	setTimeout(() => {
+		if (didError()) return
+
 		utils.flushTerminal()
-		console.log(`${term.gray(process.argv.join(" "))}
+
+		// const boldGreenUnderline = (...args: any) => `\x1b[0;1;4;32m${args.join(" ")}\x1b[0m`
+		console.log(`${term.gray([process.argv0, process.argv.slice(1)].join(" "))}
 
 	${term.bold(">")} ${term.boldGreen("ok:")} ${term.bold(
 			`Serving your app on port ${PORT} (SSG); ${term.boldUnderline(`http://localhost:${PORT}`)}${term.bold(".")}`,
@@ -62,37 +73,16 @@ function serve() {
 
 	${term.bold(`When you’re ready to stop the server, press Ctrl-C.`)}
 `)
-	}, 100)
+	}, 10)
 	server.listen(PORT)
-}
-
-// reportError reports an error message to the user.
-function reportError(err: Error) {
-	if (process.env.STACK_TRACE !== "true") {
-		console.error(`${term.gray(process.argv.join(" "))}
-
-  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(err.message)}
-
-	(Use STACK_TRACE=true ... to see the current stack trace)
-`)
-	} else {
-		const stack = (err as { stack: string }).stack
-		// prettier-ignore
-		console.error(`${term.gray(process.argv.join(" "))}
-
-  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(err.message)}
-
-	${stack.split("\n").map(line => " ".repeat(2) + line).join("\n")}
-`)
-	}
 }
 
 ;(() => {
 	try {
 		serve()
-		// throw new Error("Hello, world")
 	} catch (err) {
-		err.message = "Failed to serve your web app; " + err.message
-		reportError(err)
+		errored = true
+		err.message = "An unexpected error occurred while trying to serve your web app; " + err.message
+		log.error(err)
 	}
 })()
