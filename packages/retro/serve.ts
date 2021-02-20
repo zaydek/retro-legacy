@@ -29,6 +29,7 @@ export function convertToFilesystemPath(path: string) {
 }
 
 // This implementation is loosely based on https://stackoverflow.com/a/44188852.
+// TODO: We can use the esbuild serve command.
 function serve() {
 	const server = http.createServer(async (req, res) => {
 		if (req.url! === "/favicon.ico") {
@@ -61,11 +62,8 @@ function serve() {
 
 	setTimeout(() => {
 		if (didError()) return
-
-		utils.flushTerminal()
-
-		// const boldGreenUnderline = (...args: any) => `\x1b[0;1;4;32m${args.join(" ")}\x1b[0m`
-		console.log(`${term.gray([process.argv0, process.argv.slice(1)].join(" "))}
+		utils.clearScreen()
+		console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
 	${term.bold(">")} ${term.boldGreen("ok:")} ${term.bold(
 			`Serving your app on port ${PORT} (SSG); ${term.boldUnderline(`http://localhost:${PORT}`)}${term.bold(".")}`,
