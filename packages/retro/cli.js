@@ -3,7 +3,6 @@ var bold = (...args) => `[0;1m${args.join(" ")}[0m`;
 var gray = (...args) => `[0;2m${args.join(" ")}[0m`;
 var underline = (...args) => `[0;4m${args.join(" ")}[0m`;
 var boldRed = (...args) => `[1;31m${args.join(" ")}[0m`;
-var boldGreen = (...args) => `[1;32m${args.join(" ")}[0m`;
 
 // packages/lib/log.ts
 function error(err) {
@@ -30,14 +29,15 @@ retro dev     Starts the dev server
 retro export  Exports the production-ready build (SSG)
 retro serve   Serves the production-ready build
 `.trim();
-var body = `
+var body = `${gray([process.argv0, process.argv.slice(1)].join(" "))}
+
   ${bold("Usage:")}
 
     retro dev          Starts the dev server
     retro export       Exports the production-ready build (SSG)
     retro serve        Serves the production-ready build
 
-  ${boldGreen(">")} ${bold("retro dev")}
+  ${bold("retro dev")}
 
     Starts the dev server
 
@@ -45,14 +45,14 @@ var body = `
       --source-map     Add source maps (default true)
       --port=<number>  Port number (default 8000)
 
-  ${boldGreen(">")} ${bold("retro export")}
+  ${bold("retro export")}
 
     Exports the production-ready build (SSG)
 
       --cached         Use cached resources (default false)
       --source-map     Add source maps (default true)
 
-  ${boldGreen(">")} ${bold("retro serve")}
+  ${bold("retro serve")}
 
     Serves the production-ready build
 
