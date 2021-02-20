@@ -1,5 +1,5 @@
 // convertToPath converts a filesystem path to a browser path.
-export function convertToPath(path: string) {
+export function convertToPath(path: string): string {
 	// "/index.html" -> "/index"
 	let path2 = path
 	if (path2.endsWith(".html")) {
@@ -13,7 +13,7 @@ export function convertToPath(path: string) {
 }
 
 // getBrowserPath gets the current browser path (safe for SSR).
-export function getBrowserPath() {
+export function getBrowserPath(): string {
 	let pathname = "/"
 	if (typeof window !== undefined) {
 		pathname = window.location.pathname

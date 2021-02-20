@@ -26,7 +26,7 @@ const routerStore = store.createStore<RouterState>({
 export const Link: types.Link = ({ path, scrollTo, children, ...props }) => {
 	const setRouter = store.useStoreSetState(routerStore)
 
-	function handleClick(e: React.MouseEvent) {
+	function handleClick(e: React.MouseEvent): void {
 		e.preventDefault()
 		setRouter({ type: "PUSH", path, scrollTo })
 	}
@@ -49,7 +49,7 @@ export const Router: types.Router = ({ children }) => {
 	const [router, setRouter] = store.useStore(routerStore)
 
 	React.useEffect(() => {
-		function handlePopState() {
+		function handlePopState(): void {
 			setRouter({
 				type: "REPLACE",
 				path: utils.getBrowserPath(),
@@ -57,7 +57,9 @@ export const Router: types.Router = ({ children }) => {
 			})
 		}
 		window.addEventListener("popstate", handlePopState)
-		return () => window.removeEventListener("popstate", handlePopState)
+		return (): void => {
+			window.removeEventListener("popstate", handlePopState)
+		}
 	}, [])
 
 	let onceRef = React.useRef(false)
@@ -71,16 +73,17 @@ export const Router: types.Router = ({ children }) => {
 		if (path !== utils.getBrowserPath()) {
 			let emitHistoryEvent: Function
 			if (router.type === "PUSH") {
-				emitHistoryEvent = () => window.history.pushState({}, "", path)
+				emitHistoryEvent = (): void => window.history.pushState({}, "", path)
 			} else if (router.type === "REPLACE") {
-				emitHistoryEvent = () => window.history.replaceState({}, "", path)
+				emitHistoryEvent = (): void => window.history.replaceState({}, "", path)
 			}
 			emitHistoryEvent!()
 		}
 		// window.scrollTo:
-		if (scrollTo !== "no-op") {
-			scrollTo = scrollTo || 0
-			window.scrollTo(...(scrollTo as any))
+		if (scrollTo !== undefined && scrollTo !== "no-op") {
+			const x = !Array.isArray(scrollTo) ? 0 : scrollTo[0]
+			const y = !Array.isArray(scrollTo) ? scrollTo : scrollTo[1]
+			window.scrollTo(x, y)
 		}
 	}, [router])
 

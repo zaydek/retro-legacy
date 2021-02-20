@@ -67,7 +67,7 @@ export function serve(): void {
 		},
 	)
 
-	setTimeout((): void => {
+	setTimeout(() => {
 		// if (didError()) return
 		utils.clearScreen()
 		console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}

@@ -1,3 +1,5 @@
+import React from "react"
+
 export type ScrollTo = number | [number, number] | "no-op"
 
 export interface LinkProps {

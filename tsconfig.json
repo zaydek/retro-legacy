@@ -1,11 +1,12 @@
 {
 	"compilerOptions": {
-		/**/
+		"target": "esnext",
 		"module": "commonjs",
 		"lib": ["dom", "esnext"],
 		"jsx": "react",
 
-		/**/
+		////////////////////////////////////////////////////////////////////////////
+
 		"strict": true,
 		"noImplicitAny": true,
 		"strictNullChecks": true,
@@ -15,17 +16,20 @@
 		"noImplicitThis": true,
 		"alwaysStrict": true,
 
-		/**/
+		////////////////////////////////////////////////////////////////////////////
+
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedIndexedAccess": true,
 
-		/**/
+		////////////////////////////////////////////////////////////////////////////
+
 		"esModuleInterop": true,
 
-		/**/
+		////////////////////////////////////////////////////////////////////////////
+
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true
 	}

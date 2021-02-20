@@ -59,16 +59,12 @@ function useStoreImpl<T>(
 		store.cachedState = nextFrozenState
 		setState(nextFrozenState)
 		// Broadcast frozenState changes to subscribers:
-		//
-		// NOTE: Use 'forEach' not 'for'; Type 'Set<Dispatch<T>>' is not an array
-		// type or a string type. Use compiler option '--downlevelIteration' to
-		// allow iterating of iterators.ts(2569)
-		store.subscriptions.forEach(set => {
+		for (const set of store.subscriptions) {
 			// Dedupe the current setState:
 			if (set !== setState) {
 				set(nextFrozenState)
 			}
-		})
+		}
 	}, []) // eslint-disable-line react-hooks/exhaustive-deps
 
 	const funcKeys = React.useMemo(() => {
@@ -103,7 +99,7 @@ function useStoreImpl<T>(
 }
 
 export const useStore: types.useStore = <T>(store: types.Store<T>) => {
-	return useStoreImpl("useStore", store) as [T, React.Dispatch<T>] // Needs 'as' because of '|' operator
+	return useStoreImpl("useStore", store) as [T, React.Dispatch<T>] // Use as to coerce type
 }
 
 export const useStoreState: types.useStoreState = store => {
@@ -111,7 +107,7 @@ export const useStoreState: types.useStoreState = store => {
 }
 
 export const useStoreSetState: types.useStoreSetState = <T>(store: types.Store<T>) => {
-	return useStoreImpl("useStoreSetState", store)[1] as React.Dispatch<T> // Needs 'as' because of '|' operator
+	return useStoreImpl("useStoreSetState", store)[1] as React.Dispatch<T> // Use as to coerce type
 }
 
 export const useStoreFuncs: types.useStoreFuncs = <T>(store: types.Store<T>, createFuncs: types.FuncsCreator) => {

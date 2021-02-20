@@ -10,6 +10,7 @@ module.exports = {
 		"eslint:recommended",
     "plugin:react-hooks/recommended",
 	],
+	globals: { JSX: true }, // JSX.Element
 	parser: "@typescript-eslint/parser",
 	plugins: ["@typescript-eslint"],
 	rules: {
