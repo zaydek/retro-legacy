@@ -10,11 +10,11 @@ import STORE_KEY from "./key"
 // - https://github.com/pelotom/use-methods
 
 const errBadStoreFromCaller = (caller: string) =>
-	`${caller}: Bad 'store'. ` +
+	`${caller}: Bad store. ` +
 	"Use 'createStore(initialStateOrInitializer)' to create a new store and then 'const [state, setState] = useStore(store)'."
 
 const errBadFuncsCreatorFromCaller = (caller: string) =>
-	`${caller}: Bad 'createFuncs'. ` +
+	`${caller}: Bad createFuncs. ` +
 	"Use 'const createFuncs = state => ({ increment() { return state + 1 } })' and then 'const [state, funcs] = useStoreFuncs(store, createFuncs)'."
 
 export const createStore: types.createStore = (initialState, initializer) => {

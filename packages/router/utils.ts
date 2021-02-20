@@ -1,20 +1,22 @@
-// convPath converts a pathname (window.history.location) to a path.
-export function convPath(pathname: string) {
-	let path = pathname
-
+// convertToPath converts a filesystem path to a browser path.
+export function convertToPath(path: string) {
 	// "/index.html" -> "/index"
-	if (path.endsWith(".html")) {
-		path = path.slice(0, -5)
+	let path2 = path
+	if (path2.endsWith(".html")) {
+		path2 = path2.slice(0, -5)
 	}
-	// "/index" -> /
-	if (path.endsWith("/index")) {
-		path = path.slice(0, -5)
+	// "/index" -> "/"
+	if (path2.endsWith("/index")) {
+		path2 = path2.slice(0, -5)
 	}
-	return path
+	return path2
 }
 
-// getCurrentPath gets the current path.
-export function getCurrentPath() {
-	const pathname = typeof window === "undefined" ? "/" : window.location.pathname
-	return convPath(pathname)
+// getBrowserPath gets the current browser path (safe for SSR).
+export function getBrowserPath() {
+	let pathname = "/"
+	if (typeof window !== undefined) {
+		pathname = window.location.pathname
+	}
+	return convertToPath(pathname)
 }

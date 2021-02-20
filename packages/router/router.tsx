@@ -18,7 +18,7 @@ interface RouterState {
 // TODO: Implement synthetic pushState and replaceState functions?
 const routerStore = store.createStore<RouterState>({
 	// TODO: Add support for key.
-	path: utils.getCurrentPath(),
+	path: utils.getBrowserPath(),
 	type: "PUSH",
 	scrollTo: [0, 0],
 })
@@ -52,7 +52,7 @@ export const Router: types.Router = ({ children }) => {
 		function handlePopState() {
 			setRouter({
 				type: "REPLACE",
-				path: utils.getCurrentPath(),
+				path: utils.getBrowserPath(),
 				scrollTo: [0, 0],
 			})
 		}
@@ -68,7 +68,7 @@ export const Router: types.Router = ({ children }) => {
 		}
 		// window.pushState / window.replaceState:
 		let { path, scrollTo } = router
-		if (path !== utils.getCurrentPath()) {
+		if (path !== utils.getBrowserPath()) {
 			let emitHistoryEvent: Function
 			if (router.type === "PUSH") {
 				emitHistoryEvent = () => window.history.pushState({}, "", path)

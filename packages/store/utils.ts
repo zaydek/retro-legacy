@@ -7,8 +7,9 @@ export function freezeOnce<T>(value: T): T {
 }
 
 // testStore tests store.type for STORE_KEY.
-//
-// TODO: Add tests.
-export function testStore(store: any): boolean {
-	return store?.type === STORE_KEY
+// prettier-ignore
+export function testStore(store: unknown): boolean {
+	const ok = typeof store === "object" &&
+		(store as { type: unknown } | undefined)?.type === STORE_KEY
+	return ok
 }
