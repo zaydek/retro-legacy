@@ -9,11 +9,11 @@ import STORE_KEY from "./key"
 // - https://github.com/mucsi96/react-create-shared-state
 // - https://github.com/pelotom/use-methods
 
-const errBadStoreFromCaller = (caller: string) =>
+const errBadStoreFromCaller = (caller: string): string =>
 	`${caller}: Bad store. ` +
 	"Use 'createStore(initialStateOrInitializer)' to create a new store and then 'const [state, setState] = useStore(store)'."
 
-const errBadFuncsCreatorFromCaller = (caller: string) =>
+const errBadFuncsCreatorFromCaller = (caller: string): string =>
 	`${caller}: Bad createFuncs. ` +
 	"Use 'const createFuncs = state => ({ increment() { return state + 1 } })' and then 'const [state, funcs] = useStoreFuncs(store, createFuncs)'."
 
@@ -49,7 +49,7 @@ function useStoreImpl<T>(
 	// Manages subscriptions when a component mounts / unmounts.
 	React.useEffect(() => {
 		store.subscriptions.add(setState)
-		return () => {
+		return (): void => {
 			store.subscriptions.delete(setState)
 		}
 	}, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -85,7 +85,7 @@ function useStoreImpl<T>(
 		// render but then React errors: Warning: Cannot update a component (`xxx`)
 		// while rendering a different component (`xxx`).
 		funcs = funcKeys.reduce<types.Funcs<T>>((accum, type) => {
-			accum[type] = (...args) => {
+			accum[type] = (...args): T => {
 				const nextState = createFuncs(frozenState)[type]!(...args)
 				setStateStore(nextState)
 				return nextState

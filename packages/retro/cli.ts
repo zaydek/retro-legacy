@@ -47,7 +47,7 @@ export const usage =
 
 // parseCmdDevArguments parses 'retro dev [flags]'.
 // TODO: Write tests.
-function parseCmdDevArguments(...args: string[]) {
+function parseCmdDevArguments(...args: string[]): types.CmdDev {
 	const cmd: types.CmdDev = {
 		cached: false,
 		sourcemap: true,
@@ -58,7 +58,7 @@ function parseCmdDevArguments(...args: string[]) {
 		if (arg.startsWith("--cached")) {
 			if (arg === "--cached") {
 				cmd.cached = true
-			} else if (arg === "--cached=true" || "--cached=false") {
+			} else if (arg === "--cached=true" || arg === "--cached=false") {
 				cmd.cached = JSON.parse(arg.slice("--cached=".length))
 			} else {
 				badCmd = "--cached"
@@ -67,7 +67,7 @@ function parseCmdDevArguments(...args: string[]) {
 		} else if (arg.startsWith("--sourcemap")) {
 			if (arg === "--sourcemap") {
 				cmd.sourcemap = true
-			} else if (arg === "--sourcemap=true" || "--sourcemap=false") {
+			} else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
 				cmd.sourcemap = JSON.parse(arg.slice("--sourcemap=".length))
 			} else {
 				badCmd = "--sourcemap"
@@ -105,7 +105,7 @@ function parseCmdExportArguments(...args: string[]): types.CmdExport {
 		if (arg.startsWith("--cached")) {
 			if (arg === "--cached") {
 				cmd.cached = true
-			} else if (arg === "--cached=true" || "--cached=false") {
+			} else if (arg === "--cached=true" || arg === "--cached=false") {
 				cmd.cached = JSON.parse(arg.slice("--cached=".length))
 			} else {
 				badCmd = "--cached"
@@ -114,7 +114,7 @@ function parseCmdExportArguments(...args: string[]): types.CmdExport {
 		} else if (arg.startsWith("--sourcemap")) {
 			if (arg === "--sourcemap") {
 				cmd.sourcemap = true
-			} else if (arg === "--sourcemap=true" || "--sourcemap=false") {
+			} else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
 				cmd.sourcemap = JSON.parse(arg.slice("--sourcemap=".length))
 			} else {
 				badCmd = "--sourcemap"
@@ -169,21 +169,21 @@ function run(): void {
 
 	let cmd: types.Cmd
 	const arg = args[1]
-	if (arg == "version" || arg == "--version" || arg == "--v") {
+	if (arg === "version" || arg === "--version" || arg === "--v") {
 		console.log(process.env["RETRO_VERSION"] || "TODO")
 		process.exit(0)
-	} else if (arg == "usage" || arg == "--usage" || arg == "help" || arg == "--help") {
+	} else if (arg === "usage" || arg === "--usage" || arg === "help" || arg === "--help") {
 		console.log(usage)
 		process.exit(0)
-	} else if (arg == "dev") {
+	} else if (arg === "dev") {
 		process.env["__DEV__"] = "true"
 		process.env["NODE_ENV"] = "development"
 		cmd = parseCmdDevArguments(...args.slice(2))
-	} else if (arg == "export") {
+	} else if (arg === "export") {
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
 		cmd = parseCmdExportArguments(...args.slice(2))
-	} else if (arg == "serve") {
+	} else if (arg === "serve") {
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
 		cmd = parseCmdServeArguments(...args.slice(2))
@@ -192,7 +192,6 @@ function run(): void {
 		log.error(`Unrecognized command. Here are the commands you can use:
 
 ${cmds.split("\n").map(each => " ".repeat(2) + each).join("\n")}`)
-		process.exit(2)
 	}
 
 	console.log(cmd)

@@ -10,11 +10,11 @@ import * as utils from "./utils"
 
 const PORT = 3000
 
-let errored = false
-
-function didError(): boolean {
-	return errored
-}
+// let errored = false
+//
+// function didError(): boolean {
+// 	return errored
+// }
 
 // convertToFilesystemPath converts a browser path to a filesystem path.
 export function convertToFilesystemPath(path: string): string {
@@ -35,7 +35,7 @@ export function convertToFilesystemPath(path: string): string {
 export function serve(): void {
 	const server = http.createServer(
 		async (req, res): Promise<void> => {
-			if (req.url! === "/favicon.ico") {
+			if (req.url === "/favicon.ico") {
 				res.writeHead(204)
 				return
 			}
@@ -45,7 +45,7 @@ export function serve(): void {
 
 			let bytes: Buffer
 			try {
-				const path = p.join(process.cwd(), req.url!)
+				const path = p.join(process.cwd(), req.url)
 				bytes = await fs.promises.readFile(path)
 			} catch (err) {
 				if (err.code === constants.ENOENT) {
@@ -63,12 +63,12 @@ export function serve(): void {
 			// Done:
 			res.writeHead(200)
 			// ...
-			res.end(bytes!)
+			res.end(bytes)
 		},
 	)
 
 	setTimeout((): void => {
-		if (didError()) return
+		// if (didError()) return
 		utils.clearScreen()
 		console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 

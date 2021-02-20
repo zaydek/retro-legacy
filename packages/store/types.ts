@@ -10,7 +10,7 @@ export interface Store<T> {
 }
 
 // Funcs describes methods that return the next state.
-export type Funcs<T> = { [key: string]: (...args: any) => T }
+export type Funcs<T> = { [key: string]: (...args: unknown[]) => T }
 
 // FuncsCreator creates methods that return the next state.
 export type FuncsCreator = <T>(state: T) => Funcs<T>
