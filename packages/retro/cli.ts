@@ -95,7 +95,7 @@ function parseCmdDevArguments(...args: string[]) {
 
 // parseCmdDevArguments parses 'retro export [flags]'.
 // TODO: Write tests.
-function parseCmdExportArguments(...args: string[]) {
+function parseCmdExportArguments(...args: string[]): types.CmdExport {
 	const cmd: types.CmdExport = {
 		cached: false,
 		sourcemap: true,
@@ -132,7 +132,7 @@ function parseCmdExportArguments(...args: string[]) {
 
 // parseCmdDevArguments parses 'retro serve [flags]'.
 // TODO: Write tests.
-function parseCmdServeArguments(...args: string[]) {
+function parseCmdServeArguments(...args: string[]): types.CmdServe {
 	const cmd: types.CmdServe = {
 		port: 8000,
 	}
@@ -158,7 +158,7 @@ function parseCmdServeArguments(...args: string[]) {
 	return cmd
 }
 
-function run() {
+function run(): void {
 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
 
 	// Cover ["retro"] case:
@@ -189,7 +189,7 @@ function run() {
 		cmd = parseCmdServeArguments(...args.slice(2))
 	} else {
 		// prettier-ignore
-		log.error(`Unrecognized command. These are the commands:
+		log.error(`Unrecognized command. Here are the commands you can use:
 
 ${cmds.split("\n").map(each => " ".repeat(2) + each).join("\n")}`)
 		process.exit(2)

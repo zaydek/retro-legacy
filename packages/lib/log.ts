@@ -1,7 +1,7 @@
 import * as term from "./term"
 
 // (Use STACK_TRACE=true ... to see the stack trace)
-export function error(err: Error | string) {
+export function error(err: Error | string): void {
 	const STACK_TRACE = process.env["STACK_TRACE"] === "true"
 
 	if (typeof err === "string" || !STACK_TRACE) {
