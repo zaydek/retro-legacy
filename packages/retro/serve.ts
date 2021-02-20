@@ -2,6 +2,8 @@ import * as constants from "constants"
 import * as fs from "fs"
 import * as http from "http"
 import * as p from "path"
+import * as term from "../lib/term"
+import * as utils from "./utils"
 
 const PORT = 3000
 
@@ -51,9 +53,46 @@ function serve() {
 	})
 
 	setTimeout(() => {
-		console.log(`📡 http://localhost:${PORT}`)
+		utils.flushTerminal()
+		console.log(`${term.gray(process.argv.join(" "))}
+
+	${term.bold(">")} ${term.boldGreen("ok:")} ${term.bold(
+			`Serving your app on port ${PORT} (SSG); ${term.boldUnderline(`http://localhost:${PORT}`)}${term.bold(".")}`,
+		)}
+
+	${term.bold(`When you’re ready to stop the server, press Ctrl-C.`)}
+`)
 	}, 100)
 	server.listen(PORT)
 }
 
-serve()
+// reportError reports an error message to the user.
+function reportError(err: Error) {
+	if (process.env.STACK_TRACE !== "true") {
+		console.error(`${term.gray(process.argv.join(" "))}
+
+  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(err.message)}
+
+	(Use STACK_TRACE=true ... to see the current stack trace)
+`)
+	} else {
+		const stack = (err as { stack: string }).stack
+		// prettier-ignore
+		console.error(`${term.gray(process.argv.join(" "))}
+
+  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(err.message)}
+
+	${stack.split("\n").map(line => " ".repeat(2) + line).join("\n")}
+`)
+	}
+}
+
+;(() => {
+	try {
+		serve()
+		// throw new Error("Hello, world")
+	} catch (err) {
+		err.message = "Failed to serve your web app; " + err.message
+		reportError(err)
+	}
+})()

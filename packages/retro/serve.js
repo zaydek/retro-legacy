@@ -22,6 +22,8 @@ var __toModule = (module2) => {
     return module2;
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", {value: module2, enumerable: true})), module2);
 };
+
+// packages/retro/serve.ts
 __markAsModule(exports);
 __export(exports, {
   convertToFilesystemPath: () => convertToFilesystemPath
@@ -30,7 +32,24 @@ var constants = __toModule(require("constants"));
 var fs = __toModule(require("fs"));
 var http = __toModule(require("http"));
 var p = __toModule(require("path"));
-const PORT = 3e3;
+
+// packages/lib/term.ts
+var bold = (...args) => `[0;1m${args.join(" ")}[0m`;
+var gray = (...args) => `[0;2m${args.join(" ")}[0m`;
+var boldUnderline = (...args) => `[1;4m${args.join(" ")}[0m`;
+var boldRed = (...args) => `[1;31m${args.join(" ")}[0m`;
+var boldGreen = (...args) => `[1;32m${args.join(" ")}[0m`;
+
+// packages/retro/utils.ts
+var import_readline = __toModule(require("readline"));
+function flushTerminal() {
+  console.log("\n".repeat(process.stdout.rows));
+  import_readline.default.cursorTo(process.stdout, 0, 0);
+  import_readline.default.clearScreenDown(process.stdout);
+}
+
+// packages/retro/serve.ts
+var PORT = 3e3;
 function convertToFilesystemPath(path) {
   let path2 = path;
   if (path2.endsWith("/")) {
@@ -67,9 +86,40 @@ function serve() {
     res.end(bytes);
   });
   setTimeout(() => {
-    console.log(`\u{1F4E1} http://localhost:${PORT}`);
+    flushTerminal();
+    console.log(`${gray(process.argv.join(" "))}
+
+	${bold(">")} ${boldGreen("ok:")} ${bold(`Serving your app on port ${PORT} (SSG); ${boldUnderline(`http://localhost:${PORT}`)}${bold(".")}`)}
+
+	${bold(`When you\u2019re ready to stop the server, press Ctrl-C.`)}
+`);
   }, 100);
   server.listen(PORT);
 }
-serve();
+function reportError(err) {
+  if (process.env.STACK_TRACE !== "true") {
+    console.error(`${gray(process.argv.join(" "))}
+
+  ${bold(">")} ${boldRed("error:")} ${bold(err.message)}
+
+	(Use STACK_TRACE=true ... to see the current stack trace)
+`);
+  } else {
+    const stack = err.stack;
+    console.error(`${gray(process.argv.join(" "))}
+
+  ${bold(">")} ${boldRed("error:")} ${bold(err.message)}
+
+	${stack.split("\n").map((line) => " ".repeat(2) + line).join("\n")}
+`);
+  }
+}
+(() => {
+  try {
+    serve();
+  } catch (err) {
+    err.message = "Failed to serve your web app; " + err.message;
+    reportError(err);
+  }
+})();
 //# sourceMappingURL=serve.js.map
