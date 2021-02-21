@@ -1,31 +1,50 @@
-// CmdDev describes the 'retro dev' command.
-export interface CmdDev {
+// DevCommand describes the 'retro dev [flags]' command.
+export interface DevCommand {
 	type: "dev"
 	cached: boolean
 	sourcemap: boolean
 	port: number
 }
 
-// CmdExport describes the 'retro export' command.
-export interface CmdExport {
+// ExportCommand describes the 'retro export [flags]' command.
+export interface ExportCommand {
 	type: "export"
 	cached: boolean
 	sourcemap: boolean
 }
 
-// CmdServe describes the 'retro serve' command.
-export interface CmdServe {
+// ServeCommand describes the 'retro serve [flags]' command.
+export interface ServeCommand {
 	type: "serve"
 	port: number
 }
 
-export type Cmd = CmdDev | CmdExport | CmdServe
+export type Command = DevCommand | ExportCommand | ServeCommand
 
-// dev handles 'retro dev'.
-export type dev = (cmd: CmdDev) => void
+////////////////////////////////////////////////////////////////////////////////
 
-// export_ handles 'retro export'.
-export type export_ = (cmd: CmdExport) => void
+// DirConfiguration describes the directory configuration.
+export interface DirConfiguration {
+	publicDir: string
+	srcPagesDir: string
+	cacheDir: string
+	exportDir: string
+}
 
-// serve handles 'retro serve'.
-export type serve = (cmd: CmdServe) => void
+// Runtime a meta data structure for the runtime.
+export interface Runtime<Cmd> {
+	cmd: Cmd
+	dirConfig: DirConfiguration
+	// filesystemRouter: ...
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// dev handles 'retro dev [flags]'.
+export type dev = (runtime: Runtime<DevCommand>) => void
+
+// export_ handles 'retro export [flags]'.
+export type export_ = (runtime: Runtime<ExportCommand>) => void
+
+// serve handles 'retro serve [flags]'.
+export type serve = (runtime: Runtime<ServeCommand>) => void

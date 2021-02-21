@@ -47,10 +47,10 @@ export const usage =
 	`
 `
 
-// parseCmdDevArguments parses 'retro dev [flags]'.
+// parseDevCommandArgs parses 'retro dev [flags]'.
 // TODO: Write tests.
-function parseCmdDevArguments(...args: string[]): types.CmdDev {
-	const cmd: types.CmdDev = {
+function parseDevCommandArgs(...args: string[]): types.DevCommand {
+	const cmd: types.DevCommand = {
 		type: "dev",
 		cached: false,
 		sourcemap: true,
@@ -96,10 +96,10 @@ function parseCmdDevArguments(...args: string[]): types.CmdDev {
 	return cmd
 }
 
-// parseCmdDevArguments parses 'retro export [flags]'.
+// parseExportCommandArgs parses 'retro export [flags]'.
 // TODO: Write tests.
-function parseCmdExportArguments(...args: string[]): types.CmdExport {
-	const cmd: types.CmdExport = {
+function parseExportCommandArgs(...args: string[]): types.ExportCommand {
+	const cmd: types.ExportCommand = {
 		type: "export",
 		cached: false,
 		sourcemap: true,
@@ -134,10 +134,10 @@ function parseCmdExportArguments(...args: string[]): types.CmdExport {
 	return cmd
 }
 
-// parseCmdDevArguments parses 'retro serve [flags]'.
+// parseServeCommandArgs parses 'retro serve [flags]'.
 // TODO: Write tests.
-function parseCmdServeArguments(...args: string[]): types.CmdServe {
-	const cmd: types.CmdServe = {
+function parseServeCommandArgs(...args: string[]): types.ServeCommand {
+	const cmd: types.ServeCommand = {
 		type: "serve",
 		port: 8000,
 	}
@@ -172,7 +172,7 @@ function run(): void {
 		process.exit(0)
 	}
 
-	let cmd: types.Cmd
+	let cmd: types.Command
 	const arg = args[1]
 	if (arg === "version" || arg === "--version" || arg === "--v") {
 		console.log(process.env["RETRO_VERSION"] || "TODO")
@@ -181,11 +181,17 @@ function run(): void {
 		console.log(usage)
 		process.exit(0)
 	} else if (arg === "dev") {
-		cmd = parseCmdDevArguments(...args.slice(2))
+		process.env["__DEV__"] = "true"
+		process.env["NODE_ENV"] = "development"
+		cmd = parseDevCommandArgs(...args.slice(2))
 	} else if (arg === "export") {
-		cmd = parseCmdExportArguments(...args.slice(2))
+		process.env["__DEV__"] = "false"
+		process.env["NODE_ENV"] = "production"
+		cmd = parseExportCommandArgs(...args.slice(2))
 	} else if (arg === "serve") {
-		cmd = parseCmdServeArguments(...args.slice(2))
+		process.env["__DEV__"] = "false"
+		process.env["NODE_ENV"] = "production"
+		cmd = parseServeCommandArgs(...args.slice(2))
 	} else {
 		// prettier-ignore
 		log.error(`Unrecognized command. Here are the commands you can use:
@@ -193,21 +199,26 @@ function run(): void {
 ${cmds.split("\n").map(each => " ".repeat(2) + each).join("\n")}`)
 	}
 
+	const runtime: types.Runtime<types.Command> = {
+		cmd: cmd!,
+		// prettier-ignore
+		dirConfig: {
+			publicDir:   process.env.PUBLIC_DIR || "public",
+			srcPagesDir: process.env.PAGES_DIR  || "src/pages",
+			cacheDir:    process.env.CACHE_DIR  || "__cache__",
+			exportDir:   process.env.EXPORT_DIR || "__export__",
+		},
+	}
+
 	switch (cmd!.type) {
 		case "dev":
-			process.env["__DEV__"] = "true"
-			process.env["NODE_ENV"] = "development"
-			// dev(cmd! as types.CmdDev)
+			// serve(runtime as types.Runtime<types.DevCommand>)
 			break
 		case "export":
-			process.env["__DEV__"] = "false"
-			process.env["NODE_ENV"] = "production"
-			// export_(cmd! as types.CmdExport)
+			// serve(runtime as types.Runtime<types.ExportCommand>)
 			break
 		case "serve":
-			process.env["__DEV__"] = "false"
-			process.env["NODE_ENV"] = "production"
-			serve(cmd! as types.CmdServe)
+			serve(runtime as types.Runtime<types.ServeCommand>)
 			break
 	}
 }
