@@ -6,7 +6,6 @@ import * as types from "./types"
 import * as utils from "./utils"
 
 // spaify converts a URL for SPA-mode.
-// eslint-disable-next-line
 function spaify(_: string): string {
 	return "/"
 }

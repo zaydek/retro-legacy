@@ -79,6 +79,9 @@ function clearScreen() {
 var esbuild = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
 var p = __toModule(require("path"));
+function spaify(_) {
+  return "/";
+}
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
@@ -114,9 +117,14 @@ var serve2 = async (runtime) => {
       console.log(`  ${bold("\u2192")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${decorateStatus(args.status)} (${descriptMs})`);
     }
   }, {});
+  let transform = ssgify;
+  if (runtime.cmd.mode === "spa") {
+    transform = spaify;
+  }
   const proxySrv = http.createServer((req, res) => {
-    const proxyReq = http.request({...req, path: ssgify(req.url), port: result.port}, (proxyRes) => {
+    const proxyReq = http.request({...req, path: transform(req.url), port: result.port}, (proxyRes) => {
       if (proxyRes.statusCode === 404) {
+        res.writeHead(200, {"Content-Type": "text/plain"});
         res.end("404 page not found");
       } else {
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
