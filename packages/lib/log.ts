@@ -1,23 +1,20 @@
 import * as term from "./term"
 
-// (Use STACK_TRACE=true ... to see the stack trace)
-export function error(err: Error | string): void {
-	const STACK_TRACE = process.env["STACK_TRACE"] === "true"
+export function error(error: string | Error): void {
+	if (typeof error === "string") error = new Error(error)
 
-	if (typeof err === "string" || !STACK_TRACE) {
+	const traceEnabled = process.env["STACK_TRACE"] === "true"
+	if (!traceEnabled) {
 		console.error(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(err)}
+  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(error.message)}
 `)
 	} else {
-		const stack = (err as { stack: string }).stack
-		// prettier-ignore
 		console.error(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(err.message)}
-
-	${stack.split("\n").map(line => " ".repeat(2) + line).join("\n")}
+  ${term.bold(">")} ${term.boldRed("error:")} ${term.bold(error.message)}
 `)
+		console.error({ error })
 	}
 	process.exit(0)
 }

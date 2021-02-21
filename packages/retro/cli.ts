@@ -1,8 +1,9 @@
 import * as log from "../lib/log"
 import * as term from "../lib/term"
 import * as types from "./types"
+import * as utils from "./utils"
 
-import { serve } from "./serve"
+import serve from "./serve"
 
 export const cmds = `
 retro dev     Start the dev server
@@ -163,7 +164,15 @@ function parseServeCommandArgs(...args: string[]): types.ServeCommand {
 	return cmd
 }
 
-function run(): void {
+// prettier-ignore
+const DIRS = {
+	publicDir:   process.env.PUBLIC_DIR || "public",
+	srcPagesDir: process.env.PAGES_DIR  || "src/pages",
+	cacheDir:    process.env.CACHE_DIR  || "__cache__",
+	exportDir:   process.env.EXPORT_DIR || "__export__",
+}
+
+async function run(): Promise<void> {
 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
 
 	// Cover ["retro"] case:
@@ -193,34 +202,43 @@ function run(): void {
 		process.env["NODE_ENV"] = "production"
 		cmd = parseServeCommandArgs(...args.slice(2))
 	} else {
+		// TODO: log.error should automatically space-indent so we don’t have to at
+		// every call site.
 		// prettier-ignore
-		log.error(`Unrecognized command. Here are the commands you can use:
+		log.error(new Error(`No such command '${arg}'. Use one of these commands:
 
-${cmds.split("\n").map(each => " ".repeat(2) + each).join("\n")}`)
+${cmds.split("\n").map(each => `${" ".repeat(2)}- ${each}`).join("\n")}
+
+  Or use 'retro usage' for usage.`))
 	}
 
 	const runtime: types.Runtime<types.Command> = {
 		cmd: cmd!,
-		// prettier-ignore
-		dirConfig: {
-			publicDir:   process.env.PUBLIC_DIR || "public",
-			srcPagesDir: process.env.PAGES_DIR  || "src/pages",
-			cacheDir:    process.env.CACHE_DIR  || "__cache__",
-			exportDir:   process.env.EXPORT_DIR || "__export__",
-		},
+		dirs: DIRS,
 	}
 
 	switch (cmd!.type) {
 		case "dev":
-			// serve(runtime as types.Runtime<types.DevCommand>)
+			// await serve(runtime as types.Runtime<types.DevCommand>)
 			break
 		case "export":
-			// serve(runtime as types.Runtime<types.ExportCommand>)
+			// await serve(runtime as types.Runtime<types.ExportCommand>)
 			break
 		case "serve":
-			serve(runtime as types.Runtime<types.ServeCommand>)
+			await serve(runtime as types.Runtime<types.ServeCommand>)
 			break
 	}
 }
+
+process.on("uncaughtException", err => {
+	utils.setWillEagerlyTerminate(true)
+
+	// console.log({ err })
+
+	// Force the stack trace on:
+	process.env["STACK_TRACE"] = "true"
+	err.message = `UncaughtException: ${err.message}.`
+	log.error(err)
+})
 
 run()

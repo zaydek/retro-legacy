@@ -5,11 +5,7 @@ module.exports = {
 		jest: true,
 		node: true,
 	},
-	// prettier-ignore
-	extends: [
-		"eslint:recommended",
-    "plugin:react-hooks/recommended",
-	],
+	extends: ["eslint:recommended", "plugin:react-hooks/recommended"],
 	globals: { JSX: true }, // JSX.Element
 	parser: "@typescript-eslint/parser",
 	plugins: ["@typescript-eslint"],

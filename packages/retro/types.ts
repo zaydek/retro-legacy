@@ -34,17 +34,17 @@ export interface DirConfiguration {
 // Runtime a meta data structure for the runtime.
 export interface Runtime<Cmd> {
 	cmd: Cmd
-	dirConfig: DirConfiguration
+	dirs: DirConfiguration
 	// filesystemRouter: ...
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // dev handles 'retro dev [flags]'.
-export type dev = (runtime: Runtime<DevCommand>) => void
+export type dev = (runtime: Runtime<DevCommand>) => Promise<void>
 
 // export_ handles 'retro export [flags]'.
-export type export_ = (runtime: Runtime<ExportCommand>) => void
+export type export_ = (runtime: Runtime<ExportCommand>) => Promise<void>
 
 // serve handles 'retro serve [flags]'.
-export type serve = (runtime: Runtime<ServeCommand>) => void
+export type serve = (runtime: Runtime<ServeCommand>) => Promise<void>
