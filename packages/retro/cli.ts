@@ -210,14 +210,11 @@ async function run(): Promise<void> {
 		process.env["NODE_ENV"] = "production"
 		cmd = parseServeCommandArgs(...args.slice(2))
 	} else {
-		// TODO: log.error should automatically space-indent so we don’t have to at
-		// every call site.
-		// prettier-ignore
-		log.error(new Error(`No such command '${arg}'. Use one of these commands:
+		log.error(`No such command '${arg}'. Use one of these commands:
 
-${cmds.split("\n").map(each => `${" ".repeat(2)}- ${each}`).join("\n")}
+${cmds}
 
-  Or use 'retro usage' for usage.`))
+Or use 'retro usage' for usage.`)
 	}
 
 	const runtime: types.Runtime<types.Command> = {
@@ -233,7 +230,8 @@ ${cmds.split("\n").map(each => `${" ".repeat(2)}- ${each}`).join("\n")}
 			// await serve(runtime as types.Runtime<types.ExportCommand>)
 			break
 		case "serve":
-			await serve(runtime as types.Runtime<types.ServeCommand>)
+			const r = runtime as types.Runtime<types.ServeCommand>
+			await serve(r)
 			break
 	}
 }

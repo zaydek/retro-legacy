@@ -1,5 +1,6 @@
 import * as esbuild from "esbuild"
 import * as http from "http"
+import * as log from "../lib/log"
 import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
@@ -28,12 +29,9 @@ const serve: types.serve = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
 		utils.clearScreen()
-		console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
+		log.info(`http://localhost:${runtime.cmd.port}
 
-  ${term.bold(">")} ${term.boldGreen("ok:")} ${term.bold(`http://localhost:${runtime.cmd.port}`)}
-
-  ${term.bold(`When you’re ready to stop the server, press Ctrl-C.`)}
-`)
+When you’re ready to stop the server, press Ctrl-C.`)
 	}, 10)
 
 	// prettier-ignore
@@ -48,15 +46,15 @@ const serve: types.serve = async runtime => {
 		},
 	}, {})
 
-	let transform = ssgify
+	let transformURL = ssgify
 	if (runtime.cmd.mode === "spa") {
-		transform = spaify
+		transformURL = spaify
 	}
 
 	// The proxy server.
 	const proxySrv = http.createServer((req, res) => {
 		// The proxy request.
-		const proxyReq = http.request({ ...req, path: transform(req.url!), port: result.port }, proxyRes => {
+		const proxyReq = http.request({ ...req, path: transformURL(req.url!), port: result.port }, proxyRes => {
 			// The proxy response.
 			if (proxyRes.statusCode === 404) {
 				res.writeHead(200, { "Content-Type": "text/plain" })

@@ -40,19 +40,33 @@ var boldRed = (...args) => `[1;31m${args.join(" ")}[0m`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}[0m`;
 
 // packages/lib/log.ts
+function formatMessage(msg) {
+  return msg.split("\n").map((each, x) => {
+    if (x > 0 && each.length > 0) {
+      return " ".repeat(2) + each;
+    }
+    return each;
+  }).join("\n");
+}
+function info(...args) {
+  const message = formatMessage(args.join(" "));
+  console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
+
+  ${bold(">")} ${boldGreen("ok:")} ${bold(message)}
+`);
+}
 function error(error2) {
-  if (typeof error2 === "string")
-    error2 = new Error(error2);
+  const message = formatMessage(typeof error2 === "object" ? error2.message : error2);
   const traceEnabled = process.env["STACK_TRACE"] === "true";
   if (!traceEnabled) {
     console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${bold(">")} ${boldRed("error:")} ${bold(error2.message)}
+  ${bold(">")} ${boldRed("error:")} ${bold(message)}
 `);
   } else {
     console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${bold(">")} ${boldRed("error:")} ${bold(error2.message)}
+  ${bold(">")} ${boldRed("error:")} ${bold(message)}
 `);
     console.error({error: error2});
   }
@@ -100,12 +114,9 @@ var serve2 = async (runtime) => {
     if (getWillEagerlyTerminate())
       return;
     clearScreen();
-    console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
+    info(`http://localhost:${runtime.cmd.port}
 
-  ${bold(">")} ${boldGreen("ok:")} ${bold(`http://localhost:${runtime.cmd.port}`)}
-
-  ${bold(`When you\u2019re ready to stop the server, press Ctrl-C.`)}
-`);
+When you\u2019re ready to stop the server, press Ctrl-C.`);
   }, 10);
   const result = await esbuild.serve({
     servedir: runtime.dir.exportDir,
@@ -117,12 +128,12 @@ var serve2 = async (runtime) => {
       console.log(`  ${bold("\u2192")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${decorateStatus(args.status)} (${descriptMs})`);
     }
   }, {});
-  let transform = ssgify;
+  let transformURL = ssgify;
   if (runtime.cmd.mode === "spa") {
-    transform = spaify;
+    transformURL = spaify;
   }
   const proxySrv = http.createServer((req, res) => {
-    const proxyReq = http.request({...req, path: transform(req.url), port: result.port}, (proxyRes) => {
+    const proxyReq = http.request({...req, path: transformURL(req.url), port: result.port}, (proxyRes) => {
       if (proxyRes.statusCode === 404) {
         res.writeHead(200, {"Content-Type": "text/plain"});
         res.end("404 page not found");
@@ -327,11 +338,11 @@ async function run() {
     process.env["NODE_ENV"] = "production";
     cmd = parseServeCommandArgs(...args.slice(2));
   } else {
-    error(new Error(`No such command '${arg}'. Use one of these commands:
+    error(`No such command '${arg}'. Use one of these commands:
 
-${cmds.split("\n").map((each) => `${" ".repeat(2)}- ${each}`).join("\n")}
+${cmds}
 
-  Or use 'retro usage' for usage.`));
+Or use 'retro usage' for usage.`);
   }
   const runtime = {
     cmd,
@@ -343,7 +354,8 @@ ${cmds.split("\n").map((each) => `${" ".repeat(2)}- ${each}`).join("\n")}
     case "export":
       break;
     case "serve":
-      await serve_default(runtime);
+      const r = runtime;
+      await serve_default(r);
       break;
   }
 }
