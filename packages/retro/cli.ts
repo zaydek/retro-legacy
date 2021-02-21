@@ -3,6 +3,7 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
+import export_ from "./export_"
 import serve from "./serve"
 
 export const cmds = `
@@ -227,11 +228,12 @@ Or use 'retro usage' for usage.`)
 			// await serve(runtime as types.Runtime<types.DevCommand>)
 			break
 		case "export":
-			// await serve(runtime as types.Runtime<types.ExportCommand>)
+			const r2 = runtime as types.Runtime<types.ExportCommand>
+			await export_(r2)
 			break
 		case "serve":
-			const r = runtime as types.Runtime<types.ServeCommand>
-			await serve(r)
+			const r3 = runtime as types.Runtime<types.ServeCommand>
+			await serve(r3)
 			break
 	}
 }

@@ -89,17 +89,129 @@ function clearScreen() {
   import_readline.default.clearScreenDown(process.stdout);
 }
 
+// packages/retro/createRouter.ts
+var fs = __toModule(require("fs"));
+var p = __toModule(require("path"));
+var supported = {
+  ".js": true,
+  ".jsx": true,
+  ".ts": true,
+  ".tsx": true,
+  ".md": true,
+  ".mdx": true
+};
+function parsePathMetadata(path) {
+  const basename2 = p.basename(path);
+  const ext = p.extname(path);
+  const name = basename2.slice(0, -ext.length);
+  return {path, basename: basename2, name, ext};
+}
+function dstPath(runtime, path) {
+  const syntax = p.join(runtime.dir.exportDir, path.path.slice(runtime.dir.srcPagesDir.length));
+  return syntax.slice(0, -path.ext.length) + ".html";
+}
+function component(path) {
+  const {name} = path;
+  let syntax = "";
+  for (let x = 0; x < name.length; x++) {
+    switch (name[x]) {
+      case "/":
+        x++;
+        while (x < name.length) {
+          if (name[x] !== "/") {
+            break;
+          }
+          x++;
+        }
+        if (x < name.length) {
+          syntax += name[x].toUpperCase();
+        }
+        break;
+      case "-":
+        x++;
+        while (x < name.length) {
+          if (name[x] !== "/") {
+            break;
+          }
+          x++;
+        }
+        if (x < name.length) {
+          syntax += name[x].toUpperCase();
+        }
+        break;
+      default:
+        syntax += name[x];
+        break;
+    }
+  }
+  syntax = "Page" + syntax[0].toUpperCase() + syntax.slice(1);
+  return syntax;
+}
+function path_(runtime, path) {
+  const syntax = path.path.slice(runtime.dir.srcPagesDir.length, -path.ext.length);
+  if (syntax.endsWith("/index")) {
+    return syntax.slice(0, -"index".length);
+  }
+  return syntax;
+}
+function parseRoute(runtime, path) {
+  const route = {
+    srcPath: path.path,
+    dstPath: dstPath(runtime, path),
+    component: component(path),
+    path: path_(runtime, path)
+  };
+  return route;
+}
+async function readPaths(dir) {
+  const paths = [];
+  async function recurse(dir2) {
+    const ls = await fs.promises.readdir(dir2);
+    for (const each of ls) {
+      const current = p.join(dir2, each);
+      if ((await fs.promises.stat(current)).isDirectory()) {
+        paths.push(parsePathMetadata(current));
+        await recurse(current);
+        continue;
+      }
+      paths.push(parsePathMetadata(current));
+    }
+  }
+  await recurse(dir);
+  return paths;
+}
+async function createRouter(runtime) {
+  const paths = await readPaths("src");
+  const subpaths = paths.filter((path) => {
+    if (path.name.startsWith("_") || path.name.startsWith("$") || path.name.endsWith("_") || path.name.endsWith("$")) {
+      return false;
+    }
+    return supported[path.ext];
+  });
+  const router = [];
+  for (const path of subpaths) {
+    router.push(parseRoute(runtime, path));
+  }
+  return router;
+}
+
+// packages/retro/export_.ts
+var export_ = async (runtime) => {
+  console.log(await createRouter(runtime));
+};
+var export_default = export_;
+
 // packages/retro/serve.ts
 var esbuild = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
-var p = __toModule(require("path"));
+var p2 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p.extname(url) === "")
+  if (p2.extname(url) === "")
     return url + ".html";
   return url;
 }
@@ -352,10 +464,12 @@ Or use 'retro usage' for usage.`);
     case "dev":
       break;
     case "export":
+      const r2 = runtime;
+      await export_default(r2);
       break;
     case "serve":
-      const r = runtime;
-      await serve_default(r);
+      const r3 = runtime;
+      await serve_default(r3);
       break;
   }
 }

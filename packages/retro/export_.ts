@@ -5,6 +5,8 @@ import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
 
+import createRouter from "./createRouter"
+
 // // RenderPayload describes a render payload (page metadata).
 // interface RenderPayload {
 // 	outputPath: string
@@ -217,6 +219,7 @@ import * as types from "./types"
 // }
 
 const export_: types.export_ = async runtime => {
+	console.log(await createRouter(runtime))
 	// const router = await exportPagesAndCreateRouter(runtime)
 	//
 	// // Cache router for --cached:

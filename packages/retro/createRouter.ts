@@ -1,5 +1,6 @@
 import * as fs from "fs"
 import * as p from "path"
+import * as types from "./types"
 
 // prettier-ignore
 interface StaticRoute {
@@ -11,6 +12,7 @@ interface StaticRoute {
 
 // prettier-ignore
 interface PathMetadata {
+	path:     string // e.g. "path/to/basename.ext"
 	basename: string // e.g. "basename.ext"
 	name:     string // e.g. "basename"
 	ext:      string // e.g. ".ext"
@@ -26,25 +28,25 @@ const supported: { [key: string]: boolean } = {
 	".mdx": true,
 }
 
-// parsePath parses path metadata.
-function parsePath(path: string): PathMetadata {
+// parsePathMetadata parses path metadata.
+function parsePathMetadata(path: string): PathMetadata {
 	const basename = p.basename(path)
 	const ext = p.extname(path)
 	const name = basename.slice(0, -ext.length)
-	return { basename, ext, name }
+	return { path, basename, name, ext }
 }
 
 // src/pages/index.js -> __export__/index.html
-function dstPath(runtime: Runtime, path: string): string {
-	const { ext } = parsePath(path)
-
-	const syntax = p.join(runtime.dir.exportDir, path.slice(runtime.dir.srcPagesDir.length))
-	return syntax.slice(0, -ext.length) + ".html"
+// TODO: Write tests.
+function dstPath(runtime: types.Runtime<types.Command>, path: PathMetadata): string {
+	const syntax = p.join(runtime.dir.exportDir, path.path.slice(runtime.dir.srcPagesDir.length))
+	return syntax.slice(0, -path.ext.length) + ".html"
 }
 
 // "src/pages/component.js" -> "Component"
-function component(path: string): string {
-	const { name } = parsePath(path)
+// TODO: Write tests.
+function component(path: PathMetadata): string {
+	const { name } = path
 
 	let syntax = ""
 	for (let x = 0; x < name.length; x++) {
@@ -58,9 +60,9 @@ function component(path: string): string {
 					}
 					x++
 				}
-				// if (x < name.length) {
-				syntax += name[x]!.toUpperCase()
-				// }
+				if (x < name.length) {
+					syntax += name[x]!.toUpperCase()
+				}
 				break
 			case "-":
 				x++
@@ -71,9 +73,9 @@ function component(path: string): string {
 					}
 					x++
 				}
-				// if (x < name.length) {
-				syntax += name[x]!.toUpperCase()
-				// }
+				if (x < name.length) {
+					syntax += name[x]!.toUpperCase()
+				}
 				break
 			default:
 				syntax += name[x]
@@ -86,9 +88,9 @@ function component(path: string): string {
 
 // "src/pages/index.js" -> "/"
 // "src/pages/hello-world.js" -> "/hello-world"
-function path_(runtime: Runtime, path: string): string {
-	const { ext } = parsePath(path)
-	const syntax = path.slice(runtime.dir.srcPagesDir.length, -ext.length)
+// TODO: Write tests.
+function path_(runtime: types.Runtime<types.Command>, path: PathMetadata): string {
+	const syntax = path.path.slice(runtime.dir.srcPagesDir.length, -path.ext.length)
 	if (syntax.endsWith("/index")) {
 		// "/" case:
 		return syntax.slice(0, -"index".length)
@@ -98,9 +100,10 @@ function path_(runtime: Runtime, path: string): string {
 }
 
 // parseRoute parses a new filesystem route.
-function parseRoute(runtime: Runtime, path: string): StaticRoute {
+// TODO: Write tests.
+function parseRoute(runtime: types.Runtime<types.Command>, path: PathMetadata): StaticRoute {
 	const route: StaticRoute = {
-		srcPath: path,
+		srcPath: path.path,
 		dstPath: dstPath(runtime, path),
 		component: component(path),
 		path: path_(runtime, path),
@@ -108,49 +111,35 @@ function parseRoute(runtime: Runtime, path: string): StaticRoute {
 	return route
 }
 
-async function readdirRecursive(dir: string): Promise<string[]> {
-	const paths: string[] = []
-	const recurse = async (dir: string): Promise<void> => {
+async function readPaths(dir: string): Promise<PathMetadata[]> {
+	const paths: PathMetadata[] = []
+	async function recurse(dir: string): Promise<void> {
 		const ls = await fs.promises.readdir(dir)
 		for (const each of ls) {
 			const current = p.join(dir, each)
 			if ((await fs.promises.stat(current)).isDirectory()) {
-				paths.push(current)
+				paths.push(parsePathMetadata(current))
 				await recurse(current) // Recurse on the current directory
 				continue
 			}
-			paths.push(current)
+			paths.push(parsePathMetadata(current))
 		}
 	}
 	await recurse(dir)
 	return paths
 }
 
-// prettier-ignore
-const DIRS = {
-	publicDir:   "public",
-	srcPagesDir: "src/pages",
-	cacheDir:    "__cache__",
-	exportDir:   "__export__",
-}
-
-// prettier-ignore
-interface Runtime {
-	dir: typeof DIRS
-}
-
-export async function createStaticRouter(runtime: Runtime): Promise<StaticRoute[]> {
-	const paths = await readdirRecursive("src")
-	const filtered = paths.filter(path => {
-		const { name, ext } = parsePath(path)
-		if (name.startsWith("_") || name.startsWith("$") || name.endsWith("_") || name.endsWith("$")) {
+// createRouter creates a route from src/pages.
+export default async function createRouter(runtime: types.Runtime<types.Command>): Promise<StaticRoute[]> {
+	const paths = await readPaths("src")
+	const subpaths = paths.filter(path => {
+		if (path.name.startsWith("_") || path.name.startsWith("$") || path.name.endsWith("_") || path.name.endsWith("$")) {
 			return false
 		}
-		return supported[ext]
+		return supported[path.ext]
 	})
-
 	const router: StaticRoute[] = []
-	for (const path of filtered) {
+	for (const path of subpaths) {
 		router.push(parseRoute(runtime, path))
 	}
 	return router
