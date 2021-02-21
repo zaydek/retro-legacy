@@ -2,6 +2,8 @@ import * as log from "../lib/log"
 import * as term from "../lib/term"
 import * as types from "./types"
 
+import { serve } from "./serve"
+
 export const cmds = `
 retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
@@ -49,6 +51,7 @@ export const usage =
 // TODO: Write tests.
 function parseCmdDevArguments(...args: string[]): types.CmdDev {
 	const cmd: types.CmdDev = {
+		type: "dev",
 		cached: false,
 		sourcemap: true,
 		port: 8000,
@@ -97,6 +100,7 @@ function parseCmdDevArguments(...args: string[]): types.CmdDev {
 // TODO: Write tests.
 function parseCmdExportArguments(...args: string[]): types.CmdExport {
 	const cmd: types.CmdExport = {
+		type: "export",
 		cached: false,
 		sourcemap: true,
 	}
@@ -134,6 +138,7 @@ function parseCmdExportArguments(...args: string[]): types.CmdExport {
 // TODO: Write tests.
 function parseCmdServeArguments(...args: string[]): types.CmdServe {
 	const cmd: types.CmdServe = {
+		type: "serve",
 		port: 8000,
 	}
 	let badCmd = ""
@@ -176,16 +181,10 @@ function run(): void {
 		console.log(usage)
 		process.exit(0)
 	} else if (arg === "dev") {
-		process.env["__DEV__"] = "true"
-		process.env["NODE_ENV"] = "development"
 		cmd = parseCmdDevArguments(...args.slice(2))
 	} else if (arg === "export") {
-		process.env["__DEV__"] = "false"
-		process.env["NODE_ENV"] = "production"
 		cmd = parseCmdExportArguments(...args.slice(2))
 	} else if (arg === "serve") {
-		process.env["__DEV__"] = "false"
-		process.env["NODE_ENV"] = "production"
 		cmd = parseCmdServeArguments(...args.slice(2))
 	} else {
 		// prettier-ignore
@@ -194,7 +193,23 @@ function run(): void {
 ${cmds.split("\n").map(each => " ".repeat(2) + each).join("\n")}`)
 	}
 
-	console.log(cmd)
+	switch (cmd!.type) {
+		case "dev":
+			process.env["__DEV__"] = "true"
+			process.env["NODE_ENV"] = "development"
+			// dev(cmd! as types.CmdDev)
+			break
+		case "export":
+			process.env["__DEV__"] = "false"
+			process.env["NODE_ENV"] = "production"
+			// export_(cmd! as types.CmdExport)
+			break
+		case "serve":
+			process.env["__DEV__"] = "false"
+			process.env["NODE_ENV"] = "production"
+			serve(cmd! as types.CmdServe)
+			break
+	}
 }
 
 run()

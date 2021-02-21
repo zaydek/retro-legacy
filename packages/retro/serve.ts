@@ -6,6 +6,7 @@ import * as fs from "fs"
 import * as http from "http"
 import * as p from "path"
 import * as term from "../lib/term"
+import * as types from "./types"
 import * as utils from "./utils"
 
 const PORT = 3000
@@ -32,7 +33,7 @@ export function convertToFilesystemPath(path: string): string {
 
 // This implementation is loosely based on https://stackoverflow.com/a/44188852.
 // TODO: Use the esbuild serve command?
-export function serve(): void {
+export const serve: types.serve = (cmd: types.CmdServe): void => {
 	const server = http.createServer(
 		async (req, res): Promise<void> => {
 			if (req.url === "/favicon.ico") {
