@@ -25,6 +25,11 @@ function decorateStatus(status: number): string {
 	return term.red(status)
 }
 
+// This implementation is roughly based on:
+//
+// - https://esbuild.github.io/api/#customizing-server-behavior
+// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
+//
 const serve: types.serve = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
