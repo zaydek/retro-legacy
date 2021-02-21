@@ -5,7 +5,7 @@ module.exports = {
 		jest: true,
 		node: true,
 	},
-	extends: ["eslint:recommended", "plugin:react-hooks/recommended"],
+	extends: ["plugin:react-hooks/recommended"],
 	globals: { JSX: true }, // JSX.Element
 	parser: "@typescript-eslint/parser",
 	plugins: ["@typescript-eslint"],

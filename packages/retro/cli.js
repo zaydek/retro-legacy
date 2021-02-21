@@ -36,7 +36,6 @@ var gray = (...args) => `[0;2m${args.join(" ")}[0m`;
 var underline = (...args) => `[0;4m${args.join(" ")}[0m`;
 var red = (...args) => `[0;31m${args.join(" ")}[0m`;
 var green = (...args) => `[0;32m${args.join(" ")}[0m`;
-var boldUnderline = (...args) => `[1;4m${args.join(" ")}[0m`;
 var boldRed = (...args) => `[1;31m${args.join(" ")}[0m`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}[0m`;
 
@@ -78,11 +77,20 @@ function clearScreen() {
 
 // packages/retro/serve.ts
 var esbuild = __toModule(require("esbuild"));
-function colorStatus(statusCode) {
-  if (statusCode >= 200 && statusCode < 300) {
-    return green(statusCode);
+var http = __toModule(require("http"));
+var p = __toModule(require("path"));
+function ssgify(url) {
+  if (url.endsWith("/"))
+    return url + "index.html";
+  if (p.extname(url) === "")
+    return url + ".html";
+  return url;
+}
+function decorateStatus(status) {
+  if (status >= 200 && status < 300) {
+    return green(status);
   }
-  return red(statusCode);
+  return red(status);
 }
 var serve2 = async (runtime) => {
   setTimeout(() => {
@@ -91,18 +99,33 @@ var serve2 = async (runtime) => {
     clearScreen();
     console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${bold(">")} ${boldGreen("ok:")} ${bold(`Serving your app on port ${runtime.cmd.port}; ${boldUnderline(`http://localhost:${runtime.cmd.port}`)}${bold(".")}`)}
+  ${bold(">")} ${boldGreen("ok:")} ${bold(`http://localhost:${runtime.cmd.port}`)}
 
   ${bold(`When you\u2019re ready to stop the server, press Ctrl-C.`)}
-	`);
+`);
   }, 10);
-  await esbuild.serve({
-    port: runtime.cmd.port,
-    servedir: runtime.dirs.exportDir,
+  const result = await esbuild.serve({
+    servedir: runtime.dir.exportDir,
     onRequest: (args) => {
-      console.log(`  ${bold("\u2192")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${colorStatus(args.status)} (${args.timeInMS}ms${args.timeInMS === 0 ? " - cached" : ""})`);
+      let descriptMs = args.timeInMS + "ms";
+      if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
+        descriptMs += " - cached";
+      }
+      console.log(`  ${bold("\u2192")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${decorateStatus(args.status)} (${descriptMs})`);
     }
   }, {});
+  const proxySrv = http.createServer((req, res) => {
+    const proxyReq = http.request({...req, path: ssgify(req.url), port: result.port}, (proxyRes) => {
+      if (proxyRes.statusCode === 404) {
+        res.end("404 page not found");
+      } else {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res, {end: true});
+      }
+    });
+    req.pipe(proxyReq, {end: true});
+  });
+  proxySrv.listen(runtime.cmd.port);
 };
 var serve_default = serve2;
 
@@ -124,26 +147,27 @@ var usage = `${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
     Start the dev server
 
-      --cached=...         Use cached resources (default false)
-      --source-map=...     Add source maps (default true)
-      --port=<number>=...  Port number (default 8000)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
+      --port=...       Port number (default 8000)
 
   ${bold("retro export")}
 
     Export the production-ready build (SSG)
 
-      --cached=...         Use cached resources (default false)
-      --source-map=...     Add source maps (default true)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
 
   ${bold("retro serve")}
 
     Serve the production-ready build
 
-      --port=...           Port number (default 8000)
+      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+      --port=...       Port number (default 8000)
 
   ${bold("Repository:")}
 
-    ` + underline("https://github.com/zaydek/retro") + `
+    ${underline("https://github.com/zaydek/retro")}
 `;
 function parseDevCommandArgs(...args) {
   const cmd = {
@@ -229,11 +253,21 @@ function parseExportCommandArgs(...args) {
 function parseServeCommandArgs(...args) {
   const cmd = {
     type: "serve",
+    mode: "ssg",
     port: 8e3
   };
   let badCmd = "";
   for (const arg of args) {
-    if (arg.startsWith("--port")) {
+    if (arg.startsWith("--mode")) {
+      if (arg === "--mode=spa") {
+        cmd.mode = "spa";
+      } else if (arg === "--mode=ssg") {
+        cmd.mode = "ssg";
+      } else {
+        badCmd = "--mode";
+        break;
+      }
+    } else if (arg.startsWith("--port")) {
       if (/^--port=\d+$/.test(arg)) {
         cmd.port = JSON.parse(arg.slice("--port=".length));
       } else {
@@ -293,7 +327,7 @@ ${cmds.split("\n").map((each) => `${" ".repeat(2)}- ${each}`).join("\n")}
   }
   const runtime = {
     cmd,
-    dirs: DIRS
+    dir: DIRS
   };
   switch (cmd.type) {
     case "dev":

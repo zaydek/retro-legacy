@@ -16,6 +16,7 @@ export interface ExportCommand {
 // ServeCommand describes the 'retro serve [flags]' command.
 export interface ServeCommand {
 	type: "serve"
+	mode: "spa" | "ssg"
 	port: number
 }
 
@@ -34,7 +35,7 @@ export interface DirConfiguration {
 // Runtime a meta data structure for the runtime.
 export interface Runtime<Cmd> {
 	cmd: Cmd
-	dirs: DirConfiguration
+	dir: DirConfiguration
 	// filesystemRouter: ...
 }
 

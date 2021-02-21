@@ -1,27 +1,28 @@
 import * as esbuild from "esbuild"
+import * as http from "http"
+import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-// // convertToFilesystemPath converts a browser path to a filesystem path.
-// function convertToFilesystemPath(path: string): string {
-// 	// "/" -> "/index"
-// 	let path2 = path
-// 	if (path2.endsWith("/")) {
-// 		path2 += "index"
-// 	}
-// 	// "/index" -> "/index.html"
-// 	if (p.extname(path2) === "") {
-// 		path2 += ".html"
-// 	}
-// 	return path2
-// }
+// spaify converts a URL for SPA-mode.
+// eslint-disable-next-line
+function spaify(_: string): string {
+	return "/"
+}
 
-function colorStatus(statusCode: number): string {
-	if (statusCode >= 200 && statusCode < 300) {
-		return term.green(statusCode)
+// ssgify converts a URL for SSG-mode.
+function ssgify(url: string): string {
+	if (url.endsWith("/")) return url + "index.html"
+	if (p.extname(url) === "") return url + ".html"
+	return url
+}
+
+function decorateStatus(status: number): string {
+	if (status >= 200 && status < 300) {
+		return term.green(status)
 	}
-	return term.red(statusCode)
+	return term.red(status)
 }
 
 const serve: types.serve = async runtime => {
@@ -30,30 +31,45 @@ const serve: types.serve = async runtime => {
 		utils.clearScreen()
 		console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${term.bold(">")} ${term.boldGreen("ok:")} ${term.bold(
-			`Serving your app on port ${runtime.cmd.port}; ${term.boldUnderline(
-				`http://localhost:${runtime.cmd.port}`,
-			)}${term.bold(".")}`,
-		)}
+  ${term.bold(">")} ${term.boldGreen("ok:")} ${term.bold(`http://localhost:${runtime.cmd.port}`)}
 
   ${term.bold(`When you’re ready to stop the server, press Ctrl-C.`)}
-	`)
+`)
 	}, 10)
 
-	await esbuild.serve(
-		{
-			port: runtime.cmd.port,
-			servedir: runtime.dirs.exportDir,
-			onRequest: (args: esbuild.ServeOnRequestArgs) => {
-				console.log(
-					`  ${term.bold("→")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${colorStatus(
-						args.status,
-					)} (${args.timeInMS}ms${args.timeInMS === 0 ? " - cached" : ""})`,
-				)
-			},
+	// prettier-ignore
+	const result = await esbuild.serve({
+		servedir: runtime.dir.exportDir,
+		onRequest: (args: esbuild.ServeOnRequestArgs) => {
+			let descriptMs = args.timeInMS + "ms"
+			if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
+				descriptMs += " - cached"
+			}
+			console.log(`  ${term.bold("→")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${decorateStatus(args.status)} (${descriptMs})`)
 		},
-		{},
-	)
+	}, {})
+
+	let transform = ssgify
+	if (runtime.cmd.mode === "spa") {
+		transform = spaify
+	}
+
+	// The proxy server.
+	const proxySrv = http.createServer((req, res) => {
+		// The proxy request.
+		const proxyReq = http.request({ ...req, path: transform(req.url!), port: result.port }, proxyRes => {
+			// The proxy response.
+			if (proxyRes.statusCode === 404) {
+				res.writeHead(200, { "Content-Type": "text/plain" })
+				res.end("404 page not found")
+			} else {
+				res.writeHead(proxyRes.statusCode!, proxyRes.headers)
+				proxyRes.pipe(res, { end: true })
+			}
+		})
+		req.pipe(proxyReq, { end: true })
+	})
+	proxySrv.listen(runtime.cmd.port)
 }
 
 export default serve

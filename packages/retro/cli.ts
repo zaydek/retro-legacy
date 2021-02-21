@@ -11,8 +11,7 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim()
 
-export const usage =
-	`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
+export const usage = `${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
   ${term.bold("Usage:")}
 
@@ -24,28 +23,27 @@ export const usage =
 
     Start the dev server
 
-      --cached=...         Use cached resources (default false)
-      --source-map=...     Add source maps (default true)
-      --port=<number>=...  Port number (default 8000)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
+      --port=...       Port number (default 8000)
 
   ${term.bold("retro export")}
 
     Export the production-ready build (SSG)
 
-      --cached=...         Use cached resources (default false)
-      --source-map=...     Add source maps (default true)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
 
   ${term.bold("retro serve")}
 
     Serve the production-ready build
 
-      --port=...           Port number (default 8000)
+      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+      --port=...       Port number (default 8000)
 
   ${term.bold("Repository:")}
 
-    ` +
-	term.underline("https://github.com/zaydek/retro") +
-	`
+    ${term.underline("https://github.com/zaydek/retro")}
 `
 
 // parseDevCommandArgs parses 'retro dev [flags]'.
@@ -140,11 +138,21 @@ function parseExportCommandArgs(...args: string[]): types.ExportCommand {
 function parseServeCommandArgs(...args: string[]): types.ServeCommand {
 	const cmd: types.ServeCommand = {
 		type: "serve",
+		mode: "ssg",
 		port: 8000,
 	}
 	let badCmd = ""
 	for (const arg of args) {
-		if (arg.startsWith("--port")) {
+		if (arg.startsWith("--mode")) {
+			if (arg === "--mode=spa") {
+				cmd.mode = "spa"
+			} else if (arg === "--mode=ssg") {
+				cmd.mode = "ssg"
+			} else {
+				badCmd = "--mode"
+				break
+			}
+		} else if (arg.startsWith("--port")) {
 			if (/^--port=\d+$/.test(arg)) {
 				cmd.port = JSON.parse(arg.slice("--port=".length))
 			} else {
@@ -214,7 +222,7 @@ ${cmds.split("\n").map(each => `${" ".repeat(2)}- ${each}`).join("\n")}
 
 	const runtime: types.Runtime<types.Command> = {
 		cmd: cmd!,
-		dirs: DIRS,
+		dir: DIRS,
 	}
 
 	switch (cmd!.type) {
@@ -232,8 +240,6 @@ ${cmds.split("\n").map(each => `${" ".repeat(2)}- ${each}`).join("\n")}
 
 process.on("uncaughtException", err => {
 	utils.setWillEagerlyTerminate(true)
-
-	// console.log({ err })
 
 	// Force the stack trace on:
 	process.env["STACK_TRACE"] = "true"
