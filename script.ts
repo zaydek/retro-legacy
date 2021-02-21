@@ -1,31 +1,32 @@
 import * as fs from "fs"
 import * as p from "path"
 
-// /\.(js|ts|md)x?$/
+// prettier-ignore
+interface StaticRouter {
+	srcPath:   string // e.g. "src/pages/index.js"
+	dstPath:   string // e.g. "dst/index.html"
+	component: string // e.g. "PageIndex"
+	path:      string // e.g. "/"
+}
+
+// prettier-ignore
+interface PathMetadata {
+	basename: string // e.g. "basename.ext"
+	name:     string // e.g. "basename"
+	ext:      string // e.g. ".ext"
+}
+
+// prettier-ignore
 const supported: { [key: string]: boolean } = {
-	".js": true,
+	".js":  true,
 	".jsx": true,
-	".ts": true,
+	".ts":  true,
 	".tsx": true,
-	".md": true,
+	".md":  true,
 	".mdx": true,
 }
 
-// FilesystemRoute describes a filesystem route (serverProps and serverPaths are
-// not yet resolved on the server).
-interface FilesystemRoute {
-	srcPath: string
-	dstPath: string
-	component: string
-	path: string
-}
-
-interface PathMetadata {
-	basename: string
-	ext: string
-	name: string
-}
-
+// parsePath parses path metadata.
 function parsePath(path: string): PathMetadata {
 	const basename = p.basename(path)
 	const ext = p.extname(path)
@@ -89,16 +90,16 @@ function path_(runtime: Runtime, path: string): string {
 	const { ext } = parsePath(path)
 	const syntax = path.slice(runtime.dir.srcPagesDir.length, -ext.length)
 	if (syntax.endsWith("/index")) {
-		// "/"
+		// "/" case:
 		return syntax.slice(0, -"index".length)
 	}
-	// "/hello-world"
+	// "/hello-world" case:
 	return syntax
 }
 
 // parseStaticRoute parses a new filesystem route.
-function parseStaticRoute(runtime: Runtime, path: string): FilesystemRoute {
-	const route: FilesystemRoute = {
+function parseStaticRoute(runtime: Runtime, path: string): StaticRouter {
+	const route: StaticRouter = {
 		srcPath: path,
 		dstPath: dstPath(runtime, path),
 		component: component(path),
@@ -107,8 +108,7 @@ function parseStaticRoute(runtime: Runtime, path: string): FilesystemRoute {
 	return route
 }
 
-// ls lists paths recursively.
-async function ls(dir: string): Promise<string[]> {
+async function readdirRecursive(dir: string): Promise<string[]> {
 	const paths: string[] = []
 	const recurse = async (dir: string): Promise<void> => {
 		const ls = await fs.promises.readdir(dir)
@@ -144,7 +144,7 @@ interface Runtime {
 		dir: DIRS,
 	}
 
-	const paths = await ls("src")
+	const paths = await readdirRecursive("src")
 	const filtered = paths.filter(path => {
 		const { name, ext } = parsePath(path)
 		if (name.startsWith("_") || name.startsWith("$") || name.endsWith("_") || name.endsWith("$")) {
@@ -153,7 +153,7 @@ interface Runtime {
 		return supported[ext]
 	})
 
-	const staticRouter: FilesystemRoute[] = []
+	const staticRouter: StaticRouter[] = []
 	for (const path of filtered) {
 		staticRouter.push(parseStaticRoute(runtime, path))
 	}
