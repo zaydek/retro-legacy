@@ -34,6 +34,8 @@ __export(exports, {
 var bold = (...args) => `[0;1m${args.join(" ")}[0m`;
 var gray = (...args) => `[0;2m${args.join(" ")}[0m`;
 var underline = (...args) => `[0;4m${args.join(" ")}[0m`;
+var red = (...args) => `[0;31m${args.join(" ")}[0m`;
+var green = (...args) => `[0;32m${args.join(" ")}[0m`;
 var boldUnderline = (...args) => `[1;4m${args.join(" ")}[0m`;
 var boldRed = (...args) => `[1;31m${args.join(" ")}[0m`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}[0m`;
@@ -76,6 +78,12 @@ function clearScreen() {
 
 // packages/retro/serve.ts
 var esbuild = __toModule(require("esbuild"));
+function colorStatus(statusCode) {
+  if (statusCode >= 200 && statusCode < 300) {
+    return green(statusCode);
+  }
+  return red(statusCode);
+}
 var serve2 = async (runtime) => {
   setTimeout(() => {
     if (getWillEagerlyTerminate())
@@ -90,7 +98,10 @@ var serve2 = async (runtime) => {
   }, 10);
   await esbuild.serve({
     port: runtime.cmd.port,
-    servedir: runtime.dirs.exportDir
+    servedir: runtime.dirs.exportDir,
+    onRequest: (args) => {
+      console.log(`  ${bold("\u2192")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${colorStatus(args.status)} (${args.timeInMS}ms${args.timeInMS === 0 ? " - cached" : ""})`);
+    }
   }, {});
 };
 var serve_default = serve2;
