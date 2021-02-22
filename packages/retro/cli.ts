@@ -225,7 +225,7 @@ Or 'retro usage' for usage.`)
 			exportDir:   process.env.EXPORT_DIR || "__export__",
 		},
 		document: "", // Defer to dev and export
-		routes: [],   // Defer to dev and export
+		pages: [],    // Defer to dev and export
 	}
 
 	if (runtime.command.type === "dev") {

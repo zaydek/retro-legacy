@@ -1,4 +1,4 @@
-import { Link } from "../../router"
+import { Link } from "../../packages/router"
 
 const paths = [
 	{ path: "/", children: "Open home" },

@@ -51,14 +51,14 @@ export interface DynamicPageMeta {
 	component: string // e.g. "DynamicPageIndex"
 }
 
-export type Route = StaticPageMeta | DynamicPageMeta
+export type PageMeta = StaticPageMeta | DynamicPageMeta
 
 // Runtime a meta data structure for the runtime.
 export interface Runtime<Cmd = Command> {
 	command: Cmd
 	directories: DirConfiguration
 	document: string
-	routes: Route[]
+	pages: PageMeta[]
 }
 
 ////////////////////////////////////////////////////////////////////////////////

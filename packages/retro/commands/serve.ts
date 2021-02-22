@@ -27,12 +27,12 @@ const serve: types.serve = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
 		utils.clearScreen()
-		log.info(`http://localhost:${runtime.cmd.port}`)
+		log.info(`http://localhost:${runtime.command.port}`)
 	}, 10)
 
 	// prettier-ignore
 	const result = await esbuild.serve({
-		servedir: runtime.dir.exportDir,
+		servedir: runtime.directories.exportDir,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => {
 			let descriptMs = args.timeInMS + "ms"
 			if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
@@ -43,7 +43,7 @@ const serve: types.serve = async runtime => {
 	}, {})
 
 	let transformURL = ssgify
-	if (runtime.cmd.mode === "spa") {
+	if (runtime.command.mode === "spa") {
 		transformURL = spaify
 	}
 
@@ -62,7 +62,7 @@ const serve: types.serve = async runtime => {
 		})
 		req.pipe(proxyReq, { end: true })
 	})
-	proxySrv.listen(runtime.cmd.port)
+	proxySrv.listen(runtime.command.port)
 }
 
 export default serve

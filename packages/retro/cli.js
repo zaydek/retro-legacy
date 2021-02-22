@@ -31,6 +31,7 @@ var boldRed = (...args) => `[1;31m${args.join(" ")}${reset}`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}${reset}`;
 
 // packages/lib/log.ts
+var once = false;
 function formatMessage(msg) {
   return msg.split("\n").map((each, x) => {
     if (x === 0)
@@ -42,24 +43,31 @@ function formatMessage(msg) {
 }
 function info(...args) {
   const message = formatMessage(args.join(" "));
-  console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
-
-${" ".repeat(2)}${bold(">")} ${boldGreen("ok:")} ${bold(message)}
-`);
+  if (!once) {
+    console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
+    console.log();
+  }
+  console.log(`${" ".repeat(2)}${bold(">")} ${boldGreen("ok:")} ${bold(message)}`);
+  console.log();
+  once = true;
 }
 function error(error2) {
   const message = formatMessage(typeof error2 === "object" ? error2.message : error2);
   const traceEnabled = process.env["STACK_TRACE"] === "true";
   if (!traceEnabled) {
-    console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
-
-${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}
-`);
+    if (!once) {
+      console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
+      console.error();
+    }
+    console.error(`${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}`);
+    console.error();
   } else {
-    console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
-
-${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}
-`);
+    if (!once) {
+      console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
+      console.error();
+    }
+    console.error(`${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}`);
+    console.error();
     console.error({error: error2});
   }
   process.exit(0);
@@ -82,10 +90,11 @@ function clearScreen() {
 }
 
 // packages/retro/commands/export_.ts
+var esbuild = __toModule(require("esbuild"));
 var fs3 = __toModule(require("fs"));
 var p3 = __toModule(require("path"));
 
-// packages/retro/createRouter.ts
+// packages/retro/parsePages.ts
 var fs = __toModule(require("fs"));
 var p = __toModule(require("path"));
 var supported = {
@@ -146,7 +155,7 @@ function createDynamicPageMeta(directories, parsed) {
   return component;
 }
 var dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
-function createRoute(directories, parsed) {
+function parsePage(directories, parsed) {
   const path = toPathSyntax(directories, parsed);
   if (dynamicRegex.test(path)) {
     return createDynamicPageMeta(directories, parsed);
@@ -204,7 +213,7 @@ function testURICharacter(char) {
   }
   return false;
 }
-async function createRouter(directories) {
+async function parsePages(directories) {
   const arr = await readdirAll(directories.srcPagesDir);
   const arr2 = arr.filter((path) => {
     if (path.name.startsWith("_") || path.name.startsWith("$")) {
@@ -241,11 +250,11 @@ URI characters are described by RFC 3986:
 
 ${boldUnderline("https://tools.ietf.org/html/rfc3986")}`);
   }
-  const routes = [];
+  const pages = [];
   for (const parsed of arr2) {
-    routes.push(createRoute(directories, parsed));
+    pages.push(parsePage(directories, parsed));
   }
-  return routes;
+  return pages;
 }
 
 // packages/retro/runServerGuards.ts
@@ -308,17 +317,63 @@ For example:
 }
 
 // packages/retro/commands/export_.ts
+async function resolveStaticRoute(page, outfile) {
+  let mod;
+  try {
+    mod = require(p3.join("../..", outfile));
+  } catch {
+  }
+  let serverProps = {path: page.path};
+  if (typeof mod?.serverProps === "function") {
+    try {
+      const props = await mod.serverProps();
+      serverProps = {...serverProps, ...props};
+    } catch (err) {
+      error(`${page.src}: Failed to resolve '<${page.component}:serverProps>': ${err.message}.`);
+    }
+  }
+  info(`${page.src}: Resolved '<${page.component}:serverProps>'.`);
+  return {page, serverProps};
+}
+async function resolveServerRouter(runtime) {
+  const serverRouter = {};
+  const service = await esbuild.startService();
+  for (const page of runtime.pages) {
+    const entryPoints = [page.src];
+    const outfile = p3.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
+    await service.build({
+      bundle: true,
+      define: {
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+      },
+      entryPoints,
+      external: ["react", "react-dom"],
+      format: "cjs",
+      inject: ["packages/retro/react-shim.js"],
+      loader: {".js": "jsx"},
+      logLevel: "silent",
+      outfile
+    });
+    if (page.type === "static") {
+      const meta = await resolveStaticRoute(page, outfile);
+      serverRouter[page.path] = meta;
+    }
+  }
+  console.log(serverRouter);
+  return serverRouter;
+}
 var export_ = async (runtime) => {
   await runServerGuards(runtime.directories);
   const data = await fs3.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
-  runtime.routes = await createRouter(runtime.directories);
-  console.log(runtime);
+  runtime.pages = await parsePages(runtime.directories);
+  resolveServerRouter(runtime);
 };
 var export_default = export_;
 
 // packages/retro/commands/serve.ts
-var esbuild = __toModule(require("esbuild"));
+var esbuild2 = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
 var p4 = __toModule(require("path"));
 function spaify(_) {
@@ -336,10 +391,10 @@ var serve2 = async (runtime) => {
     if (getWillEagerlyTerminate())
       return;
     clearScreen();
-    info(`http://localhost:${runtime.cmd.port}`);
+    info(`http://localhost:${runtime.command.port}`);
   }, 10);
-  const result = await esbuild.serve({
-    servedir: runtime.dir.exportDir,
+  const result = await esbuild2.serve({
+    servedir: runtime.directories.exportDir,
     onRequest: (args) => {
       let descriptMs = args.timeInMS + "ms";
       if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
@@ -349,7 +404,7 @@ var serve2 = async (runtime) => {
     }
   }, {});
   let transformURL = ssgify;
-  if (runtime.cmd.mode === "spa") {
+  if (runtime.command.mode === "spa") {
     transformURL = spaify;
   }
   const proxySrv = http.createServer((req, res) => {
@@ -364,17 +419,11 @@ var serve2 = async (runtime) => {
     });
     req.pipe(proxyReq, {end: true});
   });
-  proxySrv.listen(runtime.cmd.port);
+  proxySrv.listen(runtime.command.port);
 };
 var serve_default = serve2;
 
 // packages/retro/cli.ts
-var DIR_CONFIGURATION = {
-  publicDir: process.env.PUBLIC_DIR || "public",
-  srcPagesDir: process.env.PAGES_DIR || "src/pages",
-  cacheDir: process.env.CACHE_DIR || "__cache__",
-  exportDir: process.env.EXPORT_DIR || "__export__"
-};
 var cmds = `
 retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
@@ -566,21 +615,20 @@ Or 'retro usage' for usage.`);
   }
   const runtime = {
     command,
-    directories: DIR_CONFIGURATION,
+    directories: {
+      publicDir: process.env.PUBLIC_DIR || "public",
+      srcPagesDir: process.env.PAGES_DIR || "src/pages",
+      cacheDir: process.env.CACHE_DIR || "__cache__",
+      exportDir: process.env.EXPORT_DIR || "__export__"
+    },
     document: "",
-    routes: []
+    pages: []
   };
-  switch (command.type) {
-    case "dev":
-      break;
-    case "export":
-      const r2 = runtime;
-      await export_default(r2);
-      break;
-    case "serve":
-      const r3 = runtime;
-      await serve_default(r3);
-      break;
+  if (runtime.command.type === "dev") {
+  } else if (runtime.command.type === "export") {
+    await export_default(runtime);
+  } else if (runtime.command.type === "serve") {
+    await serve_default(runtime);
   }
 }
 process.on("uncaughtException", (err) => {

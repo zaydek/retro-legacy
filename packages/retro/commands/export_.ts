@@ -4,11 +4,13 @@
 // import * as React from "react"
 // import * as ReactDOMServer from "react-dom/server"
 
+import * as esbuild from "esbuild"
 import * as fs from "fs"
+import * as log from "../../lib/log"
 import * as p from "path"
 import * as types from "../types"
 
-import parseRoutes from "../parseRoutes"
+import parsePages from "../parsePages"
 import runServerGuards from "../runServerGuards"
 
 // // RenderPayload describes a render payload (page metadata).
@@ -60,186 +62,249 @@ import runServerGuards from "../runServerGuards"
 // 	await fs.promises.mkdir(p.dirname(render.outputPath), { recursive: true })
 // 	await fs.promises.writeFile(render.outputPath, data)
 // }
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Props describes runtime props.
+type Props = { [key: string]: unknown }
+
+// DescriptServerProps describes runtime props resolved on the server.
+type ServerResolvedProps = Props & { path: string }
+
+// PageModule ambiguously describes a page module.
+interface PageModule {
+	Head?: (props: ServerResolvedProps) => JSX.Element
+	default?: (props: ServerResolvedProps) => JSX.Element
+}
+
+// StaticPageModule describes a static page module.
+interface StaticPageModule extends PageModule {
+	serverProps?(): Promise<ServerResolvedProps>
+}
+
+// DynamicPageModule describes a dynamic page module.
+interface DynamicPageModule extends PageModule {
+	serverPaths(): Promise<ServerResolvedProps>
+}
+
+interface ServerRouteMeta {
+	page: types.PageMeta
+	serverProps: ServerResolvedProps
+}
+
+interface ServerResolvedRouter {
+	[key: string]: ServerRouteMeta
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+async function resolveStaticRoute(page: types.StaticPageMeta, outfile: string): Promise<ServerRouteMeta> {
+	let mod: StaticPageModule
+
+	// NOTE: Use try to suppress: warning: This call to "require" will not be
+	// bundled because the argument is not a string literal (surround with a
+	// try/catch to silence this warning).
+	try {
+		mod = require(p.join("../..", outfile))
+	} catch {}
+
+	let serverProps: ServerResolvedProps = { path: page.path }
+	if (typeof mod!?.serverProps === "function") {
+		try {
+			const props = await mod!.serverProps()
+			serverProps = { ...serverProps, ...props }
+		} catch (err) {
+			log.error(`${page.src}: Failed to resolve '<${page.component}:serverProps>': ${err.message}.`)
+		}
+	}
+	log.info(`${page.src}: Resolved '<${page.component}:serverProps>'.`)
+	return { page, serverProps }
+}
+
+// async function resolveDynamicPage(page: types.PageMeta, outfile: string): Promise<ServerResolvedRouter> {
+// 	return {} as ServerResolvedRouter
 //
-// // exportPagesAndCreateRouter exports pages and creates a router from the return
-// // of mod.serverProps and mod.serverPaths.
-// async function exportPagesAndCreateRouter(runtime: types.Runtime): Promise<types.ServerRouter> {
-// 	const router: types.ServerRouter = {}
-//
-// 	const service = await esbuild.startService()
-//
-// 	// TODO: Add --concurrent?
-// 	for (const route of runtime.filesystemRouter) {
-// 		// Generate paths for esbuild:
-// 		const entryPoints = [route.inputPath]
-// 		const outfile = p.join(
-// 			runtime.directoryConfiguration.cacheDir,
-// 			entryPoints[0]!.replace(/\.(jsx?|tsx?)$/, ".esbuild.js"),
-// 		)
-//
-// 		// Use external: ["react", "react-dom"] to prevent a React error: You might
-// 		// have mismatching versions of React and the renderer (such as React DOM).
-// 		await service.build({
-// 			bundle: true,
-// 			define: {
-// 				__DEV__: process.env.__DEV__!,
-// 				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
-// 			},
-// 			entryPoints,
-// 			external: ["react", "react-dom"],
-// 			format: "cjs", // Node.js
-// 			inject: ["scripts/react-shim.js"],
-// 			loader: { ".js": "jsx" },
-// 			logLevel: "silent", // TODO
-// 			outfile,
-// 			// plugins: [...configs.retro.plugins], // TODO
-// 		})
-// 		// TODO: Handle warnings, error, and hints.
-//
-// 		const mod = require("../" + outfile)
-//
-// 		// TODO: Add cache check here.
-//
-// 		let descriptSrvProps: types.DescriptiveServerProps = { path: route.path }
-// 		if (typeof mod.serverProps === "function") {
-// 			const props = await mod.serverProps()
-// 			descriptSrvProps = {
-// 				path: route.path, // Add path
-// 				...props,
-// 			}
-// 		}
-//
-// 		// TODO: Warn here for non-dynamic filesystem routes.
-// 		if (typeof mod.serverPaths === "function") {
-// 			const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
-//
-// 			// Generate a component router:
-// 			const compRouter: types.ServerRouter = {}
-// 			for (const { path, props } of descriptSrvPaths) {
-// 				compRouter[path] = {
-// 					route,
-// 					props: {
-// 						path,
-// 						...props,
-// 					},
-// 				}
-// 			}
-//
-// 			for (const [path, { props }] of Object.entries(compRouter)) {
-// 				// Merge the component router to the app router:
-// 				//
-// 				// TODO: Warn here for repeat paths.
-// 				router[path] = { route, props }
-//
-// 				// Create a renderPayload for exportPage:
-// 				const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-// 				const render: RenderPayload = {
-// 					outputPath,
-// 					path,
-// 					module: mod,
-// 					props,
-// 				}
-// 				await exportPage(runtime, render)
-// 			}
-// 			continue
-// 		}
-//
-// 		// Merge the route to the app router:
-// 		//
-// 		// TODO: Warn here for repeat paths.
-// 		const path = route.path
-// 		router[path] = { route, props: descriptSrvProps }
-//
-// 		// Create a renderPayload for exportPage:
-// 		const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-// 		const render: RenderPayload = {
-// 			outputPath,
-// 			path,
-// 			module: mod,
-// 			props: descriptSrvProps,
-// 		}
-// 		await exportPage(runtime, render)
-// 	}
-//
-// 	return router
+// 	//	const mod = require("../" + outfile)
+// 	//	// TODO: Add cache check here.
+// 	//	let serverProps: ServerResolvedProps = { path: "" }
+// 	//	if (route.type === "static") {
+// 	//		serverProps.path = route.path // We know path
+// 	//	}
+// 	//	// Resolve serverProps:
+// 	//	if (typeof mod.serverProps === "function") {
+// 	//		const props = await mod.serverProps()
+// 	//		serverProps = { ...serverProps, ...props }
+// 	//	}
+// 	//	// TODO: Warn here for non-dynamic filesystem routes.
+// 	//	if (typeof mod.serverPaths === "function") {
+// 	//		const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
+// 	//
+// 	//		// Generate a component router:
+// 	//		const compRouter: types.ServerRouter = {}
+// 	//		for (const { path, props } of descriptSrvPaths) {
+// 	//			compRouter[path] = {
+// 	//				route,
+// 	//				props: {
+// 	//					path,
+// 	//					...props,
+// 	//				},
+// 	//			}
+// 	//		}
+// 	//
+// 	//		for (const [path, { props }] of Object.entries(compRouter)) {
+// 	//			// Merge the component router to the app router:
+// 	//			//
+// 	//			// TODO: Warn here for repeat paths.
+// 	//			router[path] = { route, props }
+// 	//
+// 	//			// Create a renderPayload for exportPage:
+// 	//			const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
+// 	//			const render: RenderPayload = {
+// 	//				outputPath,
+// 	//				path,
+// 	//				module: mod,
+// 	//				props,
+// 	//			}
+// 	//			await exportPage(runtime, render)
+// 	//		}
+// 	//		continue
+// 	//	}
+// 	//	// Merge the route to the app router:
+// 	//	//
+// 	//	// TODO: Warn here for repeat paths.
+// 	//	const path = route.path
+// 	//	router[path] = { route, props: descriptSrvProps }
+// 	//
+// 	//	// Create a renderPayload for exportPage:
+// 	//	const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
+// 	//	const render: RenderPayload = {
+// 	//		outputPath,
+// 	//		path,
+// 	//		module: mod,
+// 	//		props: descriptSrvProps,
+// 	//	}
+// 	//	await exportPage(runtime, render)
 // }
-//
-// // renderAppSource renders the App source code (before esbuild).
+
+// resolveServerRouter exports pages and resolves the server router; resolves
+// mod.serverProps and mod.serverPaths.
+async function resolveServerRouter(runtime: types.Runtime): Promise<ServerResolvedRouter> {
+	const serverRouter: ServerResolvedRouter = {}
+
+	// TODO: Add --concurrent?
+	const service = await esbuild.startService()
+	for (const page of runtime.pages) {
+		// Generate paths for esbuild:
+		const entryPoints = [page.src]
+		const outfile = p.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"))
+
+		// Use external: ["react", "react-dom"] to prevent a React error: You might
+		// have mismatching versions of React and the renderer (such as React DOM).
+		await service.build({
+			bundle: true,
+			define: {
+				__DEV__: process.env.__DEV__!,
+				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV!),
+			},
+			entryPoints,
+			external: ["react", "react-dom"],
+			format: "cjs", // Node.js
+			inject: ["packages/retro/react-shim.js"],
+			loader: { ".js": "jsx" },
+			logLevel: "silent", // TODO
+			outfile,
+			// plugins: [...configs.retro.plugins], // TODO
+		})
+
+		if (page.type === "static") {
+			const meta = await resolveStaticRoute(page, outfile)
+			serverRouter[page.path] = meta
+		} // else if (page.type === "dynamic") {
+		// resolveDynamicPage(page, outfile)
+		// ...
+		// }
+	}
+
+	console.log(serverRouter)
+	return serverRouter
+}
+
+// // renderAppSource renders the app source code (before esbuild).
 // //
 // // TODO: Write tests (pure function).
-// export async function renderAppSource(router: types.ServerRouter): Promise<string> {
-// 	// Get the shared components:
-// 	const sharedComps = [...new Set(Object.keys(router).map(keys => router[keys]!.route.component))]
+// export async function renderAppSource(runtime: types.Runtime<types.ExportCommand>): Promise<string> {
+// 	const componentKeys = [...new Set(runtime.routes.map(each => each.component))]
 //
-// 	// Create a shared server router based on shared component keys:
-// 	const sharedRouter: types.ServerRouter = {}
-// 	for (const [, meta] of Object.entries(router)) {
-// 		const comp = meta.route.component
-// 		if (sharedComps.includes(comp) && sharedRouter[comp] === undefined) {
-// 			sharedRouter[comp] = meta
-// 		}
-// 	}
+// 	const sharedRoutes = runtime.routes
+// 		.filter(route => componentKeys.includes(route.component))
+// 		.sort((a, b) => a.component.localeCompare(b.component))
 //
-// 	return `import React from "react"
+// 	console.log(`import React from "react"
 // import ReactDOM from "react-dom"
 // import { Route, Router } from "../router"
+//
 // // Shared components
-// ${Object.entries(sharedRouter)
-// 	.map(([, { route }]) => `import ${route.component} from "../${route.inputPath}"`)
-// 	.join("\n")}
-// import router from "./router.json"
-// export default function App() {
-// 	return (
-// 		<Router>
-// ${
-// 	Object.entries(router)
-// 		.map(
-// 			([path, meta]) => `
-// 			<Route path="${path}">
-// 				<${meta.route.component} {
-// 					...router["${path}"].props
-// 				} />
-// 			</Route>`,
-// 		)
-// 		.join("\n") + "\n"
-// }
-// 		</Router>
-// 	)
-// }
-// ${
-// 	JSON.parse(process.env.STRICT_MODE || "true")
-// 		? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-// 	<React.StrictMode>
-// 		<App />
-// 	</React.StrictMode>,
-// 	document.getElementById("root"),
-// )`
-// 		: `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-// 	<App />,
-// 	document.getElementById("root"),
-// )`
-// }
-// ` // EOF
+// ${sharedRoutes.map(route => `import ${route.component} from "../${route.src}"`).join("\n")}
+//
+// // Server router
+// import serverRouter from "./serverRouter.json"
+// `)
+//
+// 	// 	return `import React from "react"
+// 	// import ReactDOM from "react-dom"
+// 	// import { Route, Router } from "../router"
+// 	// // Shared components
+// 	// ${sharedComponents.map(component => `import ${component} from "../${route.inputPath}"`).join("\n")}
+// 	// import router from "./router.json"
+// 	// export default function App() {
+// 	// 	return (
+// 	// 		<Router>
+// 	// ${
+// 	// 	Object.entries(router)
+// 	// 		.map(
+// 	// 			([path, meta]) => `
+// 	// 			<Route path="${path}">
+// 	// 				<${meta.route.component} {
+// 	// 					...router["${path}"].props
+// 	// 				} />
+// 	// 			</Route>`,
+// 	// 		)
+// 	// 		.join("\n") + "\n"
+// 	// }
+// 	// 		</Router>
+// 	// 	)
+// 	// }
+// 	// ${
+// 	// 	JSON.parse(process.env.STRICT_MODE || "true")
+// 	// 		? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+// 	// 	<React.StrictMode>
+// 	// 		<App />
+// 	// 	</React.StrictMode>,
+// 	// 	document.getElementById("root"),
+// 	// )`
+// 	// 		: `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+// 	// 	<App />,
+// 	// 	document.getElementById("root"),
+// 	// )`
+// 	// }
+// 	// `
+//
+// 	return "TODO"
 // }
 
 const export_: types.export_ = async runtime => {
 	await runServerGuards(runtime.directories)
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
 	runtime.document = data.toString()
-	runtime.routes = await parseRoutes(runtime.directories)
+	runtime.pages = await parsePages(runtime.directories)
 
-	// // Add server guards here.
-	// if (cmd!.type === "dev" || cmd!.type === "export") {
-	// 	runtime.router = await parseRoutes(DIR_CONFIGURATION)
-	// }
-	// const router = await exportPagesAndCreateRouter(runtime)
-	//
-	// // Cache router for --cached:
-	// const dst = p.join(runtime.directoryConfiguration.cacheDir, "router.json")
-	// const data = JSON.stringify(router, null, "\t") + "\n" // EOF
-	// await fs.promises.writeFile(dst, data)
-	//
-	// const appSource = await renderAppSource(router)
+	resolveServerRouter(runtime)
+	// const serverRouter =
+
+	// const appSource =
+	// await renderAppSource(runtime)
+	// console.log(appSource)
+
 	// const appSourcePath = p.join(runtime.directoryConfiguration.cacheDir, "app.js")
 	// await fs.promises.writeFile(appSourcePath, appSource)
 	//

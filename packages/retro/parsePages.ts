@@ -108,7 +108,7 @@ function createDynamicPageMeta(directories: types.DirConfiguration, parsed: Pars
 // TODO: Write tests.
 const dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
-function createRoute(directories: types.DirConfiguration, parsed: ParsedPath): types.Route {
+function parsePage(directories: types.DirConfiguration, parsed: ParsedPath): types.PageMeta {
 	const path = toPathSyntax(directories, parsed)
 	if (dynamicRegex.test(path)) {
 		return createDynamicPageMeta(directories, parsed)
@@ -176,7 +176,7 @@ function testURICharacter(char: string): boolean {
 	return false
 }
 
-export default async function parseRoutes(directories: types.DirConfiguration): Promise<types.Route[]> {
+export default async function parsePages(directories: types.DirConfiguration): Promise<types.PageMeta[]> {
 	const arr = await readdirAll(directories.srcPagesDir)
 
 	// Step over:
@@ -225,9 +225,9 @@ URI characters are described by RFC 3986:
 ${term.boldUnderline("https://tools.ietf.org/html/rfc3986")}`)
 	}
 
-	const routes: types.Route[] = []
+	const pages: types.PageMeta[] = []
 	for (const parsed of arr2) {
-		routes.push(createRoute(directories, parsed))
+		pages.push(parsePage(directories, parsed))
 	}
-	return routes
+	return pages
 }
