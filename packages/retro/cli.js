@@ -69,12 +69,6 @@ function getWillEagerlyTerminate() {
 function setWillEagerlyTerminate(t) {
   willEagerlyTerminate = t;
 }
-function clearScreen() {
-  const emptyScreen = "\n".repeat(process.stdout.rows);
-  console.log(emptyScreen);
-  import_readline.default.cursorTo(process.stdout, 0, 0);
-  import_readline.default.clearScreenDown(process.stdout);
-}
 
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
@@ -361,8 +355,8 @@ function testServerPropsReturn(value) {
 function testServerPathsReturn(value) {
   return true;
 }
-async function resolveStaticRoute(runtime, page, outfile) {
-  let serverProps = {path: page.path};
+async function resolveStaticRoute(_, page, outfile) {
+  let props = {path: page.path};
   let mod;
   try {
     mod = require(p3.join("..", "..", outfile));
@@ -373,16 +367,17 @@ async function resolveStaticRoute(runtime, page, outfile) {
   }
   if (typeof mod.serverProps === "function") {
     try {
-      const props = await mod.serverProps();
-      if (!testServerPropsReturn(props)) {
+      const compProps = await mod.serverProps();
+      if (!testServerPropsReturn(compProps)) {
         error(errServerPropsReturn(page.src));
       }
-      serverProps = {...serverProps, ...props};
+      props = {...props, ...compProps};
     } catch (err) {
       error(`${page.src}.serverProps: ${err.message}`);
     }
   }
-  return {page, serverProps};
+  const route = page;
+  return {route, props};
 }
 async function resolveDynamicPage(runtime, page, outfile) {
   const subrouter = {};
@@ -401,18 +396,18 @@ async function resolveDynamicPage(runtime, page, outfile) {
         error(errServerPathsReturn(page.src));
       }
       for (const path of paths) {
-        const parsed = parsePath(page.src);
-        const dst2 = runtime.directories.exportDir + page.src.slice((runtime.directories.srcPagesDir + "/").length, -parsed.basename.length) + path.path + ".html";
-        subrouter[path.path] = {
-          page: {
-            type: "static",
+        const path_ = p3.join(p3.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+        const dst2 = p3.join(runtime.directories.exportDir, path_ + ".html");
+        subrouter[path_] = {
+          route: {
+            type: "dynamic",
             src: page.src,
             dst: dst2,
-            path: path.path,
+            path: path_,
             component: page.component
           },
-          serverProps: {
-            path: path.path,
+          props: {
+            path: path_,
             ...path.props
           }
         };
@@ -446,20 +441,20 @@ async function resolveServerRouter(runtime) {
     if (page.type === "static") {
       const date = Date.now();
       const meta = await resolveStaticRoute(runtime, page, outfile);
-      if (router[meta.page.path] !== void 0) {
-        error(`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path].page.src}.`);
+      if (router[meta.route.path] !== void 0) {
+        error(`${meta.route.src}: Path '${meta.route.path}' is already being used by ${router[meta.route.path].route.src}.`);
       }
       router[page.path] = meta;
-      console.log(`${" ".repeat(2)}${green(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`);
+      console.log(`${" ".repeat(2)}${green(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`);
     } else if (page.type === "dynamic") {
       const date = Date.now();
       const subrouter = await resolveDynamicPage(runtime, page, outfile);
       for (const [path, meta] of Object.entries(subrouter)) {
         if (router[path] !== void 0) {
-          error(`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path].page.src}.`);
+          error(`${meta.route.src}: Path '${meta.route.path}' is already being used by ${router[meta.route.path].route.src}.`);
         }
         router[path] = meta;
-        console.log(`${" ".repeat(2)}${teal(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`);
+        console.log(`${" ".repeat(2)}${teal(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`);
       }
     }
   }
@@ -493,9 +488,7 @@ var serve2 = async (runtime) => {
   setTimeout(() => {
     if (getWillEagerlyTerminate())
       return;
-    clearScreen();
-    console.log();
-    info(`http://localhost:${runtime.command.port}`);
+    info(`Serving on port ${runtime.command.port}. Open http://localhost:${runtime.command.port}.`);
   }, 10);
   const result = await esbuild2.serve({
     servedir: runtime.directories.exportDir,

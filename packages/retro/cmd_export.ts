@@ -12,7 +12,7 @@ import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
 
-import parsePages, { parsePath } from "./parsePages"
+import parsePages from "./parsePages"
 import runServerGuards from "./runServerGuards"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,9 +148,18 @@ interface DynamicPageModule extends PageModule {
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
+// prettier-ignore
+interface ServerRoute {
+	type:      "static" | "dynamic"
+	src:       string // e.g. "src/pages/index.js"
+	dst:       string // e.g. "dst/index.html"
+	path:      string // e.g. "/"
+	component: string // e.g. "PageIndex"
+}
+
 interface ServerRouteMeta {
-	page: types.StaticPageMeta
-	serverProps: ServerResolvedProps
+	route: ServerRoute
+	props: ServerResolvedProps
 }
 
 interface ServerResolvedRouter {
@@ -182,11 +191,11 @@ function testServerPathsReturn(value: unknown): boolean {
 ////////////////////////////////////////////////////////////////////////////////
 
 async function resolveStaticRoute(
-	runtime: types.Runtime<types.ExportCommand>,
+	_: types.Runtime<types.ExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
 ): Promise<ServerRouteMeta> {
-	let serverProps: ServerResolvedProps = { path: page.path }
+	let props: ServerResolvedProps = { path: page.path }
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
@@ -202,37 +211,18 @@ async function resolveStaticRoute(
 	// Resolve serverProps:
 	if (typeof mod!.serverProps === "function") {
 		try {
-			const props = await mod!.serverProps!()
-			if (!testServerPropsReturn(props)) {
+			const compProps = await mod!.serverProps!()
+			if (!testServerPropsReturn(compProps)) {
 				log.error(errServerPropsReturn(page.src))
 			}
-			serverProps = { ...serverProps, ...props }
+			props = { ...props, ...compProps }
 		} catch (err) {
 			log.error(`${page.src}.serverProps: ${err.message}`)
 		}
 	}
-	return { page, serverProps }
+	const route = page
+	return { route, props }
 }
-
-// // src/pages/index.js -> __export__/index.html
-// //
-// // TODO: Write tests.
-// function dst(directories: types.DirConfiguration, path: ParsedPath): string {
-// 	const syntax = p.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length))
-// 	return syntax.slice(0, -path.ext.length) + ".html"
-// }
-//
-// // "src/pages/index.js"       -> "/"
-// // "src/pages/hello-world.js" -> "/hello-world"
-// //
-// // TODO: Write tests.
-// function toPathSyntax(directories: types.DirConfiguration, parsed: ParsedPath): string {
-// 	const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length)
-// 	if (syntax.endsWith("/index")) {
-// 		return syntax.slice(0, -"index".length)
-// 	}
-// 	return syntax
-// }
 
 async function resolveDynamicPage(
 	runtime: types.Runtime<types.ExportCommand>,
@@ -260,22 +250,18 @@ async function resolveDynamicPage(
 				log.error(errServerPathsReturn(page.src))
 			}
 			for (const path of paths) {
-				const parsed = parsePath(page.src)
-				const dst =
-					runtime.directories.exportDir + // Add "__export__"
-					page.src.slice((runtime.directories.srcPagesDir + "/").length, -parsed.basename.length) + // Remove "src/pages" and "basename.js"
-					path.path + // Add path.path
-					".html" // Add ".html"
-				subrouter[path.path] = {
-					page: {
-						type: "static",
+				const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path)
+				const dst = p.join(runtime.directories.exportDir, path_ + ".html")
+				subrouter[path_] = {
+					route: {
+						type: "dynamic",
 						src: page.src,
 						dst,
-						path: path.path,
+						path: path_, // TODO: Should path be relative? It’s slightly  confusing because we’re using "/syntax".
 						component: page.component,
 					},
-					serverProps: {
-						path: path.path,
+					props: {
+						path: path_,
 						...path.props,
 					},
 				}
@@ -371,24 +357,28 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 		if (page.type === "static") {
 			const date = Date.now()
 			const meta = await resolveStaticRoute(runtime, page, outfile)
-			if (router[meta.page.path] !== undefined) {
+			if (router[meta.route.path] !== undefined) {
 				log.error(
-					`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path]!.page.src}.`,
+					`${meta.route.src}: Path '${meta.route.path}' is already being used by ${
+						router[meta.route.path]!.route.src
+					}.`,
 				)
 			}
 			router[page.path] = meta
-			console.log(`${" ".repeat(2)}${term.green(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`)
+			console.log(`${" ".repeat(2)}${term.green(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`)
 		} else if (page.type === "dynamic") {
 			const date = Date.now()
 			const subrouter = await resolveDynamicPage(runtime, page, outfile)
 			for (const [path, meta] of Object.entries(subrouter)) {
 				if (router[path] !== undefined) {
 					log.error(
-						`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path]!.page.src}.`,
+						`${meta.route.src}: Path '${meta.route.path}' is already being used by ${
+							router[meta.route.path]!.route.src
+						}.`,
 					)
 				}
 				router[path] = meta
-				console.log(`${" ".repeat(2)}${term.teal(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`)
+				console.log(`${" ".repeat(2)}${term.teal(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`)
 			}
 		}
 	}

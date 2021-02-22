@@ -26,9 +26,9 @@ function ssgify(url: string): string {
 const serve: types.cmd_serve = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
-		utils.clearScreen()
-		console.log()
-		log.info(`http://localhost:${runtime.command.port}`)
+		// utils.clearScreen()
+		// console.log()
+		log.info(`Serving on port ${runtime.command.port}. Open http://localhost:${runtime.command.port}.`)
 	}, 10)
 
 	// prettier-ignore
