@@ -3,9 +3,8 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-// TODO: Should we 'export * from "./commands"'?
-import export_ from "./commands/export_"
-import serve from "./commands/serve"
+import cmd_export from "./cmd_export"
+import cmd_serve from "./cmd_serve"
 
 const cmds = `
 retro dev     Start the dev server
@@ -179,6 +178,9 @@ function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 }
 
 async function run(): Promise<void> {
+	console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}`)
+	console.log()
+
 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
 
 	// Cover ["retro"] case:
@@ -229,11 +231,11 @@ Or 'retro usage' for usage.`)
 	}
 
 	if (runtime.command.type === "dev") {
-		// await dev(runtime as types.Runtime<types.DevCommand>)
+		// await cmd_dev(runtime as types.Runtime<types.DevCommand>)
 	} else if (runtime.command.type === "export") {
-		await export_(runtime as types.Runtime<types.ExportCommand>)
+		await cmd_export(runtime as types.Runtime<types.ExportCommand>)
 	} else if (runtime.command.type === "serve") {
-		await serve(runtime as types.Runtime<types.ServeCommand>)
+		await cmd_serve(runtime as types.Runtime<types.ServeCommand>)
 	}
 }
 

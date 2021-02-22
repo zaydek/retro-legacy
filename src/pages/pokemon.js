@@ -1,5 +1,5 @@
 import Component from "./component"
-import Nav from "./Nav_"
+// import Nav from "./Nav_"
 import { useEffect } from "react"
 
 // serverProps resolves props on the server. Props are cached for
@@ -49,7 +49,7 @@ export default function Page({ name, ...props }) {
 
 	return (
 		<div>
-			<Nav />
+			{/* <Nav /> */}
 			<h1>Hello, {name}!</h1>
 			<pre>{JSON.stringify(props, null, 2)}</pre>
 			<Component />

@@ -6,12 +6,72 @@
 
 import * as esbuild from "esbuild"
 import * as fs from "fs"
-import * as log from "../../lib/log"
+import * as log from "../lib/log"
 import * as p from "path"
-import * as types from "../types"
+import * as term from "../lib/term"
+import * as types from "./types"
 
-import parsePages from "../parsePages"
-import runServerGuards from "../runServerGuards"
+import parsePages from "./parsePages"
+import runServerGuards from "./runServerGuards"
+
+////////////////////////////////////////////////////////////////////////////////
+
+function errServerPropsFunction(src: string): string {
+	return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
+
+For example:
+
+// Synchronous:
+function serverProps() {
+	return { ... }
+}
+
+// Asynchronous:
+async function serverProps() {
+	await ...
+	return { ... }
+}`
+}
+
+function errServerPropsReturn(src: string): string {
+	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`
+}
+
+function errServerPathsFunction(src: string): string {
+	return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
+
+For example:
+
+// Synchronous:
+function serverPaths() {
+	return { ... }
+}
+
+// Asynchronous:
+async function serverPaths() {
+	await ...
+	return { ... }
+}`
+}
+
+// TODO
+function errServerPathsReturn(src: string): string {
+	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 // // RenderPayload describes a render payload (page metadata).
 // interface RenderPayload {
@@ -84,7 +144,7 @@ interface StaticPageModule extends PageModule {
 
 // DynamicPageModule describes a dynamic page module.
 interface DynamicPageModule extends PageModule {
-	serverPaths(): Promise<ServerResolvedProps>
+	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
 interface ServerRouteMeta {
@@ -100,51 +160,53 @@ interface ServerResolvedRouter {
 
 // Based on https://github.com/evanw/esbuild/blob/master/lib/common.ts#L35.
 // prettier-ignore
-function object(value: unknown): boolean {
+function testServerPropsReturn(value: unknown): boolean {
 	const ok = typeof value === "object" &&
 		value !== null &&
 		!Array.isArray(value)
 	return ok
 }
 
-async function resolveStaticRoute(page: types.StaticPageMeta, outfile: string): Promise<ServerRouteMeta> {
+// TODO
+// prettier-ignore
+function testServerPathsReturn(value: unknown): boolean {
+	return false
+
+	// const ok = typeof value === "object" &&
+	// 	value !== null &&
+	// 	!Array.isArray(value)
+	// return ok
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+async function resolveStaticRoute(
+	runtime: types.Runtime<types.ExportCommand>,
+	page: types.StaticPageMeta,
+	outfile: string,
+): Promise<ServerRouteMeta> {
+	// // prettier-ignore
+	// console.log(`${" ".repeat(2)}${page.src.slice(runtime.directories.srcPagesDir.length + 1)} -> ${page.dst.slice(runtime.directories.exportDir.length + 1)}`)
+
+	let serverProps: ServerResolvedProps = { path: page.path }
+
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
 	let mod: StaticPageModule
-	try {
-		mod = require(p.join("../..", outfile))
-	} catch {}
+	// prettier-ignore
+	try { mod = require(p.join("..", "..", outfile)) } catch {}
 
 	if (mod! !== undefined && "serverProps" in mod && typeof mod.serverProps !== "function") {
-		log.error(`${page.src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
-
-For example:
-
-// Synchronous:
-function serverProps() {
-	return { ... }
-}
-
-// Asynchronous:
-async function serverProps() {
-	await ...
-	return { ... }
-}`)
+		log.error(errServerPropsFunction(page.src))
 	}
 
-	let serverProps: ServerResolvedProps = { path: page.path }
-	if (mod!.serverProps !== undefined && typeof mod!?.serverProps === "function") {
+	// Resolve serverProps:
+	if (typeof mod!.serverProps === "function") {
 		try {
-			const props = await mod!.serverProps()
-			if (!object(props)) {
-				log.error(`${page.src}: 'typeof props !== "object"'; 'serverProps' must return an object.
-
-For example:
-
-function serverProps() {
-	return { ... }
-}`)
+			const props = await mod!.serverProps!()
+			if (!testServerPropsReturn(props)) {
+				log.error(errServerPropsReturn(page.src))
 			}
 			serverProps = { ...serverProps, ...props }
 		} catch (err) {
@@ -154,75 +216,99 @@ function serverProps() {
 	return { page, serverProps }
 }
 
-// async function resolveDynamicPage(page: types.PageMeta, outfile: string): Promise<ServerResolvedRouter> {
-// 	return {} as ServerResolvedRouter
-//
-// 	//	const mod = require("../" + outfile)
-// 	//	// TODO: Add cache check here.
-// 	//	let serverProps: ServerResolvedProps = { path: "" }
-// 	//	if (route.type === "static") {
-// 	//		serverProps.path = route.path // We know path
-// 	//	}
-// 	//	// Resolve serverProps:
-// 	//	if (typeof mod.serverProps === "function") {
-// 	//		const props = await mod.serverProps()
-// 	//		serverProps = { ...serverProps, ...props }
-// 	//	}
-// 	//	// TODO: Warn here for non-dynamic filesystem routes.
-// 	//	if (typeof mod.serverPaths === "function") {
-// 	//		const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
-// 	//
-// 	//		// Generate a component router:
-// 	//		const compRouter: types.ServerRouter = {}
-// 	//		for (const { path, props } of descriptSrvPaths) {
-// 	//			compRouter[path] = {
-// 	//				route,
-// 	//				props: {
-// 	//					path,
-// 	//					...props,
-// 	//				},
-// 	//			}
-// 	//		}
-// 	//
-// 	//		for (const [path, { props }] of Object.entries(compRouter)) {
-// 	//			// Merge the component router to the app router:
-// 	//			//
-// 	//			// TODO: Warn here for repeat paths.
-// 	//			router[path] = { route, props }
-// 	//
-// 	//			// Create a renderPayload for exportPage:
-// 	//			const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-// 	//			const render: RenderPayload = {
-// 	//				outputPath,
-// 	//				path,
-// 	//				module: mod,
-// 	//				props,
-// 	//			}
-// 	//			await exportPage(runtime, render)
-// 	//		}
-// 	//		continue
-// 	//	}
-// 	//	// Merge the route to the app router:
-// 	//	//
-// 	//	// TODO: Warn here for repeat paths.
-// 	//	const path = route.path
-// 	//	router[path] = { route, props: descriptSrvProps }
-// 	//
-// 	//	// Create a renderPayload for exportPage:
-// 	//	const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-// 	//	const render: RenderPayload = {
-// 	//		outputPath,
-// 	//		path,
-// 	//		module: mod,
-// 	//		props: descriptSrvProps,
-// 	//	}
-// 	//	await exportPage(runtime, render)
-// }
+async function resolveDynamicPage(page: types.PageMeta, outfile: string): Promise<ServerResolvedRouter> {
+	const subrouter: ServerResolvedRouter = {}
+	return subrouter
+
+	// NOTE: Use try to suppress: warning: This call to "require" will not be
+	// bundled because the argument is not a string literal (surround with a
+	// try/catch to silence this warning).
+	let mod: DynamicPageModule
+	// prettier-ignore
+	try { mod = require(p.join("../..", outfile)) } catch {}
+
+	if (mod! !== undefined && "serverPaths" in mod && typeof mod.serverPaths !== "function") {
+		log.error(errServerPathsFunction(page.src))
+	}
+
+	interface ServerPaths {
+		[key: string]: ServerResolvedProps
+	}
+
+	// Resolve serverPaths:
+	let serverPaths: ServerPaths = {}
+	if (typeof mod!.serverPaths === "function") {
+		try {
+			const paths = await mod!.serverPaths!()
+			if (!testServerPathsReturn(paths)) {
+				log.error(errServerPathsReturn(page.src))
+			}
+			for (const path of paths) {
+				serverPaths[path.path] = {
+					path: path.path,
+					...path.props,
+				}
+			}
+		} catch (err) {
+			log.error(`${page.src}.serverPaths: ${err.message}`)
+		}
+	}
+	return subrouter
+
+	//	if (typeof mod.serverPaths === "function") {
+	//		const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
+	//
+	//		// Generate a component router:
+	//		const compRouter: types.ServerRouter = {}
+	//		for (const { path, props } of descriptSrvPaths) {
+	//			compRouter[path] = {
+	//				route,
+	//				props: {
+	//					path,
+	//					...props,
+	//				},
+	//			}
+	//		}
+	//
+	//		for (const [path, { props }] of Object.entries(compRouter)) {
+	//			// Merge the component router to the app router:
+	//			//
+	//			// TODO: Warn here for repeat paths.
+	//			router[path] = { route, props }
+	//
+	//			// Create a renderPayload for exportPage:
+	//			const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
+	//			const render: RenderPayload = {
+	//				outputPath,
+	//				path,
+	//				module: mod,
+	//				props,
+	//			}
+	//			await exportPage(runtime, render)
+	//		}
+	//		continue
+	//	}
+	//	// Merge the route to the app router:
+	//	//
+	//	// TODO: Warn here for repeat paths.
+	//	const path = route.path
+	//	router[path] = { route, props: descriptSrvProps }
+	//
+	//	// Create a renderPayload for exportPage:
+	//	const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
+	//	const render: RenderPayload = {
+	//		outputPath,
+	//		path,
+	//		module: mod,
+	//		props: descriptSrvProps,
+	//	}
+	//	await exportPage(runtime, render)
+}
 
 // resolveServerRouter exports pages and resolves the server router; resolves
 // mod.serverProps and mod.serverPaths.
-async function resolveServerRouter(runtime: types.Runtime): Promise<ServerResolvedRouter> {
-	const serverRouter: ServerResolvedRouter = {}
+async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<ServerResolvedRouter> {
+	const router: ServerResolvedRouter = {}
 
 	// TODO: Add --concurrent?
 	const service = await esbuild.startService()
@@ -233,7 +319,7 @@ async function resolveServerRouter(runtime: types.Runtime): Promise<ServerResolv
 
 		// Use external: ["react", "react-dom"] to prevent a React error: You might
 		// have mismatching versions of React and the renderer (such as React DOM).
-		await service.build({
+		const result = await service.build({
 			bundle: true,
 			define: {
 				__DEV__: process.env.__DEV__!,
@@ -248,18 +334,19 @@ async function resolveServerRouter(runtime: types.Runtime): Promise<ServerResolv
 			outfile,
 			// plugins: [...configs.retro.plugins], // TODO
 		})
+		// TODO: Emit warnings here.
+		console.log(result)
 
 		if (page.type === "static") {
-			const meta = await resolveStaticRoute(page, outfile)
-			serverRouter[page.path] = meta
-		} // else if (page.type === "dynamic") {
-		// resolveDynamicPage(page, outfile)
-		// ...
-		// }
+			const meta = await resolveStaticRoute(runtime, page, outfile)
+			router[page.path] = meta
+		} else if (page.type === "dynamic") {
+			await resolveDynamicPage(runtime, page, outfile)
+		}
 	}
 
-	console.log(serverRouter)
-	return serverRouter
+	console.log(router)
+	return router
 }
 
 // // renderAppSource renders the app source code (before esbuild).
@@ -280,7 +367,7 @@ async function resolveServerRouter(runtime: types.Runtime): Promise<ServerResolv
 // ${sharedRoutes.map(route => `import ${route.component} from "../${route.src}"`).join("\n")}
 //
 // // Server router
-// import serverRouter from "./serverRouter.json"
+// import router from "./router.json"
 // `)
 //
 // 	// 	return `import React from "react"
@@ -325,14 +412,14 @@ async function resolveServerRouter(runtime: types.Runtime): Promise<ServerResolv
 // 	return "TODO"
 // }
 
-const export_: types.export_ = async runtime => {
+const cmd_export: types.cmd_export = async runtime => {
 	await runServerGuards(runtime.directories)
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
 	runtime.document = data.toString()
 	runtime.pages = await parsePages(runtime.directories)
 
 	resolveServerRouter(runtime)
-	// const serverRouter =
+	// const router =
 
 	// const appSource =
 	// await renderAppSource(runtime)
@@ -367,7 +454,7 @@ const export_: types.export_ = async runtime => {
 	// // TODO: Handle warnings, error, and hints.
 }
 
-export default export_
+export default cmd_export
 
 // ;(async () => {
 // 	try {

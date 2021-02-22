@@ -31,7 +31,6 @@ var boldRed = (...args) => `[1;31m${args.join(" ")}${reset}`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}${reset}`;
 
 // packages/lib/log.ts
-var once = false;
 function formatMessage(msg) {
   return msg.split("\n").map((each, x) => {
     if (x === 0)
@@ -43,29 +42,16 @@ function formatMessage(msg) {
 }
 function info(...args) {
   const message = formatMessage(args.join(" "));
-  if (!once) {
-    console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
-    console.log();
-  }
   console.log(`${" ".repeat(2)}${bold(">")} ${boldGreen("ok:")} ${bold(message)}`);
   console.log();
-  once = true;
 }
 function error(error2) {
   const message = formatMessage(typeof error2 === "object" ? error2.message : error2);
   const traceEnabled = process.env["STACK_TRACE"] === "true";
   if (!traceEnabled) {
-    if (!once) {
-      console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
-      console.error();
-    }
     console.error(`${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}`);
     console.error();
   } else {
-    if (!once) {
-      console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
-      console.error();
-    }
     console.error(`${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}`);
     console.error();
     console.error({error: error2});
@@ -89,7 +75,7 @@ function clearScreen() {
   import_readline.default.clearScreenDown(process.stdout);
 }
 
-// packages/retro/commands/export_.ts
+// packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
 var fs3 = __toModule(require("fs"));
 var p3 = __toModule(require("path"));
@@ -316,19 +302,9 @@ For example:
   }
 }
 
-// packages/retro/commands/export_.ts
-function object(value) {
-  const ok = typeof value === "object" && value !== null && !Array.isArray(value);
-  return ok;
-}
-async function resolveStaticRoute(page, outfile) {
-  let mod;
-  try {
-    mod = require(p3.join("../..", outfile));
-  } catch {
-  }
-  if (mod !== void 0 && mod.serverProps !== void 0 && typeof mod.serverProps !== "function") {
-    error(`${page.src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
+// packages/retro/cmd_export.ts
+function errServerPropsFunction(src) {
+  return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
 
 For example:
 
@@ -341,20 +317,64 @@ function serverProps() {
 async function serverProps() {
 	await ...
 	return { ... }
-}`);
-  }
-  let serverProps = {path: page.path};
-  if (mod.serverProps !== void 0 && typeof mod?.serverProps === "function") {
-    try {
-      const props = await mod.serverProps();
-      if (!object(props)) {
-        error(`${page.src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+}`;
+}
+function errServerPropsReturn(src) {
+  return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
 
 For example:
 
 function serverProps() {
 	return { ... }
-}`);
+}`;
+}
+function errServerPathsFunction(src) {
+  return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
+
+For example:
+
+// Synchronous:
+function serverPaths() {
+	return { ... }
+}
+
+// Asynchronous:
+async function serverPaths() {
+	await ...
+	return { ... }
+}`;
+}
+function errServerPathsReturn(src) {
+  return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`;
+}
+function testServerPropsReturn(value) {
+  const ok = typeof value === "object" && value !== null && !Array.isArray(value);
+  return ok;
+}
+function testServerPathsReturn(value) {
+  return false;
+}
+async function resolveStaticRoute(runtime, page, outfile) {
+  let serverProps = {path: page.path};
+  let mod;
+  try {
+    mod = require(p3.join("..", "..", outfile));
+  } catch {
+  }
+  if (mod !== void 0 && "serverProps" in mod && typeof mod.serverProps !== "function") {
+    error(errServerPropsFunction(page.src));
+  }
+  if (typeof mod.serverProps === "function") {
+    try {
+      const props = await mod.serverProps();
+      if (!testServerPropsReturn(props)) {
+        error(errServerPropsReturn(page.src));
       }
       serverProps = {...serverProps, ...props};
     } catch (err) {
@@ -363,13 +383,43 @@ function serverProps() {
   }
   return {page, serverProps};
 }
+async function resolveDynamicPage(page, outfile) {
+  const subrouter = {};
+  return subrouter;
+  let mod;
+  try {
+    mod = require(p3.join("../..", outfile));
+  } catch {
+  }
+  if (mod !== void 0 && "serverPaths" in mod && typeof mod.serverPaths !== "function") {
+    error(errServerPathsFunction(page.src));
+  }
+  let serverPaths = {};
+  if (typeof mod.serverPaths === "function") {
+    try {
+      const paths = await mod.serverPaths();
+      if (!testServerPathsReturn(paths)) {
+        error(errServerPathsReturn(page.src));
+      }
+      for (const path of paths) {
+        serverPaths[path.path] = {
+          path: path.path,
+          ...path.props
+        };
+      }
+    } catch (err) {
+      error(`${page.src}.serverPaths: ${err.message}`);
+    }
+  }
+  return subrouter;
+}
 async function resolveServerRouter(runtime) {
-  const serverRouter = {};
+  const router = {};
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
     const entryPoints = [page.src];
     const outfile = p3.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
-    await service.build({
+    const result = await service.build({
       bundle: true,
       define: {
         __DEV__: process.env.__DEV__,
@@ -383,24 +433,27 @@ async function resolveServerRouter(runtime) {
       logLevel: "silent",
       outfile
     });
+    console.log(result);
     if (page.type === "static") {
-      const meta = await resolveStaticRoute(page, outfile);
-      serverRouter[page.path] = meta;
+      const meta = await resolveStaticRoute(runtime, page, outfile);
+      router[page.path] = meta;
+    } else if (page.type === "dynamic") {
+      await resolveDynamicPage(runtime, page, outfile);
     }
   }
-  console.log(serverRouter);
-  return serverRouter;
+  console.log(router);
+  return router;
 }
-var export_ = async (runtime) => {
+var cmd_export = async (runtime) => {
   await runServerGuards(runtime.directories);
   const data = await fs3.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
   resolveServerRouter(runtime);
 };
-var export_default = export_;
+var cmd_export_default = cmd_export;
 
-// packages/retro/commands/serve.ts
+// packages/retro/cmd_serve.ts
 var esbuild2 = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
 var p4 = __toModule(require("path"));
@@ -419,16 +472,26 @@ var serve2 = async (runtime) => {
     if (getWillEagerlyTerminate())
       return;
     clearScreen();
+    console.log();
     info(`http://localhost:${runtime.command.port}`);
   }, 10);
   const result = await esbuild2.serve({
     servedir: runtime.directories.exportDir,
     onRequest: (args) => {
-      let descriptMs = args.timeInMS + "ms";
-      if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
-        descriptMs += " - cached";
+      let color;
+      if (args.status >= 200 && args.status < 300) {
+        color = green;
+      } else {
+        color = red;
       }
-      console.log(`${" ".repeat(2)}${bold("\u2192")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? green(args.status) : red(args.status)} (${descriptMs})`);
+      let descriptMs = "";
+      if (args.status >= 200 && args.status < 300) {
+        descriptMs += ` (${args.timeInMS}ms)`;
+        if (args.timeInMS === 0) {
+          descriptMs = descriptMs.slice(0, -1) + " - cached)";
+        }
+      }
+      console.log(`${" ".repeat(2)}${color(`[${args.status}]`)} ${args.method} ${args.path}${descriptMs}`);
     }
   }, {});
   let transformURL = ssgify;
@@ -449,7 +512,7 @@ var serve2 = async (runtime) => {
   });
   proxySrv.listen(runtime.command.port);
 };
-var serve_default = serve2;
+var cmd_serve_default = serve2;
 
 // packages/retro/cli.ts
 var cmds = `
@@ -609,6 +672,8 @@ function parseServeCommandFlags(...args) {
   return cmd;
 }
 async function run() {
+  console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}`);
+  console.log();
   const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv;
   if (args.length === 1) {
     console.log(usage);
@@ -654,9 +719,9 @@ Or 'retro usage' for usage.`);
   };
   if (runtime.command.type === "dev") {
   } else if (runtime.command.type === "export") {
-    await export_default(runtime);
+    await cmd_export_default(runtime);
   } else if (runtime.command.type === "serve") {
-    await serve_default(runtime);
+    await cmd_serve_default(runtime);
   }
 }
 process.on("uncaughtException", (err) => {

@@ -1,10 +1,10 @@
 import * as esbuild from "esbuild"
 import * as http from "http"
-import * as log from "../../lib/log"
+import * as log from "../lib/log"
 import * as p from "path"
-import * as term from "../../lib/term"
-import * as types from "../types"
-import * as utils from "../utils"
+import * as term from "../lib/term"
+import * as types from "./types"
+import * as utils from "./utils"
 
 // spaify converts a URL for SPA-mode.
 function spaify(_: string): string {
@@ -23,10 +23,11 @@ function ssgify(url: string): string {
 // - https://esbuild.github.io/api/#customizing-server-behavior
 // - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 //
-const serve: types.serve = async runtime => {
+const serve: types.cmd_serve = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
 		utils.clearScreen()
+		console.log()
 		log.info(`http://localhost:${runtime.command.port}`)
 	}, 10)
 
@@ -34,11 +35,20 @@ const serve: types.serve = async runtime => {
 	const result = await esbuild.serve({
 		servedir: runtime.directories.exportDir,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => {
-			let descriptMs = args.timeInMS + "ms"
-			if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
-				descriptMs += " - cached"
+			let color: Function
+			if (args.status >= 200 && args.status < 300) {
+				color = term.green
+			} else {
+				color = term.red
 			}
-			console.log(`${" ".repeat(2)}${term.bold("→")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? term.green(args.status) : term.red(args.status)} (${descriptMs})`)
+			let descriptMs = ""
+			if (args.status >= 200 && args.status < 300) {
+				descriptMs += ` (${args.timeInMS}ms)`
+				if (args.timeInMS === 0) {
+					descriptMs = descriptMs.slice(0, -1) + " - cached)"
+				}
+			}
+			console.log(`${" ".repeat(2)}${color(`[${args.status}]`)} ${args.method} ${args.path}${descriptMs}`)
 		},
 	}, {})
 
