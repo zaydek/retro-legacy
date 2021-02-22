@@ -114,10 +114,9 @@ async function resolveStaticRoute(page: types.StaticPageMeta, outfile: string): 
 			const props = await mod!.serverProps()
 			serverProps = { ...serverProps, ...props }
 		} catch (err) {
-			log.error(`${page.src}: Failed to resolve '<${page.component}:serverProps>': ${err.message}.`)
+			log.error(`${page.src}: 'await serverProps()' error: ${err.message}.`)
 		}
 	}
-	log.info(`${page.src}: Resolved '<${page.component}:serverProps>'.`)
 	return { page, serverProps }
 }
 

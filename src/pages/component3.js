@@ -4,6 +4,7 @@ function sleep(dur) {
 
 export async function serverProps() {
 	await sleep(1e3)
+	throw new Error("Hello, world!")
 	return "Hello, world!"
 
 	// return new Promise(resolve => {
