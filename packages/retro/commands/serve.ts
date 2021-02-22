@@ -1,10 +1,10 @@
 import * as esbuild from "esbuild"
 import * as http from "http"
-import * as log from "../lib/log"
+import * as log from "../../lib/log"
 import * as p from "path"
-import * as term from "../lib/term"
-import * as types from "./types"
-import * as utils from "./utils"
+import * as term from "../../lib/term"
+import * as types from "../types"
+import * as utils from "../utils"
 
 // spaify converts a URL for SPA-mode.
 function spaify(_: string): string {

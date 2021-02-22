@@ -275,12 +275,6 @@ function ssgify(url) {
     return url + ".html";
   return url;
 }
-function decorateStatus(status) {
-  if (status >= 200 && status < 300) {
-    return green(status);
-  }
-  return red(status);
-}
 var handleServe = async (runtime) => {
   setTimeout(() => {
     if (getWillEagerlyTerminate())
@@ -295,7 +289,7 @@ var handleServe = async (runtime) => {
       if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
         descriptMs += " - cached";
       }
-      console.log(`  ${bold("\u2192")} ${args.method} ${args.path} ${decorateStatus(args.status)} (${descriptMs})`);
+      console.log(`  ${bold("\u2192")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? green(args.status) : red(args.status)} (${descriptMs})`);
     }
   }, {});
   let transformURL = ssgify;

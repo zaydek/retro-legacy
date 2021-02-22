@@ -3,9 +3,9 @@
 // import * as p from "path"
 // import * as React from "react"
 // import * as ReactDOMServer from "react-dom/server"
-import * as types from "./types"
+import * as types from "../types"
 
-import newFilesystemRouter from "./router"
+import newFilesystemRouter from "../router"
 
 // // RenderPayload describes a render payload (page metadata).
 // interface RenderPayload {

@@ -3,8 +3,8 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import handleExport from "./handleExport"
-import handleServe from "./handleServe"
+import export_ from "./commands/export_"
+import serve from "./commands/serve"
 
 export const cmds = `
 retro dev     Start the dev server
@@ -233,11 +233,11 @@ Or use 'retro usage' for usage.`)
 			break
 		case "export":
 			const r2 = runtime as types.Runtime<types.ExportCommand>
-			await handleExport(r2)
+			await export_(r2)
 			break
 		case "serve":
 			const r3 = runtime as types.Runtime<types.ServeCommand>
-			await handleServe(r3)
+			await serve(r3)
 			break
 	}
 }
