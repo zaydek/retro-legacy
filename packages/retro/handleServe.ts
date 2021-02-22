@@ -30,7 +30,7 @@ function decorateStatus(status: number): string {
 // - https://esbuild.github.io/api/#customizing-server-behavior
 // - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 //
-const serve: types.serve = async runtime => {
+const handleServe: types.handleServe = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
 		utils.clearScreen()
@@ -74,4 +74,4 @@ When you’re ready to stop the server, press Ctrl-C.`)
 	proxySrv.listen(runtime.cmd.port)
 }
 
-export default serve
+export default handleServe

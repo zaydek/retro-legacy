@@ -255,13 +255,13 @@ ${boldUnderline("https://tools.ietf.org/html/rfc3986")}`);
   return router;
 }
 
-// packages/retro/export_.ts
-var export_ = async (runtime) => {
+// packages/retro/handleExport.ts
+var handleExport = async (runtime) => {
   console.log(await newFilesystemRouter(runtime));
 };
-var export_default = export_;
+var handleExport_default = handleExport;
 
-// packages/retro/serve.ts
+// packages/retro/handleServe.ts
 var esbuild = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
 var p2 = __toModule(require("path"));
@@ -281,7 +281,7 @@ function decorateStatus(status) {
   }
   return red(status);
 }
-var serve2 = async (runtime) => {
+var handleServe = async (runtime) => {
   setTimeout(() => {
     if (getWillEagerlyTerminate())
       return;
@@ -318,7 +318,7 @@ When you\u2019re ready to stop the server, press Ctrl-C.`);
   });
   proxySrv.listen(runtime.cmd.port);
 };
-var serve_default = serve2;
+var handleServe_default = handleServe;
 
 // packages/retro/cli.ts
 var cmds = `
@@ -360,7 +360,7 @@ var usage = `${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
     ${underline("https://github.com/zaydek/retro")}
 `;
-function parseDevCommandArgs(...args) {
+function parseDevCommandFlags(...args) {
   const cmd = {
     type: "dev",
     cached: false,
@@ -406,7 +406,7 @@ function parseDevCommandArgs(...args) {
   }
   return cmd;
 }
-function parseExportCommandArgs(...args) {
+function parseExportCommandFlags(...args) {
   const cmd = {
     type: "export",
     cached: false,
@@ -441,7 +441,7 @@ function parseExportCommandArgs(...args) {
   }
   return cmd;
 }
-function parseServeCommandArgs(...args) {
+function parseServeCommandFlags(...args) {
   const cmd = {
     type: "serve",
     mode: "ssg",
@@ -500,15 +500,15 @@ async function run() {
   } else if (arg === "dev") {
     process.env["__DEV__"] = "true";
     process.env["NODE_ENV"] = "development";
-    cmd = parseDevCommandArgs(...args.slice(2));
+    cmd = parseDevCommandFlags(...args.slice(2));
   } else if (arg === "export") {
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
-    cmd = parseExportCommandArgs(...args.slice(2));
+    cmd = parseExportCommandFlags(...args.slice(2));
   } else if (arg === "serve") {
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
-    cmd = parseServeCommandArgs(...args.slice(2));
+    cmd = parseServeCommandFlags(...args.slice(2));
   } else {
     error(`No such command '${arg}'. Use one of these commands:
 
@@ -525,11 +525,11 @@ Or use 'retro usage' for usage.`);
       break;
     case "export":
       const r2 = runtime;
-      await export_default(r2);
+      await handleExport_default(r2);
       break;
     case "serve":
       const r3 = runtime;
-      await serve_default(r3);
+      await handleServe_default(r3);
       break;
   }
 }

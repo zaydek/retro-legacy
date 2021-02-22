@@ -3,8 +3,8 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import export_ from "./export_"
-import serve from "./serve"
+import handleExport from "./handleExport"
+import handleServe from "./handleServe"
 
 export const cmds = `
 retro dev     Start the dev server
@@ -47,9 +47,10 @@ export const usage = `${term.gray([process.argv0, ...process.argv.slice(1)].join
     ${term.underline("https://github.com/zaydek/retro")}
 `
 
-// parseDevCommandArgs parses 'retro dev [flags]'.
+// parseDevCommandFlags parses 'retro dev [flags]'.
+//
 // TODO: Write tests.
-function parseDevCommandArgs(...args: string[]): types.DevCommand {
+function parseDevCommandFlags(...args: string[]): types.DevCommand {
 	const cmd: types.DevCommand = {
 		type: "dev",
 		cached: false,
@@ -96,9 +97,10 @@ function parseDevCommandArgs(...args: string[]): types.DevCommand {
 	return cmd
 }
 
-// parseExportCommandArgs parses 'retro export [flags]'.
+// parseExportCommandFlags parses 'retro export [flags]'.
+//
 // TODO: Write tests.
-function parseExportCommandArgs(...args: string[]): types.ExportCommand {
+function parseExportCommandFlags(...args: string[]): types.ExportCommand {
 	const cmd: types.ExportCommand = {
 		type: "export",
 		cached: false,
@@ -134,9 +136,10 @@ function parseExportCommandArgs(...args: string[]): types.ExportCommand {
 	return cmd
 }
 
-// parseServeCommandArgs parses 'retro serve [flags]'.
+// parseServeCommandFlags parses 'retro serve [flags]'.
+//
 // TODO: Write tests.
-function parseServeCommandArgs(...args: string[]): types.ServeCommand {
+function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 	const cmd: types.ServeCommand = {
 		type: "serve",
 		mode: "ssg",
@@ -201,15 +204,15 @@ async function run(): Promise<void> {
 	} else if (arg === "dev") {
 		process.env["__DEV__"] = "true"
 		process.env["NODE_ENV"] = "development"
-		cmd = parseDevCommandArgs(...args.slice(2))
+		cmd = parseDevCommandFlags(...args.slice(2))
 	} else if (arg === "export") {
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
-		cmd = parseExportCommandArgs(...args.slice(2))
+		cmd = parseExportCommandFlags(...args.slice(2))
 	} else if (arg === "serve") {
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
-		cmd = parseServeCommandArgs(...args.slice(2))
+		cmd = parseServeCommandFlags(...args.slice(2))
 	} else {
 		log.error(`No such command '${arg}'. Use one of these commands:
 
@@ -218,6 +221,7 @@ ${cmds}
 Or use 'retro usage' for usage.`)
 	}
 
+	// TODO: Add createFilesystemRouter and serverGuards here.
 	const runtime: types.Runtime = {
 		cmd: cmd!,
 		dir: DIRS,
@@ -225,24 +229,22 @@ Or use 'retro usage' for usage.`)
 
 	switch (cmd!.type) {
 		case "dev":
-			// await serve(runtime as types.Runtime<types.DevCommand>)
+			// TODO
 			break
 		case "export":
 			const r2 = runtime as types.Runtime<types.ExportCommand>
-			await export_(r2)
+			await handleExport(r2)
 			break
 		case "serve":
 			const r3 = runtime as types.Runtime<types.ServeCommand>
-			await serve(r3)
+			await handleServe(r3)
 			break
 	}
 }
 
 process.on("uncaughtException", err => {
 	utils.setWillEagerlyTerminate(true)
-
-	// Force the stack trace on:
-	process.env["STACK_TRACE"] = "true"
+	process.env["STACK_TRACE"] = "true" // Force on
 	err.message = `UncaughtException: ${err.message}.`
 	log.error(err)
 })

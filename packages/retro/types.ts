@@ -41,11 +41,11 @@ export interface Runtime<Cmd = Command> {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// dev handles 'retro dev [flags]'.
-export type dev = (runtime: Runtime<DevCommand>) => Promise<void>
+// handleDev handles 'retro dev [flags]'.
+export type handleDev = (runtime: Runtime<DevCommand>) => Promise<void>
 
-// export_ handles 'retro export [flags]'.
-export type export_ = (runtime: Runtime<ExportCommand>) => Promise<void>
+// handleExport handles 'retro export [flags]'.
+export type handleExport = (runtime: Runtime<ExportCommand>) => Promise<void>
 
-// serve handles 'retro serve [flags]'.
-export type serve = (runtime: Runtime<ServeCommand>) => Promise<void>
+// handleServe handles 'retro serve [flags]'.
+export type handleServe = (runtime: Runtime<ServeCommand>) => Promise<void>

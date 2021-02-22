@@ -218,7 +218,7 @@ import newFilesystemRouter from "./router"
 // ` // EOF
 // }
 
-const export_: types.export_ = async runtime => {
+const handleExport: types.handleExport = async runtime => {
 	console.log(await newFilesystemRouter(runtime))
 	// const router = await exportPagesAndCreateRouter(runtime)
 	//
@@ -257,7 +257,7 @@ const export_: types.export_ = async runtime => {
 	// // TODO: Handle warnings, error, and hints.
 }
 
-export default export_
+export default handleExport
 
 // ;(async () => {
 // 	try {
