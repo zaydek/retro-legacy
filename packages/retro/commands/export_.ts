@@ -98,23 +98,57 @@ interface ServerResolvedRouter {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-async function resolveStaticRoute(page: types.StaticPageMeta, outfile: string): Promise<ServerRouteMeta> {
-	let mod: StaticPageModule
+// Based on https://github.com/evanw/esbuild/blob/master/lib/common.ts#L35.
+// prettier-ignore
+function object(value: unknown): boolean {
+	const ok = typeof value === "object" &&
+		value !== null &&
+		!Array.isArray(value)
+	return ok
+}
 
+async function resolveStaticRoute(page: types.StaticPageMeta, outfile: string): Promise<ServerRouteMeta> {
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
+	let mod: StaticPageModule
 	try {
 		mod = require(p.join("../..", outfile))
 	} catch {}
 
+	if (mod! !== undefined && "serverProps" in mod && typeof mod.serverProps !== "function") {
+		log.error(`${page.src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
+
+For example:
+
+// Synchronous:
+function serverProps() {
+	return { ... }
+}
+
+// Asynchronous:
+async function serverProps() {
+	await ...
+	return { ... }
+}`)
+	}
+
 	let serverProps: ServerResolvedProps = { path: page.path }
-	if (typeof mod!?.serverProps === "function") {
+	if (mod!.serverProps !== undefined && typeof mod!?.serverProps === "function") {
 		try {
 			const props = await mod!.serverProps()
+			if (!object(props)) {
+				log.error(`${page.src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`)
+			}
 			serverProps = { ...serverProps, ...props }
 		} catch (err) {
-			log.error(`${page.src}: 'await serverProps()' error: ${err.message}.`)
+			log.error(`${page.src}.serverProps: ${err.message}`)
 		}
 	}
 	return { page, serverProps }

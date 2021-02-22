@@ -240,7 +240,7 @@ Or 'retro usage' for usage.`)
 process.on("uncaughtException", err => {
 	utils.setWillEagerlyTerminate(true)
 	process.env["STACK_TRACE"] = "true"
-	err.message = `UncaughtException: ${err.message}.`
+	err.message = `UncaughtException: ${err.message}`
 	log.error(err)
 })
 

@@ -317,19 +317,48 @@ For example:
 }
 
 // packages/retro/commands/export_.ts
+function object(value) {
+  const ok = typeof value === "object" && value !== null && !Array.isArray(value);
+  return ok;
+}
 async function resolveStaticRoute(page, outfile) {
   let mod;
   try {
     mod = require(p3.join("../..", outfile));
   } catch {
   }
+  if (mod !== void 0 && mod.serverProps !== void 0 && typeof mod.serverProps !== "function") {
+    error(`${page.src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
+
+For example:
+
+// Synchronous:
+function serverProps() {
+	return { ... }
+}
+
+// Asynchronous:
+async function serverProps() {
+	await ...
+	return { ... }
+}`);
+  }
   let serverProps = {path: page.path};
-  if (typeof mod?.serverProps === "function") {
+  if (mod.serverProps !== void 0 && typeof mod?.serverProps === "function") {
     try {
       const props = await mod.serverProps();
+      if (!object(props)) {
+        error(`${page.src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`);
+      }
       serverProps = {...serverProps, ...props};
     } catch (err) {
-      error(`${page.src}: 'await serverProps()' error: ${err.message}.`);
+      error(`${page.src}.serverProps: ${err.message}`);
     }
   }
   return {page, serverProps};
@@ -633,7 +662,7 @@ Or 'retro usage' for usage.`);
 process.on("uncaughtException", (err) => {
   setWillEagerlyTerminate(true);
   process.env["STACK_TRACE"] = "true";
-  err.message = `UncaughtException: ${err.message}.`;
+  err.message = `UncaughtException: ${err.message}`;
   error(err);
 });
 run();
