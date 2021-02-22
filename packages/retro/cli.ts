@@ -218,7 +218,7 @@ ${cmds}
 Or use 'retro usage' for usage.`)
 	}
 
-	const runtime: types.Runtime<types.Command> = {
+	const runtime: types.Runtime = {
 		cmd: cmd!,
 		dir: DIRS,
 	}

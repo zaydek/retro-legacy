@@ -19,6 +19,7 @@ export function info(...args: unknown[]): void {
 `)
 }
 
+// TODO: Can we support (...args: unknown[]) here?
 export function error(error: string | Error): void {
 	const message = formatMessage(typeof error === "object" ? error.message : error)
 

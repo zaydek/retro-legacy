@@ -33,7 +33,7 @@ export interface DirConfiguration {
 }
 
 // Runtime a meta data structure for the runtime.
-export interface Runtime<Cmd> {
+export interface Runtime<Cmd = Command> {
 	cmd: Cmd
 	dir: DirConfiguration
 	// filesystemRouter: ...

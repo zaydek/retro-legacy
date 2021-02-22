@@ -31,13 +31,15 @@ __export(exports, {
 });
 
 // packages/lib/term.ts
-var bold = (...args) => `[0;1m${args.join(" ")}[0m`;
-var gray = (...args) => `[0;2m${args.join(" ")}[0m`;
-var underline = (...args) => `[0;4m${args.join(" ")}[0m`;
-var red = (...args) => `[0;31m${args.join(" ")}[0m`;
-var green = (...args) => `[0;32m${args.join(" ")}[0m`;
-var boldRed = (...args) => `[1;31m${args.join(" ")}[0m`;
-var boldGreen = (...args) => `[1;32m${args.join(" ")}[0m`;
+var reset = `[0m`;
+var bold = (...args) => `[0;1m${args.join(" ")}${reset}`;
+var gray = (...args) => `[0;2m${args.join(" ")}${reset}`;
+var underline = (...args) => `[0;4m${args.join(" ")}${reset}`;
+var red = (...args) => `[0;31m${args.join(" ")}${reset}`;
+var green = (...args) => `[0;32m${args.join(" ")}${reset}`;
+var boldUnderline = (...args) => `[1;4m${args.join(" ")}${reset}`;
+var boldRed = (...args) => `[1;31m${args.join(" ")}${reset}`;
+var boldGreen = (...args) => `[1;32m${args.join(" ")}${reset}`;
 
 // packages/lib/log.ts
 function formatMessage(msg) {
@@ -89,7 +91,7 @@ function clearScreen() {
   import_readline.default.clearScreenDown(process.stdout);
 }
 
-// packages/retro/createRouter.ts
+// packages/retro/router.ts
 var fs = __toModule(require("fs"));
 var p = __toModule(require("path"));
 var supported = {
@@ -100,104 +102,162 @@ var supported = {
   ".md": true,
   ".mdx": true
 };
-function parsePathMetadata(path) {
+function parsePath(path) {
   const basename2 = p.basename(path);
   const ext = p.extname(path);
   const name = basename2.slice(0, -ext.length);
-  return {path, basename: basename2, name, ext};
+  return {src: path, basename: basename2, name, ext};
 }
-function dstPath(runtime, path) {
-  const syntax = p.join(runtime.dir.exportDir, path.path.slice(runtime.dir.srcPagesDir.length));
+function dst(runtime, path) {
+  const syntax = p.join(runtime.dir.exportDir, path.src.slice(runtime.dir.srcPagesDir.length));
   return syntax.slice(0, -path.ext.length) + ".html";
 }
-function component(path) {
-  const {name} = path;
-  let syntax = "";
-  for (let x = 0; x < name.length; x++) {
-    switch (name[x]) {
-      case "/":
-        x++;
-        while (x < name.length) {
-          if (name[x] !== "/") {
-            break;
-          }
-          x++;
-        }
-        if (x < name.length) {
-          syntax += name[x].toUpperCase();
-        }
-        break;
-      case "-":
-        x++;
-        while (x < name.length) {
-          if (name[x] !== "/") {
-            break;
-          }
-          x++;
-        }
-        if (x < name.length) {
-          syntax += name[x].toUpperCase();
-        }
-        break;
-      default:
-        syntax += name[x];
-        break;
-    }
+function toComponentSyntax(runtime, parsed, {dynamic}) {
+  let path = toPathSyntax(runtime, parsed);
+  if (dynamic) {
+    path = path.replace(dynamicRegex, "$1$3");
   }
-  syntax = "Page" + syntax[0].toUpperCase() + syntax.slice(1);
-  return syntax;
+  let syntax = path.split(p.sep).map((each) => {
+    if (!each.length)
+      return "";
+    return each[0].toUpperCase() + each.slice(1);
+  }).join("");
+  if (syntax === "") {
+    syntax = "index";
+  }
+  return (dynamic ? "DynamicPage" : "Page") + syntax[0].toUpperCase() + syntax.slice(1);
 }
-function path_(runtime, path) {
-  const syntax = path.path.slice(runtime.dir.srcPagesDir.length, -path.ext.length);
+function toPathSyntax(runtime, parsed) {
+  const syntax = parsed.src.slice(runtime.dir.srcPagesDir.length, -parsed.ext.length);
   if (syntax.endsWith("/index")) {
     return syntax.slice(0, -"index".length);
   }
   return syntax;
 }
-function parseRoute(runtime, path) {
-  const route = {
-    srcPath: path.path,
-    dstPath: dstPath(runtime, path),
-    component: component(path),
-    path: path_(runtime, path)
+function createStaticPageMeta(runtime, parsed) {
+  const component = {
+    type: "static",
+    src: parsed.src,
+    dst: dst(runtime, parsed),
+    path: toPathSyntax(runtime, parsed),
+    component: toComponentSyntax(runtime, parsed, {dynamic: false})
   };
-  return route;
+  return component;
 }
-async function readPaths(dir) {
-  const paths = [];
+function createDynamicPageMeta(runtime, parsed) {
+  const component = {
+    type: "dynamic",
+    src: parsed.src,
+    component: toComponentSyntax(runtime, parsed, {dynamic: true})
+  };
+  return component;
+}
+var dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
+function createFilesystemRoute(runtime, parsed) {
+  const path = toPathSyntax(runtime, parsed);
+  if (dynamicRegex.test(path)) {
+    return createDynamicPageMeta(runtime, parsed);
+  }
+  return createStaticPageMeta(runtime, parsed);
+}
+async function readdirAll(dir) {
+  const arr = [];
   async function recurse(dir2) {
     const ls = await fs.promises.readdir(dir2);
     for (const each of ls) {
-      const current = p.join(dir2, each);
-      if ((await fs.promises.stat(current)).isDirectory()) {
-        paths.push(parsePathMetadata(current));
-        await recurse(current);
+      const path = p.join(dir2, each);
+      if ((await fs.promises.stat(path)).isDirectory()) {
+        arr.push(parsePath(path));
+        await recurse(path);
         continue;
       }
-      paths.push(parsePathMetadata(current));
+      arr.push(parsePath(path));
     }
   }
   await recurse(dir);
-  return paths;
+  return arr;
 }
-async function createRouter(runtime) {
-  const paths = await readPaths("src");
-  const subpaths = paths.filter((path) => {
-    if (path.name.startsWith("_") || path.name.startsWith("$") || path.name.endsWith("_") || path.name.endsWith("$")) {
+function testURICharacter(char) {
+  if (char >= "a" && char <= "z" || char >= "A" && char <= "Z" || char >= "0" && char <= "9") {
+    return true;
+  }
+  switch (char) {
+    case "-":
+    case ".":
+    case "_":
+    case "~":
+      return true;
+  }
+  switch (char) {
+    case ":":
+    case "/":
+    case "?":
+    case "#":
+    case "[":
+    case "]":
+    case "@":
+    case "!":
+    case "$":
+    case "&":
+    case "'":
+    case "(":
+    case ")":
+    case "*":
+    case "+":
+    case ",":
+    case ";":
+    case "=":
+      return true;
+  }
+  return false;
+}
+async function newFilesystemRouter(runtime) {
+  const arr = await readdirAll(runtime.dir.srcPagesDir);
+  const arr2 = arr.filter((path) => {
+    if (path.name.startsWith("_") || path.name.startsWith("$")) {
+      return false;
+    } else if (path.name.endsWith("_") || path.name.endsWith("$")) {
       return false;
     }
-    return supported[path.ext];
+    return supported[path.ext] === true;
   });
+  const badSrcs = [];
+  for (const {src} of arr2) {
+    for (let x = 0; x < src.length; x++) {
+      if (!testURICharacter(src[x])) {
+        badSrcs.push(src);
+      }
+    }
+  }
+  if (badSrcs.length > 0) {
+    error(`These pages use non-URI characters:
+
+${badSrcs.map((each) => "- " + each).join("\n")}
+
+URI characters are described by RFC 3986:
+
+2.2. Unreserved Characters
+
+  ALPHA / DIGIT / "-" / "." / "_" / "~"
+
+2.3. Reserved Characters
+
+  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+             / "*" / "+" / "," / ";" / "="
+
+${boldUnderline("https://tools.ietf.org/html/rfc3986")}`);
+  }
   const router = [];
-  for (const path of subpaths) {
-    router.push(parseRoute(runtime, path));
+  for (const parsed of arr2) {
+    router.push(createFilesystemRoute(runtime, parsed));
   }
   return router;
 }
 
 // packages/retro/export_.ts
 var export_ = async (runtime) => {
-  console.log(await createRouter(runtime));
+  console.log(await newFilesystemRouter(runtime));
 };
 var export_default = export_;
 
