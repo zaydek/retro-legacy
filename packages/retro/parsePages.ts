@@ -24,7 +24,7 @@ const supported: { [key: string]: boolean } = {
 
 // parsePath parses path metadata so that syntax functions don’t need to
 // re-parse path metadata.
-function parsePath(path: string): ParsedPath {
+export function parsePath(path: string): ParsedPath {
 	const basename = p.basename(path)
 	const ext = p.extname(path)
 	const name = basename.slice(0, -ext.length)

@@ -44,11 +44,11 @@ const serve: types.cmd_serve = async runtime => {
 			let descriptMs = ""
 			if (args.status >= 200 && args.status < 300) {
 				descriptMs += ` (${args.timeInMS}ms)`
-				if (args.timeInMS === 0) {
-					descriptMs = descriptMs.slice(0, -1) + " - cached)"
-				}
+				// if (args.timeInMS === 0) {
+				// 	descriptMs = descriptMs.slice(0, -1) + ` - ${term.teal("cached")})`
+				// }
 			}
-			console.log(`${" ".repeat(2)}${color(`[${args.status}]`)} ${args.method} ${args.path}${descriptMs}`)
+			console.log(`${" ".repeat(2)}${args.method} ${args.path} ${color(args.status)}${descriptMs}`)
 		},
 	}, {})
 

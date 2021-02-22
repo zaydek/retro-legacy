@@ -3,6 +3,7 @@
 // import * as p from "path"
 // import * as React from "react"
 // import * as ReactDOMServer from "react-dom/server"
+// import * as term from "../lib/term"
 
 import * as esbuild from "esbuild"
 import * as fs from "fs"
@@ -11,7 +12,7 @@ import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
 
-import parsePages from "./parsePages"
+import parsePages, { parsePath } from "./parsePages"
 import runServerGuards from "./runServerGuards"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -148,7 +149,7 @@ interface DynamicPageModule extends PageModule {
 }
 
 interface ServerRouteMeta {
-	page: types.PageMeta
+	page: types.StaticPageMeta
 	serverProps: ServerResolvedProps
 }
 
@@ -185,9 +186,6 @@ async function resolveStaticRoute(
 	page: types.StaticPageMeta,
 	outfile: string,
 ): Promise<ServerRouteMeta> {
-	// // prettier-ignore
-	// console.log(`${" ".repeat(2)}${page.src.slice(runtime.directories.srcPagesDir.length + 1)} -> ${page.dst.slice(runtime.directories.exportDir.length + 1)}`)
-
 	let serverProps: ServerResolvedProps = { path: page.path }
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
@@ -216,8 +214,28 @@ async function resolveStaticRoute(
 	return { page, serverProps }
 }
 
+// // src/pages/index.js -> __export__/index.html
+// //
+// // TODO: Write tests.
+// function dst(directories: types.DirConfiguration, path: ParsedPath): string {
+// 	const syntax = p.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length))
+// 	return syntax.slice(0, -path.ext.length) + ".html"
+// }
+//
+// // "src/pages/index.js"       -> "/"
+// // "src/pages/hello-world.js" -> "/hello-world"
+// //
+// // TODO: Write tests.
+// function toPathSyntax(directories: types.DirConfiguration, parsed: ParsedPath): string {
+// 	const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length)
+// 	if (syntax.endsWith("/index")) {
+// 		return syntax.slice(0, -"index".length)
+// 	}
+// 	return syntax
+// }
+
 async function resolveDynamicPage(
-	_: types.Runtime<types.ExportCommand>,
+	runtime: types.Runtime<types.ExportCommand>,
 	page: types.PageMeta,
 	outfile: string,
 ): Promise<ServerResolvedRouter> {
@@ -242,8 +260,20 @@ async function resolveDynamicPage(
 				log.error(errServerPathsReturn(page.src))
 			}
 			for (const path of paths) {
+				const parsed = parsePath(page.src)
+				const dst =
+					runtime.directories.exportDir + // Add "__export__"
+					page.src.slice((runtime.directories.srcPagesDir + "/").length, -parsed.basename.length) + // Remove "src/pages" and "basename.js"
+					path.path + // Add path.path
+					".html" // Add ".html"
 				subrouter[path.path] = {
-					page,
+					page: {
+						type: "static",
+						src: page.src,
+						dst,
+						path: path.path,
+						component: page.component,
+					},
 					serverProps: {
 						path: path.path,
 						...path.props,
@@ -336,21 +366,29 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			// plugins: [...configs.retro.plugins], // TODO
 		})
 		// TODO: Emit warnings here.
-		console.log(result)
+		// console.log(result)
 
 		if (page.type === "static") {
+			const date = Date.now()
 			const meta = await resolveStaticRoute(runtime, page, outfile)
-			if (router[page.path] !== undefined) {
-				log.error(`${page.src}: Path '${page.path}' is already being used by ${router[page.path]!.page.src}.`)
+			if (router[meta.page.path] !== undefined) {
+				log.error(
+					`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path]!.page.src}.`,
+				)
 			}
 			router[page.path] = meta
+			console.log(`${" ".repeat(2)}${term.green(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`)
 		} else if (page.type === "dynamic") {
+			const date = Date.now()
 			const subrouter = await resolveDynamicPage(runtime, page, outfile)
 			for (const [path, meta] of Object.entries(subrouter)) {
 				if (router[path] !== undefined) {
-					log.error(`${page.src}: Path '${path}' is already being used by ${router[path]!.page.src}.`)
+					log.error(
+						`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path]!.page.src}.`,
+					)
 				}
 				router[path] = meta
+				console.log(`${" ".repeat(2)}${term.teal(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`)
 			}
 		}
 	}

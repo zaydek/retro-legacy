@@ -3,7 +3,7 @@ function sleep(dur) {
 }
 
 export async function serverProps() {
-	await sleep(1e3)
+	// await sleep(1e3)
 	return { data: "Hello, world!" }
 
 	// return new Promise(resolve => {

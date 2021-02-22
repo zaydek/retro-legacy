@@ -1,5 +1,5 @@
 import Component from "./component"
-// import Nav from "./Nav_"
+import Nav from "./Nav_"
 import { useEffect } from "react"
 
 // serverProps resolves props on the server. Props are cached for
@@ -8,12 +8,12 @@ import { useEffect } from "react"
 // <Page {...{ path, ...props }}>.
 export async function serverProps() {
 	return new Promise(resolve => {
-		setTimeout(() => {
-			resolve({
-				title: "Hello, world! (from promise)",
-				description: "This page was made using Retro. (from promise)",
-			})
-		}, 1e3)
+		// setTimeout(() => {
+		resolve({
+			title: "Hello, world! (from promise)",
+			description: "This page was made using Retro. (from promise)",
+		})
+		// }, 1e3)
 	})
 }
 
@@ -49,7 +49,7 @@ export default function Page({ name, ...props }) {
 
 	return (
 		<div>
-			{/* <Nav /> */}
+			<Nav />
 			<h1>Hello, {name}!</h1>
 			<pre>{JSON.stringify(props, null, 2)}</pre>
 			<Component />

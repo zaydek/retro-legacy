@@ -26,6 +26,7 @@ var gray = (...args) => `[0;2m${args.join(" ")}${reset}`;
 var underline = (...args) => `[0;4m${args.join(" ")}${reset}`;
 var red = (...args) => `[0;31m${args.join(" ")}${reset}`;
 var green = (...args) => `[0;32m${args.join(" ")}${reset}`;
+var teal = (...args) => `[0;36m${args.join(" ")}${reset}`;
 var boldUnderline = (...args) => `[1;4m${args.join(" ")}${reset}`;
 var boldRed = (...args) => `[1;31m${args.join(" ")}${reset}`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}${reset}`;
@@ -383,7 +384,7 @@ async function resolveStaticRoute(runtime, page, outfile) {
   }
   return {page, serverProps};
 }
-async function resolveDynamicPage(_, page, outfile) {
+async function resolveDynamicPage(runtime, page, outfile) {
   const subrouter = {};
   let mod;
   try {
@@ -400,8 +401,16 @@ async function resolveDynamicPage(_, page, outfile) {
         error(errServerPathsReturn(page.src));
       }
       for (const path of paths) {
+        const parsed = parsePath(page.src);
+        const dst2 = runtime.directories.exportDir + page.src.slice((runtime.directories.srcPagesDir + "/").length, -parsed.basename.length) + path.path + ".html";
         subrouter[path.path] = {
-          page,
+          page: {
+            type: "static",
+            src: page.src,
+            dst: dst2,
+            path: path.path,
+            component: page.component
+          },
           serverProps: {
             path: path.path,
             ...path.props
@@ -434,20 +443,23 @@ async function resolveServerRouter(runtime) {
       logLevel: "silent",
       outfile
     });
-    console.log(result);
     if (page.type === "static") {
+      const date = Date.now();
       const meta = await resolveStaticRoute(runtime, page, outfile);
-      if (router[page.path] !== void 0) {
-        error(`${page.src}: Path '${page.path}' is already being used by ${router[page.path].page.src}.`);
+      if (router[meta.page.path] !== void 0) {
+        error(`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path].page.src}.`);
       }
       router[page.path] = meta;
+      console.log(`${" ".repeat(2)}${green(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`);
     } else if (page.type === "dynamic") {
+      const date = Date.now();
       const subrouter = await resolveDynamicPage(runtime, page, outfile);
       for (const [path, meta] of Object.entries(subrouter)) {
         if (router[path] !== void 0) {
-          error(`${page.src}: Path '${path}' is already being used by ${router[path].page.src}.`);
+          error(`${meta.page.src}: Path '${meta.page.path}' is already being used by ${router[meta.page.path].page.src}.`);
         }
         router[path] = meta;
+        console.log(`${" ".repeat(2)}${teal(`${meta.page.src} -> ${meta.page.dst} (${Date.now() - date}ms)`)}`);
       }
     }
   }
@@ -497,11 +509,8 @@ var serve2 = async (runtime) => {
       let descriptMs = "";
       if (args.status >= 200 && args.status < 300) {
         descriptMs += ` (${args.timeInMS}ms)`;
-        if (args.timeInMS === 0) {
-          descriptMs = descriptMs.slice(0, -1) + " - cached)";
-        }
       }
-      console.log(`${" ".repeat(2)}${color(`[${args.status}]`)} ${args.method} ${args.path}${descriptMs}`);
+      console.log(`${" ".repeat(2)}${args.method} ${args.path} ${color(args.status)}${descriptMs}`);
     }
   }, {});
   let transformURL = ssgify;
