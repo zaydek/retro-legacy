@@ -17,20 +17,20 @@ export async function serverProps() {
 	})
 }
 
-// serverProps resolves paths on the server for dynamic pages. The returned
-// array describes { path, props }, where path creates a page and props are
-// forwarded as <Head {...{ path, ...props }}> and
-// <Page {...{ path, ...props }}>.
-//
-// prettier-ignore
-export async function serverPaths(serverProps) {
-	return [
-		{ path: "/bulbasaur",  props: { ...serverProps, name: "Bulbasaur",  type: "🌱" } },
-		{ path: "/charmander", props: { ...serverProps, name: "Charmander", type: "🔥" } },
-		{ path: "/pikachu",    props: { ...serverProps, name: "Pikachu",    type: "⚡️" } },
-		{ path: "/squirtle",   props: { ...serverProps, name: "Squirtle",   type: "💧" } },
-	]
-}
+// // serverProps resolves paths on the server for dynamic pages. The returned
+// // array describes { path, props }, where path creates a page and props are
+// // forwarded as <Head {...{ path, ...props }}> and
+// // <Page {...{ path, ...props }}>.
+// //
+// // prettier-ignore
+// export async function serverPaths(serverProps) {
+// 	return [
+// 		{ path: "/bulbasaur",  props: { ...serverProps, name: "Bulbasaur",  type: "🌱" } },
+// 		{ path: "/charmander", props: { ...serverProps, name: "Charmander", type: "🔥" } },
+// 		{ path: "/pikachu",    props: { ...serverProps, name: "Pikachu",    type: "⚡️" } },
+// 		{ path: "/squirtle",   props: { ...serverProps, name: "Squirtle",   type: "💧" } },
+// 	]
+// }
 
 export function Head({ type, name }) {
 	return (

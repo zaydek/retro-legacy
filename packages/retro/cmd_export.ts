@@ -34,16 +34,6 @@ async function serverProps() {
 }`
 }
 
-function errServerPropsReturn(src: string): string {
-	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
-
-For example:
-
-function serverProps() {
-	return { ... }
-}`
-}
-
 function errServerPathsFunction(src: string): string {
 	return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
 
@@ -61,9 +51,45 @@ async function serverPaths() {
 }`
 }
 
+function errServerPropsMismatch(src: string): string {
+	return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
+
+For example:
+
+function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}
+
+Note paths are directory-scoped.`
+}
+
+function errServerPropsReturn(src: string): string {
+	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`
+}
+
 // TODO
 function errServerPathsReturn(src: string): string {
 	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`
+}
+
+function errServerPathsMismatch(src: string): string {
+	return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
 
 For example:
 
@@ -201,11 +227,15 @@ async function resolveStaticRoute(
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
 	let mod: StaticPageModule
-	// prettier-ignore
-	try { mod = require(p.join("..", "..", outfile)) } catch {}
+	try {
+		mod = require(p.join("..", "..", outfile))
+	} catch {}
 
-	if (mod! !== undefined && "serverProps" in mod && typeof mod.serverProps !== "function") {
+	// Guard serverProps and serverPaths:
+	if ("serverProps" in mod! && typeof mod.serverProps !== "function") {
 		log.error(errServerPropsFunction(page.src))
+	} else if ("serverPaths" in mod! && typeof (mod as { [key: string]: unknown }).serverPaths === "function") {
+		log.error(errServerPathsMismatch(page.src))
 	}
 
 	// Resolve serverProps:
@@ -235,11 +265,15 @@ async function resolveDynamicPage(
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
 	let mod: DynamicPageModule
-	// prettier-ignore
-	try { mod = require(p.join("../..", outfile)) } catch {}
+	try {
+		mod = require(p.join("../..", outfile))
+	} catch {}
 
-	if (mod! !== undefined && "serverPaths" in mod && typeof mod.serverPaths !== "function") {
+	// Guard serverProps and serverPaths:
+	if ("serverPaths" in mod! && typeof mod.serverPaths !== "function") {
 		log.error(errServerPathsFunction(page.src))
+	} else if ("serverProps" in mod! && typeof (mod as { [key: string]: unknown }).serverProps === "function") {
+		log.error(errServerPropsMismatch(page.src))
 	}
 
 	// Resolve serverPaths:

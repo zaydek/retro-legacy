@@ -314,15 +314,6 @@ async function serverProps() {
 	return { ... }
 }`;
 }
-function errServerPropsReturn(src) {
-  return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
-
-For example:
-
-function serverProps() {
-	return { ... }
-}`;
-}
 function errServerPathsFunction(src) {
   return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
 
@@ -339,8 +330,41 @@ async function serverPaths() {
 	return { ... }
 }`;
 }
+function errServerPropsMismatch(src) {
+  return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
+
+For example:
+
+function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}
+
+Note paths are directory-scoped.`;
+}
+function errServerPropsReturn(src) {
+  return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`;
+}
 function errServerPathsReturn(src) {
   return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+
+For example:
+
+function serverProps() {
+	return { ... }
+}`;
+}
+function errServerPathsMismatch(src) {
+  return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
 
 For example:
 
@@ -362,8 +386,10 @@ async function resolveStaticRoute(_, page, outfile) {
     mod = require(p3.join("..", "..", outfile));
   } catch {
   }
-  if (mod !== void 0 && "serverProps" in mod && typeof mod.serverProps !== "function") {
+  if ("serverProps" in mod && typeof mod.serverProps !== "function") {
     error(errServerPropsFunction(page.src));
+  } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
+    error(errServerPathsMismatch(page.src));
   }
   if (typeof mod.serverProps === "function") {
     try {
@@ -386,8 +412,10 @@ async function resolveDynamicPage(runtime, page, outfile) {
     mod = require(p3.join("../..", outfile));
   } catch {
   }
-  if (mod !== void 0 && "serverPaths" in mod && typeof mod.serverPaths !== "function") {
+  if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
     error(errServerPathsFunction(page.src));
+  } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
+    error(errServerPropsMismatch(page.src));
   }
   if (typeof mod.serverPaths === "function") {
     try {
