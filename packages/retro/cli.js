@@ -5,10 +5,6 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __markAsModule = (target) => __defProp(target, "__esModule", {value: true});
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, {get: all[name], enumerable: true});
-};
 var __exportStar = (target, module2, desc) => {
   if (module2 && typeof module2 === "object" || typeof module2 === "function") {
     for (let key of __getOwnPropNames(module2))
@@ -23,13 +19,6 @@ var __toModule = (module2) => {
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", {value: module2, enumerable: true})), module2);
 };
 
-// packages/retro/cli.ts
-__markAsModule(exports);
-__export(exports, {
-  cmds: () => cmds,
-  usage: () => usage
-});
-
 // packages/lib/term.ts
 var reset = `[0m`;
 var bold = (...args) => `[0;1m${args.join(" ")}${reset}`;
@@ -37,6 +26,7 @@ var gray = (...args) => `[0;2m${args.join(" ")}${reset}`;
 var underline = (...args) => `[0;4m${args.join(" ")}${reset}`;
 var red = (...args) => `[0;31m${args.join(" ")}${reset}`;
 var green = (...args) => `[0;32m${args.join(" ")}${reset}`;
+var boldUnderline = (...args) => `[1;4m${args.join(" ")}${reset}`;
 var boldRed = (...args) => `[1;31m${args.join(" ")}${reset}`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}${reset}`;
 
@@ -91,21 +81,188 @@ function clearScreen() {
   import_readline.default.clearScreenDown(process.stdout);
 }
 
-// packages/retro/guards.ts
+// packages/retro/commands/export_.ts
+var fs3 = __toModule(require("fs"));
+var p3 = __toModule(require("path"));
+
+// packages/retro/createRouter.ts
 var fs = __toModule(require("fs"));
 var p = __toModule(require("path"));
+var supported = {
+  ".js": true,
+  ".jsx": true,
+  ".ts": true,
+  ".tsx": true,
+  ".md": true,
+  ".mdx": true
+};
+function parsePath(path) {
+  const basename2 = p.basename(path);
+  const ext = p.extname(path);
+  const name = basename2.slice(0, -ext.length);
+  return {src: path, basename: basename2, name, ext};
+}
+function dst(directories, path) {
+  const syntax = p.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
+  return syntax.slice(0, -path.ext.length) + ".html";
+}
+function toComponentSyntax(directories, parsed, {dynamic}) {
+  let path = toPathSyntax(directories, parsed);
+  if (dynamic) {
+    path = path.replace(dynamicRegex, "$1$3");
+  }
+  let syntax = "";
+  for (const part of path.split(p.sep)) {
+    if (!part.length)
+      continue;
+    syntax += part[0].toUpperCase() + part.slice(1);
+  }
+  syntax = syntax || "Index";
+  return (dynamic ? "DynamicPage" : "Page") + syntax[0].toUpperCase() + syntax.slice(1);
+}
+function toPathSyntax(directories, parsed) {
+  const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length);
+  if (syntax.endsWith("/index")) {
+    return syntax.slice(0, -"index".length);
+  }
+  return syntax;
+}
+function createStaticPageMeta(directories, parsed) {
+  const component = {
+    type: "static",
+    src: parsed.src,
+    dst: dst(directories, parsed),
+    path: toPathSyntax(directories, parsed),
+    component: toComponentSyntax(directories, parsed, {dynamic: false})
+  };
+  return component;
+}
+function createDynamicPageMeta(directories, parsed) {
+  const component = {
+    type: "dynamic",
+    src: parsed.src,
+    component: toComponentSyntax(directories, parsed, {dynamic: true})
+  };
+  return component;
+}
+var dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
+function createRoute(directories, parsed) {
+  const path = toPathSyntax(directories, parsed);
+  if (dynamicRegex.test(path)) {
+    return createDynamicPageMeta(directories, parsed);
+  }
+  return createStaticPageMeta(directories, parsed);
+}
+async function readdirAll(src) {
+  const arr = [];
+  async function recurse(src2) {
+    const ls = await fs.promises.readdir(src2);
+    for (const each of ls) {
+      const path = p.join(src2, each);
+      if ((await fs.promises.stat(path)).isDirectory()) {
+        arr.push(parsePath(path));
+        await recurse(path);
+        continue;
+      }
+      arr.push(parsePath(path));
+    }
+  }
+  await recurse(src);
+  return arr;
+}
+function testURICharacter(char) {
+  if (char >= "a" && char <= "z" || char >= "A" && char <= "Z" || char >= "0" && char <= "9") {
+    return true;
+  }
+  switch (char) {
+    case "-":
+    case ".":
+    case "_":
+    case "~":
+      return true;
+  }
+  switch (char) {
+    case ":":
+    case "/":
+    case "?":
+    case "#":
+    case "[":
+    case "]":
+    case "@":
+    case "!":
+    case "$":
+    case "&":
+    case "'":
+    case "(":
+    case ")":
+    case "*":
+    case "+":
+    case ",":
+    case ";":
+    case "=":
+      return true;
+  }
+  return false;
+}
+async function createRouter(directories) {
+  const arr = await readdirAll(directories.srcPagesDir);
+  const arr2 = arr.filter((path) => {
+    if (path.name.startsWith("_") || path.name.startsWith("$")) {
+      return false;
+    } else if (path.name.endsWith("_") || path.name.endsWith("$")) {
+      return false;
+    }
+    return supported[path.ext] === true;
+  });
+  const badSrcs = [];
+  for (const {src} of arr2) {
+    for (let x = 0; x < src.length; x++) {
+      if (!testURICharacter(src[x])) {
+        badSrcs.push(src);
+      }
+    }
+  }
+  if (badSrcs.length > 0) {
+    error(`These pages use non-URI characters:
+
+${badSrcs.map((each) => "- " + each).join("\n")}
+
+URI characters are described by RFC 3986:
+
+2.2. Unreserved Characters
+
+	ALPHA / DIGIT / "-" / "." / "_" / "~"
+
+2.3. Reserved Characters
+
+	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+	           / "*" / "+" / "," / ";" / "="
+
+${boldUnderline("https://tools.ietf.org/html/rfc3986")}`);
+  }
+  const routes = [];
+  for (const parsed of arr2) {
+    routes.push(createRoute(directories, parsed));
+  }
+  return routes;
+}
+
+// packages/retro/runServerGuards.ts
+var fs2 = __toModule(require("fs"));
+var p2 = __toModule(require("path"));
 async function runServerGuards(dir) {
   const dirs = Object.entries(dir).map(([_, v]) => v);
   for (const dir_ of dirs) {
     try {
-      await fs.promises.stat(dir_);
+      await fs2.promises.stat(dir_);
     } catch (_) {
-      fs.promises.mkdir(dir_, {recursive: true});
+      fs2.promises.mkdir(dir_, {recursive: true});
     }
   }
-  const path = p.join(dir.publicDir, "index.html");
+  const path = p2.join(dir.publicDir, "index.html");
   try {
-    const data = await fs.promises.readFile(path);
+    const data = await fs2.promises.readFile(path);
     const text = data.toString();
     if (!text.includes("%head")) {
       error(`${path}: Add '%head%' somewhere to '<head>'.
@@ -133,7 +290,7 @@ For example:
 ...`);
     }
   } catch (_) {
-    await fs.promises.writeFile(path, `<!DOCTYPE html>
+    await fs2.promises.writeFile(path, `<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -152,21 +309,25 @@ For example:
 
 // packages/retro/commands/export_.ts
 var export_ = async (runtime) => {
-  await runServerGuards(runtime.dir);
+  await runServerGuards(runtime.directories);
+  const data = await fs3.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
+  runtime.document = data.toString();
+  runtime.routes = await createRouter(runtime.directories);
+  console.log(runtime);
 };
 var export_default = export_;
 
 // packages/retro/commands/serve.ts
 var esbuild = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
-var p2 = __toModule(require("path"));
+var p4 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p2.extname(url) === "")
+  if (p4.extname(url) === "")
     return url + ".html";
   return url;
 }
@@ -208,6 +369,12 @@ var serve2 = async (runtime) => {
 var serve_default = serve2;
 
 // packages/retro/cli.ts
+var DIR_CONFIGURATION = {
+  publicDir: process.env.PUBLIC_DIR || "public",
+  srcPagesDir: process.env.PAGES_DIR || "src/pages",
+  cacheDir: process.env.CACHE_DIR || "__cache__",
+  exportDir: process.env.EXPORT_DIR || "__export__"
+};
 var cmds = `
 retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
@@ -364,19 +531,13 @@ function parseServeCommandFlags(...args) {
   }
   return cmd;
 }
-var DIR_CONFIGURATION = {
-  publicDir: process.env.PUBLIC_DIR || "public",
-  srcPagesDir: process.env.PAGES_DIR || "src/pages",
-  cacheDir: process.env.CACHE_DIR || "__cache__",
-  exportDir: process.env.EXPORT_DIR || "__export__"
-};
 async function run() {
   const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv;
   if (args.length === 1) {
     console.log(usage);
     process.exit(0);
   }
-  let cmd;
+  let command;
   const arg = args[1];
   if (arg === "version" || arg === "--version" || arg === "--v") {
     console.log(process.env["RETRO_VERSION"] || "TODO");
@@ -387,28 +548,29 @@ async function run() {
   } else if (arg === "dev") {
     process.env["__DEV__"] = "true";
     process.env["NODE_ENV"] = "development";
-    cmd = parseDevCommandFlags(...args.slice(2));
+    command = parseDevCommandFlags(...args.slice(2));
   } else if (arg === "export") {
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
-    cmd = parseExportCommandFlags(...args.slice(2));
+    command = parseExportCommandFlags(...args.slice(2));
   } else if (arg === "serve") {
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
-    cmd = parseServeCommandFlags(...args.slice(2));
+    command = parseServeCommandFlags(...args.slice(2));
   } else {
     error(`No such command '${arg}'. Use one of these commands:
 
 ${cmds}
 
-Or use 'retro usage' for usage.`);
+Or 'retro usage' for usage.`);
   }
   const runtime = {
-    cmd,
-    dir: DIR_CONFIGURATION,
-    router: []
+    command,
+    directories: DIR_CONFIGURATION,
+    document: "",
+    routes: []
   };
-  switch (cmd.type) {
+  switch (command.type) {
     case "dev":
       break;
     case "export":

@@ -34,8 +34,8 @@ function parsePath(path: string): ParsedPath {
 // src/pages/index.js -> __export__/index.html
 //
 // TODO: Write tests.
-function dst(dir: types.DirConfiguration, path: ParsedPath): string {
-	const syntax = p.join(dir.exportDir, path.src.slice(dir.srcPagesDir.length))
+function dst(directories: types.DirConfiguration, path: ParsedPath): string {
+	const syntax = p.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length))
 	return syntax.slice(0, -path.ext.length) + ".html"
 }
 
@@ -45,8 +45,12 @@ function dst(dir: types.DirConfiguration, path: ParsedPath): string {
 // "src/pages/nested/[component].js" -> "DynamicPageNestedComponent"
 //
 // TODO: Write tests.
-function toComponentSyntax(dir: types.DirConfiguration, parsed: ParsedPath, { dynamic }: { dynamic: boolean }): string {
-	let path = toPathSyntax(dir, parsed)
+function toComponentSyntax(
+	directories: types.DirConfiguration,
+	parsed: ParsedPath,
+	{ dynamic }: { dynamic: boolean },
+): string {
+	let path = toPathSyntax(directories, parsed)
 	if (dynamic) {
 		// Remove "[" and "]":
 		path = path.replace(dynamicRegex, "$1$3")
@@ -64,8 +68,8 @@ function toComponentSyntax(dir: types.DirConfiguration, parsed: ParsedPath, { dy
 // "src/pages/hello-world.js" -> "/hello-world"
 //
 // TODO: Write tests.
-function toPathSyntax(dir: types.DirConfiguration, parsed: ParsedPath): string {
-	const syntax = parsed.src.slice(dir.srcPagesDir.length, -parsed.ext.length)
+function toPathSyntax(directories: types.DirConfiguration, parsed: ParsedPath): string {
+	const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length)
 	if (syntax.endsWith("/index")) {
 		return syntax.slice(0, -"index".length)
 	}
@@ -73,23 +77,23 @@ function toPathSyntax(dir: types.DirConfiguration, parsed: ParsedPath): string {
 }
 
 // TODO: Write tests.
-function createStaticPageMeta(dir: types.DirConfiguration, parsed: ParsedPath): types.StaticPageMeta {
+function createStaticPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.StaticPageMeta {
 	const component: types.StaticPageMeta = {
 		type: "static",
 		src: parsed.src,
-		dst: dst(dir, parsed),
-		path: toPathSyntax(dir, parsed),
-		component: toComponentSyntax(dir, parsed, { dynamic: false }),
+		dst: dst(directories, parsed),
+		path: toPathSyntax(directories, parsed),
+		component: toComponentSyntax(directories, parsed, { dynamic: false }),
 	}
 	return component
 }
 
 // TODO: Write tests.
-function createDynamicPageMeta(dir: types.DirConfiguration, parsed: ParsedPath): types.DynamicPageMeta {
+function createDynamicPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.DynamicPageMeta {
 	const component: types.DynamicPageMeta = {
 		type: "dynamic",
 		src: parsed.src,
-		component: toComponentSyntax(dir, parsed, { dynamic: true }),
+		component: toComponentSyntax(directories, parsed, { dynamic: true }),
 	}
 	return component
 }
@@ -104,12 +108,12 @@ function createDynamicPageMeta(dir: types.DirConfiguration, parsed: ParsedPath):
 // TODO: Write tests.
 const dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
-function createRoute(dir: types.DirConfiguration, parsed: ParsedPath): types.PageMeta {
-	const path = toPathSyntax(dir, parsed)
+function createRoute(directories: types.DirConfiguration, parsed: ParsedPath): types.Route {
+	const path = toPathSyntax(directories, parsed)
 	if (dynamicRegex.test(path)) {
-		return createDynamicPageMeta(dir, parsed)
+		return createDynamicPageMeta(directories, parsed)
 	}
-	return createStaticPageMeta(dir, parsed)
+	return createStaticPageMeta(directories, parsed)
 }
 
 async function readdirAll(src: string): Promise<ParsedPath[]> {
@@ -172,9 +176,8 @@ function testURICharacter(char: string): boolean {
 	return false
 }
 
-// createRouter creates a new filesystem-based router from src/pages.
-export default async function createRouter(dir: types.DirConfiguration): Promise<types.PageMeta[]> {
-	const arr = await readdirAll(dir.srcPagesDir)
+export default async function parseRoutes(directories: types.DirConfiguration): Promise<types.Route[]> {
+	const arr = await readdirAll(directories.srcPagesDir)
 
 	// Step over:
 	//
@@ -222,9 +225,9 @@ URI characters are described by RFC 3986:
 ${term.boldUnderline("https://tools.ietf.org/html/rfc3986")}`)
 	}
 
-	const router: types.PageMeta[] = []
+	const routes: types.Route[] = []
 	for (const parsed of arr2) {
-		router.push(createRoute(dir, parsed))
+		routes.push(createRoute(directories, parsed))
 	}
-	return router
+	return routes
 }

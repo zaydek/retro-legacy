@@ -7,14 +7,14 @@ import * as utils from "./utils"
 import export_ from "./commands/export_"
 import serve from "./commands/serve"
 
-export const cmds = `
+const cmds = `
 retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim()
 
 // NOTE: Use spaces here.
-export const usage = `${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
+const usage = `${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
   ${term.bold("Usage:")}
 
@@ -178,14 +178,6 @@ function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 	return cmd
 }
 
-// prettier-ignore
-const DIR_CONFIGURATION = {
-  publicDir:   process.env.PUBLIC_DIR || "public",
-  srcPagesDir: process.env.PAGES_DIR  || "src/pages",
-  cacheDir:    process.env.CACHE_DIR  || "__cache__",
-  exportDir:   process.env.EXPORT_DIR || "__export__",
-}
-
 async function run(): Promise<void> {
 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
 
@@ -195,7 +187,7 @@ async function run(): Promise<void> {
 		process.exit(0)
 	}
 
-	let cmd: types.Command
+	let command: types.Command
 	const arg = args[1]
 	if (arg === "version" || arg === "--version" || arg === "--v") {
 		console.log(process.env["RETRO_VERSION"] || "TODO")
@@ -206,47 +198,48 @@ async function run(): Promise<void> {
 	} else if (arg === "dev") {
 		process.env["__DEV__"] = "true"
 		process.env["NODE_ENV"] = "development"
-		cmd = parseDevCommandFlags(...args.slice(2))
+		command = parseDevCommandFlags(...args.slice(2))
 	} else if (arg === "export") {
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
-		cmd = parseExportCommandFlags(...args.slice(2))
+		command = parseExportCommandFlags(...args.slice(2))
 	} else if (arg === "serve") {
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
-		cmd = parseServeCommandFlags(...args.slice(2))
+		command = parseServeCommandFlags(...args.slice(2))
 	} else {
 		log.error(`No such command '${arg}'. Use one of these commands:
 
 ${cmds}
 
-Or use 'retro usage' for usage.`)
+Or 'retro usage' for usage.`)
 	}
 
+	// prettier-ignore
 	const runtime: types.Runtime = {
-		cmd: cmd!,
-		dir: DIR_CONFIGURATION,
-		router: [],
+		command: command!,
+		directories: {
+			publicDir:   process.env.PUBLIC_DIR || "public",
+			srcPagesDir: process.env.PAGES_DIR  || "src/pages",
+			cacheDir:    process.env.CACHE_DIR  || "__cache__",
+			exportDir:   process.env.EXPORT_DIR || "__export__",
+		},
+		document: "", // Defer to dev and export
+		routes: [],   // Defer to dev and export
 	}
 
-	switch (cmd!.type) {
-		case "dev":
-			// TODO
-			break
-		case "export":
-			const r2 = runtime as types.Runtime<types.ExportCommand>
-			await export_(r2)
-			break
-		case "serve":
-			const r3 = runtime as types.Runtime<types.ServeCommand>
-			await serve(r3)
-			break
+	if (runtime.command.type === "dev") {
+		// await dev(runtime as types.Runtime<types.DevCommand>)
+	} else if (runtime.command.type === "export") {
+		await export_(runtime as types.Runtime<types.ExportCommand>)
+	} else if (runtime.command.type === "serve") {
+		await serve(runtime as types.Runtime<types.ServeCommand>)
 	}
 }
 
 process.on("uncaughtException", err => {
 	utils.setWillEagerlyTerminate(true)
-	process.env["STACK_TRACE"] = "true" // Force on
+	process.env["STACK_TRACE"] = "true"
 	err.message = `UncaughtException: ${err.message}.`
 	log.error(err)
 })

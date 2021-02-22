@@ -4,9 +4,12 @@
 // import * as React from "react"
 // import * as ReactDOMServer from "react-dom/server"
 
+import * as fs from "fs"
+import * as p from "path"
 import * as types from "../types"
 
-import runServerGuards from "../guards"
+import parseRoutes from "../parseRoutes"
+import runServerGuards from "../runServerGuards"
 
 // // RenderPayload describes a render payload (page metadata).
 // interface RenderPayload {
@@ -220,11 +223,14 @@ import runServerGuards from "../guards"
 // }
 
 const export_: types.export_ = async runtime => {
-	await runServerGuards(runtime.dir)
+	await runServerGuards(runtime.directories)
+	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
+	runtime.document = data.toString()
+	runtime.routes = await parseRoutes(runtime.directories)
 
 	// // Add server guards here.
 	// if (cmd!.type === "dev" || cmd!.type === "export") {
-	// 	runtime.router = await createRouter(DIR_CONFIGURATION)
+	// 	runtime.router = await parseRoutes(DIR_CONFIGURATION)
 	// }
 	// const router = await exportPagesAndCreateRouter(runtime)
 	//
