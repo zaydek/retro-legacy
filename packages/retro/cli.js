@@ -37,24 +37,24 @@ var gray = (...args) => `[0;2m${args.join(" ")}${reset}`;
 var underline = (...args) => `[0;4m${args.join(" ")}${reset}`;
 var red = (...args) => `[0;31m${args.join(" ")}${reset}`;
 var green = (...args) => `[0;32m${args.join(" ")}${reset}`;
-var boldUnderline = (...args) => `[1;4m${args.join(" ")}${reset}`;
 var boldRed = (...args) => `[1;31m${args.join(" ")}${reset}`;
 var boldGreen = (...args) => `[1;32m${args.join(" ")}${reset}`;
 
 // packages/lib/log.ts
 function formatMessage(msg) {
   return msg.split("\n").map((each, x) => {
-    if (x > 0 && each.length > 0) {
-      return " ".repeat(2) + each;
-    }
-    return each;
+    if (x === 0)
+      return each;
+    if (each === "")
+      return each;
+    return " ".repeat(2) + each.replace("	", "  ");
   }).join("\n");
 }
 function info(...args) {
   const message = formatMessage(args.join(" "));
   console.log(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${bold(">")} ${boldGreen("ok:")} ${bold(message)}
+${" ".repeat(2)}${bold(">")} ${boldGreen("ok:")} ${bold(message)}
 `);
 }
 function error(error2) {
@@ -63,12 +63,12 @@ function error(error2) {
   if (!traceEnabled) {
     console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${bold(">")} ${boldRed("error:")} ${bold(message)}
+${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}
 `);
   } else {
     console.error(`${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
-  ${bold(">")} ${boldRed("error:")} ${bold(message)}
+${" ".repeat(2)}${bold(">")} ${boldRed("error:")} ${bold(message)}
 `);
     console.error({error: error2});
   }
@@ -91,177 +91,72 @@ function clearScreen() {
   import_readline.default.clearScreenDown(process.stdout);
 }
 
-// packages/retro/router.ts
+// packages/retro/guards.ts
 var fs = __toModule(require("fs"));
 var p = __toModule(require("path"));
-var supported = {
-  ".js": true,
-  ".jsx": true,
-  ".ts": true,
-  ".tsx": true,
-  ".md": true,
-  ".mdx": true
+async function runServerGuards(dir) {
+  const dirs = Object.entries(dir).map(([_, v]) => v);
+  for (const dir_ of dirs) {
+    try {
+      await fs.promises.stat(dir_);
+    } catch (_) {
+      fs.promises.mkdir(dir_, {recursive: true});
+    }
+  }
+  const path = p.join(dir.publicDir, "index.html");
+  try {
+    const data = await fs.promises.readFile(path);
+    const text = data.toString();
+    if (!text.includes("%head")) {
+      error(`${path}: Add '%head%' somewhere to '<head>'.
+
+For example:
+
+...
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	%head%
+</head>
+...`);
+    } else if (!text.includes("%app")) {
+      error(`${path}: Add '%app%' somewhere to '<body>'.
+
+For example:
+
+...
+<body>
+	<noscript>You need to enable JavaScript to run this app.</noscript>
+	<div id="app"></div>
+	%app%
+</body>
+...`);
+    }
+  } catch (_) {
+    await fs.promises.writeFile(path, `<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%head%
+	</head>
+	<body>
+		<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="app"></div>
+		%app%
+	</body>
+</html>
+`);
+  }
+}
+
+// packages/retro/commands/export_.ts
+var export_ = async (runtime) => {
+  await runServerGuards(runtime.dir);
 };
-function parsePath(path) {
-  const basename2 = p.basename(path);
-  const ext = p.extname(path);
-  const name = basename2.slice(0, -ext.length);
-  return {src: path, basename: basename2, name, ext};
-}
-function dst(runtime, path) {
-  const syntax = p.join(runtime.dir.exportDir, path.src.slice(runtime.dir.srcPagesDir.length));
-  return syntax.slice(0, -path.ext.length) + ".html";
-}
-function toComponentSyntax(runtime, parsed, {dynamic}) {
-  let path = toPathSyntax(runtime, parsed);
-  if (dynamic) {
-    path = path.replace(dynamicRegex, "$1$3");
-  }
-  let syntax = path.split(p.sep).map((each) => {
-    if (!each.length)
-      return "";
-    return each[0].toUpperCase() + each.slice(1);
-  }).join("");
-  if (syntax === "") {
-    syntax = "index";
-  }
-  return (dynamic ? "DynamicPage" : "Page") + syntax[0].toUpperCase() + syntax.slice(1);
-}
-function toPathSyntax(runtime, parsed) {
-  const syntax = parsed.src.slice(runtime.dir.srcPagesDir.length, -parsed.ext.length);
-  if (syntax.endsWith("/index")) {
-    return syntax.slice(0, -"index".length);
-  }
-  return syntax;
-}
-function createStaticPageMeta(runtime, parsed) {
-  const component = {
-    type: "static",
-    src: parsed.src,
-    dst: dst(runtime, parsed),
-    path: toPathSyntax(runtime, parsed),
-    component: toComponentSyntax(runtime, parsed, {dynamic: false})
-  };
-  return component;
-}
-function createDynamicPageMeta(runtime, parsed) {
-  const component = {
-    type: "dynamic",
-    src: parsed.src,
-    component: toComponentSyntax(runtime, parsed, {dynamic: true})
-  };
-  return component;
-}
-var dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
-function createFilesystemRoute(runtime, parsed) {
-  const path = toPathSyntax(runtime, parsed);
-  if (dynamicRegex.test(path)) {
-    return createDynamicPageMeta(runtime, parsed);
-  }
-  return createStaticPageMeta(runtime, parsed);
-}
-async function readdirAll(dir) {
-  const arr = [];
-  async function recurse(dir2) {
-    const ls = await fs.promises.readdir(dir2);
-    for (const each of ls) {
-      const path = p.join(dir2, each);
-      if ((await fs.promises.stat(path)).isDirectory()) {
-        arr.push(parsePath(path));
-        await recurse(path);
-        continue;
-      }
-      arr.push(parsePath(path));
-    }
-  }
-  await recurse(dir);
-  return arr;
-}
-function testURICharacter(char) {
-  if (char >= "a" && char <= "z" || char >= "A" && char <= "Z" || char >= "0" && char <= "9") {
-    return true;
-  }
-  switch (char) {
-    case "-":
-    case ".":
-    case "_":
-    case "~":
-      return true;
-  }
-  switch (char) {
-    case ":":
-    case "/":
-    case "?":
-    case "#":
-    case "[":
-    case "]":
-    case "@":
-    case "!":
-    case "$":
-    case "&":
-    case "'":
-    case "(":
-    case ")":
-    case "*":
-    case "+":
-    case ",":
-    case ";":
-    case "=":
-      return true;
-  }
-  return false;
-}
-async function newFilesystemRouter(runtime) {
-  const arr = await readdirAll(runtime.dir.srcPagesDir);
-  const arr2 = arr.filter((path) => {
-    if (path.name.startsWith("_") || path.name.startsWith("$")) {
-      return false;
-    } else if (path.name.endsWith("_") || path.name.endsWith("$")) {
-      return false;
-    }
-    return supported[path.ext] === true;
-  });
-  const badSrcs = [];
-  for (const {src} of arr2) {
-    for (let x = 0; x < src.length; x++) {
-      if (!testURICharacter(src[x])) {
-        badSrcs.push(src);
-      }
-    }
-  }
-  if (badSrcs.length > 0) {
-    error(`These pages use non-URI characters:
+var export_default = export_;
 
-${badSrcs.map((each) => "- " + each).join("\n")}
-
-URI characters are described by RFC 3986:
-
-2.2. Unreserved Characters
-
-  ALPHA / DIGIT / "-" / "." / "_" / "~"
-
-2.3. Reserved Characters
-
-  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-             / "*" / "+" / "," / ";" / "="
-
-${boldUnderline("https://tools.ietf.org/html/rfc3986")}`);
-  }
-  const router = [];
-  for (const parsed of arr2) {
-    router.push(createFilesystemRoute(runtime, parsed));
-  }
-  return router;
-}
-
-// packages/retro/handleExport.ts
-var handleExport = async (runtime) => {
-  console.log(await newFilesystemRouter(runtime));
-};
-var handleExport_default = handleExport;
-
-// packages/retro/handleServe.ts
+// packages/retro/commands/serve.ts
 var esbuild = __toModule(require("esbuild"));
 var http = __toModule(require("http"));
 var p2 = __toModule(require("path"));
@@ -275,7 +170,7 @@ function ssgify(url) {
     return url + ".html";
   return url;
 }
-var handleServe = async (runtime) => {
+var serve2 = async (runtime) => {
   setTimeout(() => {
     if (getWillEagerlyTerminate())
       return;
@@ -289,7 +184,7 @@ var handleServe = async (runtime) => {
       if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
         descriptMs += " - cached";
       }
-      console.log(`  ${bold("\u2192")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? green(args.status) : red(args.status)} (${descriptMs})`);
+      console.log(`${" ".repeat(2)}${bold("\u2192")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? green(args.status) : red(args.status)} (${descriptMs})`);
     }
   }, {});
   let transformURL = ssgify;
@@ -310,7 +205,7 @@ var handleServe = async (runtime) => {
   });
   proxySrv.listen(runtime.cmd.port);
 };
-var handleServe_default = handleServe;
+var serve_default = serve2;
 
 // packages/retro/cli.ts
 var cmds = `
@@ -469,7 +364,7 @@ function parseServeCommandFlags(...args) {
   }
   return cmd;
 }
-var DIRS = {
+var DIR_CONFIGURATION = {
   publicDir: process.env.PUBLIC_DIR || "public",
   srcPagesDir: process.env.PAGES_DIR || "src/pages",
   cacheDir: process.env.CACHE_DIR || "__cache__",
@@ -510,18 +405,19 @@ Or use 'retro usage' for usage.`);
   }
   const runtime = {
     cmd,
-    dir: DIRS
+    dir: DIR_CONFIGURATION,
+    router: []
   };
   switch (cmd.type) {
     case "dev":
       break;
     case "export":
       const r2 = runtime;
-      await handleExport_default(r2);
+      await export_default(r2);
       break;
     case "serve":
       const r3 = runtime;
-      await handleServe_default(r3);
+      await serve_default(r3);
       break;
   }
 }

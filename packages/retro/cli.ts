@@ -3,6 +3,7 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
+// TODO: Should we 'export * from "./commands"'?
 import export_ from "./commands/export_"
 import serve from "./commands/serve"
 
@@ -12,6 +13,7 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim()
 
+// NOTE: Use spaces here.
 export const usage = `${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
 
   ${term.bold("Usage:")}
@@ -177,11 +179,11 @@ function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 }
 
 // prettier-ignore
-const DIRS = {
-	publicDir:   process.env.PUBLIC_DIR || "public",
-	srcPagesDir: process.env.PAGES_DIR  || "src/pages",
-	cacheDir:    process.env.CACHE_DIR  || "__cache__",
-	exportDir:   process.env.EXPORT_DIR || "__export__",
+const DIR_CONFIGURATION = {
+  publicDir:   process.env.PUBLIC_DIR || "public",
+  srcPagesDir: process.env.PAGES_DIR  || "src/pages",
+  cacheDir:    process.env.CACHE_DIR  || "__cache__",
+  exportDir:   process.env.EXPORT_DIR || "__export__",
 }
 
 async function run(): Promise<void> {
@@ -221,10 +223,10 @@ ${cmds}
 Or use 'retro usage' for usage.`)
 	}
 
-	// TODO: Add createFilesystemRouter and serverGuards here.
 	const runtime: types.Runtime = {
 		cmd: cmd!,
-		dir: DIRS,
+		dir: DIR_CONFIGURATION,
+		router: [],
 	}
 
 	switch (cmd!.type) {

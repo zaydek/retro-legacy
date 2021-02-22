@@ -3,9 +3,10 @@
 // import * as p from "path"
 // import * as React from "react"
 // import * as ReactDOMServer from "react-dom/server"
+
 import * as types from "../types"
 
-import newFilesystemRouter from "../router"
+import runServerGuards from "../guards"
 
 // // RenderPayload describes a render payload (page metadata).
 // interface RenderPayload {
@@ -218,8 +219,13 @@ import newFilesystemRouter from "../router"
 // ` // EOF
 // }
 
-const handleExport: types.handleExport = async runtime => {
-	console.log(await newFilesystemRouter(runtime))
+const export_: types.export_ = async runtime => {
+	await runServerGuards(runtime.dir)
+
+	// // Add server guards here.
+	// if (cmd!.type === "dev" || cmd!.type === "export") {
+	// 	runtime.router = await createRouter(DIR_CONFIGURATION)
+	// }
 	// const router = await exportPagesAndCreateRouter(runtime)
 	//
 	// // Cache router for --cached:
@@ -257,7 +263,7 @@ const handleExport: types.handleExport = async runtime => {
 	// // TODO: Handle warnings, error, and hints.
 }
 
-export default handleExport
+export default export_
 
 // ;(async () => {
 // 	try {

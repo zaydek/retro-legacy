@@ -4,28 +4,6 @@ import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
 
-////////////////////////////////////////////////////////////////////////////////
-
-// prettier-ignore
-interface StaticPageMeta {
-	type:      "static"
-	src:       string // e.g. "src/pages/index.js"
-	dst:       string // e.g. "dst/index.html"
-	path:      string // e.g. "/"
-	component: string // e.g. "PageIndex"
-}
-
-// prettier-ignore
-interface DynamicPageMeta {
-	type:      "dynamic"
-	src:       string // e.g. "src/pages/[index].js"
-	component: string // e.g. "DynamicPageIndex"
-}
-
-type PageMeta = StaticPageMeta | DynamicPageMeta
-
-////////////////////////////////////////////////////////////////////////////////
-
 // prettier-ignore
 interface ParsedPath {
 	src:      string // e.g. "path/to/basename.ext"
@@ -56,8 +34,8 @@ function parsePath(path: string): ParsedPath {
 // src/pages/index.js -> __export__/index.html
 //
 // TODO: Write tests.
-function dst(runtime: types.Runtime, path: ParsedPath): string {
-	const syntax = p.join(runtime.dir.exportDir, path.src.slice(runtime.dir.srcPagesDir.length))
+function dst(dir: types.DirConfiguration, path: ParsedPath): string {
+	const syntax = p.join(dir.exportDir, path.src.slice(dir.srcPagesDir.length))
 	return syntax.slice(0, -path.ext.length) + ".html"
 }
 
@@ -67,34 +45,27 @@ function dst(runtime: types.Runtime, path: ParsedPath): string {
 // "src/pages/nested/[component].js" -> "DynamicPageNestedComponent"
 //
 // TODO: Write tests.
-function toComponentSyntax(runtime: types.Runtime, parsed: ParsedPath, { dynamic }: { dynamic: boolean }): string {
-	// Remove "[" and "]":
-	let path = toPathSyntax(runtime, parsed)
+function toComponentSyntax(dir: types.DirConfiguration, parsed: ParsedPath, { dynamic }: { dynamic: boolean }): string {
+	let path = toPathSyntax(dir, parsed)
 	if (dynamic) {
+		// Remove "[" and "]":
 		path = path.replace(dynamicRegex, "$1$3")
 	}
-
-	let syntax = path
-		.split(p.sep)
-		.map(each => {
-			if (!each.length) return ""
-			return each[0]!.toUpperCase() + each.slice(1)
-		})
-		.join("")
-
-	// Cover "/" edge case:
-	if (syntax === "") {
-		syntax = "index"
+	let syntax = ""
+	for (const part of path.split(p.sep)) {
+		if (!part.length) continue
+		syntax += part[0]!.toUpperCase() + part.slice(1)
 	}
+	syntax = syntax || "Index"
 	return (dynamic ? "DynamicPage" : "Page") + syntax[0]!.toUpperCase() + syntax.slice(1)
 }
 
-// "src/pages/index.js" -> "/"
+// "src/pages/index.js"       -> "/"
 // "src/pages/hello-world.js" -> "/hello-world"
 //
 // TODO: Write tests.
-function toPathSyntax(runtime: types.Runtime, parsed: ParsedPath): string {
-	const syntax = parsed.src.slice(runtime.dir.srcPagesDir.length, -parsed.ext.length)
+function toPathSyntax(dir: types.DirConfiguration, parsed: ParsedPath): string {
+	const syntax = parsed.src.slice(dir.srcPagesDir.length, -parsed.ext.length)
 	if (syntax.endsWith("/index")) {
 		return syntax.slice(0, -"index".length)
 	}
@@ -102,23 +73,23 @@ function toPathSyntax(runtime: types.Runtime, parsed: ParsedPath): string {
 }
 
 // TODO: Write tests.
-function createStaticPageMeta(runtime: types.Runtime, parsed: ParsedPath): StaticPageMeta {
-	const component: StaticPageMeta = {
+function createStaticPageMeta(dir: types.DirConfiguration, parsed: ParsedPath): types.StaticPageMeta {
+	const component: types.StaticPageMeta = {
 		type: "static",
 		src: parsed.src,
-		dst: dst(runtime, parsed),
-		path: toPathSyntax(runtime, parsed),
-		component: toComponentSyntax(runtime, parsed, { dynamic: false }),
+		dst: dst(dir, parsed),
+		path: toPathSyntax(dir, parsed),
+		component: toComponentSyntax(dir, parsed, { dynamic: false }),
 	}
 	return component
 }
 
 // TODO: Write tests.
-function createDynamicPageMeta(runtime: types.Runtime, parsed: ParsedPath): DynamicPageMeta {
-	const component: DynamicPageMeta = {
+function createDynamicPageMeta(dir: types.DirConfiguration, parsed: ParsedPath): types.DynamicPageMeta {
+	const component: types.DynamicPageMeta = {
 		type: "dynamic",
 		src: parsed.src,
-		component: toComponentSyntax(runtime, parsed, { dynamic: true }),
+		component: toComponentSyntax(dir, parsed, { dynamic: true }),
 	}
 	return component
 }
@@ -133,20 +104,20 @@ function createDynamicPageMeta(runtime: types.Runtime, parsed: ParsedPath): Dyna
 // TODO: Write tests.
 const dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
-function createFilesystemRoute(runtime: types.Runtime, parsed: ParsedPath): PageMeta {
-	const path = toPathSyntax(runtime, parsed)
+function createRoute(dir: types.DirConfiguration, parsed: ParsedPath): types.PageMeta {
+	const path = toPathSyntax(dir, parsed)
 	if (dynamicRegex.test(path)) {
-		return createDynamicPageMeta(runtime, parsed)
+		return createDynamicPageMeta(dir, parsed)
 	}
-	return createStaticPageMeta(runtime, parsed)
+	return createStaticPageMeta(dir, parsed)
 }
 
-async function readdirAll(dir: string): Promise<ParsedPath[]> {
+async function readdirAll(src: string): Promise<ParsedPath[]> {
 	const arr: ParsedPath[] = []
-	async function recurse(dir: string): Promise<void> {
-		const ls = await fs.promises.readdir(dir)
+	async function recurse(src: string): Promise<void> {
+		const ls = await fs.promises.readdir(src)
 		for (const each of ls) {
-			const path = p.join(dir, each)
+			const path = p.join(src, each)
 			if ((await fs.promises.stat(path)).isDirectory()) {
 				arr.push(parsePath(path))
 				await recurse(path)
@@ -155,7 +126,7 @@ async function readdirAll(dir: string): Promise<ParsedPath[]> {
 			arr.push(parsePath(path))
 		}
 	}
-	await recurse(dir)
+	await recurse(src)
 	return arr
 }
 
@@ -201,9 +172,9 @@ function testURICharacter(char: string): boolean {
 	return false
 }
 
-// newFilesystemRouter creates a new filesystem-based router from src/pages.
-export default async function newFilesystemRouter(runtime: types.Runtime): Promise<PageMeta[]> {
-	const arr = await readdirAll(runtime.dir.srcPagesDir)
+// createRouter creates a new filesystem-based router from src/pages.
+export default async function createRouter(dir: types.DirConfiguration): Promise<types.PageMeta[]> {
+	const arr = await readdirAll(dir.srcPagesDir)
 
 	// Step over:
 	//
@@ -240,20 +211,20 @@ URI characters are described by RFC 3986:
 
 2.2. Unreserved Characters
 
-  ALPHA / DIGIT / "-" / "." / "_" / "~"
+	ALPHA / DIGIT / "-" / "." / "_" / "~"
 
 2.3. Reserved Characters
 
-  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-             / "*" / "+" / "," / ";" / "="
+	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+	           / "*" / "+" / "," / ";" / "="
 
 ${term.boldUnderline("https://tools.ietf.org/html/rfc3986")}`)
 	}
 
-	const router: PageMeta[] = []
+	const router: types.PageMeta[] = []
 	for (const parsed of arr2) {
-		router.push(createFilesystemRoute(runtime, parsed))
+		router.push(createRoute(dir, parsed))
 	}
 	return router
 }

@@ -23,7 +23,7 @@ function ssgify(url: string): string {
 // - https://esbuild.github.io/api/#customizing-server-behavior
 // - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 //
-const handleServe: types.handleServe = async runtime => {
+const serve: types.serve = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
 		utils.clearScreen()
@@ -38,7 +38,7 @@ const handleServe: types.handleServe = async runtime => {
 			if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
 				descriptMs += " - cached"
 			}
-			console.log(`  ${term.bold("→")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? term.green(args.status) : term.red(args.status)} (${descriptMs})`)
+			console.log(`${" ".repeat(2)}${term.bold("→")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? term.green(args.status) : term.red(args.status)} (${descriptMs})`)
 		},
 	}, {})
 
@@ -65,4 +65,4 @@ const handleServe: types.handleServe = async runtime => {
 	proxySrv.listen(runtime.cmd.port)
 }
 
-export default handleServe
+export default serve

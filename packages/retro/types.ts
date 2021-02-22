@@ -25,27 +25,49 @@ export type Command = DevCommand | ExportCommand | ServeCommand
 ////////////////////////////////////////////////////////////////////////////////
 
 // DirConfiguration describes the directory configuration.
+// prettier-ignore
 export interface DirConfiguration {
-	publicDir: string
-	srcPagesDir: string
-	cacheDir: string
-	exportDir: string
+	publicDir:   string // e.g. "public"
+	srcPagesDir: string // e.g. "src/pages"
+	cacheDir:    string // e.g. "__cache__"
+	exportDir:   string // e.g. "__export__"
 }
+
+// StaticPageMeta describes static page metadata.
+// prettier-ignore
+export interface StaticPageMeta {
+	type:      "static"
+	src:       string // e.g. "src/pages/index.js"
+	dst:       string // e.g. "dst/index.html"
+	path:      string // e.g. "/"
+	component: string // e.g. "PageIndex"
+}
+
+// DynamicPageMeta describes dynamic page metadata.
+// prettier-ignore
+export interface DynamicPageMeta {
+	type:      "dynamic"
+	src:       string // e.g. "src/pages/[index].js"
+	component: string // e.g. "DynamicPageIndex"
+}
+
+export type PageMeta = StaticPageMeta | DynamicPageMeta
 
 // Runtime a meta data structure for the runtime.
 export interface Runtime<Cmd = Command> {
 	cmd: Cmd
 	dir: DirConfiguration
-	// filesystemRouter: ...
+	router: PageMeta[]
+	// resolvedRouter: unknown // TODO
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// handleDev handles 'retro dev [flags]'.
-export type handleDev = (runtime: Runtime<DevCommand>) => Promise<void>
+// dev handles 'retro dev [flags]'.
+export type dev = (runtime: Runtime<DevCommand>) => Promise<void>
 
-// handleExport handles 'retro export [flags]'.
-export type handleExport = (runtime: Runtime<ExportCommand>) => Promise<void>
+// export_ handles 'retro export [flags]'.
+export type export_ = (runtime: Runtime<ExportCommand>) => Promise<void>
 
-// handleServe handles 'retro serve [flags]'.
-export type handleServe = (runtime: Runtime<ServeCommand>) => Promise<void>
+// serve handles 'retro serve [flags]'.
+export type serve = (runtime: Runtime<ServeCommand>) => Promise<void>
