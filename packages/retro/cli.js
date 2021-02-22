@@ -286,9 +286,7 @@ var handleServe = async (runtime) => {
     if (getWillEagerlyTerminate())
       return;
     clearScreen();
-    info(`http://localhost:${runtime.cmd.port}
-
-When you\u2019re ready to stop the server, press Ctrl-C.`);
+    info(`http://localhost:${runtime.cmd.port}`);
   }, 10);
   const result = await esbuild.serve({
     servedir: runtime.dir.exportDir,
@@ -297,7 +295,7 @@ When you\u2019re ready to stop the server, press Ctrl-C.`);
       if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
         descriptMs += " - cached";
       }
-      console.log(`  ${bold("\u2192")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${decorateStatus(args.status)} (${descriptMs})`);
+      console.log(`  ${bold("\u2192")} ${args.method} ${args.path} ${decorateStatus(args.status)} (${descriptMs})`);
     }
   }, {});
   let transformURL = ssgify;

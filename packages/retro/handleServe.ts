@@ -18,13 +18,6 @@ function ssgify(url: string): string {
 	return url
 }
 
-function decorateStatus(status: number): string {
-	if (status >= 200 && status < 300) {
-		return term.green(status)
-	}
-	return term.red(status)
-}
-
 // This implementation is roughly based on:
 //
 // - https://esbuild.github.io/api/#customizing-server-behavior
@@ -34,9 +27,7 @@ const handleServe: types.handleServe = async runtime => {
 	setTimeout(() => {
 		if (utils.getWillEagerlyTerminate()) return
 		utils.clearScreen()
-		log.info(`http://localhost:${runtime.cmd.port}
-
-When you’re ready to stop the server, press Ctrl-C.`)
+		log.info(`http://localhost:${runtime.cmd.port}`)
 	}, 10)
 
 	// prettier-ignore
@@ -47,7 +38,7 @@ When you’re ready to stop the server, press Ctrl-C.`)
 			if (args.status >= 200 && args.status < 300 && args.timeInMS === 0) {
 				descriptMs += " - cached"
 			}
-			console.log(`  ${term.bold("→")} http://localhost:${runtime.cmd.port} - '${args.method} ${args.path}' ${decorateStatus(args.status)} (${descriptMs})`)
+			console.log(`  ${term.bold("→")} ${args.method} ${args.path} ${args.status >= 200 && args.status < 300 ? term.green(args.status) : term.red(args.status)} (${descriptMs})`)
 		},
 	}, {})
 
