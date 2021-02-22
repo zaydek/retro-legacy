@@ -170,7 +170,7 @@ function testServerPropsReturn(value: unknown): boolean {
 // TODO
 // prettier-ignore
 function testServerPathsReturn(value: unknown): boolean {
-	return false
+	return true
 
 	// const ok = typeof value === "object" &&
 	// 	value !== null &&
@@ -216,9 +216,12 @@ async function resolveStaticRoute(
 	return { page, serverProps }
 }
 
-async function resolveDynamicPage(page: types.PageMeta, outfile: string): Promise<ServerResolvedRouter> {
+async function resolveDynamicPage(
+	_: types.Runtime<types.ExportCommand>,
+	page: types.PageMeta,
+	outfile: string,
+): Promise<ServerResolvedRouter> {
 	const subrouter: ServerResolvedRouter = {}
-	return subrouter
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
@@ -231,12 +234,7 @@ async function resolveDynamicPage(page: types.PageMeta, outfile: string): Promis
 		log.error(errServerPathsFunction(page.src))
 	}
 
-	interface ServerPaths {
-		[key: string]: ServerResolvedProps
-	}
-
 	// Resolve serverPaths:
-	let serverPaths: ServerPaths = {}
 	if (typeof mod!.serverPaths === "function") {
 		try {
 			const paths = await mod!.serverPaths!()
@@ -244,9 +242,12 @@ async function resolveDynamicPage(page: types.PageMeta, outfile: string): Promis
 				log.error(errServerPathsReturn(page.src))
 			}
 			for (const path of paths) {
-				serverPaths[path.path] = {
-					path: path.path,
-					...path.props,
+				subrouter[path.path] = {
+					page,
+					serverProps: {
+						path: path.path,
+						...path.props,
+					},
 				}
 			}
 		} catch (err) {
@@ -339,9 +340,18 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 
 		if (page.type === "static") {
 			const meta = await resolveStaticRoute(runtime, page, outfile)
+			if (router[page.path] !== undefined) {
+				log.error(`${page.src}: Path '${page.path}' is already being used by ${router[page.path]!.page.src}.`)
+			}
 			router[page.path] = meta
 		} else if (page.type === "dynamic") {
-			await resolveDynamicPage(runtime, page, outfile)
+			const subrouter = await resolveDynamicPage(runtime, page, outfile)
+			for (const [path, meta] of Object.entries(subrouter)) {
+				if (router[path] !== undefined) {
+					log.error(`${page.src}: Path '${path}' is already being used by ${router[path]!.page.src}.`)
+				}
+				router[path] = meta
+			}
 		}
 	}
 

@@ -358,7 +358,7 @@ function testServerPropsReturn(value) {
   return ok;
 }
 function testServerPathsReturn(value) {
-  return false;
+  return true;
 }
 async function resolveStaticRoute(runtime, page, outfile) {
   let serverProps = {path: page.path};
@@ -383,9 +383,8 @@ async function resolveStaticRoute(runtime, page, outfile) {
   }
   return {page, serverProps};
 }
-async function resolveDynamicPage(page, outfile) {
+async function resolveDynamicPage(_, page, outfile) {
   const subrouter = {};
-  return subrouter;
   let mod;
   try {
     mod = require(p3.join("../..", outfile));
@@ -394,7 +393,6 @@ async function resolveDynamicPage(page, outfile) {
   if (mod !== void 0 && "serverPaths" in mod && typeof mod.serverPaths !== "function") {
     error(errServerPathsFunction(page.src));
   }
-  let serverPaths = {};
   if (typeof mod.serverPaths === "function") {
     try {
       const paths = await mod.serverPaths();
@@ -402,9 +400,12 @@ async function resolveDynamicPage(page, outfile) {
         error(errServerPathsReturn(page.src));
       }
       for (const path of paths) {
-        serverPaths[path.path] = {
-          path: path.path,
-          ...path.props
+        subrouter[path.path] = {
+          page,
+          serverProps: {
+            path: path.path,
+            ...path.props
+          }
         };
       }
     } catch (err) {
@@ -436,9 +437,18 @@ async function resolveServerRouter(runtime) {
     console.log(result);
     if (page.type === "static") {
       const meta = await resolveStaticRoute(runtime, page, outfile);
+      if (router[page.path] !== void 0) {
+        error(`${page.src}: Path '${page.path}' is already being used by ${router[page.path].page.src}.`);
+      }
       router[page.path] = meta;
     } else if (page.type === "dynamic") {
-      await resolveDynamicPage(runtime, page, outfile);
+      const subrouter = await resolveDynamicPage(runtime, page, outfile);
+      for (const [path, meta] of Object.entries(subrouter)) {
+        if (router[path] !== void 0) {
+          error(`${page.src}: Path '${path}' is already being used by ${router[path].page.src}.`);
+        }
+        router[path] = meta;
+      }
     }
   }
   console.log(router);
