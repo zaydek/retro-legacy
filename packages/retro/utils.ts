@@ -2,6 +2,14 @@ import * as esbuild from "esbuild"
 
 import chalk from "chalk"
 
+export function testObject(value: unknown): boolean {
+	return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+export function testArray(value: unknown): boolean {
+	return typeof value === "object" && value !== null && Array.isArray(value)
+}
+
 // loc.file:loc.line:loc.column: msg.text
 //
 // loc.line | loc.lineText

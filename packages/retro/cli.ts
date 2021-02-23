@@ -174,11 +174,11 @@ function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 	return cmd
 }
 
-// cmd returns the command used.
-function cmd(): string {
-	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
-	return `retro ${args.slice(1).join(" ")}`
-}
+// // cmd returns the command used.
+// function cmd(): string {
+// 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
+// 	return `retro ${args.slice(1).join(" ")}`
+// }
 
 async function run(): Promise<void> {
 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
@@ -198,26 +198,18 @@ async function run(): Promise<void> {
 		console.log(usage.replace("\t", " ".repeat(2)))
 		process.exit(0)
 	} else if (arg === "dev") {
-		console.log(chalk.gray(cmd()))
-		console.log()
 		process.env["__DEV__"] = "true"
 		process.env["NODE_ENV"] = "development"
 		command = parseDevCommandFlags(...args.slice(2))
 	} else if (arg === "export") {
-		console.log(chalk.gray(cmd()))
-		console.log()
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
 		command = parseExportCommandFlags(...args.slice(2))
 	} else if (arg === "serve") {
-		console.log(chalk.gray(cmd()))
-		console.log()
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
 		command = parseServeCommandFlags(...args.slice(2))
 	} else {
-		console.log(chalk.gray(cmd()))
-		console.log()
 		log.error(`No such command '${arg}'. Use one of these commands:
 
 ${cmds}

@@ -1547,6 +1547,7 @@ var require_source = __commonJS((exports2, module2) => {
 
 // packages/lib/log.ts
 var import_chalk = __toModule(require_source());
+var once = false;
 function format(...args) {
   if (args.length === 1 && args[0] instanceof Error) {
     return format(args[0].message);
@@ -1561,21 +1562,31 @@ function format(...args) {
 }
 function ok(...args) {
   const message = format(...args);
+  if (!once)
+    console.log();
   console.log(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.green("ok:")} ${import_chalk.default.bold(message)}`);
   console.log();
+  once = true;
 }
 function warning(...args) {
   const message = format(...args);
+  if (!once)
+    console.warn();
   console.warn(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.yellow("warning:")} ${import_chalk.default.bold(message)}`);
   console.warn();
+  once = true;
 }
 function error(...args) {
   const message = format(...args);
   const traceEnabled = process.env["STACK_TRACE"] === "true";
   if (!traceEnabled) {
+    if (!once)
+      console.error();
     console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("error:")} ${import_chalk.default.bold(message)}`);
     console.error();
   } else {
+    if (!once)
+      console.error();
     console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("error:")} ${import_chalk.default.bold(message)}`);
     console.error();
     console.error({error});
@@ -1593,6 +1604,12 @@ var p3 = __toModule(require("path"));
 
 // packages/retro/utils.ts
 var import_chalk2 = __toModule(require_source());
+function testObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function testArray(value) {
+  return typeof value === "object" && value !== null && Array.isArray(value);
+}
 function formatMessage(msg, color) {
   const loc = msg.location;
   return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
@@ -1906,11 +1923,14 @@ function errPathExists(r1, r2) {
   return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`;
 }
 function testServerPropsReturn(value) {
-  const ok2 = typeof value === "object" && value !== null && !Array.isArray(value);
-  return ok2;
+  return testObject(value);
 }
 function testServerPathsReturn(value) {
-  return true;
+  const ok2 = testArray(value) && value.every((each) => {
+    const ok3 = testObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && testObject(each.props));
+    return ok3;
+  });
+  return ok2;
 }
 async function resolveStaticRouteMeta(_, page, outfile) {
   let props = {path: page.path};
@@ -1951,36 +1971,38 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
     error(errServerPropsMismatch(page.src));
   }
   if (typeof mod.serverPaths === "function") {
+    let paths = [];
     try {
-      const paths = await mod.serverPaths();
+      paths = await mod.serverPaths();
       if (!testServerPathsReturn(paths)) {
         error(errServerPathsReturn(page.src));
       }
-      for (const path of paths) {
-        const path_ = p3.join(p3.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-        const dst2 = p3.join(runtime.directories.exportDir, path_ + ".html");
-        metas.push({
-          route: {
-            type: "dynamic",
-            src: page.src,
-            dst: dst2,
-            path: path_,
-            component: page.component
-          },
-          props: {
-            path: path_,
-            ...path.props
-          }
-        });
-      }
     } catch (err) {
       error(`${page.src}.serverPaths: ${err.message}`);
+    }
+    for (const path of paths) {
+      const path_ = p3.join(p3.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p3.join(runtime.directories.exportDir, path_ + ".html");
+      metas.push({
+        route: {
+          type: "dynamic",
+          src: page.src,
+          dst: dst2,
+          path: path_,
+          component: page.component
+        },
+        props: {
+          path: path_,
+          ...path.props
+        }
+      });
     }
   }
   return metas;
 }
 async function resolveServerRouter(runtime) {
   const router = {};
+  console.log();
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
     const entryPoints = [page.src];
@@ -2172,7 +2194,7 @@ var usage = `
 		${import_chalk7.default.underline("https://github.com/zaydek/retro")}
 `;
 function parseDevCommandFlags(...args) {
-  const cmd2 = {
+  const cmd = {
     type: "dev",
     cached: false,
     sourcemap: true,
@@ -2182,25 +2204,25 @@ function parseDevCommandFlags(...args) {
   for (const arg of args) {
     if (arg.startsWith("--cached")) {
       if (arg === "--cached") {
-        cmd2.cached = true;
+        cmd.cached = true;
       } else if (arg === "--cached=true" || arg === "--cached=false") {
-        cmd2.cached = JSON.parse(arg.slice("--cached=".length));
+        cmd.cached = JSON.parse(arg.slice("--cached=".length));
       } else {
         badCmd = "--cached";
         break;
       }
     } else if (arg.startsWith("--sourcemap")) {
       if (arg === "--sourcemap") {
-        cmd2.sourcemap = true;
+        cmd.sourcemap = true;
       } else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
-        cmd2.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
+        cmd.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
       } else {
         badCmd = "--sourcemap";
         break;
       }
     } else if (arg.startsWith("--port")) {
       if (/^--port=\d+$/.test(arg)) {
-        cmd2.port = JSON.parse(arg.slice("--port=".length));
+        cmd.port = JSON.parse(arg.slice("--port=".length));
       } else {
         badCmd = "--port";
         break;
@@ -2212,13 +2234,13 @@ function parseDevCommandFlags(...args) {
   if (badCmd !== "") {
     error(`Bad command '${badCmd}'. You can use 'retro help' for help.`);
   }
-  if (cmd2.port < 1e3 || cmd2.port >= 1e4) {
+  if (cmd.port < 1e3 || cmd.port >= 1e4) {
     error("'--port' must be between 1000-9999.");
   }
-  return cmd2;
+  return cmd;
 }
 function parseExportCommandFlags(...args) {
-  const cmd2 = {
+  const cmd = {
     type: "export",
     cached: false,
     sourcemap: true
@@ -2227,18 +2249,18 @@ function parseExportCommandFlags(...args) {
   for (const arg of args) {
     if (arg.startsWith("--cached")) {
       if (arg === "--cached") {
-        cmd2.cached = true;
+        cmd.cached = true;
       } else if (arg === "--cached=true" || arg === "--cached=false") {
-        cmd2.cached = JSON.parse(arg.slice("--cached=".length));
+        cmd.cached = JSON.parse(arg.slice("--cached=".length));
       } else {
         badCmd = "--cached";
         break;
       }
     } else if (arg.startsWith("--sourcemap")) {
       if (arg === "--sourcemap") {
-        cmd2.sourcemap = true;
+        cmd.sourcemap = true;
       } else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
-        cmd2.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
+        cmd.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
       } else {
         badCmd = "--sourcemap";
         break;
@@ -2250,10 +2272,10 @@ function parseExportCommandFlags(...args) {
   if (badCmd !== "") {
     error(`Bad command '${badCmd}'. You can use 'retro help' for help.`);
   }
-  return cmd2;
+  return cmd;
 }
 function parseServeCommandFlags(...args) {
-  const cmd2 = {
+  const cmd = {
     type: "serve",
     mode: "ssg",
     port: 8e3
@@ -2262,16 +2284,16 @@ function parseServeCommandFlags(...args) {
   for (const arg of args) {
     if (arg.startsWith("--mode")) {
       if (arg === "--mode=spa") {
-        cmd2.mode = "spa";
+        cmd.mode = "spa";
       } else if (arg === "--mode=ssg") {
-        cmd2.mode = "ssg";
+        cmd.mode = "ssg";
       } else {
         badCmd = "--mode";
         break;
       }
     } else if (arg.startsWith("--port")) {
       if (/^--port=\d+$/.test(arg)) {
-        cmd2.port = JSON.parse(arg.slice("--port=".length));
+        cmd.port = JSON.parse(arg.slice("--port=".length));
       } else {
         badCmd = "--port";
         break;
@@ -2283,14 +2305,10 @@ function parseServeCommandFlags(...args) {
   if (badCmd !== "") {
     error(`Bad command '${badCmd}'. You can use 'retro help' for help.`);
   }
-  if (cmd2.port < 1e3 || cmd2.port >= 1e4) {
+  if (cmd.port < 1e3 || cmd.port >= 1e4) {
     error("'--port' must be between 1000-9999.");
   }
-  return cmd2;
-}
-function cmd() {
-  const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv;
-  return `retro ${args.slice(1).join(" ")}`;
+  return cmd;
 }
 async function run() {
   const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv;
@@ -2307,26 +2325,18 @@ async function run() {
     console.log(usage.replace("	", " ".repeat(2)));
     process.exit(0);
   } else if (arg === "dev") {
-    console.log(import_chalk7.default.gray(cmd()));
-    console.log();
     process.env["__DEV__"] = "true";
     process.env["NODE_ENV"] = "development";
     command = parseDevCommandFlags(...args.slice(2));
   } else if (arg === "export") {
-    console.log(import_chalk7.default.gray(cmd()));
-    console.log();
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
     command = parseExportCommandFlags(...args.slice(2));
   } else if (arg === "serve") {
-    console.log(import_chalk7.default.gray(cmd()));
-    console.log();
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
     command = parseServeCommandFlags(...args.slice(2));
   } else {
-    console.log(import_chalk7.default.gray(cmd()));
-    console.log();
     error(`No such command '${arg}'. Use one of these commands:
 
 ${cmds}

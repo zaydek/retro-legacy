@@ -99,7 +99,7 @@ function serverProps() {
 }`
 }
 
-function errPathExists(r1: ServerRoute, r2: ServerRoute) {
+function errPathExists(r1: ServerRoute, r2: ServerRoute): string {
 	return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`
 }
 
@@ -202,21 +202,22 @@ interface ServerResolvedRouter {
 // Based on https://github.com/evanw/esbuild/blob/master/lib/common.ts#L35.
 // prettier-ignore
 function testServerPropsReturn(value: unknown): boolean {
-	const ok = typeof value === "object" &&
-		value !== null &&
-		!Array.isArray(value)
-	return ok
+	return utils.testObject(value)
 }
 
-// TODO
 // prettier-ignore
 function testServerPathsReturn(value: unknown): boolean {
-	return true
+	type A = unknown[]
+	type O = { [key: string]: unknown }
 
-	// const ok = typeof value === "object" &&
-	// 	value !== null &&
-	// 	!Array.isArray(value)
-	// return ok
+	const ok = utils.testArray(value) &&
+		(value as A).every(each => {
+			const ok = utils.testObject(each) &&
+				("path" in (each as O) && typeof (each as O).path === "string") && // each.path
+				("props" in (each as O) && utils.testObject((each as O).props))          // each.props
+			return ok
+		})
+	return ok
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -259,6 +260,16 @@ async function resolveStaticRouteMeta(
 	return { route, props }
 }
 
+// // Create a renderPayload for exportPage:
+// const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
+// const render: RenderPayload = {
+// 	outputPath,
+// 	path,
+// 	module: mod,
+// 	props: descriptSrvProps,
+// }
+// await exportPage(runtime, render)
+
 async function resolveDynamicRouteMetas(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.PageMeta,
@@ -283,104 +294,54 @@ async function resolveDynamicRouteMetas(
 
 	// Resolve serverPaths:
 	if (typeof mod!.serverPaths === "function") {
+		let paths: { path: string; props: Props }[] = []
+
 		try {
-			const paths = await mod!.serverPaths!()
+			paths = await mod!.serverPaths!()
 			if (!testServerPathsReturn(paths)) {
 				log.error(errServerPathsReturn(page.src))
-			}
-			for (const path of paths) {
-				const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path)
-				const dst = p.join(runtime.directories.exportDir, path_ + ".html")
-				metas.push({
-					route: {
-						type: "dynamic",
-						src: page.src,
-						dst,
-						path: path_,
-						component: page.component,
-					},
-					props: {
-						path: path_, // Add path
-						...path.props,
-					},
-				})
 			}
 		} catch (err) {
 			log.error(`${page.src}.serverPaths: ${err.message}`)
 		}
+
+		for (const path of paths) {
+			const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path)
+			const dst = p.join(runtime.directories.exportDir, path_ + ".html")
+			metas.push({
+				route: {
+					type: "dynamic",
+					src: page.src,
+					dst,
+					path: path_,
+					component: page.component,
+				},
+				props: {
+					path: path_, // Add path
+					...path.props,
+				},
+			})
+			// ...
+		}
 	}
 	return metas
-
-	//	if (typeof mod.serverPaths === "function") {
-	//		const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
-	//
-	//		// Generate a component router:
-	//		const compRouter: types.ServerRouter = {}
-	//		for (const { path, props } of descriptSrvPaths) {
-	//			compRouter[path] = {
-	//				route,
-	//				props: {
-	//					path,
-	//					...props,
-	//				},
-	//			}
-	//		}
-	//
-	//		for (const [path, { props }] of Object.entries(compRouter)) {
-	//			// Merge the component router to the app router:
-	//			//
-	//			// TODO: Warn here for repeat paths.
-	//			router[path] = { route, props }
-	//
-	//			// Create a renderPayload for exportPage:
-	//			const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-	//			const render: RenderPayload = {
-	//				outputPath,
-	//				path,
-	//				module: mod,
-	//				props,
-	//			}
-	//			await exportPage(runtime, render)
-	//		}
-	//		continue
-	//	}
-	//	// Merge the route to the app router:
-	//	//
-	//	// TODO: Warn here for repeat paths.
-	//	const path = route.path
-	//	router[path] = { route, props: descriptSrvProps }
-	//
-	//	// Create a renderPayload for exportPage:
-	//	const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-	//	const render: RenderPayload = {
-	//		outputPath,
-	//		path,
-	//		module: mod,
-	//		props: descriptSrvProps,
-	//	}
-	//	await exportPage(runtime, render)
 }
 
-// function formatEsbuildError(color: (...args: unknown[]) => void, message: esbuild.Message): string {
-// 	const file = message.location!.file
-// 	const text = message.text
-// 	const code = message.location!.lineText
+// for (const [path, { props }] of Object.entries(compRouter)) {
+// 	// Merge the component router to the app router:
+// 	//
+// 	// TODO: Warn here for repeat paths.
+// 	router[path] = { route, props }
 //
-// 	const x = message.location!.column
-// 	const w = message.location!.length
-// 	const y = message.location!.line
-//
-// 	const msg = `${file}: ${text}
-// 	${y} ${chalk.gray("|")} ${code}
-// 	${" ".repeat(String(color).length)} ${chalk.gray("|")} ${" ".repeat(x)}${color("~".repeat(w))}`
-// }
-
-// function formatEsbuildError(color: (...args: unknown[]) => void, message: esbuild.Message): string {
-// 	return `${message.location!.file}: ${message.text}
-// 	${message.location!.line} ${chalk.gray("|")} ${message.location!.lineText}
-// 	${" ".repeat(String(message.location!.line).length)} ${chalk.gray("|")} ${" ".repeat(message.location!.column)}${color(
-// 		"~".repeat(message.location!.length),
-// 	)}`
+// 	// Create a renderPayload for exportPage:
+// 	const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
+// 	const render: RenderPayload = {
+// 		outputPath,
+// 		path,
+// 		module: mod,
+// 		props,
+// 	}
+// 	await exportPage(runtime, render)
 // }
 
 // resolveServerRouter exports pages and resolves the server router; resolves
@@ -389,6 +350,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 	const router: ServerResolvedRouter = {}
 
 	// TODO: Add --concurrent?
+	console.log() // "\n"
 	const service = await esbuild.startService()
 	for (const page of runtime.pages) {
 		// Generate paths for esbuild:
