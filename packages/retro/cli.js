@@ -1321,14 +1321,14 @@ var require_templates = __commonJS((exports2, module2) => {
     }
     return results;
   }
-  function buildStyle(chalk6, styles) {
+  function buildStyle(chalk8, styles) {
     const enabled = {};
     for (const layer of styles) {
       for (const style of layer.styles) {
         enabled[style[0]] = layer.inverse ? null : style.slice(1);
       }
     }
-    let current = chalk6;
+    let current = chalk8;
     for (const [styleName, styles2] of Object.entries(enabled)) {
       if (!Array.isArray(styles2)) {
         continue;
@@ -1340,7 +1340,7 @@ var require_templates = __commonJS((exports2, module2) => {
     }
     return current;
   }
-  module2.exports = (chalk6, temporary) => {
+  module2.exports = (chalk8, temporary) => {
     const styles = [];
     const chunks = [];
     let chunk = [];
@@ -1350,13 +1350,13 @@ var require_templates = __commonJS((exports2, module2) => {
       } else if (style) {
         const string = chunk.join("");
         chunk = [];
-        chunks.push(styles.length === 0 ? string : buildStyle(chalk6, styles)(string));
+        chunks.push(styles.length === 0 ? string : buildStyle(chalk8, styles)(string));
         styles.push({inverse, styles: parseStyle(style)});
       } else if (close) {
         if (styles.length === 0) {
           throw new Error("Found extraneous } in Chalk template literal");
         }
-        chunks.push(buildStyle(chalk6, styles)(chunk.join("")));
+        chunks.push(buildStyle(chalk8, styles)(chunk.join("")));
         chunk = [];
         styles.pop();
       } else {
@@ -1402,16 +1402,16 @@ var require_source = __commonJS((exports2, module2) => {
     }
   };
   var chalkFactory = (options) => {
-    const chalk7 = {};
-    applyOptions(chalk7, options);
-    chalk7.template = (...arguments_) => chalkTag(chalk7.template, ...arguments_);
-    Object.setPrototypeOf(chalk7, Chalk.prototype);
-    Object.setPrototypeOf(chalk7.template, chalk7);
-    chalk7.template.constructor = () => {
+    const chalk9 = {};
+    applyOptions(chalk9, options);
+    chalk9.template = (...arguments_) => chalkTag(chalk9.template, ...arguments_);
+    Object.setPrototypeOf(chalk9, Chalk.prototype);
+    Object.setPrototypeOf(chalk9.template, chalk9);
+    chalk9.template.constructor = () => {
       throw new Error("`chalk.constructor()` is deprecated. Use `new chalk.Instance()` instead.");
     };
-    chalk7.template.Instance = ChalkClass;
-    return chalk7.template;
+    chalk9.template.Instance = ChalkClass;
+    return chalk9.template;
   };
   function Chalk(options) {
     return chalkFactory(options);
@@ -1522,7 +1522,7 @@ var require_source = __commonJS((exports2, module2) => {
     return openAll + string + closeAll;
   };
   var template;
-  var chalkTag = (chalk7, ...strings) => {
+  var chalkTag = (chalk9, ...strings) => {
     const [firstString] = strings;
     if (!isArray(firstString) || !isArray(firstString.raw)) {
       return strings.join(" ");
@@ -1535,14 +1535,14 @@ var require_source = __commonJS((exports2, module2) => {
     if (template === void 0) {
       template = require_templates();
     }
-    return template(chalk7, parts.join(""));
+    return template(chalk9, parts.join(""));
   };
   Object.defineProperties(Chalk.prototype, styles);
-  var chalk6 = Chalk();
-  chalk6.supportsColor = stdoutColor;
-  chalk6.stderr = Chalk({level: stderrColor ? stderrColor.level : 0});
-  chalk6.stderr.supportsColor = stderrColor;
-  module2.exports = chalk6;
+  var chalk8 = Chalk();
+  chalk8.supportsColor = stdoutColor;
+  chalk8.stderr = Chalk({level: stderrColor ? stderrColor.level : 0});
+  chalk8.stderr.supportsColor = stderrColor;
+  module2.exports = chalk8;
 });
 
 // packages/lib/log.ts
@@ -1559,19 +1559,24 @@ function format(...args) {
     return " ".repeat(2) + each.replace("	", "  ");
   }).join("\n");
 }
-function info(...args) {
+function ok(...args) {
   const message = format(...args);
-  console.log(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.green("OK:")} ${import_chalk.default.bold(message)}`);
+  console.log(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.green("ok:")} ${import_chalk.default.bold(message)}`);
   console.log();
+}
+function warning(...args) {
+  const message = format(...args);
+  console.warn(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.yellow("warning:")} ${import_chalk.default.bold(message)}`);
+  console.warn();
 }
 function error(...args) {
   const message = format(...args);
   const traceEnabled = process.env["STACK_TRACE"] === "true";
   if (!traceEnabled) {
-    console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("Error:")} ${import_chalk.default.bold(message)}`);
+    console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("error:")} ${import_chalk.default.bold(message)}`);
     console.error();
   } else {
-    console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("Error:")} ${import_chalk.default.bold(message)}`);
+    console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("error:")} ${import_chalk.default.bold(message)}`);
     console.error();
     console.error({error});
   }
@@ -1579,17 +1584,30 @@ function error(...args) {
 }
 
 // packages/retro/cli.ts
-var import_chalk5 = __toModule(require_source());
+var import_chalk7 = __toModule(require_source());
 
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
 var fs3 = __toModule(require("fs"));
 var p3 = __toModule(require("path"));
 
+// packages/retro/utils.ts
+var import_chalk2 = __toModule(require_source());
+function formatMessage(msg, color) {
+  const loc = msg.location;
+  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
+
+	${loc.line} ${import_chalk2.default.gray("|")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${import_chalk2.default.gray("|")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+}
+
+// packages/retro/cmd_export.ts
+var import_chalk4 = __toModule(require_source());
+
 // packages/retro/parsePages.ts
 var fs = __toModule(require("fs"));
 var p = __toModule(require("path"));
-var import_chalk2 = __toModule(require_source());
+var import_chalk3 = __toModule(require_source());
 var supported = {
   ".js": true,
   ".jsx": true,
@@ -1741,7 +1759,7 @@ URI characters are described by RFC 3986:
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
 	           / "*" / "+" / "," / ";" / "="
 
-${import_chalk2.default.underline("https://tools.ietf.org/html/rfc3986")}`);
+${import_chalk3.default.underline("https://tools.ietf.org/html/rfc3986")}`);
   }
   const pages = [];
   for (const parsed of arr2) {
@@ -1888,8 +1906,8 @@ function errPathExists(r1, r2) {
   return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`;
 }
 function testServerPropsReturn(value) {
-  const ok = typeof value === "object" && value !== null && !Array.isArray(value);
-  return ok;
+  const ok2 = typeof value === "object" && value !== null && !Array.isArray(value);
+  return ok2;
 }
 function testServerPathsReturn(value) {
   return true;
@@ -1967,20 +1985,31 @@ async function resolveServerRouter(runtime) {
   for (const page of runtime.pages) {
     const entryPoints = [page.src];
     const outfile = p3.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
-    const result = await service.build({
-      bundle: true,
-      define: {
-        __DEV__: process.env.__DEV__,
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-      },
-      entryPoints,
-      external: ["react", "react-dom"],
-      format: "cjs",
-      inject: ["packages/retro/react-shim.js"],
-      loader: {".js": "jsx"},
-      logLevel: "silent",
-      outfile
-    });
+    try {
+      const result = await service.build({
+        bundle: true,
+        define: {
+          __DEV__: process.env.__DEV__,
+          "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+        },
+        entryPoints,
+        external: ["react", "react-dom"],
+        format: "cjs",
+        inject: ["packages/retro/react-shim.js"],
+        loader: {".js": "jsx"},
+        logLevel: "silent",
+        outfile
+      });
+      if (result.warnings.length > 0) {
+        for (const warning2 of result.warnings) {
+          warning(formatMessage(warning2, import_chalk4.default.yellow));
+        }
+        process.exit(1);
+      }
+    } catch (err) {
+      error(err);
+      process.exit(1);
+    }
     if (page.type === "static") {
       const d1 = Date.now();
       const meta = await resolveStaticRouteMeta(runtime, page, outfile);
@@ -1989,6 +2018,8 @@ async function resolveServerRouter(runtime) {
       }
       router[meta.route.path] = meta;
       const d2 = Date.now();
+      const sep2 = import_chalk4.default.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)));
+      console.log(`${" ".repeat(2)}${import_chalk4.default.green(`${meta.route.src} ${sep2} ${meta.route.dst} (${d2 - d1}ms)`)}`);
     }
     if (page.type === "dynamic") {
       const d1 = Date.now();
@@ -1999,9 +2030,12 @@ async function resolveServerRouter(runtime) {
         }
         router[meta.route.path] = meta;
         const d2 = Date.now();
+        const sep2 = import_chalk4.default.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)));
+        console.log(`${" ".repeat(2)}${import_chalk4.default.cyan(`${meta.route.src} ${sep2} ${meta.route.dst} (${d2 - d1}ms)`)}`);
       }
     }
   }
+  console.log();
   return router;
 }
 var cmd_export = async (runtime) => {
@@ -2018,10 +2052,10 @@ var esbuild2 = __toModule(require("esbuild"));
 var fs4 = __toModule(require("fs"));
 var http = __toModule(require("http"));
 var p4 = __toModule(require("path"));
-var import_chalk4 = __toModule(require_source());
+var import_chalk6 = __toModule(require_source());
 
 // packages/retro/logRequest.ts
-var import_chalk3 = __toModule(require_source());
+var import_chalk5 = __toModule(require_source());
 function getTimeInfo() {
   const date = new Date();
   const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
@@ -2033,15 +2067,15 @@ function getTimeInfo() {
 }
 function logRequest(args) {
   const {hh, mm, ss, am, ms} = getTimeInfo();
-  const ok = args.status >= 200 && args.status < 300;
+  const ok2 = args.status >= 200 && args.status < 300;
   let color = (...args2) => args2.join(" ");
-  if (!ok) {
-    color = (...args2) => import_chalk3.default.red(args2.join(" "));
+  if (!ok2) {
+    color = (...args2) => import_chalk5.default.red(args2.join(" "));
   }
   const format2 = `${" ".repeat(2)}03:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`;
-  const result = format2.replace("03:04:05.000 AM", import_chalk3.default.gray(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, color(args.method, args.path)).replace(" - ", " " + import_chalk3.default.gray("-" + "-".repeat(Math.max(0, 65 - format2.length))) + " ").replace("200", color(args.status)).replace("(0ms)", import_chalk3.default.gray(`(${args.timeInMS}ms)`));
+  const result = format2.replace("03:04:05.000 AM", import_chalk5.default.gray(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, color(args.method, args.path)).replace(" - ", " " + import_chalk5.default.gray("-" + "-".repeat(Math.max(0, 65 - format2.length))) + " ").replace("200", color(args.status)).replace("(0ms)", import_chalk5.default.gray(`(${args.timeInMS}ms)`));
   let log6 = (...args2) => console.log(...args2);
-  if (!ok) {
+  if (!ok2) {
     log6 = (...args2) => console.error(...args2);
   }
   log6(result);
@@ -2065,7 +2099,7 @@ var serve2 = async (runtime) => {
     error(`It looks like you\u2019re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`);
   }
   setTimeout(() => {
-    info(`${import_chalk4.default.underline(`http://localhost:${runtime.command.port}`)}`);
+    ok(`${import_chalk6.default.underline(`http://localhost:${runtime.command.port}`)}`);
   }, 25);
   const result = await esbuild2.serve({
     servedir: runtime.directories.exportDir,
@@ -2076,14 +2110,14 @@ var serve2 = async (runtime) => {
     transformURL = spaify;
   }
   const proxySrv = http.createServer((req, res) => {
-    const opts = {
+    const options = {
       hostname: result.host,
       port: result.port,
       path: transformURL(req.url),
       method: req.method,
       headers: req.headers
     };
-    const proxyReq = http.request(opts, (proxyRes) => {
+    const proxyReq = http.request(options, (proxyRes) => {
       if (proxyRes.statusCode === 404) {
         res.writeHead(404, {"Content-Type": "text/plain"});
         res.end("404 - Not Found");
@@ -2105,13 +2139,13 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim();
 var usage = `
-	${import_chalk5.default.bold("Usage:")}
+	${import_chalk7.default.bold("Usage:")}
 
 		retro dev     Start the dev server
 		retro export  Export the production-ready build (SSG)
 		retro serve   Serve the production-ready build
 
-	${import_chalk5.default.bold("retro dev")}
+	${import_chalk7.default.bold("retro dev")}
 
 		Start the dev server
 
@@ -2119,23 +2153,23 @@ var usage = `
 			--sourcemap=...  Add source maps (default true)
 			--port=...       Port number (default 8000)
 
-	${import_chalk5.default.bold("retro export")}
+	${import_chalk7.default.bold("retro export")}
 
 		Export the production-ready build (SSG)
 
 			--cached=...     Use cached resources (default false)
 			--sourcemap=...  Add source maps (default true)
 
-	${import_chalk5.default.bold("retro serve")}
+	${import_chalk7.default.bold("retro serve")}
 
 		Serve the production-ready build
 
 			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
 			--port=...       Port number (default 8000)
 
-	${import_chalk5.default.bold("Repository")}
+	${import_chalk7.default.bold("Repository")}
 
-		${import_chalk5.default.underline("https://github.com/zaydek/retro")}
+		${import_chalk7.default.underline("https://github.com/zaydek/retro")}
 `;
 function parseDevCommandFlags(...args) {
   const cmd2 = {
@@ -2273,25 +2307,25 @@ async function run() {
     console.log(usage.replace("	", " ".repeat(2)));
     process.exit(0);
   } else if (arg === "dev") {
-    console.log(import_chalk5.default.gray(cmd()));
+    console.log(import_chalk7.default.gray(cmd()));
     console.log();
     process.env["__DEV__"] = "true";
     process.env["NODE_ENV"] = "development";
     command = parseDevCommandFlags(...args.slice(2));
   } else if (arg === "export") {
-    console.log(import_chalk5.default.gray(cmd()));
+    console.log(import_chalk7.default.gray(cmd()));
     console.log();
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
     command = parseExportCommandFlags(...args.slice(2));
   } else if (arg === "serve") {
-    console.log(import_chalk5.default.gray(cmd()));
+    console.log(import_chalk7.default.gray(cmd()));
     console.log();
     process.env["__DEV__"] = "false";
     process.env["NODE_ENV"] = "production";
     command = parseServeCommandFlags(...args.slice(2));
   } else {
-    console.log(import_chalk5.default.gray(cmd()));
+    console.log(import_chalk7.default.gray(cmd()));
     console.log();
     error(`No such command '${arg}'. Use one of these commands:
 

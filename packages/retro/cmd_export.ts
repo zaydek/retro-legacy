@@ -9,9 +9,10 @@ import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
-// import * as term from "../lib/term"
 import * as types from "./types"
+import * as utils from "./utils"
 
+import chalk from "chalk"
 import parsePages from "./parsePages"
 import runServerGuards from "./runServerGuards"
 
@@ -360,6 +361,28 @@ async function resolveDynamicRouteMetas(
 	//	await exportPage(runtime, render)
 }
 
+// function formatEsbuildError(color: (...args: unknown[]) => void, message: esbuild.Message): string {
+// 	const file = message.location!.file
+// 	const text = message.text
+// 	const code = message.location!.lineText
+//
+// 	const x = message.location!.column
+// 	const w = message.location!.length
+// 	const y = message.location!.line
+//
+// 	const msg = `${file}: ${text}
+// 	${y} ${chalk.gray("|")} ${code}
+// 	${" ".repeat(String(color).length)} ${chalk.gray("|")} ${" ".repeat(x)}${color("~".repeat(w))}`
+// }
+
+// function formatEsbuildError(color: (...args: unknown[]) => void, message: esbuild.Message): string {
+// 	return `${message.location!.file}: ${message.text}
+// 	${message.location!.line} ${chalk.gray("|")} ${message.location!.lineText}
+// 	${" ".repeat(String(message.location!.line).length)} ${chalk.gray("|")} ${" ".repeat(message.location!.column)}${color(
+// 		"~".repeat(message.location!.length),
+// 	)}`
+// }
+
 // resolveServerRouter exports pages and resolves the server router; resolves
 // mod.serverProps and mod.serverPaths.
 async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<ServerResolvedRouter> {
@@ -372,25 +395,35 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 		const entryPoints = [page.src]
 		const outfile = p.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"))
 
-		// Use external: ["react", "react-dom"] to prevent a React error: You might
-		// have mismatching versions of React and the renderer (such as React DOM).
-		const result = await service.build({
-			bundle: true,
-			define: {
-				__DEV__: process.env.__DEV__!,
-				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV!),
-			},
-			entryPoints,
-			external: ["react", "react-dom"],
-			format: "cjs", // Node.js
-			inject: ["packages/retro/react-shim.js"],
-			loader: { ".js": "jsx" },
-			logLevel: "silent", // TODO
-			outfile,
-			// plugins: [...configs.retro.plugins], // TODO
-		})
-		// TODO: Emit warnings here.
-		// console.log(result)
+		try {
+			// Use external: ["react", "react-dom"] to prevent a React error: You might
+			// have mismatching versions of React and the renderer (such as React DOM).
+			const result = await service.build({
+				bundle: true,
+				define: {
+					__DEV__: process.env.__DEV__!,
+					"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV!),
+				},
+				entryPoints,
+				external: ["react", "react-dom"],
+				format: "cjs", // Node.js
+				inject: ["packages/retro/react-shim.js"],
+				loader: { ".js": "jsx" },
+				logLevel: "silent", // TODO
+				outfile,
+				// plugins: [...configs.retro.plugins], // TODO
+			})
+			// TODO: Add support for hints.
+			if (result.warnings.length > 0) {
+				for (const warning of result.warnings) {
+					log.warning(utils.formatMessage(warning, chalk.yellow))
+				}
+				process.exit(1)
+			}
+		} catch (err) {
+			log.error(err)
+			process.exit(1)
+		}
 
 		// Resolve static page:
 		if (page.type === "static") {
@@ -401,7 +434,8 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			}
 			router[meta.route.path] = meta
 			const d2 = Date.now()
-			// console.log(`  ${term.green(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
+			const sep = chalk.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)))
+			console.log(`${" ".repeat(2)}${chalk.green(`${meta.route.src} ${sep} ${meta.route.dst} (${d2 - d1}ms)`)}`)
 		}
 
 		// Resolve dynamic pages:
@@ -414,11 +448,13 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				}
 				router[meta.route.path] = meta
 				const d2 = Date.now()
-				// console.log(`  ${term.teal(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
+				const sep = chalk.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)))
+				console.log(`${" ".repeat(2)}${chalk.cyan(`${meta.route.src} ${sep} ${meta.route.dst} (${d2 - d1}ms)`)}`)
 			}
 		}
 	}
 
+	console.log() // "\n"
 	return router
 }
 

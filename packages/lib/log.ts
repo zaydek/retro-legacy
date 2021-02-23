@@ -17,22 +17,29 @@ function format(...args: unknown[]): string {
 		.join("\n")
 }
 
-// "> OK: ..."
-export function info(...args: unknown[]): void {
+// "> ok: ..."
+export function ok(...args: unknown[]): void {
 	const message = format(...args)
-	console.log(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.green("OK:")} ${chalk.bold(message)}`)
+	console.log(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.green("ok:")} ${chalk.bold(message)}`)
 	console.log() // "\n"
 }
 
-// > Error: ..."
+// "> warning: ..."
+export function warning(...args: unknown[]): void {
+	const message = format(...args)
+	console.warn(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.yellow("warning:")} ${chalk.bold(message)}`)
+	console.warn() // "\n"
+}
+
+// "> error: ..."
 export function error(...args: unknown[]): void {
 	const message = format(...args)
 	const traceEnabled = process.env["STACK_TRACE"] === "true"
 	if (!traceEnabled) {
-		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("Error:")} ${chalk.bold(message)}`)
+		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("error:")} ${chalk.bold(message)}`)
 		console.error()
 	} else {
-		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("Error:")} ${chalk.bold(message)}`)
+		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("error:")} ${chalk.bold(message)}`)
 		console.error()
 		console.error({ error })
 	}

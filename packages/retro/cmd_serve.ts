@@ -35,7 +35,7 @@ const serve: types.cmd_serve = async runtime => {
 	}
 
 	setTimeout(() => {
-		log.info(`${chalk.underline(`http://localhost:${runtime.command.port}`)}`)
+		log.ok(`${chalk.underline(`http://localhost:${runtime.command.port}`)}`)
 	}, 25)
 
 	// prettier-ignore
