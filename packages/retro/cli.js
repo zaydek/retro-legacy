@@ -2023,6 +2023,9 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
       });
     }
   }
+  for (const meta of metas) {
+    await exportPage(runtime, meta, mod);
+  }
   return metas;
 }
 async function resolveServerRouter(runtime) {
@@ -2085,12 +2088,51 @@ async function resolveServerRouter(runtime) {
   console.log();
   return router;
 }
+function prettyJSON(str) {
+  return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
+}
+async function renderAppSource(runtime, router) {
+  const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
+  const distinctRoutes = runtime.pages.filter((route) => distinctComponents.includes(route.component)).sort((a, b) => a.component.localeCompare(b.component));
+  return `import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "../router"
+
+// Components
+${distinctRoutes.map((route) => `import ${route.component} from "../${route.src}"`).join("\n")}
+
+export default function App() {
+	return (
+		<Router>
+${Object.entries(router).map(([path, meta]) => `
+			<Route path="${path}">
+				<${meta.route.component}
+					{...${prettyJSON(JSON.stringify(meta.props))}
+				} />
+			</Route>`).join("\n") + "\n"}
+		</Router>
+	)
+}
+
+${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
+	document.getElementById("root"),
+)` : `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`}
+`;
+}
 var cmd_export = async (runtime) => {
   await runServerGuards(runtime.directories);
   const data = await fs3.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
-  resolveServerRouter(runtime);
+  const router = await resolveServerRouter(runtime);
+  const appSource = await renderAppSource(runtime, router);
+  console.log(appSource);
 };
 var cmd_export_default = cmd_export;
 

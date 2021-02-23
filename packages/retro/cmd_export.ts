@@ -131,13 +131,13 @@ interface ServerRoute {
 	component: string // e.g. "PageIndex"
 }
 
-interface ServerRouteMeta {
+interface RouteMeta {
 	route: ServerRoute
 	props: ServerResolvedProps
 }
 
-interface ServerResolvedRouter {
-	[key: string]: ServerRouteMeta
+interface Router {
+	[key: string]: RouteMeta
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -166,7 +166,7 @@ function testServerPathsReturn(value: unknown): boolean {
 ////////////////////////////////////////////////////////////////////////////////
 
 // exportPage exports a page.
-async function exportPage(runtime: types.Runtime, meta: ServerRouteMeta, mod: PageModule): Promise<void> {
+async function exportPage(runtime: types.Runtime, meta: RouteMeta, mod: PageModule): Promise<void> {
 	let head = "<!-- <Head> -->"
 	try {
 		if (typeof mod.Head === "function") {
@@ -198,7 +198,7 @@ async function resolveStaticRouteMeta(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
-): Promise<ServerRouteMeta> {
+): Promise<RouteMeta> {
 	let props: ServerResolvedProps = { path: page.path }
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
@@ -234,26 +234,16 @@ async function resolveStaticRouteMeta(
 	}
 
 	const meta = { route: page, props }
-	await exportPage(runtime, meta, mod)
+	await exportPage(runtime, meta, mod!)
 	return meta
 }
-
-// // Create a renderPayload for exportPage:
-// const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-// const render: RenderPayload = {
-// 	outputPath,
-// 	path,
-// 	module: mod,
-// 	props: descriptSrvProps,
-// }
-// await exportPage(runtime, render)
 
 async function resolveDynamicRouteMetas(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.PageMeta,
 	outfile: string,
-): Promise<ServerRouteMeta[]> {
-	const metas: ServerRouteMeta[] = []
+): Promise<RouteMeta[]> {
+	const metas: RouteMeta[] = []
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
@@ -273,7 +263,6 @@ async function resolveDynamicRouteMetas(
 	// Resolve serverPaths:
 	if (typeof mod!.serverPaths === "function") {
 		let paths: { path: string; props: Props }[] = []
-
 		try {
 			paths = await mod!.serverPaths!()
 			if (!testServerPathsReturn(paths)) {
@@ -299,33 +288,19 @@ async function resolveDynamicRouteMetas(
 					...path.props,
 				},
 			})
-			// ...
 		}
+	}
+
+	for (const meta of metas) {
+		await exportPage(runtime, meta, mod!)
 	}
 	return metas
 }
 
-// for (const [path, { props }] of Object.entries(compRouter)) {
-// 	// Merge the component router to the app router:
-// 	//
-// 	// TODO: Warn here for repeat paths.
-// 	router[path] = { route, props }
-//
-// 	// Create a renderPayload for exportPage:
-// 	const outputPath = p.join(runtime.directoryConfiguration.exportDir, pathToHTML(path))
-// 	const render: RenderPayload = {
-// 		outputPath,
-// 		path,
-// 		module: mod,
-// 		props,
-// 	}
-// 	await exportPage(runtime, render)
-// }
-
 // resolveServerRouter exports pages and resolves the server router; resolves
 // mod.serverProps and mod.serverPaths.
-async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<ServerResolvedRouter> {
-	const router: ServerResolvedRouter = {}
+async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<Router> {
+	const router: Router = {}
 
 	// TODO: Add --concurrent?
 	console.log() // "\n"
@@ -336,8 +311,9 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 		const outfile = p.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"))
 
 		try {
-			// Use external: ["react", "react-dom"] to prevent a React error: You might
-			// have mismatching versions of React and the renderer (such as React DOM).
+			// Use external: ["react", "react-dom"] to prevent a React error: You
+			// might have mismatching versions of React and the renderer (such as
+			// React DOM).
 			const result = await service.build({
 				bundle: true,
 				define: {
@@ -398,68 +374,61 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 	return router
 }
 
-// // renderAppSource renders the app source code (before esbuild).
-// //
-// // TODO: Write tests (pure function).
-// export async function renderAppSource(runtime: types.Runtime<types.ExportCommand>): Promise<string> {
-// 	const componentKeys = [...new Set(runtime.routes.map(each => each.component))]
+function prettyJSON(str: string): string {
+	return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`)
+}
+
+// renderAppSource renders the app source code; depends on the server router.
 //
-// 	const sharedRoutes = runtime.routes
-// 		.filter(route => componentKeys.includes(route.component))
-// 		.sort((a, b) => a.component.localeCompare(b.component))
-//
-// 	console.log(`import React from "react"
-// import ReactDOM from "react-dom"
-// import { Route, Router } from "../router"
-//
-// // Shared components
-// ${sharedRoutes.map(route => `import ${route.component} from "../${route.src}"`).join("\n")}
-//
-// // Server router
-// import router from "./router.json"
-// `)
-//
-// 	// 	return `import React from "react"
-// 	// import ReactDOM from "react-dom"
-// 	// import { Route, Router } from "../router"
-// 	// // Shared components
-// 	// ${sharedComponents.map(component => `import ${component} from "../${route.inputPath}"`).join("\n")}
-// 	// import router from "./router.json"
-// 	// export default function App() {
-// 	// 	return (
-// 	// 		<Router>
-// 	// ${
-// 	// 	Object.entries(router)
-// 	// 		.map(
-// 	// 			([path, meta]) => `
-// 	// 			<Route path="${path}">
-// 	// 				<${meta.route.component} {
-// 	// 					...router["${path}"].props
-// 	// 				} />
-// 	// 			</Route>`,
-// 	// 		)
-// 	// 		.join("\n") + "\n"
-// 	// }
-// 	// 		</Router>
-// 	// 	)
-// 	// }
-// 	// ${
-// 	// 	JSON.parse(process.env.STRICT_MODE || "true")
-// 	// 		? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-// 	// 	<React.StrictMode>
-// 	// 		<App />
-// 	// 	</React.StrictMode>,
-// 	// 	document.getElementById("root"),
-// 	// )`
-// 	// 		: `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-// 	// 	<App />,
-// 	// 	document.getElementById("root"),
-// 	// )`
-// 	// }
-// 	// `
-//
-// 	return "TODO"
-// }
+// TODO: Write tests (pure function).
+export async function renderAppSource(runtime: types.Runtime<types.ExportCommand>, router: Router): Promise<string> {
+	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?
+
+	const distinctRoutes = runtime.pages
+		.filter(route => distinctComponents.includes(route.component))
+		.sort((a, b) => a.component.localeCompare(b.component))
+
+	return `import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "../router"
+
+// Components
+${distinctRoutes.map(route => `import ${route.component} from "../${route.src}"`).join("\n")}
+
+export default function App() {
+	return (
+		<Router>
+${
+	Object.entries(router)
+		.map(
+			([path, meta]) => `
+			<Route path="${path}">
+				<${meta.route.component}
+					{...${prettyJSON(JSON.stringify(meta.props))}
+				} />
+			</Route>`,
+		)
+		.join("\n") + "\n"
+}
+		</Router>
+	)
+}
+
+${
+	JSON.parse(process.env.STRICT_MODE || "true")
+		? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
+	document.getElementById("root"),
+)`
+		: `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`
+}
+`
+}
 
 const cmd_export: types.cmd_export = async runtime => {
 	await runServerGuards(runtime.directories)
@@ -467,12 +436,13 @@ const cmd_export: types.cmd_export = async runtime => {
 	runtime.document = data.toString()
 	runtime.pages = await parsePages(runtime.directories)
 
-	resolveServerRouter(runtime)
-	// const router =
+	const router = await resolveServerRouter(runtime)
 
-	// const appSource =
-	// await renderAppSource(runtime)
-	// console.log(appSource)
+	// // TODO: Cache the router for renderAppSource?
+	// console.log(router)
+
+	const appSource = await renderAppSource(runtime, router)
+	console.log(appSource)
 
 	// const appSourcePath = p.join(runtime.directoryConfiguration.cacheDir, "app.js")
 	// await fs.promises.writeFile(appSourcePath, appSource)
