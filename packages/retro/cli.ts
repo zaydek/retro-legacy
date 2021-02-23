@@ -12,10 +12,8 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim()
 
-// NOTE: Use spaces here.
-const usage = `${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}
-
-  ${term.bold("Usage:")}
+// TODO: Usage should not show the entry command.
+const usage = `  ${term.bold("Usage:")}
 
     retro dev     Start the dev server
     retro export  Export the production-ready build (SSG)

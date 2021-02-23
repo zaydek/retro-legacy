@@ -372,6 +372,9 @@ function serverProps() {
 	return { ... }
 }`;
 }
+function errPathExists(r1, r2) {
+  return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`;
+}
 function testServerPropsReturn(value) {
   const ok = typeof value === "object" && value !== null && !Array.isArray(value);
   return ok;
@@ -379,7 +382,7 @@ function testServerPropsReturn(value) {
 function testServerPathsReturn(value) {
   return true;
 }
-async function resolveStaticRoute(_, page, outfile) {
+async function resolveStaticRouteMeta(_, page, outfile) {
   let props = {path: page.path};
   let mod;
   try {
@@ -393,11 +396,11 @@ async function resolveStaticRoute(_, page, outfile) {
   }
   if (typeof mod.serverProps === "function") {
     try {
-      const compProps = await mod.serverProps();
-      if (!testServerPropsReturn(compProps)) {
+      const serverProps = await mod.serverProps();
+      if (!testServerPropsReturn(serverProps)) {
         error(errServerPropsReturn(page.src));
       }
-      props = {...props, ...compProps};
+      props = {...props, ...serverProps};
     } catch (err) {
       error(`${page.src}.serverProps: ${err.message}`);
     }
@@ -405,11 +408,11 @@ async function resolveStaticRoute(_, page, outfile) {
   const route = page;
   return {route, props};
 }
-async function resolveDynamicPage(runtime, page, outfile) {
-  const subrouter = {};
+async function resolveDynamicRouteMetas(runtime, page, outfile) {
+  const metas = [];
   let mod;
   try {
-    mod = require(p3.join("../..", outfile));
+    mod = require(p3.join("..", "..", outfile));
   } catch {
   }
   if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
@@ -426,7 +429,7 @@ async function resolveDynamicPage(runtime, page, outfile) {
       for (const path of paths) {
         const path_ = p3.join(p3.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
         const dst2 = p3.join(runtime.directories.exportDir, path_ + ".html");
-        subrouter[path_] = {
+        metas.push({
           route: {
             type: "dynamic",
             src: page.src,
@@ -438,13 +441,13 @@ async function resolveDynamicPage(runtime, page, outfile) {
             path: path_,
             ...path.props
           }
-        };
+        });
       }
     } catch (err) {
       error(`${page.src}.serverPaths: ${err.message}`);
     }
   }
-  return subrouter;
+  return metas;
 }
 async function resolveServerRouter(runtime) {
   const router = {};
@@ -467,26 +470,29 @@ async function resolveServerRouter(runtime) {
       outfile
     });
     if (page.type === "static") {
-      const date = Date.now();
-      const meta = await resolveStaticRoute(runtime, page, outfile);
+      const d1 = Date.now();
+      const meta = await resolveStaticRouteMeta(runtime, page, outfile);
       if (router[meta.route.path] !== void 0) {
-        error(`${meta.route.src}: Path '${meta.route.path}' is already being used by ${router[meta.route.path].route.src}.`);
+        error(errPathExists(meta.route, router[meta.route.path].route));
       }
-      router[page.path] = meta;
-      console.log(`${" ".repeat(2)}${green(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`);
-    } else if (page.type === "dynamic") {
-      const date = Date.now();
-      const subrouter = await resolveDynamicPage(runtime, page, outfile);
-      for (const [path, meta] of Object.entries(subrouter)) {
-        if (router[path] !== void 0) {
-          error(`${meta.route.src}: Path '${meta.route.path}' is already being used by ${router[meta.route.path].route.src}.`);
+      router[meta.route.path] = meta;
+      const d2 = Date.now();
+      console.log(`  ${green(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`);
+    }
+    if (page.type === "dynamic") {
+      const d1 = Date.now();
+      const metas = await resolveDynamicRouteMetas(runtime, page, outfile);
+      console.log(router, metas);
+      for (const meta of metas) {
+        if (router[meta.route.path] !== void 0) {
+          error(errPathExists(meta.route, router[meta.route.path].route));
         }
-        router[path] = meta;
-        console.log(`${" ".repeat(2)}${teal(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`);
+        router[meta.route.path] = meta;
+        const d2 = Date.now();
+        console.log(`  ${teal(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`);
       }
     }
   }
-  console.log(router);
   return router;
 }
 var cmd_export = async (runtime) => {
@@ -560,9 +566,7 @@ retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim();
-var usage = `${gray([process.argv0, ...process.argv.slice(1)].join(" "))}
-
-  ${bold("Usage:")}
+var usage = `  ${bold("Usage:")}
 
     retro dev     Start the dev server
     retro export  Export the production-ready build (SSG)

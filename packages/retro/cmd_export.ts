@@ -98,6 +98,10 @@ function serverProps() {
 }`
 }
 
+function errPathExists(r1: ServerRoute, r2: ServerRoute) {
+	return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // // RenderPayload describes a render payload (page metadata).
@@ -216,7 +220,7 @@ function testServerPathsReturn(value: unknown): boolean {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-async function resolveStaticRoute(
+async function resolveStaticRouteMeta(
 	_: types.Runtime<types.ExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
@@ -241,11 +245,12 @@ async function resolveStaticRoute(
 	// Resolve serverProps:
 	if (typeof mod!.serverProps === "function") {
 		try {
-			const compProps = await mod!.serverProps!()
-			if (!testServerPropsReturn(compProps)) {
+			const serverProps = await mod!.serverProps!()
+			if (!testServerPropsReturn(serverProps)) {
 				log.error(errServerPropsReturn(page.src))
 			}
-			props = { ...props, ...compProps }
+			// Do not overwrite path:
+			props = { ...props, ...serverProps }
 		} catch (err) {
 			log.error(`${page.src}.serverProps: ${err.message}`)
 		}
@@ -254,19 +259,19 @@ async function resolveStaticRoute(
 	return { route, props }
 }
 
-async function resolveDynamicPage(
+async function resolveDynamicRouteMetas(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.PageMeta,
 	outfile: string,
-): Promise<ServerResolvedRouter> {
-	const subrouter: ServerResolvedRouter = {}
+): Promise<ServerRouteMeta[]> {
+	const metas: ServerRouteMeta[] = []
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
 	let mod: DynamicPageModule
 	try {
-		mod = require(p.join("../..", outfile))
+		mod = require(p.join("..", "..", outfile))
 	} catch {}
 
 	// Guard serverProps and serverPaths:
@@ -286,25 +291,25 @@ async function resolveDynamicPage(
 			for (const path of paths) {
 				const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path)
 				const dst = p.join(runtime.directories.exportDir, path_ + ".html")
-				subrouter[path_] = {
+				metas.push({
 					route: {
 						type: "dynamic",
 						src: page.src,
 						dst,
-						path: path_, // TODO: Should path be relative? It’s slightly  confusing because we’re using "/syntax".
+						path: path_,
 						component: page.component,
 					},
 					props: {
-						path: path_,
+						path: path_, // Add path
 						...path.props,
 					},
-				}
+				})
 			}
 		} catch (err) {
 			log.error(`${page.src}.serverPaths: ${err.message}`)
 		}
 	}
-	return subrouter
+	return metas
 
 	//	if (typeof mod.serverPaths === "function") {
 	//		const descriptSrvPaths: types.DescriptiveServerPaths = await mod.serverPaths(descriptSrvProps)
@@ -388,36 +393,33 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 		// TODO: Emit warnings here.
 		// console.log(result)
 
+		// Resolve static page:
 		if (page.type === "static") {
-			const date = Date.now()
-			const meta = await resolveStaticRoute(runtime, page, outfile)
+			const d1 = Date.now()
+			const meta = await resolveStaticRouteMeta(runtime, page, outfile)
 			if (router[meta.route.path] !== undefined) {
-				log.error(
-					`${meta.route.src}: Path '${meta.route.path}' is already being used by ${
-						router[meta.route.path]!.route.src
-					}.`,
-				)
+				log.error(errPathExists(meta.route, router[meta.route.path]!.route))
 			}
-			router[page.path] = meta
-			console.log(`${" ".repeat(2)}${term.green(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`)
-		} else if (page.type === "dynamic") {
-			const date = Date.now()
-			const subrouter = await resolveDynamicPage(runtime, page, outfile)
-			for (const [path, meta] of Object.entries(subrouter)) {
-				if (router[path] !== undefined) {
-					log.error(
-						`${meta.route.src}: Path '${meta.route.path}' is already being used by ${
-							router[meta.route.path]!.route.src
-						}.`,
-					)
+			router[meta.route.path] = meta
+			const d2 = Date.now()
+			console.log(`  ${term.green(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
+		}
+
+		// Resolve dynamic pages:
+		if (page.type === "dynamic") {
+			const d1 = Date.now()
+			const metas = await resolveDynamicRouteMetas(runtime, page, outfile)
+			for (const meta of metas) {
+				if (router[meta.route.path] !== undefined) {
+					log.error(errPathExists(meta.route, router[meta.route.path]!.route))
 				}
-				router[path] = meta
-				console.log(`${" ".repeat(2)}${term.teal(`${meta.route.src} -> ${meta.route.dst} (${Date.now() - date}ms)`)}`)
+				router[meta.route.path] = meta
+				const d2 = Date.now()
+				console.log(`  ${term.teal(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
 			}
 		}
 	}
 
-	console.log(router)
 	return router
 }
 

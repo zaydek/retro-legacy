@@ -10,7 +10,7 @@ export async function serverPaths() {
 		{ path: "/charmander", props: { name: "Charmander", type: "🔥" } },
 		{ path: "/pikachu",    props: { name: "Pikachu",    type: "⚡️" } },
 		{ path: "/squirtle",   props: { name: "Squirtle",   type: "💧" } },
-		{ path: "/squirtle",   props: { name: "Squirtle",   type: "💧" } },
+		// { path: "/squirtle",   props: { name: "Squirtle",   type: "💧" } },
 	]
 }
 
