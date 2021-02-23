@@ -1589,7 +1589,6 @@ function error(...args) {
       console.error();
     console.error(`${" ".repeat(2)}${import_chalk.default.bold(">")} ${import_chalk.default.bold.red("error:")} ${import_chalk.default.bold(message)}`);
     console.error();
-    console.error({error});
   }
   process.exit(0);
 }
@@ -1601,6 +1600,8 @@ var import_chalk7 = __toModule(require_source());
 var esbuild = __toModule(require("esbuild"));
 var fs3 = __toModule(require("fs"));
 var p3 = __toModule(require("path"));
+var React = __toModule(require("react"));
+var ReactDOMServer = __toModule(require("react-dom/server"));
 
 // packages/retro/utils.ts
 var import_chalk2 = __toModule(require_source());
@@ -1788,16 +1789,16 @@ ${import_chalk3.default.underline("https://tools.ietf.org/html/rfc3986")}`);
 // packages/retro/runServerGuards.ts
 var fs2 = __toModule(require("fs"));
 var p2 = __toModule(require("path"));
-async function runServerGuards(dir) {
-  const dirs = Object.entries(dir).map(([_, v]) => v);
-  for (const dir_ of dirs) {
+async function runServerGuards(dirConfig) {
+  const dirs = Object.entries(dirConfig).map(([_, dir]) => dir);
+  for (const dir of dirs) {
     try {
-      await fs2.promises.stat(dir_);
+      await fs2.promises.stat(dir);
     } catch (_) {
-      fs2.promises.mkdir(dir_, {recursive: true});
+      fs2.promises.mkdir(dir, {recursive: true});
     }
   }
-  const path = p2.join(dir.publicDir, "index.html");
+  const path = p2.join(dirConfig.publicDir, "index.html");
   try {
     const data = await fs2.promises.readFile(path);
     const text = data.toString();
@@ -1813,16 +1814,14 @@ For example:
 	%head%
 </head>
 ...`);
-    } else if (!text.includes("%app")) {
-      error(`${path}: Add '%app%' somewhere to '<body>'.
+    } else if (!text.includes("%page")) {
+      error(`${path}: Add '%page%' somewhere to '<body>'.
 
 For example:
 
 ...
 <body>
-	<noscript>You need to enable JavaScript to run this app.</noscript>
-	<div id="app"></div>
-	%app%
+	%page%
 </body>
 ...`);
     }
@@ -1835,9 +1834,7 @@ For example:
 		%head%
 	</head>
 	<body>
-		<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="app"></div>
-		%app%
+		%page%
 	</body>
 </html>
 `);
@@ -1851,12 +1848,12 @@ function errServerPropsFunction(src) {
 For example:
 
 // Synchronous:
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }
 
 // Asynchronous:
-async function serverProps() {
+export async function serverProps() {
 	await ...
 	return { ... }
 }`;
@@ -1867,12 +1864,12 @@ function errServerPathsFunction(src) {
 For example:
 
 // Synchronous:
-function serverPaths() {
+export function serverPaths() {
 	return { ... }
 }
 
 // Asynchronous:
-async function serverPaths() {
+export async function serverPaths() {
 	await ...
 	return { ... }
 }`;
@@ -1882,7 +1879,7 @@ function errServerPropsMismatch(src) {
 
 For example:
 
-function serverPaths() {
+export function serverPaths() {
 	return [
 		{ path: "/foo", props: ... },
 		{ path: "/foo/bar", props: ... },
@@ -1897,7 +1894,7 @@ function errServerPropsReturn(src) {
 
 For example:
 
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }`;
 }
@@ -1906,7 +1903,7 @@ function errServerPathsReturn(src) {
 
 For example:
 
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }`;
 }
@@ -1915,7 +1912,7 @@ function errServerPathsMismatch(src) {
 
 For example:
 
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }`;
 }
@@ -1932,7 +1929,31 @@ function testServerPathsReturn(value) {
   });
   return ok2;
 }
-async function resolveStaticRouteMeta(_, page, outfile) {
+async function exportPage(runtime, meta, mod) {
+  let head = "<!-- <Head> -->";
+  try {
+    if (typeof mod.Head === "function") {
+      const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, meta.props));
+      head = renderString.replace(/></g, ">\n		<").replace(/\/>/g, " />");
+    }
+  } catch (err) {
+    error(`${meta.route.src}.Head: ${err.message}`);
+  }
+  let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root"></div>`;
+  try {
+    if (typeof mod.default === "function") {
+      const renderString = ReactDOMServer.renderToString(React.createElement(mod.default, meta.props));
+      page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`);
+    }
+  } catch (err) {
+    error(`${meta.route.src}.default: ${err.message}`);
+  }
+  const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
+  await fs3.promises.mkdir(p3.dirname(meta.route.dst), {recursive: true});
+  await fs3.promises.writeFile(meta.route.dst, rendered);
+}
+async function resolveStaticRouteMeta(runtime, page, outfile) {
   let props = {path: page.path};
   let mod;
   try {
@@ -1950,13 +1971,17 @@ async function resolveStaticRouteMeta(_, page, outfile) {
       if (!testServerPropsReturn(serverProps)) {
         error(errServerPropsReturn(page.src));
       }
-      props = {...props, ...serverProps};
+      props = {
+        path: page.path,
+        ...serverProps
+      };
     } catch (err) {
       error(`${page.src}.serverProps: ${err.message}`);
     }
   }
-  const route = page;
-  return {route, props};
+  const meta = {route: page, props};
+  await exportPage(runtime, meta, mod);
+  return meta;
 }
 async function resolveDynamicRouteMetas(runtime, page, outfile) {
   const metas = [];

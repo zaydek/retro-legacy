@@ -4,20 +4,20 @@ import * as p from "path"
 import * as types from "./types"
 
 // runServerGuards tests for the presence of directories and public/index.html.
-export default async function runServerGuards(dir: types.DirConfiguration): Promise<void> {
-	const dirs = Object.entries(dir).map(([_, v]) => v)
+export default async function runServerGuards(dirConfig: types.DirConfiguration): Promise<void> {
+	const dirs = Object.entries(dirConfig).map(([_, dir]) => dir)
 
 	// Guards directories:
-	for (const dir_ of dirs) {
+	for (const dir of dirs) {
 		try {
-			await fs.promises.stat(dir_)
+			await fs.promises.stat(dir)
 		} catch (_) {
-			fs.promises.mkdir(dir_, { recursive: true })
+			fs.promises.mkdir(dir, { recursive: true })
 		}
 	}
 
 	// Guards public/index.html:
-	const path = p.join(dir.publicDir, "index.html")
+	const path = p.join(dirConfig.publicDir, "index.html")
 	try {
 		const data = await fs.promises.readFile(path)
 		const text = data.toString()
@@ -33,16 +33,14 @@ For example:
 	%head%
 </head>
 ...`)
-		} else if (!text.includes("%app")) {
-			log.error(`${path}: Add '%app%' somewhere to '<body>'.
+		} else if (!text.includes("%page")) {
+			log.error(`${path}: Add '%page%' somewhere to '<body>'.
 
 For example:
 
 ...
 <body>
-	<noscript>You need to enable JavaScript to run this app.</noscript>
-	<div id="app"></div>
-	%app%
+	%page%
 </body>
 ...`)
 		}
@@ -57,9 +55,7 @@ For example:
 		%head%
 	</head>
 	<body>
-		<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="app"></div>
-		%app%
+		%page%
 	</body>
 </html>
 `,

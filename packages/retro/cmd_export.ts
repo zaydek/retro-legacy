@@ -1,14 +1,9 @@
-// import * as esbuild from "esbuild"
-// import * as fs from "fs"
-// import * as p from "path"
-// import * as React from "react"
-// import * as ReactDOMServer from "react-dom/server"
-// import * as term from "../lib/term"
-
 import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
+import * as React from "react"
+import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
 import * as utils from "./utils"
 
@@ -24,12 +19,12 @@ function errServerPropsFunction(src: string): string {
 For example:
 
 // Synchronous:
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }
 
 // Asynchronous:
-async function serverProps() {
+export async function serverProps() {
 	await ...
 	return { ... }
 }`
@@ -41,12 +36,12 @@ function errServerPathsFunction(src: string): string {
 For example:
 
 // Synchronous:
-function serverPaths() {
+export function serverPaths() {
 	return { ... }
 }
 
 // Asynchronous:
-async function serverPaths() {
+export async function serverPaths() {
 	await ...
 	return { ... }
 }`
@@ -57,7 +52,7 @@ function errServerPropsMismatch(src: string): string {
 
 For example:
 
-function serverPaths() {
+export function serverPaths() {
 	return [
 		{ path: "/foo", props: ... },
 		{ path: "/foo/bar", props: ... },
@@ -73,7 +68,7 @@ function errServerPropsReturn(src: string): string {
 
 For example:
 
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }`
 }
@@ -84,7 +79,7 @@ function errServerPathsReturn(src: string): string {
 
 For example:
 
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }`
 }
@@ -94,7 +89,7 @@ function errServerPathsMismatch(src: string): string {
 
 For example:
 
-function serverProps() {
+export function serverProps() {
 	return { ... }
 }`
 }
@@ -102,58 +97,6 @@ function serverProps() {
 function errPathExists(r1: ServerRoute, r2: ServerRoute): string {
 	return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-// // RenderPayload describes a render payload (page metadata).
-// interface RenderPayload {
-// 	outputPath: string
-// 	path: string
-// 	module: types.StaticPageModule | types.DynamicPageModule
-// 	props?: types.DescriptiveServerProps
-// }
-//
-// // "/" -> "/index.html"
-// // "/nested/" -> "/nested/index.html"
-// function pathToHTML(path: string): string {
-// 	if (!path.endsWith("/")) return path + ".html"
-// 	return path + "index.html"
-// }
-//
-// // exportPage exports a page.
-// async function exportPage(runtime: types.Runtime, render: RenderPayload): Promise<void> {
-// 	// Render head:
-// 	let head = "<!-- <Head> -->"
-// 	if (typeof render.module.Head === "function") {
-// 		const markup = ReactDOMServer.renderToStaticMarkup(React.createElement(render.module.Head, render.props))
-// 		head = markup.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
-// 	}
-//
-// 	// Render page:
-// 	let page = `
-// 		<noscript>You need to enable JavaScript to run this app.</noscript>
-// 		<div id="root"></div>
-// 		<script src="/app.js"></script>
-// 	`.trim()
-//
-// 	// prettier-ignore
-// 	if (typeof render.module.default === "function") {
-// 		const str = ReactDOMServer.renderToString(React.createElement(render.module.default, render.props))
-// 		page = page.replace(
-// 			`<div id="root"></div>`,
-// 			`<div id="root">${str}</div>`,
-// 		)
-// 	}
-//
-// 	// prettier-ignore
-// 	const data = runtime.baseHTML
-// 		.replace("%head%", head)
-// 		.replace("%page%", page)
-//
-// 	// Export:
-// 	await fs.promises.mkdir(p.dirname(render.outputPath), { recursive: true })
-// 	await fs.promises.writeFile(render.outputPath, data)
-// }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -214,7 +157,7 @@ function testServerPathsReturn(value: unknown): boolean {
 		(value as A).every(each => {
 			const ok = utils.testObject(each) &&
 				("path" in (each as O) && typeof (each as O).path === "string") && // each.path
-				("props" in (each as O) && utils.testObject((each as O).props))          // each.props
+				("props" in (each as O) && utils.testObject((each as O).props))    // each.props
 			return ok
 		})
 	return ok
@@ -222,8 +165,37 @@ function testServerPathsReturn(value: unknown): boolean {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// exportPage exports a page.
+async function exportPage(runtime: types.Runtime, meta: ServerRouteMeta, mod: PageModule): Promise<void> {
+	let head = "<!-- <Head> -->"
+	try {
+		if (typeof mod.Head === "function") {
+			const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, meta.props))
+			head = renderString.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
+		}
+	} catch (err) {
+		log.error(`${meta.route.src}.Head: ${err.message}`)
+	}
+
+	let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root"></div>`
+	try {
+		if (typeof mod.default === "function") {
+			const renderString = ReactDOMServer.renderToString(React.createElement(mod.default, meta.props))
+			page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`)
+		}
+	} catch (err) {
+		log.error(`${meta.route.src}.default: ${err.message}`)
+	}
+
+	// Export:
+	const rendered = runtime.document.replace("%head%", head).replace("%page%", page)
+	await fs.promises.mkdir(p.dirname(meta.route.dst), { recursive: true })
+	await fs.promises.writeFile(meta.route.dst, rendered)
+}
+
 async function resolveStaticRouteMeta(
-	_: types.Runtime<types.ExportCommand>,
+	runtime: types.Runtime<types.ExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
 ): Promise<ServerRouteMeta> {
@@ -251,13 +223,19 @@ async function resolveStaticRouteMeta(
 			if (!testServerPropsReturn(serverProps)) {
 				log.error(errServerPropsReturn(page.src))
 			}
-			props = { ...props, ...serverProps }
+			props = {
+				// @ts-ignore
+				path: page.path, // Add path
+				...serverProps,
+			}
 		} catch (err) {
 			log.error(`${page.src}.serverProps: ${err.message}`)
 		}
 	}
-	const route = page
-	return { route, props }
+
+	const meta = { route: page, props }
+	await exportPage(runtime, meta, mod)
+	return meta
 }
 
 // // Create a renderPayload for exportPage:

@@ -1,4 +1,4 @@
-import Nav from "../Nav_"
+// import Nav from "../Nav_"
 
 export function Head() {
 	return <title>Welcome to my wonderful website. (nested)</title>
@@ -7,7 +7,7 @@ export function Head() {
 export default function Page() {
 	return (
 		<div>
-			<Nav />
+			{/* <Nav /> */}
 			<h1>My website (nested)</h1>
 		</div>
 	)

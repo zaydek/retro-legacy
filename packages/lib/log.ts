@@ -49,7 +49,7 @@ export function error(...args: unknown[]): void {
 		if (!once) console.error()
 		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("error:")} ${chalk.bold(message)}`)
 		console.error()
-		console.error({ error })
+		// console.error({ error: message }) // TODO?
 	}
 	process.exit(0)
 }
