@@ -9,7 +9,7 @@ import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
-import * as term from "../lib/term"
+// import * as term from "../lib/term"
 import * as types from "./types"
 
 import parsePages from "./parsePages"
@@ -249,7 +249,6 @@ async function resolveStaticRouteMeta(
 			if (!testServerPropsReturn(serverProps)) {
 				log.error(errServerPropsReturn(page.src))
 			}
-			// Do not overwrite path:
 			props = { ...props, ...serverProps }
 		} catch (err) {
 			log.error(`${page.src}.serverProps: ${err.message}`)
@@ -402,7 +401,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			}
 			router[meta.route.path] = meta
 			const d2 = Date.now()
-			console.log(`  ${term.green(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
+			// console.log(`  ${term.green(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
 		}
 
 		// Resolve dynamic pages:
@@ -415,7 +414,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				}
 				router[meta.route.path] = meta
 				const d2 = Date.now()
-				console.log(`  ${term.teal(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
+				// console.log(`  ${term.teal(`${meta.route.src} -> ${meta.route.dst} (${d2 - d1}ms)`)}`)
 			}
 		}
 	}

@@ -1,8 +1,7 @@
 import * as log from "../lib/log"
-import * as term from "../lib/term"
 import * as types from "./types"
-import * as utils from "./utils"
 
+import chalk from "chalk"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
@@ -12,38 +11,38 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim()
 
-// TODO: Usage should not show the entry command.
-const usage = `  ${term.bold("Usage:")}
+const usage = `
+	${chalk.bold("Usage:")}
 
-    retro dev     Start the dev server
-    retro export  Export the production-ready build (SSG)
-    retro serve   Serve the production-ready build
+		retro dev     Start the dev server
+		retro export  Export the production-ready build (SSG)
+		retro serve   Serve the production-ready build
 
-  ${term.bold("retro dev")}
+	${chalk.bold("retro dev")}
 
-    Start the dev server
+		Start the dev server
 
-      --cached=...     Use cached resources (default false)
-      --sourcemap=...  Add source maps (default true)
-      --port=...       Port number (default 8000)
+			--cached=...     Use cached resources (default false)
+			--sourcemap=...  Add source maps (default true)
+			--port=...       Port number (default 8000)
 
-  ${term.bold("retro export")}
+	${chalk.bold("retro export")}
 
-    Export the production-ready build (SSG)
+		Export the production-ready build (SSG)
 
-      --cached=...     Use cached resources (default false)
-      --sourcemap=...  Add source maps (default true)
+			--cached=...     Use cached resources (default false)
+			--sourcemap=...  Add source maps (default true)
 
-  ${term.bold("retro serve")}
+	${chalk.bold("retro serve")}
 
-    Serve the production-ready build
+		Serve the production-ready build
 
-      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-      --port=...       Port number (default 8000)
+			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+			--port=...       Port number (default 8000)
 
-  ${term.bold("Repository:")}
+	${chalk.bold("Repository")}
 
-    ${term.underline("https://github.com/zaydek/retro")}
+		${chalk.underline("https://github.com/zaydek/retro")}
 `
 
 // parseDevCommandFlags parses 'retro dev [flags]'.
@@ -175,15 +174,18 @@ function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 	return cmd
 }
 
-async function run(): Promise<void> {
-	console.log(`${term.gray([process.argv0, ...process.argv.slice(1)].join(" "))}`)
-	console.log()
+// cmd returns the command used.
+function cmd(): string {
+	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
+	return `retro ${args.slice(1).join(" ")}`
+}
 
+async function run(): Promise<void> {
 	const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv
 
 	// Cover ["retro"] case:
 	if (args.length === 1) {
-		console.log(usage)
+		console.log(usage.replace("\t", " ".repeat(2)))
 		process.exit(0)
 	}
 
@@ -193,21 +195,29 @@ async function run(): Promise<void> {
 		console.log(process.env["RETRO_VERSION"] || "TODO")
 		process.exit(0)
 	} else if (arg === "usage" || arg === "--usage" || arg === "help" || arg === "--help") {
-		console.log(usage)
+		console.log(usage.replace("\t", " ".repeat(2)))
 		process.exit(0)
 	} else if (arg === "dev") {
+		console.log(chalk.gray(cmd()))
+		console.log()
 		process.env["__DEV__"] = "true"
 		process.env["NODE_ENV"] = "development"
 		command = parseDevCommandFlags(...args.slice(2))
 	} else if (arg === "export") {
+		console.log(chalk.gray(cmd()))
+		console.log()
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
 		command = parseExportCommandFlags(...args.slice(2))
 	} else if (arg === "serve") {
+		console.log(chalk.gray(cmd()))
+		console.log()
 		process.env["__DEV__"] = "false"
 		process.env["NODE_ENV"] = "production"
 		command = parseServeCommandFlags(...args.slice(2))
 	} else {
+		console.log(chalk.gray(cmd()))
+		console.log()
 		log.error(`No such command '${arg}'. Use one of these commands:
 
 ${cmds}
@@ -238,7 +248,6 @@ Or 'retro usage' for usage.`)
 }
 
 process.on("uncaughtException", err => {
-	utils.setWillEagerlyTerminate(true)
 	process.env["STACK_TRACE"] = "true"
 	err.message = `UncaughtException: ${err.message}`
 	log.error(err)

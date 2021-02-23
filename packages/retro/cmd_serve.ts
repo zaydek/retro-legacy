@@ -1,10 +1,12 @@
 import * as esbuild from "esbuild"
+import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
 import * as p from "path"
-import * as term from "../lib/term"
 import * as types from "./types"
-import * as utils from "./utils"
+
+import chalk from "chalk"
+import logRequest from "./logRequest"
 
 // spaify converts a URL for SPA-mode.
 function spaify(_: string): string {
@@ -24,32 +26,22 @@ function ssgify(url: string): string {
 // - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 //
 const serve: types.cmd_serve = async runtime => {
+	try {
+		await fs.promises.stat("__export__")
+	} catch {
+		log.error(
+			`It looks like you’re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`,
+		)
+	}
+
 	setTimeout(() => {
-		if (utils.getWillEagerlyTerminate()) return
-		// utils.clearScreen()
-		// console.log()
-		log.info(`Serving on port ${runtime.command.port}. Open http://localhost:${runtime.command.port}.`)
-	}, 10)
+		log.info(`${chalk.underline(`http://localhost:${runtime.command.port}`)}`)
+	}, 25)
 
 	// prettier-ignore
 	const result = await esbuild.serve({
 		servedir: runtime.directories.exportDir,
-		onRequest: (args: esbuild.ServeOnRequestArgs) => {
-			let color: Function
-			if (args.status >= 200 && args.status < 300) {
-				color = term.green
-			} else {
-				color = term.red
-			}
-			let descriptMs = ""
-			if (args.status >= 200 && args.status < 300) {
-				descriptMs += ` (${args.timeInMS}ms)`
-				// if (args.timeInMS === 0) {
-				// 	descriptMs = descriptMs.slice(0, -1) + ` - ${term.teal("cached")})`
-				// }
-			}
-			console.log(`${" ".repeat(2)}${args.method} ${args.path} ${color(args.status)}${descriptMs}`)
-		},
+		onRequest: (args: esbuild.ServeOnRequestArgs) => logRequest(args),
 	}, {})
 
 	let transformURL = ssgify
@@ -57,18 +49,23 @@ const serve: types.cmd_serve = async runtime => {
 		transformURL = spaify
 	}
 
-	// The proxy server.
 	const proxySrv = http.createServer((req, res) => {
-		// The proxy request.
-		const proxyReq = http.request({ ...req, path: transformURL(req.url!), port: result.port }, proxyRes => {
-			// The proxy response.
+		const options = {
+			hostname: result.host,
+			port: result.port,
+			path: transformURL(req.url!),
+			method: req.method,
+			headers: req.headers,
+		}
+		const proxyReq = http.request(options, proxyRes => {
+			// Bad request:
 			if (proxyRes.statusCode === 404) {
-				res.writeHead(200, { "Content-Type": "text/plain" })
-				res.end("404 page not found")
-			} else {
-				res.writeHead(proxyRes.statusCode!, proxyRes.headers)
-				proxyRes.pipe(res, { end: true })
+				res.writeHead(404, { "Content-Type": "text/plain" })
+				res.end("404 - Not Found")
+				return
 			}
+			res.writeHead(proxyRes.statusCode!, proxyRes.headers)
+			proxyRes.pipe(res, { end: true })
 		})
 		req.pipe(proxyReq, { end: true })
 	})

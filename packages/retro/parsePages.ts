@@ -1,8 +1,9 @@
 import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
-import * as term from "../lib/term"
 import * as types from "./types"
+
+import chalk from "chalk"
 
 // prettier-ignore
 interface ParsedPath {
@@ -222,7 +223,7 @@ URI characters are described by RFC 3986:
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
 	           / "*" / "+" / "," / ";" / "="
 
-${term.boldUnderline("https://tools.ietf.org/html/rfc3986")}`)
+${chalk.underline("https://tools.ietf.org/html/rfc3986")}`)
 	}
 
 	const pages: types.PageMeta[] = []
