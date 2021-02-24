@@ -24,17 +24,17 @@ export default function logRequest(args: esbuild.ServeOnRequestArgs): void {
 
 	const ok = args.status >= 200 && args.status < 300
 
-	let color = (...args: unknown[]): string => args.join(" ")
+	let pretty = term.noop
 	if (!ok) {
-		color = (...args: unknown[]): string => term.red(args.join(" "))
+		pretty = term.red
 	}
 
 	const format = `\x2003:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`
 	const result = format
 		.replace("03:04:05.000 AM", term.dim(`${hh}:${mm}:${ss}.${ms} ${am}`))
-		.replace(`${args.method} ${args.path}`, color(args.method, args.path))
+		.replace(`${args.method} ${args.path}`, pretty(args.method, args.path))
 		.replace(" - ", " " + term.dim("-" + "-".repeat(Math.max(0, 65 - format.length))) + " ")
-		.replace("200", color(args.status))
+		.replace("200", pretty(args.status))
 		.replace("(0ms)", term.dim(`(${args.timeInMS}ms)`))
 
 	let log = (...args: unknown[]): void => console.log(...args)

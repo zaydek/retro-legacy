@@ -100,6 +100,7 @@ function build(...codes) {
   }
   return format2;
 }
+var noop = (...args) => args.join(" ");
 var normal = build("[0m");
 var bold = build("[1m");
 var dim = build("[2m");
@@ -765,12 +766,12 @@ function getTimeInfo() {
 function logRequest(args) {
   const {hh, mm, ss, am, ms} = getTimeInfo();
   const ok2 = args.status >= 200 && args.status < 300;
-  let color = (...args2) => args2.join(" ");
+  let c = noop;
   if (!ok2) {
-    color = (...args2) => red(args2.join(" "));
+    c = red;
   }
   const format2 = ` 03:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`;
-  const result = format2.replace("03:04:05.000 AM", dim(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, color(args.method, args.path)).replace(" - ", " " + dim("-" + "-".repeat(Math.max(0, 65 - format2.length))) + " ").replace("200", color(args.status)).replace("(0ms)", dim(`(${args.timeInMS}ms)`));
+  const result = format2.replace("03:04:05.000 AM", dim(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, c(args.method, args.path)).replace(" - ", " " + dim("-" + "-".repeat(Math.max(0, 65 - format2.length))) + " ").replace("200", c(args.status)).replace("(0ms)", dim(`(${args.timeInMS}ms)`));
   let log6 = (...args2) => console.log(...args2);
   if (!ok2) {
     log6 = (...args2) => console.error(...args2);

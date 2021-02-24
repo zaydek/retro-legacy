@@ -120,12 +120,15 @@ function build(...codes: string[]): BuilderFunction {
 
 	const format = (...args: unknown[]): string => {
 		const distinct = [...set].join("")
-		const str = distinct + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + distinct) + "\x1b[0m"
-		return cleanTerminalString(str)
+		const out = distinct + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + distinct) + "\x1b[0m"
+		// return cleanTerminalString(out)
+		return out
 	}
 
 	for (const { name, code } of options) {
 		;(format as FlexibleBuilderFunction)[name] = (...args: unknown[]): string => {
+			// codes.push(code)
+			// return format(...args)
 			return build(...[...codes, code])(...args)
 		}
 	}
@@ -135,6 +138,7 @@ function build(...codes: string[]): BuilderFunction {
 	return format as BuilderFunction
 }
 
+export const noop = (...args: unknown[]): string => args.join(" ")
 export const normal = build("\x1b[0m")
 export const bold = build("\x1b[1m")
 export const dim = build("\x1b[2m")
