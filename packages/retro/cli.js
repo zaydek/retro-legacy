@@ -1789,8 +1789,8 @@ ${import_chalk3.default.underline("https://tools.ietf.org/html/rfc3986")}`);
 // packages/retro/runServerGuards.ts
 var fs2 = __toModule(require("fs"));
 var p2 = __toModule(require("path"));
-async function runServerGuards(dirConfig) {
-  const dirs = Object.entries(dirConfig).map(([_, dir]) => dir);
+async function runServerGuards(directories) {
+  const dirs = Object.entries(directories).map(([_, dir]) => dir);
   for (const dir of dirs) {
     try {
       await fs2.promises.stat(dir);
@@ -1798,7 +1798,7 @@ async function runServerGuards(dirConfig) {
       fs2.promises.mkdir(dir, {recursive: true});
     }
   }
-  const path = p2.join(dirConfig.publicDir, "index.html");
+  const path = p2.join(directories.publicDir, "index.html");
   try {
     const data = await fs2.promises.readFile(path);
     const text = data.toString();
@@ -1890,7 +1890,7 @@ export function serverPaths() {
 Note paths are directory-scoped.`;
 }
 function errServerPropsReturn(src) {
-  return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+  return `${src}.serverProps: 'serverProps' does not resolve to an object.
 
 For example:
 
@@ -1899,13 +1899,19 @@ export function serverProps() {
 }`;
 }
 function errServerPathsReturn(src) {
-  return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+  return `${src}.serverPaths: 'serverPaths' does not resolve to an object.
 
 For example:
 
-export function serverProps() {
-	return { ... }
-}`;
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}
+
+Note paths are directory-scoped.`;
 }
 function errServerPathsMismatch(src) {
   return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
@@ -1940,7 +1946,8 @@ async function exportPage(runtime, meta, mod) {
     error(`${meta.route.src}.Head: ${err.message}`);
   }
   let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root"></div>`;
+		<div id="root"></div>
+		<script src="/app.js"></script>`;
   try {
     if (typeof mod.default === "function") {
       const renderString = ReactDOMServer.renderToString(React.createElement(mod.default, meta.props));
@@ -2033,6 +2040,13 @@ async function resolveServerRouter(runtime) {
   console.log();
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
+    let dur = function(d1, d2) {
+      const delta = d2 - d1;
+      if (delta < 100) {
+        return `${delta}ms`;
+      }
+      return `${(delta / 1e3).toFixed(1)}s`;
+    };
     const entryPoints = [page.src];
     const outfile = p3.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
     try {
@@ -2060,6 +2074,8 @@ async function resolveServerRouter(runtime) {
       error(err);
       process.exit(1);
     }
+    const l1 = runtime.directories.srcPagesDir.length;
+    const l2 = runtime.directories.exportDir.length;
     if (page.type === "static") {
       const d1 = Date.now();
       const meta = await resolveStaticRouteMeta(runtime, page, outfile);
@@ -2069,7 +2085,7 @@ async function resolveServerRouter(runtime) {
       router[meta.route.path] = meta;
       const d2 = Date.now();
       const sep2 = import_chalk4.default.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)));
-      console.log(`${" ".repeat(2)}${import_chalk4.default.green(`${meta.route.src} ${sep2} ${meta.route.dst} (${d2 - d1}ms)`)}`);
+      console.log(`${" ".repeat(2)}${import_chalk4.default.green(`${meta.route.src.slice(l1)} ${sep2} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`);
     }
     if (page.type === "dynamic") {
       const d1 = Date.now();
@@ -2081,11 +2097,10 @@ async function resolveServerRouter(runtime) {
         router[meta.route.path] = meta;
         const d2 = Date.now();
         const sep2 = import_chalk4.default.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)));
-        console.log(`${" ".repeat(2)}${import_chalk4.default.cyan(`${meta.route.src} ${sep2} ${meta.route.dst} (${d2 - d1}ms)`)}`);
+        console.log(`${" ".repeat(2)}${import_chalk4.default.cyan(`${meta.route.src.slice(l1)} ${sep2} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`);
       }
     }
   }
-  console.log();
   return router;
 }
 function prettyJSON(str) {
@@ -2096,7 +2111,7 @@ async function renderAppSource(runtime, router) {
   const distinctRoutes = runtime.pages.filter((route) => distinctComponents.includes(route.component)).sort((a, b) => a.component.localeCompare(b.component));
   return `import React from "react"
 import ReactDOM from "react-dom"
-import { Route, Router } from "../router"
+import { Route, Router } from "../packages/router"
 
 // Components
 ${distinctRoutes.map((route) => `import ${route.component} from "../${route.src}"`).join("\n")}
@@ -2132,7 +2147,35 @@ var cmd_export = async (runtime) => {
   runtime.pages = await parsePages(runtime.directories);
   const router = await resolveServerRouter(runtime);
   const appSource = await renderAppSource(runtime, router);
-  console.log(appSource);
+  const appSourcePath = p3.join(runtime.directories.cacheDir, "app.js");
+  await fs3.promises.writeFile(appSourcePath, appSource);
+  const entryPoints = [appSourcePath];
+  const outfile = p3.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
+  try {
+    const result = await esbuild.build({
+      bundle: true,
+      define: {
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+      },
+      entryPoints,
+      format: "iife",
+      inject: ["packages/retro/react-shim.js"],
+      loader: {".js": "jsx"},
+      logLevel: "silent",
+      outfile
+    });
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(formatMessage(warning2, import_chalk4.default.yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    error(err);
+    process.exit(1);
+  }
+  console.log();
 };
 var cmd_export_default = cmd_export;
 

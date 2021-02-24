@@ -4,8 +4,8 @@ import * as p from "path"
 import * as types from "./types"
 
 // runServerGuards tests for the presence of directories and public/index.html.
-export default async function runServerGuards(dirConfig: types.DirConfiguration): Promise<void> {
-	const dirs = Object.entries(dirConfig).map(([_, dir]) => dir)
+export default async function runServerGuards(directories: types.DirConfiguration): Promise<void> {
+	const dirs = Object.entries(directories).map(([_, dir]) => dir)
 
 	// Guards directories:
 	for (const dir of dirs) {
@@ -17,7 +17,7 @@ export default async function runServerGuards(dirConfig: types.DirConfiguration)
 	}
 
 	// Guards public/index.html:
-	const path = p.join(dirConfig.publicDir, "index.html")
+	const path = p.join(directories.publicDir, "index.html")
 	try {
 		const data = await fs.promises.readFile(path)
 		const text = data.toString()

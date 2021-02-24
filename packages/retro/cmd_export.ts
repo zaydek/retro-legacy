@@ -64,7 +64,7 @@ Note paths are directory-scoped.`
 }
 
 function errServerPropsReturn(src: string): string {
-	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+	return `${src}.serverProps: 'serverProps' does not resolve to an object.
 
 For example:
 
@@ -73,15 +73,20 @@ export function serverProps() {
 }`
 }
 
-// TODO
 function errServerPathsReturn(src: string): string {
-	return `${src}: 'typeof props !== "object"'; 'serverProps' must return an object.
+	return `${src}.serverPaths: 'serverPaths' does not resolve to an object.
 
 For example:
 
-export function serverProps() {
-	return { ... }
-}`
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}
+
+Note paths are directory-scoped.`
 }
 
 function errServerPathsMismatch(src: string): string {
@@ -178,7 +183,8 @@ async function exportPage(runtime: types.Runtime, meta: RouteMeta, mod: PageModu
 	}
 
 	let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root"></div>`
+		<div id="root"></div>
+		<script src="/app.js"></script>`
 	try {
 		if (typeof mod.default === "function") {
 			const renderString = ReactDOMServer.renderToString(React.createElement(mod.default, meta.props))
@@ -341,6 +347,17 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			process.exit(1)
 		}
 
+		const l1 = runtime.directories.srcPagesDir.length
+		const l2 = runtime.directories.exportDir.length
+
+		function dur(d1: number, d2: number): string {
+			const delta = d2 - d1
+			if (delta < 100) {
+				return `${delta}ms`
+			}
+			return `${(delta / 1e3).toFixed(1)}s`
+		}
+
 		// Resolve static page:
 		if (page.type === "static") {
 			const d1 = Date.now()
@@ -351,7 +368,11 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			router[meta.route.path] = meta
 			const d2 = Date.now()
 			const sep = chalk.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)))
-			console.log(`${" ".repeat(2)}${chalk.green(`${meta.route.src} ${sep} ${meta.route.dst} (${d2 - d1}ms)`)}`)
+			console.log(
+				`${" ".repeat(2)}${chalk.green(
+					`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`,
+				)}`,
+			)
 		}
 
 		// Resolve dynamic pages:
@@ -365,12 +386,16 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				router[meta.route.path] = meta
 				const d2 = Date.now()
 				const sep = chalk.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)))
-				console.log(`${" ".repeat(2)}${chalk.cyan(`${meta.route.src} ${sep} ${meta.route.dst} (${d2 - d1}ms)`)}`)
+				console.log(
+					`${" ".repeat(2)}${chalk.cyan(
+						`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`,
+					)}`,
+				)
 			}
 		}
 	}
 
-	console.log() // "\n"
+	// console.log() // "\n"
 	return router
 }
 
@@ -390,7 +415,7 @@ export async function renderAppSource(runtime: types.Runtime<types.ExportCommand
 
 	return `import React from "react"
 import ReactDOM from "react-dom"
-import { Route, Router } from "../router"
+import { Route, Router } from "../packages/router"
 
 // Components
 ${distinctRoutes.map(route => `import ${route.component} from "../${route.src}"`).join("\n")}
@@ -442,43 +467,43 @@ const cmd_export: types.cmd_export = async runtime => {
 	// console.log(router)
 
 	const appSource = await renderAppSource(runtime, router)
-	console.log(appSource)
+	const appSourcePath = p.join(runtime.directories.cacheDir, "app.js")
+	await fs.promises.writeFile(appSourcePath, appSource)
 
-	// const appSourcePath = p.join(runtime.directoryConfiguration.cacheDir, "app.js")
-	// await fs.promises.writeFile(appSourcePath, appSource)
-	//
-	// // Generate paths for esbuild:
-	// const entryPoints = [appSourcePath]
-	// const outfile = entryPoints[0]!.replace(
-	// 	new RegExp("^" + runtime.directoryConfiguration.cacheDir.replace("/", "\\/")),
-	// 	runtime.directoryConfiguration.exportDir,
-	// )
-	//
-	// await esbuild.build({
-	// 	bundle: true,
-	// 	define: {
-	// 		__DEV__: process.env.__DEV__!,
-	// 		"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
-	// 	},
-	// 	entryPoints,
-	// 	format: "iife", // DOM
-	// 	inject: ["scripts/react-shim.js"],
-	// 	loader: { ".js": "jsx" },
-	// 	logLevel: "silent", // TODO
-	// 	minify: true,
-	// 	outfile,
-	// 	// TODO: We should probably only need to resolve plugins once.
-	// 	// plugins: [...configs.retro.plugins],
-	// })
-	// // TODO: Handle warnings, error, and hints.
+	// Generate paths for esbuild:
+	const entryPoints = [appSourcePath]
+	const outfile = p.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length))
+
+	try {
+		const result = await esbuild.build({
+			bundle: true,
+			define: {
+				__DEV__: process.env.__DEV__!,
+				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+			},
+			entryPoints,
+			// external: ["react", "react-dom"],
+			format: "iife", // DOM
+			inject: ["packages/retro/react-shim.js"],
+			loader: { ".js": "jsx" },
+			logLevel: "silent", // TODO
+			// minify: true,
+			outfile,
+			// plugins: [...configs.retro.plugins], // TODO
+		})
+		// TODO: Add support for hints.
+		if (result.warnings.length > 0) {
+			for (const warning of result.warnings) {
+				log.warning(utils.formatMessage(warning, chalk.yellow))
+			}
+			process.exit(1)
+		}
+	} catch (err) {
+		log.error(err)
+		process.exit(1)
+	}
+
+	console.log() // "\n"
 }
 
 export default cmd_export
-
-// ;(async () => {
-// 	try {
-// 		await run(require("../__cache__/runtime.json"))
-// 	} catch (error) {
-// 		console.error(error.stack)
-// 	}
-// })()
