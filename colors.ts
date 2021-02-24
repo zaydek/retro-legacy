@@ -121,7 +121,7 @@ function build(...codes: string[]): BuilderFunction {
 	const format = (...args: unknown[]): string => {
 		const distinct = [...set].join("")
 		const str = distinct + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + distinct) + "\x1b[0m"
-		return str
+		return clean(str)
 	}
 
 	for (const { name, code } of options) {
@@ -156,20 +156,8 @@ export const bgMagenta = build("\x1b[45m")
 export const bgCyan = build("\x1b[46m")
 export const bgWhite = build("\x1b[47m")
 
-// // console.log("\x1B[31mhello\x1B[36m\x1B[47mhello\x1B[0m\x1B[31m!\x1B[0m")
-// // console.log({
-// // 	out: cleanTerminalString("\x1b[31m\x1b[32m\x1b[33m\x1b[34mhello\x1b[0m"),
-// // })
-//
-// // console.log(red.blue("hello"))
-// // console.log({ out: bold.underline(`Hello, ${red("world")}!`) })
 // console.log(cleanTerminalString(bold.underline(`Hello, ${red("world")}!`)))
-// // console.log({ out: cleanTerminalString(bold.underline(`Hello, ${red("world")}!`)) })
 console.log({ out: bold.underline(`Hello, ${red("world")}!`) })
 console.log(bold.underline(`Hello, ${red("world")}!`))
-// // console.log("\x1B[1;4mHello, \x1B[31mworld\x1B[0;1m\x1B[4m!\x1B[0m")
-
-// console.log(`${" ".repeat(2)}${bold(">")} ${bold.green("ok:")} ${bold("hehe")}`)
-// console.log({ out: `${" ".repeat(2)}${bold(">")} ${bold.green("ok:")} ${bold("hehe")}` })
-// console.log({ out: `${bold.green("ok:")} ${bold("hehe")}` })
-// console.log(`${bold.green("ok:")} ${bold("hehe")}`)
+console.log({ out: `${bold.green("ok:")} ${bold("hehe")}` })
+console.log(`${bold.green("ok:")} ${bold("hehe")}`)

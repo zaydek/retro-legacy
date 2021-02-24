@@ -1,4 +1,4 @@
-import chalk from "chalk"
+import * as term from "../lib/term"
 
 let once = false
 
@@ -23,7 +23,7 @@ function format(...args: unknown[]): string {
 export function ok(...args: unknown[]): void {
 	const message = format(...args)
 	if (!once) console.log()
-	console.log(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.green("ok:")} ${chalk.bold(message)}`)
+	console.log(`\x20\x20${term.bold(">")} ${term.bold.green("ok:")} ${term.bold(message)}`)
 	console.log()
 	once = true
 }
@@ -32,7 +32,7 @@ export function ok(...args: unknown[]): void {
 export function warning(...args: unknown[]): void {
 	const message = format(...args)
 	if (!once) console.warn()
-	console.warn(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.yellow("warning:")} ${chalk.bold(message)}`)
+	console.warn(`\x20\x20${term.bold(">")} ${term.bold.yellow("warning:")} ${term.bold(message)}`)
 	console.warn()
 	once = true
 }
@@ -43,13 +43,12 @@ export function error(...args: unknown[]): void {
 	const traceEnabled = process.env["STACK_TRACE"] === "true"
 	if (!traceEnabled) {
 		if (!once) console.error()
-		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("error:")} ${chalk.bold(message)}`)
+		console.error(`\x20\x20${term.bold(">")} ${term.bold.red("error:")} ${term.bold(message)}`)
 		console.error()
 	} else {
 		if (!once) console.error()
-		console.error(`${" ".repeat(2)}${chalk.bold(">")} ${chalk.bold.red("error:")} ${chalk.bold(message)}`)
+		console.error(`\x20\x20${term.bold(">")} ${term.bold.red("error:")} ${term.bold(message)}`)
 		console.error()
-		// console.error({ error: message }) // TODO?
 	}
 	process.exit(0)
 }

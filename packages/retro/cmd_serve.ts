@@ -3,9 +3,9 @@ import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
 import * as p from "path"
+import * as term from "../lib/term"
 import * as types from "./types"
 
-import chalk from "chalk"
 import logRequest from "./logRequest"
 
 // spaify converts a URL for SPA-mode.
@@ -35,7 +35,7 @@ const serve: types.cmd_serve = async runtime => {
 	}
 
 	setTimeout(() => {
-		log.ok(`${chalk.underline(`http://localhost:${runtime.command.port}`)}`)
+		log.ok(`${term.underline(`http://localhost:${runtime.command.port}`)}`)
 	}, 25)
 
 	// prettier-ignore

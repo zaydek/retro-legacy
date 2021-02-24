@@ -1,6 +1,5 @@
 import * as esbuild from "esbuild"
-
-import chalk from "chalk"
+import * as term from "../lib/term"
 
 interface TimeInfo {
 	hh: string // e.g. "03"
@@ -27,16 +26,16 @@ export default function logRequest(args: esbuild.ServeOnRequestArgs): void {
 
 	let color = (...args: unknown[]): string => args.join(" ")
 	if (!ok) {
-		color = (...args: unknown[]): string => chalk.red(args.join(" "))
+		color = (...args: unknown[]): string => term.red(args.join(" "))
 	}
 
-	const format = `${" ".repeat(2)}03:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`
+	const format = `\x2003:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`
 	const result = format
-		.replace("03:04:05.000 AM", chalk.gray(`${hh}:${mm}:${ss}.${ms} ${am}`))
+		.replace("03:04:05.000 AM", term.dim(`${hh}:${mm}:${ss}.${ms} ${am}`))
 		.replace(`${args.method} ${args.path}`, color(args.method, args.path))
-		.replace(" - ", " " + chalk.gray("-" + "-".repeat(Math.max(0, 65 - format.length))) + " ")
+		.replace(" - ", " " + term.dim("-" + "-".repeat(Math.max(0, 65 - format.length))) + " ")
 		.replace("200", color(args.status))
-		.replace("(0ms)", chalk.gray(`(${args.timeInMS}ms)`))
+		.replace("(0ms)", term.dim(`(${args.timeInMS}ms)`))
 
 	let log = (...args: unknown[]): void => console.log(...args)
 	if (!ok) {

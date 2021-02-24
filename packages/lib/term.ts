@@ -30,11 +30,6 @@ interface BuilderFunction {
 	bgWhite: BuilderFunction
 }
 
-interface FlexibleBuilderFunction {
-	(...args: unknown[]): string
-	[key: string]: (...args: unknown[]) => string
-}
-
 const options = [
 	{ name: "normal", code: "\x1b[0m" },
 	{ name: "bold", code: "\x1b[1m" },
@@ -57,7 +52,7 @@ const options = [
 	{ name: "bgWhite", code: "\x1b[47m" },
 ]
 
-function clean(str: string): string {
+function cleanTerminalString(str: string): string {
 	let out = ""
 
 	let x = 0
@@ -115,30 +110,34 @@ function clean(str: string): string {
 	return out
 }
 
-function build(code: string): BuilderFunction {
-	const codes = new Set(code)
+function build(...codes: string[]): BuilderFunction {
+	interface FlexibleBuilderFunction {
+		(...args: unknown[]): string
+		[key: string]: (...args: unknown[]) => string
+	}
+
+	const set = new Set(codes)
 
 	const format = (...args: unknown[]): string => {
-		const distinct = [...codes].join("")
+		const distinct = [...set].join("")
 		const str = distinct + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + distinct) + "\x1b[0m"
-		return clean(str)
+		return cleanTerminalString(str)
 	}
 
 	for (const { name, code } of options) {
 		;(format as FlexibleBuilderFunction)[name] = (...args: unknown[]): string => {
-			codes.add(code)
-			return format(...args)
+			return build(...[...codes, code])(...args)
 		}
 	}
 
-	// NOTE: Use 'as builder' because 'const format: BuilderFunction' causes a
-	// TypeScript error: Type '(...args: unknown[]) => string' is missing the
-	// following properties from type 'BuilderFunction': ...
+	// NOTE: We cannot use 'const format: BuilderFunction' because there’s no
+	// initializer syntax for functions and methods.
 	return format as BuilderFunction
 }
 
 export const normal = build("\x1b[0m")
 export const bold = build("\x1b[1m")
+export const dim = build("\x1b[2m")
 export const underline = build("\x1b[4m")
 export const black = build("\x1b[30m")
 export const red = build("\x1b[31m")

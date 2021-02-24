@@ -1,7 +1,7 @@
 import * as log from "../lib/log"
+import * as term from "../lib/term"
 import * as types from "./types"
 
-import chalk from "chalk"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
@@ -12,13 +12,13 @@ retro serve   Serve the production-ready build
 `.trim()
 
 const usage = `
-	${chalk.bold("Usage:")}
+	${term.bold("Usage:")}
 
 		retro dev     Start the dev server
 		retro export  Export the production-ready build (SSG)
 		retro serve   Serve the production-ready build
 
-	${chalk.bold("retro dev")}
+	${term.bold("retro dev")}
 
 		Start the dev server
 
@@ -26,23 +26,23 @@ const usage = `
 			--sourcemap=...  Add source maps (default true)
 			--port=...       Port number (default 8000)
 
-	${chalk.bold("retro export")}
+	${term.bold("retro export")}
 
 		Export the production-ready build (SSG)
 
 			--cached=...     Use cached resources (default false)
 			--sourcemap=...  Add source maps (default true)
 
-	${chalk.bold("retro serve")}
+	${term.bold("retro serve")}
 
 		Serve the production-ready build
 
 			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
 			--port=...       Port number (default 8000)
 
-	${chalk.bold("Repository")}
+	${term.bold("Repository")}
 
-		${chalk.underline("https://github.com/zaydek/retro")}
+		${term.underline("https://github.com/zaydek/retro")}
 `
 
 // parseDevCommandFlags parses 'retro dev [flags]'.

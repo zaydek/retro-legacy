@@ -1,6 +1,5 @@
 import * as esbuild from "esbuild"
-
-import chalk from "chalk"
+import * as term from "../lib/term"
 
 export function testObject(value: unknown): boolean {
 	return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -15,10 +14,10 @@ export function testArray(value: unknown): boolean {
 // loc.line | loc.lineText
 //            ~~~~~~~~~~~~
 //
-export function formatMessage(msg: esbuild.Message, color: (...args: unknown[]) => void): string {
+export function formatEsbuildMessage(msg: esbuild.Message, color: (...args: unknown[]) => void): string {
 	const loc = msg.location!
 	return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
 
-	${loc.line} ${chalk.gray("|")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${chalk.gray("|")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`
+	${loc.line} ${term.dim("|")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${term.dim("|")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`
 }

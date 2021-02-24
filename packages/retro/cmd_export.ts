@@ -4,10 +4,10 @@ import * as log from "../lib/log"
 import * as p from "path"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
+import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import chalk from "chalk"
 import parsePages from "./parsePages"
 import runServerGuards from "./runServerGuards"
 
@@ -338,7 +338,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			// TODO: Add support for hints.
 			if (result.warnings.length > 0) {
 				for (const warning of result.warnings) {
-					log.warning(utils.formatMessage(warning, chalk.yellow))
+					log.warning(utils.formatEsbuildMessage(warning, term.yellow))
 				}
 				process.exit(1)
 			}
@@ -367,11 +367,9 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			}
 			router[meta.route.path] = meta
 			const d2 = Date.now()
-			const sep = chalk.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)))
+			const sep = term.dim("-".repeat(Math.max(0, 37 - meta.route.src.length)))
 			console.log(
-				`${" ".repeat(2)}${chalk.green(
-					`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`,
-				)}`,
+				`\x20\x20${term.green(`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`,
 			)
 		}
 
@@ -385,11 +383,9 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				}
 				router[meta.route.path] = meta
 				const d2 = Date.now()
-				const sep = chalk.gray("-".repeat(Math.max(0, 37 - meta.route.src.length)))
+				const sep = term.dim("-".repeat(Math.max(0, 37 - meta.route.src.length)))
 				console.log(
-					`${" ".repeat(2)}${chalk.cyan(
-						`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`,
-					)}`,
+					`\x20\x20${term.cyan(`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`,
 				)
 			}
 		}
@@ -494,7 +490,7 @@ const cmd_export: types.cmd_export = async runtime => {
 		// TODO: Add support for hints.
 		if (result.warnings.length > 0) {
 			for (const warning of result.warnings) {
-				log.warning(utils.formatMessage(warning, chalk.yellow))
+				log.warning(utils.formatEsbuildMessage(warning, term.yellow))
 			}
 			process.exit(1)
 		}
