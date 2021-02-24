@@ -358,6 +358,20 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			return `${(delta / 1e3).toFixed(1)}s`
 		}
 
+		let color: term.Builder
+		if (page.type === "static") {
+			color = term.green
+		} else {
+			color = term.cyan
+		}
+
+		let dim: term.Builder
+		if (page.type === "static") {
+			dim = term.dim.green
+		} else {
+			dim = term.dim.cyan
+		}
+
 		// Resolve static page:
 		if (page.type === "static") {
 			const d1 = Date.now()
@@ -367,9 +381,9 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 			}
 			router[meta.route.path] = meta
 			const d2 = Date.now()
-			const sep = term.dim("-".repeat(Math.max(0, 37 - meta.route.src.length)))
+			const sep = dim("-".repeat(Math.max(0, 46 - meta.route.src.length)))
 			console.log(
-				`\x20\x20${term.green(`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`,
+				color(`\x20\x20${meta.route.src.slice(l1)} ${dim(sep)} ${meta.route.dst.slice(l2)} ${dim(`(${dur(d1, d2)})`)}`),
 			)
 		}
 
@@ -383,9 +397,11 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				}
 				router[meta.route.path] = meta
 				const d2 = Date.now()
-				const sep = term.dim("-".repeat(Math.max(0, 37 - meta.route.src.length)))
+				const sep = "-".repeat(Math.max(0, 46 - meta.route.src.length))
 				console.log(
-					`\x20\x20${term.cyan(`${meta.route.src.slice(l1)} ${sep} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`,
+					color(
+						`\x20\x20${meta.route.src.slice(l1)} ${dim(sep)} ${meta.route.dst.slice(l2)} ${dim(`(${dur(d1, d2)})`)}`,
+					),
 				)
 			}
 		}

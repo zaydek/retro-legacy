@@ -102,48 +102,49 @@ function clean(str: string): string {
 	return out
 }
 
-function builder(code: string): Builder {
-	const set = new Set(code)
+function build(...codes: string[]): Builder {
+	const set = new Set(codes)
 
-	const sprint = (...args: unknown[]): string => {
-		const distinct = [...set].join("")
-		const out = distinct + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + distinct) + "\x1b[0m"
-		return clean(out)
+	function format(...args: unknown[]): string {
+		const coded = [...set].join("")
+		return clean(coded + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + coded) + "\x1b[0m")
 	}
 
 	for (const { name, code } of options) {
-		Object.defineProperty(sprint, name, {
+		Object.defineProperty(format, name, {
 			enumerable: true,
-			get: function () {
-				set.add(code)
-				return this
+			get() {
+				return build(...[...codes, code])
 			},
 		})
 	}
-	return sprint as Builder
+	return format as Builder
 }
 
 const noop = (...args: unknown[]): string => args.join(" ")
-const normal = builder("\x1b[0m")
-const bold = builder("\x1b[1m")
-const dim = builder("\x1b[2m")
-const underline = builder("\x1b[4m")
-const black = builder("\x1b[30m")
-const red = builder("\x1b[31m")
-const green = builder("\x1b[32m")
-const yellow = builder("\x1b[33m")
-const blue = builder("\x1b[34m")
-const magenta = builder("\x1b[35m")
-const cyan = builder("\x1b[36m")
-const white = builder("\x1b[37m")
-const bgBlack = builder("\x1b[40m")
-const bgRed = builder("\x1b[41m")
-const bgGreen = builder("\x1b[42m")
-const bgYellow = builder("\x1b[43m")
-const bgBlue = builder("\x1b[44m")
-const bgMagenta = builder("\x1b[45m")
-const bgCyan = builder("\x1b[46m")
-const bgWhite = builder("\x1b[47m")
+const normal = build("\x1b[0m")
+const bold = build("\x1b[1m")
+const dim = build("\x1b[2m")
+const underline = build("\x1b[4m")
+const black = build("\x1b[30m")
+const red = build("\x1b[31m")
+const green = build("\x1b[32m")
+const yellow = build("\x1b[33m")
+const blue = build("\x1b[34m")
+const magenta = build("\x1b[35m")
+const cyan = build("\x1b[36m")
+const white = build("\x1b[37m")
+const bgBlack = build("\x1b[40m")
+const bgRed = build("\x1b[41m")
+const bgGreen = build("\x1b[42m")
+const bgYellow = build("\x1b[43m")
+const bgBlue = build("\x1b[44m")
+const bgMagenta = build("\x1b[45m")
+const bgCyan = build("\x1b[46m")
+const bgWhite = build("\x1b[47m")
 
-console.log(bold.red(`hello ${blue("haha")}!`))
-console.log(bold.blue.bgRed("hello") + "!")
+// console.log(bold.red(`hello ${blue("haha")}!`))
+// console.log(bold.blue.bgRed("hello") + "!")
+
+console.log(`\x20\x20${bold(">")} ${bold.green("ok:")} ${bold("Hello")}`)
+console.log({ out: `\x20\x20${bold(">")} ${bold.green("ok:")} ${bold("Hello")}` })

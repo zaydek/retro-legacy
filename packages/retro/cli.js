@@ -23,6 +23,7 @@ var __toModule = (module2) => {
 var options = [
   {name: "normal", code: "[0m"},
   {name: "bold", code: "[1m"},
+  {name: "dim", code: "[2m"},
   {name: "underline", code: "[4m"},
   {name: "black", code: "[30m"},
   {name: "red", code: "[31m"},
@@ -41,66 +42,22 @@ var options = [
   {name: "bgCyan", code: "[46m"},
   {name: "bgWhite", code: "[47m"}
 ];
-function cleanTerminalString(str) {
-  let out = "";
-  let x = 0;
-  while (x < str.length) {
-    let codes = [];
-    let x2 = x;
-    while (str[x2] === "") {
-      x2++;
-      if (x2 >= str.length || str[x2] !== "[") {
-        break;
-      }
-      x2++;
-      const start = x2;
-      while (x2 < str.length) {
-        if (str[x2] < "0" || str[x2] > "9") {
-          break;
-        }
-        x2++;
-      }
-      const end = x2;
-      if (start === end) {
-        break;
-      }
-      if (x2 >= str.length || str[x2] !== "m") {
-        break;
-      }
-      x2++;
-      codes.push(str.slice(start, end));
-    }
-    if (codes.length > 0) {
-      out += `[${codes.join(";")}m`;
-      x = x2;
-      continue;
-    }
-    if (x2 > x) {
-      out += str.slice(x, x2);
-      x = x2;
-      continue;
-    }
-    out += str[x];
-    x++;
-  }
-  return out;
-}
 function build(...codes) {
   const set = new Set(codes);
-  const format2 = (...args) => {
-    const distinct = [...set].join("");
-    const str = distinct + args.join(" ").replaceAll("[0m", "[0m" + distinct) + "[0m";
-    return cleanTerminalString(str);
-  };
+  function format2(...args) {
+    const coded = [...set].join("");
+    return coded + args.join(" ").replaceAll("[0m", "[0m" + coded) + "[0m";
+  }
   for (const {name, code} of options) {
-    ;
-    format2[name] = (...args) => {
-      return build(...[...codes, code])(...args);
-    };
+    Object.defineProperty(format2, name, {
+      enumerable: true,
+      get() {
+        return build(...[...codes, code]);
+      }
+    });
   }
   return format2;
 }
-var noop = (...args) => args.join(" ");
 var normal = build("[0m");
 var bold = build("[1m");
 var dim = build("[2m");
@@ -644,6 +601,18 @@ async function resolveServerRouter(runtime) {
     }
     const l1 = runtime.directories.srcPagesDir.length;
     const l2 = runtime.directories.exportDir.length;
+    let color;
+    if (page.type === "static") {
+      color = green;
+    } else {
+      color = cyan;
+    }
+    let dim2;
+    if (page.type === "static") {
+      dim2 = dim.green;
+    } else {
+      dim2 = dim.cyan;
+    }
     if (page.type === "static") {
       const d1 = Date.now();
       const meta = await resolveStaticRouteMeta(runtime, page, outfile);
@@ -652,8 +621,8 @@ async function resolveServerRouter(runtime) {
       }
       router[meta.route.path] = meta;
       const d2 = Date.now();
-      const sep2 = dim("-".repeat(Math.max(0, 37 - meta.route.src.length)));
-      console.log(`  ${green(`${meta.route.src.slice(l1)} ${sep2} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`);
+      const sep2 = dim2("-".repeat(Math.max(0, 46 - meta.route.src.length)));
+      console.log(color(`  ${meta.route.src.slice(l1)} ${dim2(sep2)} ${meta.route.dst.slice(l2)} ${dim2(`(${dur(d1, d2)})`)}`));
     }
     if (page.type === "dynamic") {
       const d1 = Date.now();
@@ -664,8 +633,8 @@ async function resolveServerRouter(runtime) {
         }
         router[meta.route.path] = meta;
         const d2 = Date.now();
-        const sep2 = dim("-".repeat(Math.max(0, 37 - meta.route.src.length)));
-        console.log(`  ${cyan(`${meta.route.src.slice(l1)} ${sep2} ${meta.route.dst.slice(l2)} (${dur(d1, d2)})`)}`);
+        const sep2 = "-".repeat(Math.max(0, 46 - meta.route.src.length));
+        console.log(color(`  ${meta.route.src.slice(l1)} ${dim2(sep2)} ${meta.route.dst.slice(l2)} ${dim2(`(${dur(d1, d2)})`)}`));
       }
     }
   }
@@ -766,12 +735,16 @@ function getTimeInfo() {
 function logRequest(args) {
   const {hh, mm, ss, am, ms} = getTimeInfo();
   const ok2 = args.status >= 200 && args.status < 300;
-  let c = noop;
+  let normal2 = normal;
   if (!ok2) {
-    c = red;
+    normal2 = red;
+  }
+  let dim2 = dim;
+  if (!ok2) {
+    dim2 = dim.red;
   }
   const format2 = ` 03:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`;
-  const result = format2.replace("03:04:05.000 AM", dim(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, c(args.method, args.path)).replace(" - ", " " + dim("-" + "-".repeat(Math.max(0, 65 - format2.length))) + " ").replace("200", c(args.status)).replace("(0ms)", dim(`(${args.timeInMS}ms)`));
+  const result = format2.replace("03:04:05.000 AM", dim2(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, normal2(args.method, args.path)).replace(" - ", " " + dim2("-" + "-".repeat(Math.max(0, 70 - format2.length))) + " ").replace("200", normal2(args.status)).replace("(0ms)", dim2(`(${args.timeInMS}ms)`));
   let log6 = (...args2) => console.log(...args2);
   if (!ok2) {
     log6 = (...args2) => console.error(...args2);

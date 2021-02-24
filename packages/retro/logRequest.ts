@@ -24,18 +24,23 @@ export default function logRequest(args: esbuild.ServeOnRequestArgs): void {
 
 	const ok = args.status >= 200 && args.status < 300
 
-	let pretty = term.noop
+	let normal = term.normal
 	if (!ok) {
-		pretty = term.red
+		normal = term.red
+	}
+
+	let dim = term.dim
+	if (!ok) {
+		dim = term.dim.red
 	}
 
 	const format = `\x2003:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`
 	const result = format
-		.replace("03:04:05.000 AM", term.dim(`${hh}:${mm}:${ss}.${ms} ${am}`))
-		.replace(`${args.method} ${args.path}`, pretty(args.method, args.path))
-		.replace(" - ", " " + term.dim("-" + "-".repeat(Math.max(0, 65 - format.length))) + " ")
-		.replace("200", pretty(args.status))
-		.replace("(0ms)", term.dim(`(${args.timeInMS}ms)`))
+		.replace("03:04:05.000 AM", dim(`${hh}:${mm}:${ss}.${ms} ${am}`))
+		.replace(`${args.method} ${args.path}`, normal(args.method, args.path))
+		.replace(" - ", " " + dim("-" + "-".repeat(Math.max(0, 70 - format.length))) + " ")
+		.replace("200", normal(args.status))
+		.replace("(0ms)", dim(`(${args.timeInMS}ms)`))
 
 	let log = (...args: unknown[]): void => console.log(...args)
 	if (!ok) {
