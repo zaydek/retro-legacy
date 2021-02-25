@@ -3,5 +3,5 @@ export function Head() {
 }
 
 export default function Page() {
-	return <h1>Hello, world!</h1>
+	return <h1>Oops, this is the wrong page</h1>
 }

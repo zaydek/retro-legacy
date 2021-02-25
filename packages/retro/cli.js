@@ -80,7 +80,6 @@ var bgCyan = build("[46m");
 var bgWhite = build("[47m");
 
 // packages/lib/log.ts
-var once = false;
 function format(...args) {
   if (args.length === 1 && args[0] instanceof Error) {
     return format(args[0].message);
@@ -93,34 +92,19 @@ function format(...args) {
     return " ".repeat(2) + each.replace("	", "  ");
   }).join("\n");
 }
-function ok(...args) {
-  const message = format(...args);
-  if (!once)
-    console.log();
-  console.log(`  ${bold(">")} ${bold.green("ok:")} ${bold(message)}`);
-  console.log();
-  once = true;
-}
 function warning(...args) {
   const message = format(...args);
-  if (!once)
-    console.warn();
-  console.warn(`  ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}`);
+  console.warn(` ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}`);
   console.warn();
-  once = true;
 }
 function error(...args) {
   const message = format(...args);
   const traceEnabled = process.env["STACK_TRACE"] === "true";
   if (!traceEnabled) {
-    if (!once)
-      console.error();
-    console.error(`  ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
+    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
     console.error();
   } else {
-    if (!once)
-      console.error();
-    console.error(`  ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
+    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
     console.error();
   }
   process.exit(0);
@@ -129,7 +113,78 @@ function error(...args) {
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
 var fs3 = __toModule(require("fs"));
-var p3 = __toModule(require("path"));
+
+// packages/retro/loggers.ts
+var p = __toModule(require("path"));
+var TERM_WIDTH = 35;
+function getTimeInfo() {
+  const date = new Date();
+  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const am = date.getHours() < 12 ? "AM" : "PM";
+  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
+  return {hh, mm, ss, am, ms};
+}
+function formatMs(ms) {
+  switch (true) {
+    case ms < 250:
+      return `${ms}ms`;
+    default:
+      return `${(ms / 1e3).toFixed(2)}s`;
+  }
+}
+var once = false;
+function serveEvent(args) {
+  const {hh, mm, ss, am, ms} = getTimeInfo();
+  const dur = formatMs(args.timeInMS);
+  let color = normal;
+  if (args.status < 200 || args.status >= 300) {
+    color = red;
+  }
+  let dimColor = dim;
+  if (args.status < 200 || args.status >= 300) {
+    dimColor = dim.red;
+  }
+  let logger = (...args2) => console.log(...args2);
+  if (args.status < 200 || args.status >= 300) {
+    logger = (...args2) => console.error(...args2);
+  }
+  const path = args.path;
+  const path_ext = p.extname(path);
+  const path_name = path.slice(1, -path_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
+  if (!once) {
+    logger();
+    once = true;
+  }
+  logger(` ${dimColor(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+}
+function exportEvent(runtime, meta, start) {
+  const {hh, mm, ss, am, ms} = getTimeInfo();
+  const dur = formatMs(Date.now() - start);
+  const l1 = runtime.directories.srcPagesDir.length;
+  const l2 = runtime.directories.exportDir.length;
+  let color = white;
+  if (meta.route.type === "dynamic") {
+    color = cyan;
+  }
+  let dimColor = dim.white;
+  if (meta.route.type === "dynamic") {
+    dimColor = dim.cyan;
+  }
+  const src = meta.route.src.slice(l1);
+  const src_ext = p.extname(src);
+  const src_name = src.slice(1, -src_ext.length);
+  const dst2 = meta.route.dst.slice(l2);
+  const dst_ext = p.extname(dst2);
+  const dst_name = dst2.slice(1, -dst_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
+  console.log(` ${dimColor(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+}
+
+// packages/retro/cmd_export.ts
+var p4 = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
 
@@ -144,13 +199,13 @@ function formatEsbuildMessage(msg, color) {
   const loc = msg.location;
   return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
 
-	${loc.line} ${dim("|")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${dim("|")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+	${loc.line} ${dim("\u2502")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${red("~".repeat(loc.length))}`;
 }
 
 // packages/retro/parsePages.ts
 var fs = __toModule(require("fs"));
-var p = __toModule(require("path"));
+var p2 = __toModule(require("path"));
 var supported = {
   ".js": true,
   ".jsx": true,
@@ -160,13 +215,13 @@ var supported = {
   ".mdx": true
 };
 function parsePath(path) {
-  const basename2 = p.basename(path);
-  const ext = p.extname(path);
+  const basename2 = p2.basename(path);
+  const ext = p2.extname(path);
   const name = basename2.slice(0, -ext.length);
   return {src: path, basename: basename2, name, ext};
 }
 function dst(directories, path) {
-  const syntax = p.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
+  const syntax = p2.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
   return syntax.slice(0, -path.ext.length) + ".html";
 }
 function toComponentSyntax(directories, parsed, {dynamic}) {
@@ -175,7 +230,7 @@ function toComponentSyntax(directories, parsed, {dynamic}) {
     path = path.replace(dynamicRegex, "$1$3");
   }
   let syntax = "";
-  for (const part of path.split(p.sep)) {
+  for (const part of path.split(p2.sep)) {
     if (!part.length)
       continue;
     syntax += part[0].toUpperCase() + part.slice(1);
@@ -221,7 +276,7 @@ async function readdirAll(src) {
   async function recurse(src2) {
     const ls = await fs.promises.readdir(src2);
     for (const each of ls) {
-      const path = p.join(src2, each);
+      const path = p2.join(src2, each);
       if ((await fs.promises.stat(path)).isDirectory()) {
         arr.push(parsePath(path));
         await recurse(path);
@@ -313,7 +368,7 @@ ${underline("https://tools.ietf.org/html/rfc3986")}`);
 
 // packages/retro/runServerGuards.ts
 var fs2 = __toModule(require("fs"));
-var p2 = __toModule(require("path"));
+var p3 = __toModule(require("path"));
 async function runServerGuards(directories) {
   const dirs = Object.entries(directories).map(([_, dir]) => dir);
   for (const dir of dirs) {
@@ -323,7 +378,7 @@ async function runServerGuards(directories) {
       fs2.promises.mkdir(dir, {recursive: true});
     }
   }
-  const path = p2.join(directories.publicDir, "index.html");
+  const path = p3.join(directories.publicDir, "index.html");
   try {
     const data = await fs2.promises.readFile(path);
     const text = data.toString();
@@ -454,11 +509,11 @@ function testServerPropsReturn(value) {
   return testObject(value);
 }
 function testServerPathsReturn(value) {
-  const ok2 = testArray(value) && value.every((each) => {
-    const ok3 = testObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && testObject(each.props));
-    return ok3;
+  const ok = testArray(value) && value.every((each) => {
+    const ok2 = testObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && testObject(each.props));
+    return ok2;
   });
-  return ok2;
+  return ok;
 }
 async function exportPage(runtime, meta, mod) {
   let head = "<!-- <Head> -->";
@@ -482,14 +537,14 @@ async function exportPage(runtime, meta, mod) {
     error(`${meta.route.src}.default: ${err.message}`);
   }
   const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
-  await fs3.promises.mkdir(p3.dirname(meta.route.dst), {recursive: true});
+  await fs3.promises.mkdir(p4.dirname(meta.route.dst), {recursive: true});
   await fs3.promises.writeFile(meta.route.dst, rendered);
 }
 async function resolveStaticRouteMeta(runtime, page, outfile) {
   let props = {path: page.path};
   let mod;
   try {
-    mod = require(p3.join("..", "..", outfile));
+    mod = require(p4.join("..", "..", outfile));
   } catch {
   }
   if ("serverProps" in mod && typeof mod.serverProps !== "function") {
@@ -519,7 +574,7 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
   const metas = [];
   let mod;
   try {
-    mod = require(p3.join("..", "..", outfile));
+    mod = require(p4.join("..", "..", outfile));
   } catch {
   }
   if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
@@ -538,8 +593,8 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
       error(`${page.src}.serverPaths: ${err.message}`);
     }
     for (const path of paths) {
-      const path_ = p3.join(p3.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-      const dst2 = p3.join(runtime.directories.exportDir, path_ + ".html");
+      const path_ = p4.join(p4.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p4.join(runtime.directories.exportDir, path_ + ".html");
       metas.push({
         route: {
           type: "dynamic",
@@ -560,20 +615,13 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
   }
   return metas;
 }
+var once2 = false;
 async function resolveServerRouter(runtime) {
   const router = {};
-  console.log();
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
-    let dur = function(d1, d2) {
-      const delta = d2 - d1;
-      if (delta < 100) {
-        return `${delta}ms`;
-      }
-      return `${(delta / 1e3).toFixed(1)}s`;
-    };
     const entryPoints = [page.src];
-    const outfile = p3.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
+    const outfile = p4.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
     try {
       const result = await service.build({
         bundle: true,
@@ -596,48 +644,38 @@ async function resolveServerRouter(runtime) {
         process.exit(1);
       }
     } catch (err) {
-      error(err);
-      process.exit(1);
+      error(formatEsbuildMessage(err.errors[0], bold.red));
     }
-    const l1 = runtime.directories.srcPagesDir.length;
-    const l2 = runtime.directories.exportDir.length;
-    let color;
+    let start = Date.now();
     if (page.type === "static") {
-      color = green;
-    } else {
-      color = cyan;
-    }
-    let dim2;
-    if (page.type === "static") {
-      dim2 = dim.green;
-    } else {
-      dim2 = dim.cyan;
-    }
-    if (page.type === "static") {
-      const d1 = Date.now();
       const meta = await resolveStaticRouteMeta(runtime, page, outfile);
       if (router[meta.route.path] !== void 0) {
         error(errPathExists(meta.route, router[meta.route.path].route));
       }
       router[meta.route.path] = meta;
-      const d2 = Date.now();
-      const sep2 = dim2("-".repeat(Math.max(0, 46 - meta.route.src.length)));
-      console.log(color(`  ${meta.route.src.slice(l1)} ${dim2(sep2)} ${meta.route.dst.slice(l2)} ${dim2(`(${dur(d1, d2)})`)}`));
+      if (!once2) {
+        console.log();
+        once2 = true;
+      }
+      exportEvent(runtime, meta, start);
     }
     if (page.type === "dynamic") {
-      const d1 = Date.now();
       const metas = await resolveDynamicRouteMetas(runtime, page, outfile);
       for (const meta of metas) {
         if (router[meta.route.path] !== void 0) {
           error(errPathExists(meta.route, router[meta.route.path].route));
         }
         router[meta.route.path] = meta;
-        const d2 = Date.now();
-        const sep2 = "-".repeat(Math.max(0, 46 - meta.route.src.length));
-        console.log(color(`  ${meta.route.src.slice(l1)} ${dim2(sep2)} ${meta.route.dst.slice(l2)} ${dim2(`(${dur(d1, d2)})`)}`));
+        if (!once2) {
+          console.log();
+          once2 = true;
+        }
+        exportEvent(runtime, meta, start);
+        start = 0;
       }
     }
   }
+  console.log();
   return router;
 }
 function prettyJSON(str) {
@@ -679,15 +717,15 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 }
 var cmd_export = async (runtime) => {
   await runServerGuards(runtime.directories);
-  const data = await fs3.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
+  const data = await fs3.promises.readFile(p4.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
   const router = await resolveServerRouter(runtime);
   const appSource = await renderAppSource(runtime, router);
-  const appSourcePath = p3.join(runtime.directories.cacheDir, "app.js");
+  const appSourcePath = p4.join(runtime.directories.cacheDir, "app.js");
   await fs3.promises.writeFile(appSourcePath, appSource);
   const entryPoints = [appSourcePath];
-  const outfile = p3.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
+  const outfile = p4.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
   try {
     const result = await esbuild.build({
       bundle: true,
@@ -700,6 +738,7 @@ var cmd_export = async (runtime) => {
       inject: ["packages/retro/react-shim.js"],
       loader: {".js": "jsx"},
       logLevel: "silent",
+      minify: true,
       outfile
     });
     if (result.warnings.length > 0) {
@@ -712,7 +751,6 @@ var cmd_export = async (runtime) => {
     error(err);
     process.exit(1);
   }
-  console.log();
 };
 var cmd_export_default = cmd_export;
 
@@ -720,46 +758,14 @@ var cmd_export_default = cmd_export;
 var esbuild2 = __toModule(require("esbuild"));
 var fs4 = __toModule(require("fs"));
 var http = __toModule(require("http"));
-var p4 = __toModule(require("path"));
-
-// packages/retro/logRequest.ts
-function getTimeInfo() {
-  const date = new Date();
-  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  const am = date.getHours() < 12 ? "AM" : "PM";
-  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
-  return {hh, mm, ss, am, ms};
-}
-function logRequest(args) {
-  const {hh, mm, ss, am, ms} = getTimeInfo();
-  const ok2 = args.status >= 200 && args.status < 300;
-  let normal2 = normal;
-  if (!ok2) {
-    normal2 = red;
-  }
-  let dim2 = dim;
-  if (!ok2) {
-    dim2 = dim.red;
-  }
-  const format2 = ` 03:04:05.000 AM  ${args.method} ${args.path} - 200 (0ms)`;
-  const result = format2.replace("03:04:05.000 AM", dim2(`${hh}:${mm}:${ss}.${ms} ${am}`)).replace(`${args.method} ${args.path}`, normal2(args.method, args.path)).replace(" - ", " " + dim2("-" + "-".repeat(Math.max(0, 70 - format2.length))) + " ").replace("200", normal2(args.status)).replace("(0ms)", dim2(`(${args.timeInMS}ms)`));
-  let log6 = (...args2) => console.log(...args2);
-  if (!ok2) {
-    log6 = (...args2) => console.error(...args2);
-  }
-  log6(result);
-}
-
-// packages/retro/cmd_serve.ts
+var p5 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p4.extname(url) === "")
+  if (p5.extname(url) === "")
     return url + ".html";
   return url;
 }
@@ -769,12 +775,9 @@ var serve2 = async (runtime) => {
   } catch {
     error(`It looks like you\u2019re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`);
   }
-  setTimeout(() => {
-    ok(`${underline(`http://localhost:${runtime.command.port}`)}`);
-  }, 25);
   const result = await esbuild2.serve({
     servedir: runtime.directories.exportDir,
-    onRequest: (args) => logRequest(args)
+    onRequest: (args) => serveEvent(args)
   }, {});
   let transformURL = ssgify;
   if (runtime.command.mode === "spa") {
@@ -810,37 +813,37 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim();
 var usage = `
-	${bold("Usage:")}
+  ${bold("Usage:")}
 
-		retro dev     Start the dev server
-		retro export  Export the production-ready build (SSG)
-		retro serve   Serve the production-ready build
+  retro dev     Start the dev server
+  retro export  Export the production-ready build (SSG)
+  retro serve   Serve the production-ready build
 
-	${bold("retro dev")}
+  ${bold("retro dev")}
 
-		Start the dev server
+    Start the dev server
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
-			--port=...       Port number (default 8000)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
+      --port=...       Port number (default 8000)
 
-	${bold("retro export")}
+  ${bold("retro export")}
 
-		Export the production-ready build (SSG)
+    Export the production-ready build (SSG)
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
 
-	${bold("retro serve")}
+  ${bold("retro serve")}
 
-		Serve the production-ready build
+    Serve the production-ready build
 
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-			--port=...       Port number (default 8000)
+      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+      --port=...       Port number (default 8000)
 
-	${bold("Repository")}
+  ${bold("Repository")}
 
-		${underline("https://github.com/zaydek/retro")}
+  ${underline("https://github.com/zaydek/retro")}
 `;
 function parseDevCommandFlags(...args) {
   const cmd = {

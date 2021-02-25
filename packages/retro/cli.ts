@@ -12,37 +12,37 @@ retro serve   Serve the production-ready build
 `.trim()
 
 const usage = `
-	${term.bold("Usage:")}
+\x20\x20${term.bold("Usage:")}
 
-		retro dev     Start the dev server
-		retro export  Export the production-ready build (SSG)
-		retro serve   Serve the production-ready build
+  retro dev     Start the dev server
+  retro export  Export the production-ready build (SSG)
+  retro serve   Serve the production-ready build
 
-	${term.bold("retro dev")}
+  ${term.bold("retro dev")}
 
-		Start the dev server
+    Start the dev server
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
-			--port=...       Port number (default 8000)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
+      --port=...       Port number (default 8000)
 
-	${term.bold("retro export")}
+  ${term.bold("retro export")}
 
-		Export the production-ready build (SSG)
+    Export the production-ready build (SSG)
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
+      --cached=...     Use cached resources (default false)
+      --sourcemap=...  Add source maps (default true)
 
-	${term.bold("retro serve")}
+  ${term.bold("retro serve")}
 
-		Serve the production-ready build
+    Serve the production-ready build
 
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-			--port=...       Port number (default 8000)
+      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+      --port=...       Port number (default 8000)
 
-	${term.bold("Repository")}
+  ${term.bold("Repository")}
 
-		${term.underline("https://github.com/zaydek/retro")}
+  ${term.underline("https://github.com/zaydek/retro")}
 `
 
 // parseDevCommandFlags parses 'retro dev [flags]'.

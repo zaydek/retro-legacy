@@ -2,11 +2,10 @@ import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
+import * as loggers from "./loggers"
 import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
-
-import logRequest from "./logRequest"
 
 // spaify converts a URL for SPA-mode.
 function spaify(_: string): string {
@@ -34,14 +33,15 @@ const serve: types.cmd_serve = async runtime => {
 		)
 	}
 
-	setTimeout(() => {
-		log.ok(`${term.underline(`http://localhost:${runtime.command.port}`)}`)
-	}, 25)
+	// setTimeout(() => {
+	// 	console.log()
+	// 	log.ok(term.underline(`http://localhost:${runtime.command.port}`))
+	// }, 25)
 
 	// prettier-ignore
 	const result = await esbuild.serve({
 		servedir: runtime.directories.exportDir,
-		onRequest: (args: esbuild.ServeOnRequestArgs) => logRequest(args),
+		onRequest: (args: esbuild.ServeOnRequestArgs) => loggers.serveEvent(args),
 	}, {})
 
 	let transformURL = ssgify

@@ -26,7 +26,7 @@ export async function serverPaths() {
 				{ path: "/squirtle23",   props: { name: "Squirtle",   type: "💧" } },
 				// { path: "/squirtle",   props: { name: "Squirtle",   type: "💧" } },
 			])
-		}, 1e3)
+		}, 0)
 	})
 }
 

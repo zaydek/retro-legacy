@@ -4,11 +4,11 @@ const ReactDOMServer = require("react-dom/server")
 const store = require("./packages/store")
 
 // const myStore = store.createStore({})
-
+//
 function Component() {
 	// const [state, setState] = store.useStore(myStore)
 
-	const name = "yolo"
+	const name = "yoasdasdlo"
 
 	React.useEffect(() => {
 		console.log(`Hello, ${name}!`)

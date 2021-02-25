@@ -1,6 +1,7 @@
 import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
+import * as loggers from "./loggers"
 import * as p from "path"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
@@ -11,7 +12,21 @@ import * as utils from "./utils"
 import parsePages from "./parsePages"
 import runServerGuards from "./runServerGuards"
 
-////////////////////////////////////////////////////////////////////////////////
+// PageModule ambiguously describes a page module.
+interface PageModule {
+	Head?: (props: types.ServerResolvedProps) => JSX.Element
+	default?: (props: types.ServerResolvedProps) => JSX.Element
+}
+
+// StaticPageModule describes a static page module.
+interface StaticPageModule extends PageModule {
+	serverProps?(): Promise<types.ServerResolvedProps>
+}
+
+// DynamicPageModule describes a dynamic page module.
+interface DynamicPageModule extends PageModule {
+	serverPaths(): Promise<{ path: string; props: types.Props }[]>
+}
 
 function errServerPropsFunction(src: string): string {
 	return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
@@ -99,53 +114,9 @@ export function serverProps() {
 }`
 }
 
-function errPathExists(r1: ServerRoute, r2: ServerRoute): string {
+function errPathExists(r1: types.ServerRoute, r2: types.ServerRoute): string {
 	return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-// Props describes runtime props.
-type Props = { [key: string]: unknown }
-
-// DescriptServerProps describes runtime props resolved on the server.
-type ServerResolvedProps = Props & { path: string }
-
-// PageModule ambiguously describes a page module.
-interface PageModule {
-	Head?: (props: ServerResolvedProps) => JSX.Element
-	default?: (props: ServerResolvedProps) => JSX.Element
-}
-
-// StaticPageModule describes a static page module.
-interface StaticPageModule extends PageModule {
-	serverProps?(): Promise<ServerResolvedProps>
-}
-
-// DynamicPageModule describes a dynamic page module.
-interface DynamicPageModule extends PageModule {
-	serverPaths(): Promise<{ path: string; props: Props }[]>
-}
-
-// prettier-ignore
-interface ServerRoute {
-	type:      "static" | "dynamic"
-	src:       string // e.g. "src/pages/index.js"
-	dst:       string // e.g. "dst/index.html"
-	path:      string // e.g. "/"
-	component: string // e.g. "PageIndex"
-}
-
-interface RouteMeta {
-	route: ServerRoute
-	props: ServerResolvedProps
-}
-
-interface Router {
-	[key: string]: RouteMeta
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 // Based on https://github.com/evanw/esbuild/blob/master/lib/common.ts#L35.
 // prettier-ignore
@@ -171,7 +142,7 @@ function testServerPathsReturn(value: unknown): boolean {
 ////////////////////////////////////////////////////////////////////////////////
 
 // exportPage exports a page.
-async function exportPage(runtime: types.Runtime, meta: RouteMeta, mod: PageModule): Promise<void> {
+async function exportPage(runtime: types.Runtime, meta: types.RouteMeta, mod: PageModule): Promise<void> {
 	let head = "<!-- <Head> -->"
 	try {
 		if (typeof mod.Head === "function") {
@@ -204,8 +175,8 @@ async function resolveStaticRouteMeta(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
-): Promise<RouteMeta> {
-	let props: ServerResolvedProps = { path: page.path }
+): Promise<types.RouteMeta> {
+	let props: types.ServerResolvedProps = { path: page.path }
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
@@ -248,8 +219,8 @@ async function resolveDynamicRouteMetas(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.PageMeta,
 	outfile: string,
-): Promise<RouteMeta[]> {
-	const metas: RouteMeta[] = []
+): Promise<types.RouteMeta[]> {
+	const metas: types.RouteMeta[] = []
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
@@ -268,7 +239,7 @@ async function resolveDynamicRouteMetas(
 
 	// Resolve serverPaths:
 	if (typeof mod!.serverPaths === "function") {
-		let paths: { path: string; props: Props }[] = []
+		let paths: { path: string; props: types.Props }[] = []
 		try {
 			paths = await mod!.serverPaths!()
 			if (!testServerPathsReturn(paths)) {
@@ -303,19 +274,21 @@ async function resolveDynamicRouteMetas(
 	return metas
 }
 
+let once = false
+
 // resolveServerRouter exports pages and resolves the server router; resolves
 // mod.serverProps and mod.serverPaths.
-async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<Router> {
-	const router: Router = {}
+async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<types.Router> {
+	const router: types.Router = {}
 
 	// TODO: Add --concurrent?
-	console.log() // "\n"
 	const service = await esbuild.startService()
 	for (const page of runtime.pages) {
 		// Generate paths for esbuild:
 		const entryPoints = [page.src]
 		const outfile = p.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"))
 
+		// let result: esbuild.BuildResult
 		try {
 			// Use external: ["react", "react-dom"] to prevent a React error: You
 			// might have mismatching versions of React and the renderer (such as
@@ -343,71 +316,53 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				process.exit(1)
 			}
 		} catch (err) {
-			log.error(err)
-			process.exit(1)
+			log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
+			// log.error(utils.formatEsbuildMessage(result.error, term.red))
+			// log.error(JSON.stringify(err))
+			// log.error(err)
+			// process.exit(1)
 		}
 
-		const l1 = runtime.directories.srcPagesDir.length
-		const l2 = runtime.directories.exportDir.length
-
-		function dur(d1: number, d2: number): string {
-			const delta = d2 - d1
-			if (delta < 100) {
-				return `${delta}ms`
-			}
-			return `${(delta / 1e3).toFixed(1)}s`
-		}
-
-		let color: term.Builder
-		if (page.type === "static") {
-			color = term.green
-		} else {
-			color = term.cyan
-		}
-
-		let dim: term.Builder
-		if (page.type === "static") {
-			dim = term.dim.green
-		} else {
-			dim = term.dim.cyan
-		}
+		let start = Date.now()
 
 		// Resolve static page:
 		if (page.type === "static") {
-			const d1 = Date.now()
 			const meta = await resolveStaticRouteMeta(runtime, page, outfile)
 			if (router[meta.route.path] !== undefined) {
 				log.error(errPathExists(meta.route, router[meta.route.path]!.route))
 			}
 			router[meta.route.path] = meta
-			const d2 = Date.now()
-			const sep = dim("-".repeat(Math.max(0, 46 - meta.route.src.length)))
-			console.log(
-				color(`\x20\x20${meta.route.src.slice(l1)} ${dim(sep)} ${meta.route.dst.slice(l2)} ${dim(`(${dur(d1, d2)})`)}`),
-			)
+
+			if (!once) {
+				console.log()
+				once = true
+			}
+			loggers.exportEvent(runtime, meta, start)
 		}
 
 		// Resolve dynamic pages:
 		if (page.type === "dynamic") {
-			const d1 = Date.now()
 			const metas = await resolveDynamicRouteMetas(runtime, page, outfile)
+
 			for (const meta of metas) {
+				// start = Date.now()
+
 				if (router[meta.route.path] !== undefined) {
 					log.error(errPathExists(meta.route, router[meta.route.path]!.route))
 				}
 				router[meta.route.path] = meta
-				const d2 = Date.now()
-				const sep = "-".repeat(Math.max(0, 46 - meta.route.src.length))
-				console.log(
-					color(
-						`\x20\x20${meta.route.src.slice(l1)} ${dim(sep)} ${meta.route.dst.slice(l2)} ${dim(`(${dur(d1, d2)})`)}`,
-					),
-				)
+
+				if (!once) {
+					console.log()
+					once = true
+				}
+				loggers.exportEvent(runtime, meta, start)
+				start = 0 // No-op
 			}
 		}
 	}
+	console.log()
 
-	// console.log() // "\n"
 	return router
 }
 
@@ -418,7 +373,10 @@ function prettyJSON(str: string): string {
 // renderAppSource renders the app source code; depends on the server router.
 //
 // TODO: Write tests (pure function).
-export async function renderAppSource(runtime: types.Runtime<types.ExportCommand>, router: Router): Promise<string> {
+export async function renderAppSource(
+	runtime: types.Runtime<types.ExportCommand>,
+	router: types.Router,
+): Promise<string> {
 	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?
 
 	const distinctRoutes = runtime.pages
@@ -499,7 +457,7 @@ const cmd_export: types.cmd_export = async runtime => {
 			inject: ["packages/retro/react-shim.js"],
 			loader: { ".js": "jsx" },
 			logLevel: "silent", // TODO
-			// minify: true,
+			minify: true,
 			outfile,
 			// plugins: [...configs.retro.plugins], // TODO
 		})
@@ -514,8 +472,6 @@ const cmd_export: types.cmd_export = async runtime => {
 		log.error(err)
 		process.exit(1)
 	}
-
-	console.log() // "\n"
 }
 
 export default cmd_export

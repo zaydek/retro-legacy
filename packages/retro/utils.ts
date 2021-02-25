@@ -18,6 +18,7 @@ export function formatEsbuildMessage(msg: esbuild.Message, color: (...args: unkn
 	const loc = msg.location!
 	return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
 
-	${loc.line} ${term.dim("|")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${term.dim("|")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`
+	${loc.line} ${term.dim("│")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${term.dim("│")} ${" ".repeat(loc.column)}${term.red("~".repeat(loc.length))}`
+	// ${" ".repeat(String(loc.line).length)} ${term.dim("│")} ${" ".repeat(loc.column)}${color("^")}`
 }

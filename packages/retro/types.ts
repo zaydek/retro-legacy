@@ -63,6 +63,32 @@ export interface Runtime<Cmd = Command> {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// Props describes runtime props.
+export type Props = { [key: string]: unknown }
+
+// DescriptServerProps describes runtime props resolved on the server.
+export type ServerResolvedProps = Props & { path: string }
+
+// prettier-ignore
+export interface ServerRoute {
+	type:      "static" | "dynamic"
+	src:       string // e.g. "src/pages/index.js"
+	dst:       string // e.g. "dst/index.html"
+	path:      string // e.g. "/"
+	component: string // e.g. "PageIndex"
+}
+
+export interface RouteMeta {
+	route: ServerRoute
+	props: ServerResolvedProps
+}
+
+export interface Router {
+	[key: string]: RouteMeta
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 // cmd_dev handles 'retro dev [flags]'.
 export type cmd_dev = (runtime: Runtime<DevCommand>) => Promise<void>
 
