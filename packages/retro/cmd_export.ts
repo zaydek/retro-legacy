@@ -1,3 +1,4 @@
+import * as errs from "./errs"
 import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
@@ -28,106 +29,6 @@ interface DynamicPageModule extends PageModule {
 	serverPaths(): Promise<{ path: string; props: types.Props }[]>
 }
 
-function errServerPropsFunction(src: string): string {
-	return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}
-
-Or:
-
-${term.dim(`// ${src}`)}
-export async function serverProps() {
-	await ...
-	return { ... }
-}`
-}
-
-function errServerPathsFunction(src: string): string {
-	return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverPaths() {
-	return { ... }
-}
-
-Or:
-
-${term.dim(`// ${src}`)}
-export async function serverPaths() {
-	await ...
-	return { ... }
-}`
-}
-
-function errServerPropsMismatch(src: string): string {
-	return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}
-
-Note paths are directory-scoped.`
-}
-
-function errServerPropsReturn(src: string): string {
-	return `${src}.serverProps: 'serverProps' does not resolve to a server props object.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}`
-}
-
-function errServerPathsReturn(src: string): string {
-	return `${src}.serverPaths: 'serverPaths' does not resolve to a server paths object.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}
-
-Note paths are directory-scoped.`
-}
-
-function errServerPathsMismatch(src: string): string {
-	return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}`
-}
-
-function errPathExists(r1: types.ServerRoute, r2: types.ServerRoute): string {
-	return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`
-}
-
-// Based on https://github.com/evanw/esbuild/blob/master/lib/common.ts#L35.
-// prettier-ignore
 function testServerPropsReturn(value: unknown): boolean {
 	return utils.testStrictObject(value)
 }
@@ -195,9 +96,9 @@ async function resolveStaticRouteMeta(
 
 	// Guard serverProps and serverPaths:
 	if ("serverProps" in mod! && typeof mod.serverProps !== "function") {
-		log.error(errServerPropsFunction(page.src))
+		log.error(errs.serverPropsFunction(page.src))
 	} else if ("serverPaths" in mod! && typeof (mod as { [key: string]: unknown }).serverPaths === "function") {
-		log.error(errServerPathsMismatch(page.src))
+		log.error(errs.serverPathsMismatch(page.src))
 	}
 
 	// Resolve serverProps:
@@ -205,7 +106,7 @@ async function resolveStaticRouteMeta(
 		try {
 			const serverProps = await mod!.serverProps!()
 			if (!testServerPropsReturn(serverProps)) {
-				log.error(errServerPropsReturn(page.src))
+				log.error(errs.serverPropsReturn(page.src))
 			}
 			props = {
 				// @ts-ignore
@@ -239,9 +140,9 @@ async function resolveDynamicRouteMetas(
 
 	// Guard serverProps and serverPaths:
 	if ("serverPaths" in mod! && typeof mod.serverPaths !== "function") {
-		log.error(errServerPathsFunction(page.src))
+		log.error(errs.serverPathsFunction(page.src))
 	} else if ("serverProps" in mod! && typeof (mod as { [key: string]: unknown }).serverProps === "function") {
-		log.error(errServerPropsMismatch(page.src))
+		log.error(errs.serverPropsMismatch(page.src))
 	}
 
 	// Resolve serverPaths:
@@ -250,7 +151,7 @@ async function resolveDynamicRouteMetas(
 		try {
 			paths = await mod!.serverPaths!()
 			if (!testServerPathsReturn(paths)) {
-				log.error(errServerPathsReturn(page.src))
+				log.error(errs.serverPathsReturn(page.src))
 			}
 		} catch (err) {
 			log.error(`${page.src}.serverPaths: ${err.message}`)
@@ -323,6 +224,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				process.exit(1)
 			}
 		} catch (err) {
+			// TODO: How do we differentiate esbuild errors from general errors?
 			log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
 			// log.error(utils.formatEsbuildMessage(result.error, term.red))
 			// log.error(JSON.stringify(err))
@@ -336,7 +238,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 		if (page.type === "static") {
 			const meta = await resolveStaticRouteMeta(runtime, page, outfile)
 			if (router[meta.route.path] !== undefined) {
-				log.error(errPathExists(meta.route, router[meta.route.path]!.route))
+				log.error(errs.pathExists(meta.route, router[meta.route.path]!.route))
 			}
 			router[meta.route.path] = meta
 
@@ -355,7 +257,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				// start = Date.now()
 
 				if (router[meta.route.path] !== undefined) {
-					log.error(errPathExists(meta.route, router[meta.route.path]!.route))
+					log.error(errs.pathExists(meta.route, router[meta.route.path]!.route))
 				}
 				router[meta.route.path] = meta
 
@@ -476,6 +378,7 @@ const cmd_export: types.cmd_export = async runtime => {
 			process.exit(1)
 		}
 	} catch (err) {
+		// TODO: How do we differentiate esbuild errors from general errors?
 		log.error(err)
 		process.exit(1)
 	}
