@@ -51,13 +51,11 @@ export function serverPaths() {
 		{ path: "/foo/bar", props: ... },
 		{ path: "/foo/bar/baz", props: ... },
 	]
-}
-
-Note paths are directory-scoped.`
+}`
 }
 
 export function serverPropsReturn(src: string): string {
-	return `${src}.serverProps: 'serverProps' does not resolve to a server props object.
+	return `${src}.serverProps: Bad 'serverProps' resolver.
 
 For example:
 
@@ -68,7 +66,7 @@ export function serverProps() {
 }
 
 export function serverPathsReturn(src: string): string {
-	return `${src}.serverPaths: 'serverPaths' does not resolve to a server paths object.
+	return `${src}.serverPaths: Bad 'serverPaths' resolver.
 
 For example:
 
@@ -79,9 +77,7 @@ export function serverPaths() {
 		{ path: "/foo/bar", props: ... },
 		{ path: "/foo/bar/baz", props: ... },
 	]
-}
-
-Note paths are directory-scoped.`
+}`
 }
 
 export function serverPathsMismatch(src: string): string {

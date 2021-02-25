@@ -110,6 +110,97 @@ function error(...args) {
   process.exit(0);
 }
 
+// packages/retro/errs.ts
+function serverPropsFunction(src) {
+  return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}
+
+Or:
+
+${dim(`// ${src}`)}
+export async function serverProps() {
+	await ...
+	return { ... }
+}`;
+}
+function serverPathsFunction(src) {
+  return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return { ... }
+}
+
+Or:
+
+${dim(`// ${src}`)}
+export async function serverPaths() {
+	await ...
+	return { ... }
+}`;
+}
+function serverPropsMismatch(src) {
+  return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}
+
+Note paths are directory-scoped.`;
+}
+function serverPropsReturn(src) {
+  return `${src}.serverProps: Bad 'serverProps' resolver.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}`;
+}
+function serverPathsReturn(src) {
+  return `${src}.serverPaths: Bad 'serverPaths' resolver.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}`;
+}
+function serverPathsMismatch(src) {
+  return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}`;
+}
+function pathExists(r1, r2) {
+  return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`;
+}
+
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
 var fs3 = __toModule(require("fs"));
@@ -158,7 +249,7 @@ function serveEvent(args) {
     logger();
     once = true;
   }
-  logger(` ${dimColor(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+  logger(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
 }
 function exportEvent(runtime, meta, start) {
   const {hh, mm, ss, am, ms} = getTimeInfo();
@@ -180,7 +271,7 @@ function exportEvent(runtime, meta, start) {
   const dst_ext = p.extname(dst2);
   const dst_name = dst2.slice(1, -dst_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  console.log(` ${dimColor(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+  console.log(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
 }
 
 // packages/retro/cmd_export.ts
@@ -189,10 +280,10 @@ var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
 
 // packages/retro/utils.ts
-function testObject(value) {
+function testStrictObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
-function testArray(value) {
+function testStrictArray(value) {
   return typeof value === "object" && value !== null && Array.isArray(value);
 }
 function formatEsbuildMessage(msg, color) {
@@ -200,7 +291,7 @@ function formatEsbuildMessage(msg, color) {
   return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
 
 	${loc.line} ${dim("\u2502")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${red("~".repeat(loc.length))}`;
+	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
 }
 
 // packages/retro/parsePages.ts
@@ -422,95 +513,12 @@ For example:
 }
 
 // packages/retro/cmd_export.ts
-function errServerPropsFunction(src) {
-  return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
-
-For example:
-
-// Synchronous:
-export function serverProps() {
-	return { ... }
-}
-
-// Asynchronous:
-export async function serverProps() {
-	await ...
-	return { ... }
-}`;
-}
-function errServerPathsFunction(src) {
-  return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
-
-For example:
-
-// Synchronous:
-export function serverPaths() {
-	return { ... }
-}
-
-// Asynchronous:
-export async function serverPaths() {
-	await ...
-	return { ... }
-}`;
-}
-function errServerPropsMismatch(src) {
-  return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
-
-For example:
-
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}
-
-Note paths are directory-scoped.`;
-}
-function errServerPropsReturn(src) {
-  return `${src}.serverProps: 'serverProps' does not resolve to an object.
-
-For example:
-
-export function serverProps() {
-	return { ... }
-}`;
-}
-function errServerPathsReturn(src) {
-  return `${src}.serverPaths: 'serverPaths' does not resolve to an object.
-
-For example:
-
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}
-
-Note paths are directory-scoped.`;
-}
-function errServerPathsMismatch(src) {
-  return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
-
-For example:
-
-export function serverProps() {
-	return { ... }
-}`;
-}
-function errPathExists(r1, r2) {
-  return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`;
-}
 function testServerPropsReturn(value) {
-  return testObject(value);
+  return testStrictObject(value);
 }
 function testServerPathsReturn(value) {
-  const ok = testArray(value) && value.every((each) => {
-    const ok2 = testObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && testObject(each.props));
+  const ok = testStrictArray(value) && value.every((each) => {
+    const ok2 = testStrictObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && testStrictObject(each.props));
     return ok2;
   });
   return ok;
@@ -548,15 +556,15 @@ async function resolveStaticRouteMeta(runtime, page, outfile) {
   } catch {
   }
   if ("serverProps" in mod && typeof mod.serverProps !== "function") {
-    error(errServerPropsFunction(page.src));
+    error(serverPropsFunction(page.src));
   } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
-    error(errServerPathsMismatch(page.src));
+    error(serverPathsMismatch(page.src));
   }
   if (typeof mod.serverProps === "function") {
     try {
       const serverProps = await mod.serverProps();
       if (!testServerPropsReturn(serverProps)) {
-        error(errServerPropsReturn(page.src));
+        error(serverPropsReturn(page.src));
       }
       props = {
         path: page.path,
@@ -578,16 +586,16 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
   } catch {
   }
   if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
-    error(errServerPathsFunction(page.src));
+    error(serverPathsFunction(page.src));
   } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
-    error(errServerPropsMismatch(page.src));
+    error(serverPropsMismatch(page.src));
   }
   if (typeof mod.serverPaths === "function") {
     let paths = [];
     try {
       paths = await mod.serverPaths();
       if (!testServerPathsReturn(paths)) {
-        error(errServerPathsReturn(page.src));
+        error(serverPathsReturn(page.src));
       }
     } catch (err) {
       error(`${page.src}.serverPaths: ${err.message}`);
@@ -650,7 +658,7 @@ async function resolveServerRouter(runtime) {
     if (page.type === "static") {
       const meta = await resolveStaticRouteMeta(runtime, page, outfile);
       if (router[meta.route.path] !== void 0) {
-        error(errPathExists(meta.route, router[meta.route.path].route));
+        error(pathExists(meta.route, router[meta.route.path].route));
       }
       router[meta.route.path] = meta;
       if (!once2) {
@@ -663,7 +671,7 @@ async function resolveServerRouter(runtime) {
       const metas = await resolveDynamicRouteMetas(runtime, page, outfile);
       for (const meta of metas) {
         if (router[meta.route.path] !== void 0) {
-          error(errPathExists(meta.route, router[meta.route.path].route));
+          error(pathExists(meta.route, router[meta.route.path].route));
         }
         router[meta.route.path] = meta;
         if (!once2) {

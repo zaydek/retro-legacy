@@ -29,6 +29,8 @@ interface DynamicPageModule extends PageModule {
 	serverPaths(): Promise<{ path: string; props: types.Props }[]>
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 function testServerPropsReturn(value: unknown): boolean {
 	return utils.testStrictObject(value)
 }
@@ -334,6 +336,7 @@ ${
 `
 }
 
+// TODO: We need to purge the export directory before write to it.
 const cmd_export: types.cmd_export = async runtime => {
 	await runServerGuards(runtime.directories)
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
