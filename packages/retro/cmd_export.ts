@@ -33,12 +33,14 @@ function errServerPropsFunction(src: string): string {
 
 For example:
 
-// Synchronous:
+${term.dim(`// ${src}`)}
 export function serverProps() {
 	return { ... }
 }
 
-// Asynchronous:
+Or:
+
+${term.dim(`// ${src}`)}
 export async function serverProps() {
 	await ...
 	return { ... }
@@ -50,12 +52,14 @@ function errServerPathsFunction(src: string): string {
 
 For example:
 
-// Synchronous:
+${term.dim(`// ${src}`)}
 export function serverPaths() {
 	return { ... }
 }
 
-// Asynchronous:
+Or:
+
+${term.dim(`// ${src}`)}
 export async function serverPaths() {
 	await ...
 	return { ... }
@@ -67,6 +71,7 @@ function errServerPropsMismatch(src: string): string {
 
 For example:
 
+${term.dim(`// ${src}`)}
 export function serverPaths() {
 	return [
 		{ path: "/foo", props: ... },
@@ -79,20 +84,22 @@ Note paths are directory-scoped.`
 }
 
 function errServerPropsReturn(src: string): string {
-	return `${src}.serverProps: 'serverProps' does not resolve to an object.
+	return `${src}.serverProps: 'serverProps' does not resolve to a server props object.
 
 For example:
 
+${term.dim(`// ${src}`)}
 export function serverProps() {
 	return { ... }
 }`
 }
 
 function errServerPathsReturn(src: string): string {
-	return `${src}.serverPaths: 'serverPaths' does not resolve to an object.
+	return `${src}.serverPaths: 'serverPaths' does not resolve to a server paths object.
 
 For example:
 
+${term.dim(`// ${src}`)}
 export function serverPaths() {
 	return [
 		{ path: "/foo", props: ... },
@@ -109,6 +116,7 @@ function errServerPathsMismatch(src: string): string {
 
 For example:
 
+${term.dim(`// ${src}`)}
 export function serverProps() {
 	return { ... }
 }`
@@ -121,7 +129,7 @@ function errPathExists(r1: types.ServerRoute, r2: types.ServerRoute): string {
 // Based on https://github.com/evanw/esbuild/blob/master/lib/common.ts#L35.
 // prettier-ignore
 function testServerPropsReturn(value: unknown): boolean {
-	return utils.testObject(value)
+	return utils.testStrictObject(value)
 }
 
 // prettier-ignore
@@ -129,11 +137,11 @@ function testServerPathsReturn(value: unknown): boolean {
 	type A = unknown[]
 	type O = { [key: string]: unknown }
 
-	const ok = utils.testArray(value) &&
+	const ok = utils.testStrictArray(value) &&
 		(value as A).every(each => {
-			const ok = utils.testObject(each) &&
+			const ok = utils.testStrictObject(each) &&
 				("path" in (each as O) && typeof (each as O).path === "string") && // each.path
-				("props" in (each as O) && utils.testObject((each as O).props))    // each.props
+				("props" in (each as O) && utils.testStrictObject((each as O).props))    // each.props
 			return ok
 		})
 	return ok
@@ -141,7 +149,6 @@ function testServerPathsReturn(value: unknown): boolean {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// exportPage exports a page.
 async function exportPage(runtime: types.Runtime, meta: types.RouteMeta, mod: PageModule): Promise<void> {
 	let head = "<!-- <Head> -->"
 	try {

@@ -4,7 +4,6 @@ import * as http from "http"
 import * as log from "../lib/log"
 import * as loggers from "./loggers"
 import * as p from "path"
-import * as term from "../lib/term"
 import * as types from "./types"
 
 // spaify converts a URL for SPA-mode.

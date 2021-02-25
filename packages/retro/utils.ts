@@ -1,11 +1,11 @@
 import * as esbuild from "esbuild"
 import * as term from "../lib/term"
 
-export function testObject(value: unknown): boolean {
+export function testStrictObject(value: unknown): boolean {
 	return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-export function testArray(value: unknown): boolean {
+export function testStrictArray(value: unknown): boolean {
 	return typeof value === "object" && value !== null && Array.isArray(value)
 }
 
@@ -19,6 +19,6 @@ export function formatEsbuildMessage(msg: esbuild.Message, color: (...args: unkn
 	return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
 
 	${loc.line} ${term.dim("│")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${term.dim("│")} ${" ".repeat(loc.column)}${term.red("~".repeat(loc.length))}`
+	${" ".repeat(String(loc.line).length)} ${term.dim("│")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`
 	// ${" ".repeat(String(loc.line).length)} ${term.dim("│")} ${" ".repeat(loc.column)}${color("^")}`
 }
