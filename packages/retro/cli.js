@@ -332,11 +332,11 @@ ${badSrcs.map((each) => "- " + each).join("\n")}
 
 URI characters are described by RFC 3986:
 
-${dim("2.2.")} Unreserved Characters
+2.2. Unreserved Characters
 
 	ALPHA / DIGIT / "-" / "." / "_" / "~"
 
-${dim("2.3.")} Reserved Characters
+2.3. Reserved Characters
 
 	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
@@ -349,6 +349,127 @@ ${underline("https://tools.ietf.org/html/rfc3986")}`);
     pages.push(parsePage(directories, parsed));
   }
   return pages;
+}
+
+// packages/retro/errs.ts
+function missingHeadTemplateTag(path) {
+  return `${path}: Add ${magenta("'%head%'")} somewhere to ${magenta("'<head>'")}.
+
+For example:
+
+${dim(`// ${path}`)}
+...
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	${magenta("%head%")}
+</head>
+...`;
+}
+function missingPageTemplateTag(path) {
+  return `${path}: Add ${magenta("'%page%'")} somewhere to ${magenta("'<body>'")}.
+
+For example:
+
+${dim(`// ${path}`)}
+...
+<body>
+	${magenta("%page%")}
+</body>
+...`;
+}
+function serverPropsFunction(src) {
+  return `${src}: ${magenta(`'typeof serverProps !== "function"'`)}; ${magenta("'serverProps'")} must be a synchronous or an asynchronous function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}
+
+Or:
+
+${dim(`// ${src}`)}
+export async function serverProps() {
+	await ...
+	return { ... }
+}`;
+}
+function serverPathsFunction(src) {
+  return `${src}: ${magenta(`'typeof serverPaths !== "function"'`)}; ${magenta("'serverPaths'")} must be a synchronous or an asynchronous function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return { ... }
+}
+
+Or:
+
+${dim(`// ${src}`)}
+export async function serverPaths() {
+	await ...
+	return { ... }
+}`;
+}
+function serverPropsMismatch(src) {
+  return `${src}: Dynamic pages must use ${magenta("'serverPaths'")} not ${magenta("'serverProps'")}.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}`;
+}
+function serverPropsReturn(src) {
+  return `${src}.serverProps: Bad ${magenta("'serverProps'")} resolver.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}`;
+}
+function serverPathsReturn(src) {
+  return `${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}`;
+}
+function serverPathsMismatch(src) {
+  return `${src}: Non-dynamic pages must use ${magenta("'serverProps'")} not ${magenta("'serverPaths'")}.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}`;
+}
+function duplicatePathFound(r1, r2) {
+  function caller(r) {
+    return r.type === "static" ? "serverProps" : "serverPaths";
+  }
+  return `${r1.src}.${caller(r1)}: Path ${magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`;
+}
+function serveWithoutExport() {
+  return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
 }
 
 // packages/retro/utils/preflight.ts
@@ -373,27 +494,9 @@ async function runServerGuards(directories) {
     const data = await fs2.promises.readFile(path);
     const text = data.toString();
     if (!text.includes("%head")) {
-      error(`${path}: Add '%head%' somewhere to '<head>'.
-
-For example:
-
-...
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	%head%
-</head>
-...`);
+      error(missingHeadTemplateTag(path));
     } else if (!text.includes("%page")) {
-      error(`${path}: Add '%page%' somewhere to '<body>'.
-
-For example:
-
-...
-<body>
-	%page%
-</body>
-...`);
+      error(missingPageTemplateTag(path));
     }
   } catch (_) {
     await fs2.promises.writeFile(path, `<!DOCTYPE html>
@@ -559,95 +662,6 @@ var cmd_dev = async (runtime) => {
 };
 var cmd_dev_default = cmd_dev;
 
-// packages/retro/errs.ts
-function serverPropsFunction(src) {
-  return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}
-
-Or:
-
-${dim(`// ${src}`)}
-export async function serverProps() {
-	await ...
-	return { ... }
-}`;
-}
-function serverPathsFunction(src) {
-  return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return { ... }
-}
-
-Or:
-
-${dim(`// ${src}`)}
-export async function serverPaths() {
-	await ...
-	return { ... }
-}`;
-}
-function serverPropsMismatch(src) {
-  return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}`;
-}
-function serverPropsReturn(src) {
-  return `${src}.serverProps: Bad 'serverProps' resolver.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}`;
-}
-function serverPathsReturn(src) {
-  return `${src}.serverPaths: Bad 'serverPaths' resolver.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}`;
-}
-function serverPathsMismatch(src) {
-  return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}`;
-}
-function pathExists(r1, r2) {
-  return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`;
-}
-
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
 var fs5 = __toModule(require("fs"));
@@ -789,7 +803,7 @@ async function resolveServerRouter(runtime) {
     if (page.type === "static") {
       const meta = await resolveStaticRouteMeta(runtime, page, outfile);
       if (router[meta.route.path] !== void 0) {
-        error(pathExists(meta.route, router[meta.route.path].route));
+        error(duplicatePathFound(meta.route, router[meta.route.path].route));
       }
       router[meta.route.path] = meta;
       if (!once2) {
@@ -802,7 +816,7 @@ async function resolveServerRouter(runtime) {
       const metas = await resolveDynamicRouteMetas(runtime, page, outfile);
       for (const meta of metas) {
         if (router[meta.route.path] !== void 0) {
-          error(pathExists(meta.route, router[meta.route.path].route));
+          error(duplicatePathFound(meta.route, router[meta.route.path].route));
         }
         router[meta.route.path] = meta;
         if (!once2) {
@@ -908,7 +922,7 @@ var serve2 = async (runtime) => {
   try {
     await fs6.promises.stat("__export__");
   } catch {
-    error(`It looks like you\u2019re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`);
+    error(serveWithoutExport);
   }
   const result = await esbuild2.serve({
     servedir: runtime.directories.exportDir,
@@ -1019,10 +1033,10 @@ function parseDevCommandFlags(...args) {
     }
   }
   if (badCmd !== "") {
-    error(`Bad command '${badCmd}'. You can use 'retro help' for help.`);
+    error(`Bad command ${magenta(`'${badCmd}'`)}. You can use ${magenta("'retro help'")} for help.`);
   }
   if (cmd.port < 1e3 || cmd.port >= 1e4) {
-    error("'--port' must be between 1000-9999.");
+    error(`${magenta("'--port'")} must be between 1000-9999.`);
   }
   return cmd;
 }
@@ -1057,7 +1071,7 @@ function parseExportCommandFlags(...args) {
     }
   }
   if (badCmd !== "") {
-    error(`Bad command '${badCmd}'. You can use 'retro help' for help.`);
+    error(`Bad command ${magenta(`'${badCmd}'`)}. You can use ${magenta("'retro help'")} for help.`);
   }
   return cmd;
 }
@@ -1090,10 +1104,10 @@ function parseServeCommandFlags(...args) {
     }
   }
   if (badCmd !== "") {
-    error(`Bad command '${badCmd}'. You can use 'retro help' for help.`);
+    error(`Bad command ${magenta(`'${badCmd}'`)}. You can use ${magenta("'retro help'")} for help.`);
   }
   if (cmd.port < 1e3 || cmd.port >= 1e4) {
-    error("'--port' must be between 1000-9999.");
+    error(`${magenta("'--port'")} must be between 1000-9999.`);
   }
   return cmd;
 }
@@ -1124,11 +1138,13 @@ async function run() {
     process.env["NODE_ENV"] = "production";
     command = parseServeCommandFlags(...args.slice(2));
   } else {
-    error(`No such command '${arg}'. Use one of these commands:
+    error(`No such command ${magenta(`'${arg}'`)}.
+
+Supported commands:
 
 ${cmds}
 
-Or 'retro usage' for usage.`);
+${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`);
   }
   const runtime = {
     command,

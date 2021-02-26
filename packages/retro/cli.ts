@@ -90,10 +90,10 @@ function parseDevCommandFlags(...args: string[]): types.DevCommand {
 		}
 	}
 	if (badCmd !== "") {
-		log.error(`Bad command '${badCmd}'. You can use 'retro help' for help.`)
+		log.error(`Bad command ${term.magenta(`'${badCmd}'`)}. You can use ${term.magenta("'retro help'")} for help.`)
 	}
 	if (cmd.port < 1e3 || cmd.port >= 1e4) {
-		log.error("'--port' must be between 1000-9999.")
+		log.error(`${term.magenta("'--port'")} must be between 1000-9999.`)
 	}
 	return cmd
 }
@@ -132,7 +132,7 @@ function parseExportCommandFlags(...args: string[]): types.ExportCommand {
 		}
 	}
 	if (badCmd !== "") {
-		log.error(`Bad command '${badCmd}'. You can use 'retro help' for help.`)
+		log.error(`Bad command ${term.magenta(`'${badCmd}'`)}. You can use ${term.magenta("'retro help'")} for help.`)
 	}
 	return cmd
 }
@@ -169,10 +169,10 @@ function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 		}
 	}
 	if (badCmd !== "") {
-		log.error(`Bad command '${badCmd}'. You can use 'retro help' for help.`)
+		log.error(`Bad command ${term.magenta(`'${badCmd}'`)}. You can use ${term.magenta("'retro help'")} for help.`)
 	}
 	if (cmd.port < 1e3 || cmd.port >= 1e4) {
-		log.error("'--port' must be between 1000-9999.")
+		log.error(`${term.magenta("'--port'")} must be between 1000-9999.`)
 	}
 	return cmd
 }
@@ -213,11 +213,18 @@ async function run(): Promise<void> {
 		process.env["NODE_ENV"] = "production"
 		command = parseServeCommandFlags(...args.slice(2))
 	} else {
-		log.error(`No such command '${arg}'. Use one of these commands:
+		log.error(`No such command ${term.magenta(`'${arg}'`)}.
 
-${cmds}
+Supported commands:
 
-Or 'retro usage' for usage.`)
+${
+	cmds
+	// .split("\n")
+	// .map(each => "\x20\x20" + each)
+	// .join("\n")
+}
+
+${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`)
 	}
 
 	// prettier-ignore

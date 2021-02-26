@@ -8,11 +8,15 @@ import * as p from "path"
 import * as types from "./types"
 
 // spaify converts a URL for SPA-mode.
+//
+// TODO: Write tests.
 function spaify(_: string): string {
 	return "/"
 }
 
 // ssgify converts a URL for SSG-mode.
+//
+// TODO: Write tests.
 function ssgify(url: string): string {
 	if (url.endsWith("/")) return url + "index.html"
 	if (p.extname(url) === "") return url + ".html"
@@ -71,3 +75,5 @@ const serve: types.cmd_serve = async runtime => {
 }
 
 export default serve
+
+//// TODO: Write tests.
