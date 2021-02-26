@@ -465,16 +465,86 @@ function validateServerPathsReturn(value) {
 // packages/retro/utils/watcher.ts
 var fs3 = __toModule(require("fs"));
 var p4 = __toModule(require("path"));
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function* watcher(root, {interval}) {
+  const modTimes = {};
+  async function read(entry, {deep}) {
+    const stat = await fs3.promises.stat(entry);
+    const modTime = modTimes[entry];
+    if (modTime === void 0 || stat.mtimeMs !== modTime) {
+      modTimes[entry] = stat.mtimeMs;
+      if (!deep) {
+        return entry;
+      }
+    }
+    if (stat.isDirectory()) {
+      for (const each of await fs3.promises.readdir(entry)) {
+        const src = p4.join(entry, each);
+        const result = await read(src, {deep});
+        if (result !== "") {
+          if (!deep) {
+            return result;
+          }
+        }
+      }
+    }
+    return "";
+  }
+  await read(root, {deep: true});
+  while (true) {
+    await sleep(interval);
+    const src = await read(root, {deep: false});
+    if (src !== "") {
+      yield src;
+    }
+  }
+}
 
 // packages/retro/cmd_dev.ts
-var fs4 = __toModule(require("fs"));
-var p5 = __toModule(require("path"));
+var http = __toModule(require("http"));
 var cmd_dev = async (runtime) => {
-  await fs4.promises.rmdir(runtime.directories.exportDir, {recursive: true});
-  await copyAll(runtime.directories.publicDir, p5.join(runtime.directories.exportDir, runtime.directories.publicDir), [p5.join(runtime.directories.publicDir, "index.html")]);
-  const data = await fs4.promises.readFile(p5.join(runtime.directories.publicDir, "index.html"));
-  runtime.document = data.toString();
-  runtime.pages = await parsePages(runtime.directories);
+  let callback;
+  const router = {
+    "/": {
+      route: {},
+      props: {}
+    },
+    "/pikachu": {
+      route: {},
+      props: {}
+    }
+  };
+  const cache = {};
+  async function watch() {
+    const generator = watcher("src", {interval: 100});
+    async function next() {
+      return (await generator.next()).value;
+    }
+    while (true) {
+      const src = await next();
+      if (src !== "") {
+        if (callback)
+          callback();
+      }
+    }
+  }
+  watch();
+  const server = http.createServer(async (request2, response) => {
+    if (request2.url === "/~dev") {
+      callback = () => {
+        response.write("event: reload\n\n");
+      };
+      response.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive"
+      });
+      return;
+    }
+  });
+  server.listen("8000");
 };
 var cmd_dev_default = cmd_dev;
 
@@ -569,8 +639,8 @@ function pathExists(r1, r2) {
 
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs"));
-var p6 = __toModule(require("path"));
+var fs4 = __toModule(require("fs"));
+var p5 = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
 async function exportPage(runtime, meta, mod) {
@@ -595,14 +665,14 @@ async function exportPage(runtime, meta, mod) {
     error(`${meta.route.src}.default: ${err.message}`);
   }
   const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
-  await fs5.promises.mkdir(p6.dirname(meta.route.dst), {recursive: true});
-  await fs5.promises.writeFile(meta.route.dst, rendered);
+  await fs4.promises.mkdir(p5.dirname(meta.route.dst), {recursive: true});
+  await fs4.promises.writeFile(meta.route.dst, rendered);
 }
 async function resolveStaticRouteMeta(runtime, page, outfile) {
   let props = {path: page.path};
   let mod;
   try {
-    mod = require(p6.join("..", "..", outfile));
+    mod = require(p5.join("..", "..", outfile));
   } catch {
   }
   if ("serverProps" in mod && typeof mod.serverProps !== "function") {
@@ -632,7 +702,7 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
   const metas = [];
   let mod;
   try {
-    mod = require(p6.join("..", "..", outfile));
+    mod = require(p5.join("..", "..", outfile));
   } catch {
   }
   if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
@@ -651,8 +721,8 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
       error(`${page.src}.serverPaths: ${err.message}`);
     }
     for (const path of paths) {
-      const path_ = p6.join(p6.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-      const dst2 = p6.join(runtime.directories.exportDir, path_ + ".html");
+      const path_ = p5.join(p5.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p5.join(runtime.directories.exportDir, path_ + ".html");
       metas.push({
         route: {
           type: "dynamic",
@@ -679,7 +749,7 @@ async function resolveServerRouter(runtime) {
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
     const entryPoints = [page.src];
-    const outfile = p6.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
+    const outfile = p5.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
     try {
       const result = await service.build({
         bundle: true,
@@ -776,10 +846,10 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 var cmd_export = async (runtime) => {
   const router = await resolveServerRouter(runtime);
   const appSource = await renderAppSource(runtime, router);
-  const appSourcePath = p6.join(runtime.directories.cacheDir, "app.js");
-  await fs5.promises.writeFile(appSourcePath, appSource);
+  const appSourcePath = p5.join(runtime.directories.cacheDir, "app.js");
+  await fs4.promises.writeFile(appSourcePath, appSource);
   const entryPoints = [appSourcePath];
-  const outfile = p6.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
+  const outfile = p5.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
   try {
     const result = await esbuild.build({
       bundle: true,
@@ -810,22 +880,22 @@ var cmd_export_default = cmd_export;
 
 // packages/retro/cmd_serve.ts
 var esbuild2 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs"));
-var http = __toModule(require("http"));
-var p7 = __toModule(require("path"));
+var fs5 = __toModule(require("fs"));
+var http2 = __toModule(require("http"));
+var p6 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p7.extname(url) === "")
+  if (p6.extname(url) === "")
     return url + ".html";
   return url;
 }
 var serve2 = async (runtime) => {
   try {
-    await fs6.promises.stat("__export__");
+    await fs5.promises.stat("__export__");
   } catch {
     error(`It looks like you\u2019re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`);
   }
@@ -837,7 +907,7 @@ var serve2 = async (runtime) => {
   if (runtime.command.mode === "spa") {
     transformURL = spaify;
   }
-  const proxySrv = http.createServer((req, res) => {
+  const proxySrv = http2.createServer((req, res) => {
     const options2 = {
       hostname: result.host,
       port: result.port,
@@ -845,7 +915,7 @@ var serve2 = async (runtime) => {
       method: req.method,
       headers: req.headers
     };
-    const proxyReq = http.request(options2, (proxyRes) => {
+    const proxyReq = http2.request(options2, (proxyRes) => {
       if (proxyRes.statusCode === 404) {
         res.writeHead(404, {"Content-Type": "text/plain"});
         res.end("404 - Not Found");

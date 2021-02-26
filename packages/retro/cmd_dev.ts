@@ -1,8 +1,9 @@
 // import * as esbuild from "esbuild"
+// import * as fs from "fs"
 // import * as http from "http"
+// import * as p from "path"
 
-import * as fs from "fs"
-import * as p from "path"
+import * as http from "http"
 import * as types from "./types"
 import * as utils from "./utils"
 
@@ -21,21 +22,30 @@ async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
 // On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
 //
 const cmd_dev: types.cmd_dev = async runtime => {
-	// Purge __export__:
-	await fs.promises.rmdir(runtime.directories.exportDir, { recursive: true })
-	await utils.copyAll(
-		runtime.directories.publicDir,
-		p.join(runtime.directories.exportDir, runtime.directories.publicDir),
-		[p.join(runtime.directories.publicDir, "index.html")],
-	)
+	// const cache: {
+	// 	[key: string]: {
+	// 		modTime: number
+	// 		exportedPage: string
+	// 		// Head?: (serverProps: unknown):
+	// 	}
+	// } = {}
 
-	// Read runtime.document and runtime.pages:
-	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
-	runtime.document = data.toString()
-	runtime.pages = await utils.parsePages(runtime.directories)
+	let callback: () => void | undefined
 
-	//	const check = await checker("watch-src")
-	//
+	// Resolve router:
+	const router: { [key: string]: { route: {}; props: {} } } = {
+		"/": {
+			route: {},
+			props: {},
+		},
+		"/pikachu": {
+			route: {},
+			props: {},
+		},
+	}
+	const cache: { [key: string]: unknown } = {}
+
+	// Resolve app.js:
 	//	const result = await esbuild.build({
 	//		bundle: true,
 	//		define: { "process.env.NODE_ENV": JSON.stringify("development") },
@@ -44,71 +54,63 @@ const cmd_dev: types.cmd_dev = async runtime => {
 	//		loader: { ".js": "jsx" },
 	//		outfile: "component.esbuild.js",
 	//	})
-	//
-	//	const router: { [key: string]: { route: {}; props: {} } } = {
-	//		"/": {
-	//			route: {},
-	//			props: {},
-	//		},
-	//		"/pikachu": {
-	//			route: {},
-	//			props: {},
-	//		},
-	//	}
-	//
-	//	async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
-	//		return "Hello, world!"
-	//	}
-	//
-	//	const cache: {
-	//		[key: string]: {
-	//			modTime: number
-	//			exportedPage: string
-	//			// Head?: (serverProps: unknown):
-	//		}
-	//	} = {}
-	//
-	//	const server = http.createServer(async (req, res) => {
-	//		// // Bad requests:
-	//		// if (router[req.url!] === undefined) {
-	//		// 	res.writeHead(404, { "Content-Type": "text/plain" })
-	//		// 	res.end("404 - Not Found")
-	//		// 	return
-	//		// }
-	//		// // Respond from the cache:
-	//		// const stat = await fs.promises.stat(req.url!)
-	//		// const cached = cache[req.url!]
-	//		// if (cached !== undefined && cached.modTime !== stat.mtimeMs) {
-	//		// 	res.writeHead(200, { "Content-Type": "text/html" })
-	//		// 	res.end(cached.exportedPage)
-	//		// 	return
-	//		// }
-	//		// // Re-export and cache:
-	//		// const exportedPage = await exportPage({}, router[req.url!]!)
-	//		// cache[req.url!] = {
-	//		// 	modTime: stat.mtimeMs,
-	//		// 	exportedPage,
-	//		// }
-	//		// res.writeHead(200, { "Content-Type": "text/html" })
-	//		// res.end(exportedPage)
-	//	})
-	//	server.listen("8000")
-	//
-	//	console.log("hello, world!")
-	//
-	//	// When the user navigates to page, export it.
-	//	setInterval(async () => {
-	//		const path = await check()
-	//		if (path !== "") {
-	//			// // Dedupe watch events:
-	//			// const stat = await fs.promises.stat(path)
-	//			// if (stat.isDirectory()) return
-	//
-	//			// TODO: Emit a server-sent event here.
-	//			console.log(`${path} changed`)
-	//			await result.rebuild()
-	//		}
-	//	}, POLL_INTERVAL)
+
+	async function watch(): Promise<void> {
+		const generator = utils.watcher("src", { interval: 100 })
+		async function next(): Promise<string> {
+			return (await generator.next()).value
+		}
+		while (true) {
+			const src = await next()
+			if (src !== "") {
+				if (callback) callback()
+			}
+		}
+	}
+
+	watch()
+
+	const server = http.createServer(
+		async (request: http.IncomingMessage, response: http.ServerResponse): Promise<void> => {
+			// Handle server-sent events:
+			if (request.url === "/~dev") {
+				callback = (): void => {
+					// TODO: Log a custom event here.
+					response.write("event: reload\n\n")
+				}
+				response.writeHead(200, {
+					"Content-Type": "text/event-stream",
+					"Cache-Control": "no-cache",
+					Connection: "keep-alive",
+				})
+				return
+			}
+
+			// // Bad requests:
+			// if (router[request.url!] === undefined) {
+			// 	response.writeHead(404, { "Content-Type": "text/plain" })
+			// 	response.end("404 - Not Found")
+			// 	return
+			// }
+			// // Respond from the cache:
+			// const stat = await fs.promises.stat(request.url!)
+			// const cached = cache[request.url!]
+			// if (cached !== undefined && cached.modTime !== stat.mtimeMs) {
+			// 	response.writeHead(200, { "Content-Type": "text/html" })
+			// 	response.end(cached.exportedPage)
+			// 	return
+			// }
+			// // Re-export and cache:
+			// const exportedPage = await exportPage({}, router[request.url!]!)
+			// cache[request.url!] = {
+			// 	modTime: stat.mtimeMs,
+			// 	exportedPage,
+			// }
+			// response.writeHead(200, { "Content-Type": "text/html" })
+			// response.end(exportedPage)
+		},
+	)
+	server.listen("8000")
 }
 
 export default cmd_dev
