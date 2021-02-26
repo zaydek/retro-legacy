@@ -1,14 +1,10 @@
-// import * as esbuild from "esbuild"
-// import * as fs from "fs"
-// import * as http from "http"
-// import * as p from "path"
-
+import * as fs from "fs"
 import * as http from "http"
 import * as types from "./types"
 import * as utils from "./utils"
 
-async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
-	return "Hello, world!"
+function renderToString(): string {
+	return "TODO"
 }
 
 // On start, cache the server-side props and paths.
@@ -22,47 +18,27 @@ async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
 // On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
 //
 const cmd_dev: types.cmd_dev = async runtime => {
-	// const cache: {
-	// 	[key: string]: {
-	// 		modTime: number
-	// 		exportedPage: string
-	// 		// Head?: (serverProps: unknown):
-	// 	}
-	// } = {}
+	const router: types.ServerRouter = {}
+
+	// cache caches HTML based on '(await fs.promises.stat(...)).mtimeMs'.
+	const cache: {
+		[key: string]: {
+			mtimeMs: number
+			html: string
+		}
+	} = {}
 
 	let callback: () => void | undefined
 
-	// Resolve router:
-	const router: { [key: string]: { route: {}; props: {} } } = {
-		"/": {
-			route: {},
-			props: {},
-		},
-		"/pikachu": {
-			route: {},
-			props: {},
-		},
-	}
-	const cache: { [key: string]: unknown } = {}
-
-	// Resolve app.js:
-	//	const result = await esbuild.build({
-	//		bundle: true,
-	//		define: { "process.env.NODE_ENV": JSON.stringify("development") },
-	//		entryPoints: ["watch-src/component.js"],
-	//		incremental: true,
-	//		loader: { ".js": "jsx" },
-	//		outfile: "component.esbuild.js",
-	//	})
+	// TODO: Implement esbuild here.
 
 	async function watch(): Promise<void> {
-		const generator = utils.watcher("src", { interval: 100 })
-		async function next(): Promise<string> {
-			return (await generator.next()).value
-		}
+		const gen = utils.watcher("src", { interval: 100 })
 		while (true) {
-			const src = await next()
+			const src = await (await gen.next()).value
 			if (src !== "") {
+				// TODO: Regenerate server router here.
+				// TODO: Implement esbuild here.
 				if (callback) callback()
 			}
 		}
@@ -70,15 +46,15 @@ const cmd_dev: types.cmd_dev = async runtime => {
 
 	watch()
 
-	const server = http.createServer(
-		async (request: http.IncomingMessage, response: http.ServerResponse): Promise<void> => {
-			// Handle server-sent events:
-			if (request.url === "/~dev") {
+	const srv = http.createServer(
+		async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
+			// Server-sent events: (takes precedence)
+			if (req.url === "/~dev") {
 				callback = (): void => {
-					// TODO: Log a custom event here.
-					response.write("event: reload\n\n")
+					// TODO: Emit a log event here.
+					res.write("event: reload\n\n")
 				}
-				response.writeHead(200, {
+				res.writeHead(200, {
 					"Content-Type": "text/event-stream",
 					"Cache-Control": "no-cache",
 					Connection: "keep-alive",
@@ -86,31 +62,32 @@ const cmd_dev: types.cmd_dev = async runtime => {
 				return
 			}
 
-			// // Bad requests:
-			// if (router[request.url!] === undefined) {
-			// 	response.writeHead(404, { "Content-Type": "text/plain" })
-			// 	response.end("404 - Not Found")
-			// 	return
-			// }
-			// // Respond from the cache:
-			// const stat = await fs.promises.stat(request.url!)
-			// const cached = cache[request.url!]
-			// if (cached !== undefined && cached.modTime !== stat.mtimeMs) {
-			// 	response.writeHead(200, { "Content-Type": "text/html" })
-			// 	response.end(cached.exportedPage)
-			// 	return
-			// }
-			// // Re-export and cache:
-			// const exportedPage = await exportPage({}, router[request.url!]!)
-			// cache[request.url!] = {
-			// 	modTime: stat.mtimeMs,
-			// 	exportedPage,
-			// }
-			// response.writeHead(200, { "Content-Type": "text/html" })
-			// response.end(exportedPage)
+			// Bad route:
+			if (router[req.url!] === undefined) {
+				// TODO: Emit a log event here.
+				res.writeHead(404, { "Content-Type": "text/plain" })
+				res.end("404 - Not Found")
+				return
+			}
+			// Read from the cache:
+			const stat = await fs.promises.stat(req.url!)
+			const read = cache[req.url!]
+			if (read !== undefined && read.mtimeMs !== stat.mtimeMs) {
+				res.writeHead(200, { "Content-Type": "text/html" })
+				res.end(read.html)
+				return
+			}
+			// Render and cache:
+			const html = await renderToString() // TODO
+			cache[req.url!] = {
+				mtimeMs: stat.mtimeMs,
+				html,
+			}
+			res.writeHead(200, { "Content-Type": "text/html" })
+			res.end(html)
 		},
 	)
-	server.listen("8000")
+	srv.listen(runtime.command.port)
 }
 
 export default cmd_dev

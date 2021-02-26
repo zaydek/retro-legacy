@@ -10,7 +10,7 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-async function exportPage(runtime: types.Runtime, meta: types.RouteMeta, mod: types.PageModule): Promise<void> {
+async function exportPage(runtime: types.Runtime, meta: types.ServerRouteMeta, mod: types.PageModule): Promise<void> {
 	let head = "<!-- <Head> -->"
 	try {
 		if (typeof mod.Head === "function") {
@@ -43,7 +43,7 @@ async function resolveStaticRouteMeta(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
-): Promise<types.RouteMeta> {
+): Promise<types.ServerRouteMeta> {
 	let props: types.ServerResolvedProps = { path: page.path }
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
@@ -87,8 +87,8 @@ async function resolveDynamicRouteMetas(
 	runtime: types.Runtime<types.ExportCommand>,
 	page: types.PageMeta,
 	outfile: string,
-): Promise<types.RouteMeta[]> {
-	const metas: types.RouteMeta[] = []
+): Promise<types.ServerRouteMeta[]> {
+	const metas: types.ServerRouteMeta[] = []
 
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
@@ -146,8 +146,8 @@ let once = false
 
 // resolveServerRouter exports pages and resolves the server router; resolves
 // mod.serverProps and mod.serverPaths.
-async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<types.Router> {
-	const router: types.Router = {}
+async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>): Promise<types.ServerRouter> {
+	const router: types.ServerRouter = {}
 
 	// TODO: Add --concurrent?
 	const service = await esbuild.startService()
@@ -244,7 +244,7 @@ function prettyJSON(str: string): string {
 // TODO: Write tests (pure function).
 export async function renderAppSource(
 	runtime: types.Runtime<types.ExportCommand>,
-	router: types.Router,
+	router: types.ServerRouter,
 ): Promise<string> {
 	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?
 
@@ -301,13 +301,13 @@ const cmd_export: types.cmd_export = async runtime => {
 	// // TODO: Cache the router for renderAppSource?
 	// console.log(router)
 
-	const appSource = await renderAppSource(runtime, router)
-	const appSourcePath = p.join(runtime.directories.cacheDir, "app.js")
-	await fs.promises.writeFile(appSourcePath, appSource)
+	const appContents = await renderAppSource(runtime, router)
+	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
+	await fs.promises.writeFile(appContentsPath, appContents)
 
 	// Generate paths for esbuild:
-	const entryPoints = [appSourcePath]
-	const outfile = p.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length))
+	const entryPoints = [appContentsPath]
+	const outfile = p.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length))
 
 	try {
 		const result = await esbuild.build({

@@ -6,13 +6,13 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export async function* watcher(root: string, { interval }: { interval: number }): AsyncGenerator<string> {
-	const modTimes: { [key: string]: number } = {}
+	const mtimeMsMap: { [key: string]: number } = {}
 
 	async function read(entry: string, { deep }: { deep: boolean }): Promise<string> {
 		const stat = await fs.promises.stat(entry)
-		const modTime = modTimes[entry]
-		if (modTime === undefined || stat.mtimeMs !== modTime) {
-			modTimes[entry] = stat.mtimeMs
+		const mtimeMs = mtimeMsMap[entry]
+		if (mtimeMs === undefined || stat.mtimeMs !== mtimeMs) {
+			mtimeMsMap[entry] = stat.mtimeMs
 			if (!deep) {
 				return entry
 			}

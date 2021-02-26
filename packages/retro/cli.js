@@ -469,12 +469,12 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 async function* watcher(root, {interval}) {
-  const modTimes = {};
+  const mtimeMsMap = {};
   async function read(entry, {deep}) {
     const stat = await fs3.promises.stat(entry);
-    const modTime = modTimes[entry];
-    if (modTime === void 0 || stat.mtimeMs !== modTime) {
-      modTimes[entry] = stat.mtimeMs;
+    const mtimeMs = mtimeMsMap[entry];
+    if (mtimeMs === void 0 || stat.mtimeMs !== mtimeMs) {
+      mtimeMsMap[entry] = stat.mtimeMs;
       if (!deep) {
         return entry;
       }
@@ -503,27 +503,19 @@ async function* watcher(root, {interval}) {
 }
 
 // packages/retro/cmd_dev.ts
+var fs4 = __toModule(require("fs"));
 var http = __toModule(require("http"));
+function renderToString() {
+  return "TODO";
+}
 var cmd_dev = async (runtime) => {
-  let callback;
-  const router = {
-    "/": {
-      route: {},
-      props: {}
-    },
-    "/pikachu": {
-      route: {},
-      props: {}
-    }
-  };
+  const router = {};
   const cache = {};
+  let callback;
   async function watch() {
-    const generator = watcher("src", {interval: 100});
-    async function next() {
-      return (await generator.next()).value;
-    }
+    const gen = watcher("src", {interval: 100});
     while (true) {
-      const src = await next();
+      const src = await (await gen.next()).value;
       if (src !== "") {
         if (callback)
           callback();
@@ -531,20 +523,39 @@ var cmd_dev = async (runtime) => {
     }
   }
   watch();
-  const server = http.createServer(async (request2, response) => {
-    if (request2.url === "/~dev") {
+  const srv = http.createServer(async (req, res) => {
+    if (req.url === "/~dev") {
       callback = () => {
-        response.write("event: reload\n\n");
+        res.write("event: reload\n\n");
       };
-      response.writeHead(200, {
+      res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive"
       });
       return;
     }
+    if (router[req.url] === void 0) {
+      res.writeHead(404, {"Content-Type": "text/plain"});
+      res.end("404 - Not Found");
+      return;
+    }
+    const stat = await fs4.promises.stat(req.url);
+    const read = cache[req.url];
+    if (read !== void 0 && read.mtimeMs !== stat.mtimeMs) {
+      res.writeHead(200, {"Content-Type": "text/html"});
+      res.end(read.html);
+      return;
+    }
+    const html = await renderToString();
+    cache[req.url] = {
+      mtimeMs: stat.mtimeMs,
+      html
+    };
+    res.writeHead(200, {"Content-Type": "text/html"});
+    res.end(html);
   });
-  server.listen("8000");
+  srv.listen(runtime.command.port);
 };
 var cmd_dev_default = cmd_dev;
 
@@ -639,7 +650,7 @@ function pathExists(r1, r2) {
 
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
-var fs4 = __toModule(require("fs"));
+var fs5 = __toModule(require("fs"));
 var p5 = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
@@ -665,8 +676,8 @@ async function exportPage(runtime, meta, mod) {
     error(`${meta.route.src}.default: ${err.message}`);
   }
   const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
-  await fs4.promises.mkdir(p5.dirname(meta.route.dst), {recursive: true});
-  await fs4.promises.writeFile(meta.route.dst, rendered);
+  await fs5.promises.mkdir(p5.dirname(meta.route.dst), {recursive: true});
+  await fs5.promises.writeFile(meta.route.dst, rendered);
 }
 async function resolveStaticRouteMeta(runtime, page, outfile) {
   let props = {path: page.path};
@@ -845,11 +856,11 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 }
 var cmd_export = async (runtime) => {
   const router = await resolveServerRouter(runtime);
-  const appSource = await renderAppSource(runtime, router);
-  const appSourcePath = p5.join(runtime.directories.cacheDir, "app.js");
-  await fs4.promises.writeFile(appSourcePath, appSource);
-  const entryPoints = [appSourcePath];
-  const outfile = p5.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
+  const appContents = await renderAppSource(runtime, router);
+  const appContentsPath = p5.join(runtime.directories.cacheDir, "app.js");
+  await fs5.promises.writeFile(appContentsPath, appContents);
+  const entryPoints = [appContentsPath];
+  const outfile = p5.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length));
   try {
     const result = await esbuild.build({
       bundle: true,
@@ -880,7 +891,7 @@ var cmd_export_default = cmd_export;
 
 // packages/retro/cmd_serve.ts
 var esbuild2 = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs"));
+var fs6 = __toModule(require("fs"));
 var http2 = __toModule(require("http"));
 var p6 = __toModule(require("path"));
 function spaify(_) {
@@ -895,7 +906,7 @@ function ssgify(url) {
 }
 var serve2 = async (runtime) => {
   try {
-    await fs5.promises.stat("__export__");
+    await fs6.promises.stat("__export__");
   } catch {
     error(`It looks like you\u2019re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`);
   }
@@ -907,7 +918,7 @@ var serve2 = async (runtime) => {
   if (runtime.command.mode === "spa") {
     transformURL = spaify;
   }
-  const proxySrv = http2.createServer((req, res) => {
+  const srvProxy = http2.createServer((req, res) => {
     const options2 = {
       hostname: result.host,
       port: result.port,
@@ -915,33 +926,28 @@ var serve2 = async (runtime) => {
       method: req.method,
       headers: req.headers
     };
-    const proxyReq = http2.request(options2, (proxyRes) => {
-      if (proxyRes.statusCode === 404) {
+    const reqProxy = http2.request(options2, (resProxy) => {
+      if (resProxy.statusCode === 404) {
         res.writeHead(404, {"Content-Type": "text/plain"});
         res.end("404 - Not Found");
         return;
       }
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res, {end: true});
+      res.writeHead(resProxy.statusCode, resProxy.headers);
+      resProxy.pipe(res, {end: true});
     });
-    req.pipe(proxyReq, {end: true});
+    req.pipe(reqProxy, {end: true});
   });
-  proxySrv.listen(runtime.command.port);
+  srvProxy.listen(runtime.command.port);
 };
 var cmd_serve_default = serve2;
 
 // packages/retro/cli.ts
-var cmds = `
-retro dev     Start the dev server
-retro export  Export the production-ready build (SSG)
-retro serve   Serve the production-ready build
-`.trim();
 var usage = `
   ${bold("Usage:")}
 
-  retro dev     Start the dev server
-  retro export  Export the production-ready build (SSG)
-  retro serve   Serve the production-ready build
+    retro dev          Start the dev server
+    retro export       Export the production-ready build (SSG)
+    retro serve        Serve the production-ready build
 
   ${bold("retro dev")}
 
@@ -967,8 +973,13 @@ var usage = `
 
   ${bold("Repository")}
 
-  ${underline("https://github.com/zaydek/retro")}
+    ${underline("https://github.com/zaydek/retro")}
 `;
+var cmds = `
+retro dev     Start the dev server
+retro export  Export the production-ready build (SSG)
+retro serve   Serve the production-ready build
+`.trim();
 function parseDevCommandFlags(...args) {
   const cmd = {
     type: "dev",

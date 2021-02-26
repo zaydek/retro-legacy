@@ -48,7 +48,7 @@ const serve: types.cmd_serve = async runtime => {
 		transformURL = spaify
 	}
 
-	const proxySrv = http.createServer((req, res) => {
+	const srvProxy = http.createServer((req, res) => {
 		const options = {
 			hostname: result.host,
 			port: result.port,
@@ -56,19 +56,19 @@ const serve: types.cmd_serve = async runtime => {
 			method: req.method,
 			headers: req.headers,
 		}
-		const proxyReq = http.request(options, proxyRes => {
+		const reqProxy = http.request(options, resProxy => {
 			// Bad request:
-			if (proxyRes.statusCode === 404) {
+			if (resProxy.statusCode === 404) {
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				return
 			}
-			res.writeHead(proxyRes.statusCode!, proxyRes.headers)
-			proxyRes.pipe(res, { end: true })
+			res.writeHead(resProxy.statusCode!, resProxy.headers)
+			resProxy.pipe(res, { end: true })
 		})
-		req.pipe(proxyReq, { end: true })
+		req.pipe(reqProxy, { end: true })
 	})
-	proxySrv.listen(runtime.command.port)
+	srvProxy.listen(runtime.command.port)
 }
 
 export default serve

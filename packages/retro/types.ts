@@ -94,13 +94,13 @@ export interface ServerRoute {
 	component: string // e.g. "PageIndex"
 }
 
-export interface RouteMeta {
+export interface ServerRouteMeta {
 	route: ServerRoute
 	props: ServerResolvedProps
 }
 
-export interface Router {
-	[key: string]: RouteMeta
+export interface ServerRouter {
+	[key: string]: ServerRouteMeta
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -7,19 +7,13 @@ import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
-const cmds = `
-retro dev     Start the dev server
-retro export  Export the production-ready build (SSG)
-retro serve   Serve the production-ready build
-`.trim()
-
 // NOTE: Use spaces for usage.
 const usage = `
   ${term.bold("Usage:")}
 
-  retro dev     Start the dev server
-  retro export  Export the production-ready build (SSG)
-  retro serve   Serve the production-ready build
+    retro dev          Start the dev server
+    retro export       Export the production-ready build (SSG)
+    retro serve        Serve the production-ready build
 
   ${term.bold("retro dev")}
 
@@ -45,8 +39,14 @@ const usage = `
 
   ${term.bold("Repository")}
 
-  ${term.underline("https://github.com/zaydek/retro")}
+    ${term.underline("https://github.com/zaydek/retro")}
 `
+
+const cmds = `
+retro dev     Start the dev server
+retro export  Export the production-ready build (SSG)
+retro serve   Serve the production-ready build
+`.trim()
 
 // parseDevCommandFlags parses 'retro dev [flags]'.
 //
@@ -222,16 +222,16 @@ Or 'retro usage' for usage.`)
 
 	// prettier-ignore
 	const runtime: types.Runtime = {
-		command: command!,
-		directories: {
-			publicDir:   process.env.PUBLIC_DIR || "public",
-			srcPagesDir: process.env.PAGES_DIR  || "src/pages",
-			cacheDir:    process.env.CACHE_DIR  || "__cache__",
-			exportDir:   process.env.EXPORT_DIR || "__export__",
-		},
-		document: "", // Defer to dev and export
-		pages: [],    // Defer to dev and export
-	}
+    command: command!,
+    directories: {
+      publicDir:   process.env.PUBLIC_DIR || "public",
+      srcPagesDir: process.env.PAGES_DIR  || "src/pages",
+      cacheDir:    process.env.CACHE_DIR  || "__cache__",
+      exportDir:   process.env.EXPORT_DIR || "__export__",
+    },
+    document: "", // Defer to dev and export
+    pages: [],    // Defer to dev and export
+  }
 
 	if (runtime.command.type === "dev") {
 		await utils.preflight(runtime)
