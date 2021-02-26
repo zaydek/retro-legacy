@@ -1,13 +1,5 @@
 import * as esbuild from "esbuild"
-import * as term from "../lib/term"
-
-export function testStrictObject(value: unknown): boolean {
-	return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-export function testStrictArray(value: unknown): boolean {
-	return typeof value === "object" && value !== null && Array.isArray(value)
-}
+import * as term from "../../lib/term"
 
 // loc.file:loc.line:loc.column: msg.text
 //

@@ -1,8 +1,8 @@
 import * as fs from "fs"
-import * as log from "../lib/log"
+import * as log from "../../lib/log"
 import * as p from "path"
-import * as term from "../lib/term"
-import * as types from "./types"
+import * as term from "../../lib/term"
+import * as types from "../types"
 
 // prettier-ignore
 interface ParsedPath {
@@ -176,7 +176,7 @@ function testURICharacter(char: string): boolean {
 	return false
 }
 
-export default async function parsePages(directories: types.DirConfiguration): Promise<types.PageMeta[]> {
+export async function parsePages(directories: types.DirConfiguration): Promise<types.PageMeta[]> {
 	const arr = await readdirAll(directories.srcPagesDir)
 
 	// Step over:

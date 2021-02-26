@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as p from "path"
 
-async function copyAll(src: string, dst: string, exclude: string[] = []): Promise<void> {
+export async function copyAll(src: string, dst: string, exclude: string[] = []): Promise<void> {
 	const directories: string[] = []
 	const files: string[] = []
 
@@ -27,32 +27,3 @@ async function copyAll(src: string, dst: string, exclude: string[] = []): Promis
 		await fs.promises.mkdir(p.join(dst, directory.slice(src.length)), { recursive: true })
 	for (const file of files) await fs.promises.copyFile(file, p.join(dst, file.slice(src.length)))
 }
-
-copyAll("src", "src-copy")
-
-// const ls = await fs.promises.readdir(entry)
-// for (const each of ls) {
-// 	const path = p.join(entry, each)
-// 	const stat = await fs.promises.stat(path)
-// 	if (!stat.isDirectory()) {
-// 		// ...
-// 	} else {
-// 		// ...
-// 	}
-// }
-
-// const arr: ParsedPath[] = []
-// async function recurse(src: string): Promise<void> {
-// 	const ls = await fs.promises.readdir(src)
-// 	for (const each of ls) {
-// 		const path = p.join(src, each)
-// 		if ((await fs.promises.stat(path)).isDirectory()) {
-// 			arr.push(parsePath(path))
-// 			await recurse(path)
-// 			continue
-// 		}
-// 		arr.push(parsePath(path))
-// 	}
-// }
-// await recurse(src)
-// return arr

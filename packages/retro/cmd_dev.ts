@@ -1,12 +1,10 @@
 // import * as esbuild from "esbuild"
 // import * as http from "http"
+
 import * as fs from "fs"
 import * as p from "path"
 import * as types from "./types"
-
-import copyAll from "./copyAll"
-import readPages from "./readPages"
-import runServerGuards from "./runServerGuards"
+import * as utils from "./utils"
 
 async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
 	return "Hello, world!"
@@ -24,18 +22,20 @@ async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
 //
 const cmd_dev: types.cmd_dev = async runtime => {
 	// Run server guards:
-	await runServerGuards(runtime.directories)
+	await utils.serverGuards(runtime.directories)
 
 	// Purge __export__:
 	await fs.promises.rmdir(runtime.directories.exportDir, { recursive: true })
-	await copyAll(runtime.directories.publicDir, p.join(runtime.directories.exportDir, runtime.directories.publicDir), [
-		p.join(runtime.directories.publicDir, "index.html"),
-	])
+	await utils.copyAll(
+		runtime.directories.publicDir,
+		p.join(runtime.directories.exportDir, runtime.directories.publicDir),
+		[p.join(runtime.directories.publicDir, "index.html")],
+	)
 
 	// Read runtime.document and runtime.pages:
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
 	runtime.document = data.toString()
-	runtime.pages = await readPages(runtime.directories)
+	runtime.pages = await utils.parsePages(runtime.directories)
 
 	//	const check = await checker("watch-src")
 	//

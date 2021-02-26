@@ -2,37 +2,13 @@ import * as errs from "./errs"
 import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
-import * as loggers from "./loggers"
+import * as loggers from "./utils/logTypes"
 import * as p from "path"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
-
-import readPages from "./readPages"
-import runServerGuards from "./runServerGuards"
-
-function testServerPropsReturn(value: unknown): boolean {
-	return utils.testStrictObject(value)
-}
-
-// prettier-ignore
-function testServerPathsReturn(value: unknown): boolean {
-	type A = unknown[]
-	type O = { [key: string]: unknown }
-
-	const ok = utils.testStrictArray(value) &&
-		(value as A).every(each => {
-			const ok = utils.testStrictObject(each) &&
-				("path" in (each as O) && typeof (each as O).path === "string") && // each.path
-				("props" in (each as O) && utils.testStrictObject((each as O).props))    // each.props
-			return ok
-		})
-	return ok
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 async function exportPage(runtime: types.Runtime, meta: types.RouteMeta, mod: types.PageModule): Promise<void> {
 	let head = "<!-- <Head> -->"
@@ -89,7 +65,7 @@ async function resolveStaticRouteMeta(
 	if (typeof mod!.serverProps === "function") {
 		try {
 			const serverProps = await mod!.serverProps!()
-			if (!testServerPropsReturn(serverProps)) {
+			if (!utils.validateServerPropsReturn(serverProps)) {
 				log.error(errs.serverPropsReturn(page.src))
 			}
 			props = {
@@ -134,7 +110,7 @@ async function resolveDynamicRouteMetas(
 		let paths: { path: string; props: types.Props }[] = []
 		try {
 			paths = await mod!.serverPaths!()
-			if (!testServerPathsReturn(paths)) {
+			if (!utils.validateServerPathsReturn(paths)) {
 				log.error(errs.serverPathsReturn(page.src))
 			}
 		} catch (err) {
@@ -320,10 +296,10 @@ ${
 
 // TODO: We need to purge the export directory before write to it.
 const cmd_export: types.cmd_export = async runtime => {
-	await runServerGuards(runtime.directories)
+	await utils.serverGuards(runtime.directories)
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
 	runtime.document = data.toString()
-	runtime.pages = await readPages(runtime.directories)
+	runtime.pages = await utils.parsePages(runtime.directories)
 
 	const router = await resolveServerRouter(runtime)
 

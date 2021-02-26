@@ -1,9 +1,7 @@
 import * as esbuild from "esbuild"
 import * as p from "path"
-import * as term from "../lib/term"
-import * as types from "./types"
-
-type Logger = (...args: unknown[]) => void
+import * as term from "../../lib/term"
+import * as types from "../types"
 
 interface TimeInfo {
 	hh: string // e.g. "03"
@@ -37,6 +35,8 @@ function formatMs(ms: number): string {
 let once = false
 
 export function serveEvent(args: esbuild.ServeOnRequestArgs): void {
+	type Logger = (...args: unknown[]) => void
+
 	const { hh, mm, ss, am, ms } = getTimeInfo()
 
 	const dur = formatMs(args.timeInMS)

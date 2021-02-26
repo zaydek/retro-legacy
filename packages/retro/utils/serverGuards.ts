@@ -1,10 +1,10 @@
 import * as fs from "fs"
-import * as log from "../lib/log"
+import * as log from "../../lib/log"
 import * as p from "path"
-import * as types from "./types"
+import * as types from "../types"
 
-// runServerGuards tests for the presence of directories and public/index.html.
-export default async function runServerGuards(directories: types.DirConfiguration): Promise<void> {
+// serverGuards tests for the presence of directories and public/index.html.
+export async function serverGuards(directories: types.DirConfiguration): Promise<void> {
 	// prettier-ignore
 	const dirs = [
 		directories.publicDir,

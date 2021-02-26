@@ -2,7 +2,7 @@ import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
-import * as loggers from "./loggers"
+import * as loggers from "./utils/logTypes"
 import * as p from "path"
 import * as types from "./types"
 
