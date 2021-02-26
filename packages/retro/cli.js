@@ -110,6 +110,273 @@ function error(...args) {
   process.exit(0);
 }
 
+// packages/retro/cmd_dev.ts
+var fs4 = __toModule(require("fs"));
+var p4 = __toModule(require("path"));
+
+// packages/retro/copyAll.ts
+var fs = __toModule(require("fs"));
+var p = __toModule(require("path"));
+async function copyAll(src, dst2, exclude = []) {
+  const directories = [];
+  const files = [];
+  async function recurse(entry) {
+    if (exclude.includes(entry))
+      return;
+    const stat = await fs.promises.stat(entry);
+    if (!stat.isDirectory()) {
+      files.push(entry);
+    } else {
+      directories.push(entry);
+      const ls = await fs.promises.readdir(entry);
+      for (const each of ls) {
+        await recurse(p.join(entry, each));
+      }
+    }
+  }
+  await recurse(src);
+  for (const directory of directories)
+    await fs.promises.mkdir(p.join(dst2, directory.slice(src.length)), {recursive: true});
+  for (const file of files)
+    await fs.promises.copyFile(file, p.join(dst2, file.slice(src.length)));
+}
+
+// packages/retro/readPages.ts
+var fs2 = __toModule(require("fs"));
+var p2 = __toModule(require("path"));
+var supported = {
+  ".js": true,
+  ".jsx": true,
+  ".ts": true,
+  ".tsx": true,
+  ".md": true,
+  ".mdx": true
+};
+function parsePath(path) {
+  const basename2 = p2.basename(path);
+  const ext = p2.extname(path);
+  const name = basename2.slice(0, -ext.length);
+  return {src: path, basename: basename2, name, ext};
+}
+function dst(directories, path) {
+  const syntax = p2.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
+  return syntax.slice(0, -path.ext.length) + ".html";
+}
+function toComponentSyntax(directories, parsed, {dynamic}) {
+  let path = toPathSyntax(directories, parsed);
+  if (dynamic) {
+    path = path.replace(dynamicRegex, "$1$3");
+  }
+  let syntax = "";
+  for (const part of path.split(p2.sep)) {
+    if (!part.length)
+      continue;
+    syntax += part[0].toUpperCase() + part.slice(1);
+  }
+  syntax = syntax || "Index";
+  return (dynamic ? "DynamicPage" : "Page") + syntax[0].toUpperCase() + syntax.slice(1);
+}
+function toPathSyntax(directories, parsed) {
+  const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length);
+  if (syntax.endsWith("/index")) {
+    return syntax.slice(0, -"index".length);
+  }
+  return syntax;
+}
+function createStaticPageMeta(directories, parsed) {
+  const component = {
+    type: "static",
+    src: parsed.src,
+    dst: dst(directories, parsed),
+    path: toPathSyntax(directories, parsed),
+    component: toComponentSyntax(directories, parsed, {dynamic: false})
+  };
+  return component;
+}
+function createDynamicPageMeta(directories, parsed) {
+  const component = {
+    type: "dynamic",
+    src: parsed.src,
+    component: toComponentSyntax(directories, parsed, {dynamic: true})
+  };
+  return component;
+}
+var dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
+function parsePage(directories, parsed) {
+  const path = toPathSyntax(directories, parsed);
+  if (dynamicRegex.test(path)) {
+    return createDynamicPageMeta(directories, parsed);
+  }
+  return createStaticPageMeta(directories, parsed);
+}
+async function readdirAll(src) {
+  const arr = [];
+  async function recurse(src2) {
+    const ls = await fs2.promises.readdir(src2);
+    for (const each of ls) {
+      const path = p2.join(src2, each);
+      if ((await fs2.promises.stat(path)).isDirectory()) {
+        arr.push(parsePath(path));
+        await recurse(path);
+        continue;
+      }
+      arr.push(parsePath(path));
+    }
+  }
+  await recurse(src);
+  return arr;
+}
+function testURICharacter(char) {
+  if (char >= "a" && char <= "z" || char >= "A" && char <= "Z" || char >= "0" && char <= "9") {
+    return true;
+  }
+  switch (char) {
+    case "-":
+    case ".":
+    case "_":
+    case "~":
+      return true;
+  }
+  switch (char) {
+    case ":":
+    case "/":
+    case "?":
+    case "#":
+    case "[":
+    case "]":
+    case "@":
+    case "!":
+    case "$":
+    case "&":
+    case "'":
+    case "(":
+    case ")":
+    case "*":
+    case "+":
+    case ",":
+    case ";":
+    case "=":
+      return true;
+  }
+  return false;
+}
+async function parsePages(directories) {
+  const arr = await readdirAll(directories.srcPagesDir);
+  const arr2 = arr.filter((path) => {
+    if (path.name.startsWith("_") || path.name.startsWith("$")) {
+      return false;
+    } else if (path.name.endsWith("_") || path.name.endsWith("$")) {
+      return false;
+    }
+    return supported[path.ext] === true;
+  });
+  const badSrcs = [];
+  for (const {src} of arr2) {
+    for (let x = 0; x < src.length; x++) {
+      if (!testURICharacter(src[x])) {
+        badSrcs.push(src);
+      }
+    }
+  }
+  if (badSrcs.length > 0) {
+    error(`These pages use non-URI characters:
+
+${badSrcs.map((each) => "- " + each).join("\n")}
+
+URI characters are described by RFC 3986:
+
+${dim("2.2.")} Unreserved Characters
+
+	ALPHA / DIGIT / "-" / "." / "_" / "~"
+
+${dim("2.3.")} Reserved Characters
+
+	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+	           / "*" / "+" / "," / ";" / "="
+
+${underline("https://tools.ietf.org/html/rfc3986")}`);
+  }
+  const pages = [];
+  for (const parsed of arr2) {
+    pages.push(parsePage(directories, parsed));
+  }
+  return pages;
+}
+
+// packages/retro/runServerGuards.ts
+var fs3 = __toModule(require("fs"));
+var p3 = __toModule(require("path"));
+async function runServerGuards(directories) {
+  const dirs = [
+    directories.publicDir,
+    directories.srcPagesDir,
+    directories.cacheDir,
+    directories.exportDir
+  ];
+  for (const dir of dirs) {
+    try {
+      await fs3.promises.stat(dir);
+    } catch (_) {
+      fs3.promises.mkdir(dir, {recursive: true});
+    }
+  }
+  const path = p3.join(directories.publicDir, "index.html");
+  try {
+    const data = await fs3.promises.readFile(path);
+    const text = data.toString();
+    if (!text.includes("%head")) {
+      error(`${path}: Add '%head%' somewhere to '<head>'.
+
+For example:
+
+...
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	%head%
+</head>
+...`);
+    } else if (!text.includes("%page")) {
+      error(`${path}: Add '%page%' somewhere to '<body>'.
+
+For example:
+
+...
+<body>
+	%page%
+</body>
+...`);
+    }
+  } catch (_) {
+    await fs3.promises.writeFile(path, `<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%head%
+	</head>
+	<body>
+		%page%
+	</body>
+</html>
+`);
+  }
+}
+
+// packages/retro/cmd_dev.ts
+var cmd_dev = async (runtime) => {
+  await runServerGuards(runtime.directories);
+  await fs4.promises.rmdir(runtime.directories.exportDir, {recursive: true});
+  await copyAll(runtime.directories.publicDir, p4.join(runtime.directories.exportDir, runtime.directories.publicDir), [
+    p4.join(runtime.directories.publicDir, "index.html")
+  ]);
+  const data = await fs4.promises.readFile(p4.join(runtime.directories.publicDir, "index.html"));
+  runtime.document = data.toString();
+  runtime.pages = await parsePages(runtime.directories);
+};
+var cmd_dev_default = cmd_dev;
+
 // packages/retro/errs.ts
 function serverPropsFunction(src) {
   return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
@@ -201,10 +468,10 @@ function pathExists(r1, r2) {
 
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
-var fs3 = __toModule(require("fs"));
+var fs5 = __toModule(require("fs"));
 
 // packages/retro/loggers.ts
-var p = __toModule(require("path"));
+var p5 = __toModule(require("path"));
 var TERM_WIDTH = 35;
 function getTimeInfo() {
   const date = new Date();
@@ -240,7 +507,7 @@ function serveEvent(args) {
     logger = (...args2) => console.error(...args2);
   }
   const path = args.path;
-  const path_ext = p.extname(path);
+  const path_ext = p5.extname(path);
   const path_name = path.slice(1, -path_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
   if (!once) {
@@ -263,17 +530,17 @@ function exportEvent(runtime, meta, start) {
     dimColor = dim.cyan;
   }
   const src = meta.route.src.slice(l1);
-  const src_ext = p.extname(src);
+  const src_ext = p5.extname(src);
   const src_name = src.slice(1, -src_ext.length);
   const dst2 = meta.route.dst.slice(l2);
-  const dst_ext = p.extname(dst2);
+  const dst_ext = p5.extname(dst2);
   const dst_name = dst2.slice(1, -dst_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
   console.log(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
 }
 
 // packages/retro/cmd_export.ts
-var p4 = __toModule(require("path"));
+var p6 = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
 
@@ -290,224 +557,6 @@ function formatEsbuildMessage(msg, color) {
 
 	${loc.line} ${dim("\u2502")} ${loc.lineText}
 	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
-}
-
-// packages/retro/parsePages.ts
-var fs = __toModule(require("fs"));
-var p2 = __toModule(require("path"));
-var supported = {
-  ".js": true,
-  ".jsx": true,
-  ".ts": true,
-  ".tsx": true,
-  ".md": true,
-  ".mdx": true
-};
-function parsePath(path) {
-  const basename2 = p2.basename(path);
-  const ext = p2.extname(path);
-  const name = basename2.slice(0, -ext.length);
-  return {src: path, basename: basename2, name, ext};
-}
-function dst(directories, path) {
-  const syntax = p2.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
-  return syntax.slice(0, -path.ext.length) + ".html";
-}
-function toComponentSyntax(directories, parsed, {dynamic}) {
-  let path = toPathSyntax(directories, parsed);
-  if (dynamic) {
-    path = path.replace(dynamicRegex, "$1$3");
-  }
-  let syntax = "";
-  for (const part of path.split(p2.sep)) {
-    if (!part.length)
-      continue;
-    syntax += part[0].toUpperCase() + part.slice(1);
-  }
-  syntax = syntax || "Index";
-  return (dynamic ? "DynamicPage" : "Page") + syntax[0].toUpperCase() + syntax.slice(1);
-}
-function toPathSyntax(directories, parsed) {
-  const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length);
-  if (syntax.endsWith("/index")) {
-    return syntax.slice(0, -"index".length);
-  }
-  return syntax;
-}
-function createStaticPageMeta(directories, parsed) {
-  const component = {
-    type: "static",
-    src: parsed.src,
-    dst: dst(directories, parsed),
-    path: toPathSyntax(directories, parsed),
-    component: toComponentSyntax(directories, parsed, {dynamic: false})
-  };
-  return component;
-}
-function createDynamicPageMeta(directories, parsed) {
-  const component = {
-    type: "dynamic",
-    src: parsed.src,
-    component: toComponentSyntax(directories, parsed, {dynamic: true})
-  };
-  return component;
-}
-var dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
-function parsePage(directories, parsed) {
-  const path = toPathSyntax(directories, parsed);
-  if (dynamicRegex.test(path)) {
-    return createDynamicPageMeta(directories, parsed);
-  }
-  return createStaticPageMeta(directories, parsed);
-}
-async function readdirAll(src) {
-  const arr = [];
-  async function recurse(src2) {
-    const ls = await fs.promises.readdir(src2);
-    for (const each of ls) {
-      const path = p2.join(src2, each);
-      if ((await fs.promises.stat(path)).isDirectory()) {
-        arr.push(parsePath(path));
-        await recurse(path);
-        continue;
-      }
-      arr.push(parsePath(path));
-    }
-  }
-  await recurse(src);
-  return arr;
-}
-function testURICharacter(char) {
-  if (char >= "a" && char <= "z" || char >= "A" && char <= "Z" || char >= "0" && char <= "9") {
-    return true;
-  }
-  switch (char) {
-    case "-":
-    case ".":
-    case "_":
-    case "~":
-      return true;
-  }
-  switch (char) {
-    case ":":
-    case "/":
-    case "?":
-    case "#":
-    case "[":
-    case "]":
-    case "@":
-    case "!":
-    case "$":
-    case "&":
-    case "'":
-    case "(":
-    case ")":
-    case "*":
-    case "+":
-    case ",":
-    case ";":
-    case "=":
-      return true;
-  }
-  return false;
-}
-async function parsePages(directories) {
-  const arr = await readdirAll(directories.srcPagesDir);
-  const arr2 = arr.filter((path) => {
-    if (path.name.startsWith("_") || path.name.startsWith("$")) {
-      return false;
-    } else if (path.name.endsWith("_") || path.name.endsWith("$")) {
-      return false;
-    }
-    return supported[path.ext] === true;
-  });
-  const badSrcs = [];
-  for (const {src} of arr2) {
-    for (let x = 0; x < src.length; x++) {
-      if (!testURICharacter(src[x])) {
-        badSrcs.push(src);
-      }
-    }
-  }
-  if (badSrcs.length > 0) {
-    error(`These pages use non-URI characters:
-
-${badSrcs.map((each) => "- " + each).join("\n")}
-
-URI characters are described by RFC 3986:
-
-2.2. Unreserved Characters
-
-	ALPHA / DIGIT / "-" / "." / "_" / "~"
-
-2.3. Reserved Characters
-
-	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-	           / "*" / "+" / "," / ";" / "="
-
-${underline("https://tools.ietf.org/html/rfc3986")}`);
-  }
-  const pages = [];
-  for (const parsed of arr2) {
-    pages.push(parsePage(directories, parsed));
-  }
-  return pages;
-}
-
-// packages/retro/runServerGuards.ts
-var fs2 = __toModule(require("fs"));
-var p3 = __toModule(require("path"));
-async function runServerGuards(directories) {
-  const dirs = Object.entries(directories).map(([_, dir]) => dir);
-  for (const dir of dirs) {
-    try {
-      await fs2.promises.stat(dir);
-    } catch (_) {
-      fs2.promises.mkdir(dir, {recursive: true});
-    }
-  }
-  const path = p3.join(directories.publicDir, "index.html");
-  try {
-    const data = await fs2.promises.readFile(path);
-    const text = data.toString();
-    if (!text.includes("%head")) {
-      error(`${path}: Add '%head%' somewhere to '<head>'.
-
-For example:
-
-...
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	%head%
-</head>
-...`);
-    } else if (!text.includes("%page")) {
-      error(`${path}: Add '%page%' somewhere to '<body>'.
-
-For example:
-
-...
-<body>
-	%page%
-</body>
-...`);
-    }
-  } catch (_) {
-    await fs2.promises.writeFile(path, `<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		%head%
-	</head>
-	<body>
-		%page%
-	</body>
-</html>
-`);
-  }
 }
 
 // packages/retro/cmd_export.ts
@@ -543,14 +592,14 @@ async function exportPage(runtime, meta, mod) {
     error(`${meta.route.src}.default: ${err.message}`);
   }
   const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
-  await fs3.promises.mkdir(p4.dirname(meta.route.dst), {recursive: true});
-  await fs3.promises.writeFile(meta.route.dst, rendered);
+  await fs5.promises.mkdir(p6.dirname(meta.route.dst), {recursive: true});
+  await fs5.promises.writeFile(meta.route.dst, rendered);
 }
 async function resolveStaticRouteMeta(runtime, page, outfile) {
   let props = {path: page.path};
   let mod;
   try {
-    mod = require(p4.join("..", "..", outfile));
+    mod = require(p6.join("..", "..", outfile));
   } catch {
   }
   if ("serverProps" in mod && typeof mod.serverProps !== "function") {
@@ -580,7 +629,7 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
   const metas = [];
   let mod;
   try {
-    mod = require(p4.join("..", "..", outfile));
+    mod = require(p6.join("..", "..", outfile));
   } catch {
   }
   if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
@@ -599,8 +648,8 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
       error(`${page.src}.serverPaths: ${err.message}`);
     }
     for (const path of paths) {
-      const path_ = p4.join(p4.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-      const dst2 = p4.join(runtime.directories.exportDir, path_ + ".html");
+      const path_ = p6.join(p6.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p6.join(runtime.directories.exportDir, path_ + ".html");
       metas.push({
         route: {
           type: "dynamic",
@@ -627,7 +676,7 @@ async function resolveServerRouter(runtime) {
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
     const entryPoints = [page.src];
-    const outfile = p4.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
+    const outfile = p6.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
     try {
       const result = await service.build({
         bundle: true,
@@ -723,15 +772,15 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 }
 var cmd_export = async (runtime) => {
   await runServerGuards(runtime.directories);
-  const data = await fs3.promises.readFile(p4.join(runtime.directories.publicDir, "index.html"));
+  const data = await fs5.promises.readFile(p6.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
   const router = await resolveServerRouter(runtime);
   const appSource = await renderAppSource(runtime, router);
-  const appSourcePath = p4.join(runtime.directories.cacheDir, "app.js");
-  await fs3.promises.writeFile(appSourcePath, appSource);
+  const appSourcePath = p6.join(runtime.directories.cacheDir, "app.js");
+  await fs5.promises.writeFile(appSourcePath, appSource);
   const entryPoints = [appSourcePath];
-  const outfile = p4.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
+  const outfile = p6.join(runtime.directories.exportDir, appSourcePath.slice(runtime.directories.srcPagesDir.length));
   try {
     const result = await esbuild.build({
       bundle: true,
@@ -762,22 +811,22 @@ var cmd_export_default = cmd_export;
 
 // packages/retro/cmd_serve.ts
 var esbuild2 = __toModule(require("esbuild"));
-var fs4 = __toModule(require("fs"));
+var fs6 = __toModule(require("fs"));
 var http = __toModule(require("http"));
-var p5 = __toModule(require("path"));
+var p7 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p5.extname(url) === "")
+  if (p7.extname(url) === "")
     return url + ".html";
   return url;
 }
 var serve2 = async (runtime) => {
   try {
-    await fs4.promises.stat("__export__");
+    await fs6.promises.stat("__export__");
   } catch {
     error(`It looks like you\u2019re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`);
   }
@@ -1013,6 +1062,7 @@ Or 'retro usage' for usage.`);
     pages: []
   };
   if (runtime.command.type === "dev") {
+    await cmd_dev_default(runtime);
   } else if (runtime.command.type === "export") {
     await cmd_export_default(runtime);
   } else if (runtime.command.type === "serve") {

@@ -206,17 +206,18 @@ export default async function parsePages(directories: types.DirConfiguration): P
 	}
 
 	if (badSrcs.length > 0) {
+		// TODO: Extract to errs?
 		log.error(`These pages use non-URI characters:
 
 ${badSrcs.map(each => "- " + each).join("\n")}
 
 URI characters are described by RFC 3986:
 
-2.2. Unreserved Characters
+${term.dim("2.2.")} Unreserved Characters
 
 	ALPHA / DIGIT / "-" / "." / "_" / "~"
 
-2.3. Reserved Characters
+${term.dim("2.3.")} Reserved Characters
 
 	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"

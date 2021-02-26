@@ -2,6 +2,7 @@ import * as log from "../lib/log"
 import * as term from "../lib/term"
 import * as types from "./types"
 
+import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
@@ -231,7 +232,7 @@ Or 'retro usage' for usage.`)
 	}
 
 	if (runtime.command.type === "dev") {
-		// await cmd_dev(runtime as types.Runtime<types.DevCommand>)
+		await cmd_dev(runtime as types.Runtime<types.DevCommand>)
 	} else if (runtime.command.type === "export") {
 		await cmd_export(runtime as types.Runtime<types.ExportCommand>)
 	} else if (runtime.command.type === "serve") {

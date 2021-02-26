@@ -5,9 +5,14 @@ import * as types from "./types"
 
 // runServerGuards tests for the presence of directories and public/index.html.
 export default async function runServerGuards(directories: types.DirConfiguration): Promise<void> {
-	const dirs = Object.entries(directories).map(([_, dir]) => dir)
+	// prettier-ignore
+	const dirs = [
+		directories.publicDir,
+		directories.srcPagesDir,
+		directories.cacheDir,
+		directories.exportDir,
+	]
 
-	// Guards directories:
 	for (const dir of dirs) {
 		try {
 			await fs.promises.stat(dir)
@@ -22,6 +27,7 @@ export default async function runServerGuards(directories: types.DirConfiguratio
 		const data = await fs.promises.readFile(path)
 		const text = data.toString()
 		if (!text.includes("%head")) {
+			// TODO: Extract to errs?
 			log.error(`${path}: Add '%head%' somewhere to '<head>'.
 
 For example:
@@ -34,6 +40,7 @@ For example:
 </head>
 ...`)
 		} else if (!text.includes("%page")) {
+			// TODO: Extract to errs?
 			log.error(`${path}: Add '%page%' somewhere to '<body>'.
 
 For example:

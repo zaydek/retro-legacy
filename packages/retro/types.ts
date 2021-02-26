@@ -69,6 +69,22 @@ export type Props = { [key: string]: unknown }
 // DescriptServerProps describes runtime props resolved on the server.
 export type ServerResolvedProps = Props & { path: string }
 
+// PageModule ambiguously describes a page module.
+export interface PageModule {
+	Head?: (props: ServerResolvedProps) => JSX.Element
+	default?: (props: ServerResolvedProps) => JSX.Element
+}
+
+// StaticPageModule describes a static page module.
+export interface StaticPageModule extends PageModule {
+	serverProps?(): Promise<ServerResolvedProps>
+}
+
+// DynamicPageModule describes a dynamic page module.
+export interface DynamicPageModule extends PageModule {
+	serverPaths(): Promise<{ path: string; props: Props }[]>
+}
+
 // prettier-ignore
 export interface ServerRoute {
 	type:      "static" | "dynamic"

@@ -10,26 +10,8 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import parsePages from "./parsePages"
+import readPages from "./readPages"
 import runServerGuards from "./runServerGuards"
-
-// PageModule ambiguously describes a page module.
-interface PageModule {
-	Head?: (props: types.ServerResolvedProps) => JSX.Element
-	default?: (props: types.ServerResolvedProps) => JSX.Element
-}
-
-// StaticPageModule describes a static page module.
-interface StaticPageModule extends PageModule {
-	serverProps?(): Promise<types.ServerResolvedProps>
-}
-
-// DynamicPageModule describes a dynamic page module.
-interface DynamicPageModule extends PageModule {
-	serverPaths(): Promise<{ path: string; props: types.Props }[]>
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 function testServerPropsReturn(value: unknown): boolean {
 	return utils.testStrictObject(value)
@@ -52,7 +34,7 @@ function testServerPathsReturn(value: unknown): boolean {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-async function exportPage(runtime: types.Runtime, meta: types.RouteMeta, mod: PageModule): Promise<void> {
+async function exportPage(runtime: types.Runtime, meta: types.RouteMeta, mod: types.PageModule): Promise<void> {
 	let head = "<!-- <Head> -->"
 	try {
 		if (typeof mod.Head === "function") {
@@ -91,7 +73,7 @@ async function resolveStaticRouteMeta(
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
-	let mod: StaticPageModule
+	let mod: types.StaticPageModule
 	try {
 		mod = require(p.join("..", "..", outfile))
 	} catch {}
@@ -135,7 +117,7 @@ async function resolveDynamicRouteMetas(
 	// NOTE: Use try to suppress: warning: This call to "require" will not be
 	// bundled because the argument is not a string literal (surround with a
 	// try/catch to silence this warning).
-	let mod: DynamicPageModule
+	let mod: types.DynamicPageModule
 	try {
 		mod = require(p.join("..", "..", outfile))
 	} catch {}
@@ -341,7 +323,7 @@ const cmd_export: types.cmd_export = async runtime => {
 	await runServerGuards(runtime.directories)
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
 	runtime.document = data.toString()
-	runtime.pages = await parsePages(runtime.directories)
+	runtime.pages = await readPages(runtime.directories)
 
 	const router = await resolveServerRouter(runtime)
 
