@@ -89,7 +89,7 @@ function format(...args) {
       return each;
     if (each === "")
       return each;
-    return " ".repeat(2) + each.replace("	", "  ");
+    return " " + each.replace("	", "  ");
   }).join("\n");
 }
 function warning(...args) {
@@ -159,9 +159,7 @@ export function serverPaths() {
 		{ path: "/foo/bar", props: ... },
 		{ path: "/foo/bar/baz", props: ... },
 	]
-}
-
-Note paths are directory-scoped.`;
+}`;
 }
 function serverPropsReturn(src) {
   return `${src}.serverProps: Bad 'serverProps' resolver.
