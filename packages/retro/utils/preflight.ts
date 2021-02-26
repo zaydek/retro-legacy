@@ -1,3 +1,4 @@
+import * as errs from "../errs"
 import * as fs from "fs"
 import * as log from "../../lib/log"
 import * as p from "path"
@@ -16,6 +17,7 @@ async function runServerGuards(directories: types.DirConfiguration): Promise<voi
 		directories.exportDir,
 	]
 
+	// Guard directories:
 	for (const dir of dirs) {
 		try {
 			await fs.promises.stat(dir)
@@ -24,35 +26,15 @@ async function runServerGuards(directories: types.DirConfiguration): Promise<voi
 		}
 	}
 
-	// Guards public/index.html:
+	// Guard public/index.html:
 	const path = p.join(directories.publicDir, "index.html")
 	try {
 		const data = await fs.promises.readFile(path)
 		const text = data.toString()
 		if (!text.includes("%head")) {
-			// TODO: Extract to errs?
-			log.error(`${path}: Add '%head%' somewhere to '<head>'.
-
-For example:
-
-...
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	%head%
-</head>
-...`)
+			log.error(errs.missingHeadTemplateTag(path))
 		} else if (!text.includes("%page")) {
-			// TODO: Extract to errs?
-			log.error(`${path}: Add '%page%' somewhere to '<body>'.
-
-For example:
-
-...
-<body>
-	%page%
-</body>
-...`)
+			log.error(errs.missingPageTemplateTag(path))
 		}
 	} catch (_) {
 		await fs.promises.writeFile(
@@ -68,7 +50,7 @@ For example:
 		%page%
 	</body>
 </html>
-`,
+`, // EOF
 		)
 	}
 }

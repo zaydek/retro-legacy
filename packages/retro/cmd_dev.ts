@@ -62,7 +62,7 @@ const cmd_dev: types.cmd_dev = async runtime => {
 				return
 			}
 
-			// Bad route:
+			// Bad path:
 			if (router[req.url!] === undefined) {
 				// TODO: Emit a log event here.
 				res.writeHead(404, { "Content-Type": "text/plain" })
@@ -83,6 +83,7 @@ const cmd_dev: types.cmd_dev = async runtime => {
 				mtimeMs: stat.mtimeMs,
 				html,
 			}
+			// TODO: Emit a log event here (incl. read from the cache or not).
 			res.writeHead(200, { "Content-Type": "text/html" })
 			res.end(html)
 		},

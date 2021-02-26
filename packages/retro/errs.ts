@@ -1,8 +1,37 @@
 import * as term from "../lib/term"
 import * as types from "./types"
 
+export function missingHeadTemplateTag(path: string): string {
+	return `${path}: Add ${term.cyan("'%head%'")} somewhere to ${term.cyan("'<head>'")}.
+
+For example:
+
+${term.dim(`// ${path}`)}
+...
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	${term.cyan("%head%")}
+</head>
+...`
+}
+
+export function missingPageTemplateTag(path: string): string {
+	return `${path}: Add ${term.cyan("'%page%'")} somewhere to ${term.cyan("'<body>'")}.
+
+For example:
+
+${term.dim(`// ${path}`)}
+...
+<body>
+	${term.cyan("%page%")}
+</body>
+...`
+}
+
 export function serverPropsFunction(src: string): string {
-	return `${src}: 'typeof serverProps !== "function"'; 'serverProps' must be a synchronous or an asynchronous function.
+	// prettier-ignore
+	return `${src}: ${term.cyan("'typeof serverProps !== \"function\"'")}; ${term.cyan("'serverProps'")} must be a synchronous or an asynchronous function.
 
 For example:
 
@@ -21,7 +50,8 @@ export async function serverProps() {
 }
 
 export function serverPathsFunction(src: string): string {
-	return `${src}: 'typeof serverPaths !== "function"'; 'serverPaths' must be a synchronous or an asynchronous function.
+	// prettier-ignore
+	return `${src}: ${term.cyan("'typeof serverPaths !== \"function\"'")}; ${term.cyan("'serverPaths'")} must be a synchronous or an asynchronous function.
 
 For example:
 
@@ -40,7 +70,7 @@ export async function serverPaths() {
 }
 
 export function serverPropsMismatch(src: string): string {
-	return `${src}: Dynamic pages must use 'serverPaths' not 'serverProps'.
+	return `${src}: Dynamic pages must use ${term.cyan("'serverPaths'")} not ${term.cyan("'serverProps'")}.
 
 For example:
 
@@ -55,7 +85,7 @@ export function serverPaths() {
 }
 
 export function serverPropsReturn(src: string): string {
-	return `${src}.serverProps: Bad 'serverProps' resolver.
+	return `${src}.serverProps: Bad ${term.cyan("'serverProps'")} resolver.
 
 For example:
 
@@ -66,7 +96,7 @@ export function serverProps() {
 }
 
 export function serverPathsReturn(src: string): string {
-	return `${src}.serverPaths: Bad 'serverPaths' resolver.
+	return `${src}.serverPaths: Bad ${term.cyan("'serverPaths'")} resolver.
 
 For example:
 
@@ -81,7 +111,7 @@ export function serverPaths() {
 }
 
 export function serverPathsMismatch(src: string): string {
-	return `${src}: Non-dynamic pages must use 'serverProps' not 'serverPaths'.
+	return `${src}: Non-dynamic pages must use ${term.cyan("'serverProps'")} not ${term.cyan("'serverPaths'")}.
 
 For example:
 
@@ -92,5 +122,5 @@ export function serverProps() {
 }
 
 export function pathExists(r1: types.ServerRoute, r2: types.ServerRoute): string {
-	return `${r1.src}: Path '${r1.path}' is already being used by ${r2.src}.`
+	return `${r1.src}: Path ${term.cyan(`'${r1.path}'`)} is already being used by ${r2.src}.`
 }
