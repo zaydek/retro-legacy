@@ -213,11 +213,11 @@ ${badSrcs.map(each => "- " + each).join("\n")}
 
 URI characters are described by RFC 3986:
 
-${term.dim("2.2.")} Unreserved Characters
+2.2. Unreserved Characters
 
 	ALPHA / DIGIT / "-" / "." / "_" / "~"
 
-${term.dim("2.3.")} Reserved Characters
+2.3. Reserved Characters
 
 	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"

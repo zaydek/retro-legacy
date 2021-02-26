@@ -1,3 +1,4 @@
+import * as errs from "./errs"
 import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as http from "http"
@@ -27,9 +28,7 @@ const serve: types.cmd_serve = async runtime => {
 	try {
 		await fs.promises.stat("__export__")
 	} catch {
-		log.error(
-			`It looks like you’re trying to run 'retro serve' before 'retro export'. Try 'retro export && retro serve'.`,
-		)
+		log.error(errs.serveWithoutExport)
 	}
 
 	// setTimeout(() => {

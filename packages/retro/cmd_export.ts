@@ -198,7 +198,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 		if (page.type === "static") {
 			const meta = await resolveStaticRouteMeta(runtime, page, outfile)
 			if (router[meta.route.path] !== undefined) {
-				log.error(errs.pathExists(meta.route, router[meta.route.path]!.route))
+				log.error(errs.duplicatePathFound(meta.route, router[meta.route.path]!.route))
 			}
 			router[meta.route.path] = meta
 
@@ -217,7 +217,7 @@ async function resolveServerRouter(runtime: types.Runtime<types.ExportCommand>):
 				// start = Date.now()
 
 				if (router[meta.route.path] !== undefined) {
-					log.error(errs.pathExists(meta.route, router[meta.route.path]!.route))
+					log.error(errs.duplicatePathFound(meta.route, router[meta.route.path]!.route))
 				}
 				router[meta.route.path] = meta
 

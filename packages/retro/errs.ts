@@ -29,8 +29,8 @@ ${term.dim(`// ${path}`)}
 ...`
 }
 
+// prettier-ignore
 export function serverPropsFunction(src: string): string {
-	// prettier-ignore
 	return `${src}: ${term.cyan("'typeof serverProps !== \"function\"'")}; ${term.cyan("'serverProps'")} must be a synchronous or an asynchronous function.
 
 For example:
@@ -49,8 +49,8 @@ export async function serverProps() {
 }`
 }
 
+// prettier-ignore
 export function serverPathsFunction(src: string): string {
-	// prettier-ignore
 	return `${src}: ${term.cyan("'typeof serverPaths !== \"function\"'")}; ${term.cyan("'serverPaths'")} must be a synchronous or an asynchronous function.
 
 For example:
@@ -121,6 +121,14 @@ export function serverProps() {
 }`
 }
 
-export function pathExists(r1: types.ServerRoute, r2: types.ServerRoute): string {
-	return `${r1.src}: Path ${term.cyan(`'${r1.path}'`)} is already being used by ${r2.src}.`
+export function duplicatePathFound(r1: types.ServerRoute, r2: types.ServerRoute): string {
+	function caller(r: types.ServerRoute): string {
+		return r.type === "static" ? "serverProps" : "serverPaths"
+	}
+	return `${r1.src}.${caller(r1)}: Path ${term.cyan(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`
+}
+
+// prettier-ignore
+export function serveWithoutExport(): string {
+	return `It looks like you’re trying to run ${term.cyan("'retro serve'")} before ${term.cyan("'retro export'")}. Try ${term.cyan("'retro export && retro serve'")}.`
 }
