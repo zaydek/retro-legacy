@@ -296,11 +296,6 @@ ${
 
 // TODO: We need to purge the export directory before write to it.
 const cmd_export: types.cmd_export = async runtime => {
-	await utils.serverGuards(runtime.directories)
-	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
-	runtime.document = data.toString()
-	runtime.pages = await utils.parsePages(runtime.directories)
-
 	const router = await resolveServerRouter(runtime)
 
 	// // TODO: Cache the router for renderAppSource?

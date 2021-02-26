@@ -1,6 +1,7 @@
 import * as log from "../lib/log"
 import * as term from "../lib/term"
 import * as types from "./types"
+import * as utils from "./utils"
 
 import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
@@ -12,8 +13,9 @@ retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 `.trim()
 
+// NOTE: Use spaces for usage.
 const usage = `
-\x20\x20${term.bold("Usage:")}
+  ${term.bold("Usage:")}
 
   retro dev     Start the dev server
   retro export  Export the production-ready build (SSG)
@@ -232,15 +234,17 @@ Or 'retro usage' for usage.`)
 	}
 
 	if (runtime.command.type === "dev") {
+		await utils.preflight(runtime)
 		await cmd_dev(runtime as types.Runtime<types.DevCommand>)
 	} else if (runtime.command.type === "export") {
+		await utils.preflight(runtime)
 		await cmd_export(runtime as types.Runtime<types.ExportCommand>)
 	} else if (runtime.command.type === "serve") {
 		await cmd_serve(runtime as types.Runtime<types.ServeCommand>)
 	}
 }
 
-process.on("uncaughtException", err => {
+process.on("uncaughtException", (err: Error): void => {
 	process.env["STACK_TRACE"] = "true"
 	err.message = `UncaughtException: ${err.message}`
 	log.error(err)

@@ -21,9 +21,6 @@ async function exportPage(runtime: unknown, meta: unknown): Promise<string> {
 // On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
 //
 const cmd_dev: types.cmd_dev = async runtime => {
-	// Run server guards:
-	await utils.serverGuards(runtime.directories)
-
 	// Purge __export__:
 	await fs.promises.rmdir(runtime.directories.exportDir, { recursive: true })
 	await utils.copyAll(

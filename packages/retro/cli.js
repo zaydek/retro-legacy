@@ -110,39 +110,86 @@ function error(...args) {
   process.exit(0);
 }
 
-// packages/retro/cmd_dev.ts
-var fs4 = __toModule(require("fs"));
-var p4 = __toModule(require("path"));
+// packages/retro/utils/formatEsbuild.ts
+function formatEsbuildMessage(msg, color) {
+  const loc = msg.location;
+  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
 
-// packages/retro/copyAll.ts
-var fs = __toModule(require("fs"));
-var p = __toModule(require("path"));
-async function copyAll(src, dst2, exclude = []) {
-  const directories = [];
-  const files = [];
-  async function recurse(entry) {
-    if (exclude.includes(entry))
-      return;
-    const stat = await fs.promises.stat(entry);
-    if (!stat.isDirectory()) {
-      files.push(entry);
-    } else {
-      directories.push(entry);
-      const ls = await fs.promises.readdir(entry);
-      for (const each of ls) {
-        await recurse(p.join(entry, each));
-      }
-    }
-  }
-  await recurse(src);
-  for (const directory of directories)
-    await fs.promises.mkdir(p.join(dst2, directory.slice(src.length)), {recursive: true});
-  for (const file of files)
-    await fs.promises.copyFile(file, p.join(dst2, file.slice(src.length)));
+	${loc.line} ${dim("\u2502")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
 }
 
-// packages/retro/readPages.ts
-var fs2 = __toModule(require("fs"));
+// packages/retro/utils/logTypes.ts
+var p = __toModule(require("path"));
+var TERM_WIDTH = 35;
+function getTimeInfo() {
+  const date = new Date();
+  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const am = date.getHours() < 12 ? "AM" : "PM";
+  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
+  return {hh, mm, ss, am, ms};
+}
+function formatMs(ms) {
+  switch (true) {
+    case ms < 250:
+      return `${ms}ms`;
+    default:
+      return `${(ms / 1e3).toFixed(2)}s`;
+  }
+}
+var once = false;
+function serveEvent(args) {
+  const {hh, mm, ss, am, ms} = getTimeInfo();
+  const dur = formatMs(args.timeInMS);
+  let color = normal;
+  if (args.status < 200 || args.status >= 300) {
+    color = red;
+  }
+  let dimColor = dim;
+  if (args.status < 200 || args.status >= 300) {
+    dimColor = dim.red;
+  }
+  let logger = (...args2) => console.log(...args2);
+  if (args.status < 200 || args.status >= 300) {
+    logger = (...args2) => console.error(...args2);
+  }
+  const path = args.path;
+  const path_ext = p.extname(path);
+  const path_name = path.slice(1, -path_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
+  if (!once) {
+    logger();
+    once = true;
+  }
+  logger(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+}
+function exportEvent(runtime, meta, start) {
+  const {hh, mm, ss, am, ms} = getTimeInfo();
+  const dur = formatMs(Date.now() - start);
+  const l1 = runtime.directories.srcPagesDir.length;
+  const l2 = runtime.directories.exportDir.length;
+  let color = white;
+  if (meta.route.type === "dynamic") {
+    color = cyan;
+  }
+  let dimColor = dim.white;
+  if (meta.route.type === "dynamic") {
+    dimColor = dim.cyan;
+  }
+  const src = meta.route.src.slice(l1);
+  const src_ext = p.extname(src);
+  const src_name = src.slice(1, -src_ext.length);
+  const dst2 = meta.route.dst.slice(l2);
+  const dst_ext = p.extname(dst2);
+  const dst_name = dst2.slice(1, -dst_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
+  console.log(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+}
+
+// packages/retro/utils/parsePages.ts
+var fs = __toModule(require("fs"));
 var p2 = __toModule(require("path"));
 var supported = {
   ".js": true,
@@ -212,10 +259,10 @@ function parsePage(directories, parsed) {
 async function readdirAll(src) {
   const arr = [];
   async function recurse(src2) {
-    const ls = await fs2.promises.readdir(src2);
+    const ls = await fs.promises.readdir(src2);
     for (const each of ls) {
       const path = p2.join(src2, each);
-      if ((await fs2.promises.stat(path)).isDirectory()) {
+      if ((await fs.promises.stat(path)).isDirectory()) {
         arr.push(parsePath(path));
         await recurse(path);
         continue;
@@ -304,8 +351,8 @@ ${underline("https://tools.ietf.org/html/rfc3986")}`);
   return pages;
 }
 
-// packages/retro/runServerGuards.ts
-var fs3 = __toModule(require("fs"));
+// packages/retro/utils/preflight.ts
+var fs2 = __toModule(require("fs"));
 var p3 = __toModule(require("path"));
 async function runServerGuards(directories) {
   const dirs = [
@@ -316,14 +363,14 @@ async function runServerGuards(directories) {
   ];
   for (const dir of dirs) {
     try {
-      await fs3.promises.stat(dir);
+      await fs2.promises.stat(dir);
     } catch (_) {
-      fs3.promises.mkdir(dir, {recursive: true});
+      fs2.promises.mkdir(dir, {recursive: true});
     }
   }
   const path = p3.join(directories.publicDir, "index.html");
   try {
-    const data = await fs3.promises.readFile(path);
+    const data = await fs2.promises.readFile(path);
     const text = data.toString();
     if (!text.includes("%head")) {
       error(`${path}: Add '%head%' somewhere to '<head>'.
@@ -349,7 +396,7 @@ For example:
 ...`);
     }
   } catch (_) {
-    await fs3.promises.writeFile(path, `<!DOCTYPE html>
+    await fs2.promises.writeFile(path, `<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -363,15 +410,69 @@ For example:
 `);
   }
 }
+async function copyAll(src, dst2, exclude = []) {
+  const directories = [];
+  const files = [];
+  async function recurse(entry) {
+    if (exclude.includes(entry))
+      return;
+    const stat = await fs2.promises.stat(entry);
+    if (!stat.isDirectory()) {
+      files.push(entry);
+    } else {
+      directories.push(entry);
+      const ls = await fs2.promises.readdir(entry);
+      for (const each of ls) {
+        await recurse(p3.join(entry, each));
+      }
+    }
+  }
+  await recurse(src);
+  for (const directory of directories)
+    await fs2.promises.mkdir(p3.join(dst2, directory.slice(src.length)), {recursive: true});
+  for (const file of files)
+    await fs2.promises.copyFile(file, p3.join(dst2, file.slice(src.length)));
+}
+async function preflight(runtime) {
+  await runServerGuards(runtime.directories);
+  await fs2.promises.rmdir(runtime.directories.exportDir, {recursive: true});
+  await copyAll(runtime.directories.publicDir, p3.join(runtime.directories.exportDir, runtime.directories.publicDir), [
+    p3.join(runtime.directories.publicDir, "index.html")
+  ]);
+  const data = await fs2.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
+  runtime.document = data.toString();
+  runtime.pages = await parsePages(runtime.directories);
+}
+
+// packages/retro/utils/validators.ts
+function validateObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function validateArray(value) {
+  return typeof value === "object" && value !== null && Array.isArray(value);
+}
+function validateServerPropsReturn(value) {
+  return validateObject(value);
+}
+function validateServerPathsReturn(value) {
+  const ok = validateArray(value) && value.every((each) => {
+    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
+    return ok2;
+  });
+  return ok;
+}
+
+// packages/retro/utils/watcher.ts
+var fs3 = __toModule(require("fs"));
+var p4 = __toModule(require("path"));
 
 // packages/retro/cmd_dev.ts
+var fs4 = __toModule(require("fs"));
+var p5 = __toModule(require("path"));
 var cmd_dev = async (runtime) => {
-  await runServerGuards(runtime.directories);
   await fs4.promises.rmdir(runtime.directories.exportDir, {recursive: true});
-  await copyAll(runtime.directories.publicDir, p4.join(runtime.directories.exportDir, runtime.directories.publicDir), [
-    p4.join(runtime.directories.publicDir, "index.html")
-  ]);
-  const data = await fs4.promises.readFile(p4.join(runtime.directories.publicDir, "index.html"));
+  await copyAll(runtime.directories.publicDir, p5.join(runtime.directories.exportDir, runtime.directories.publicDir), [p5.join(runtime.directories.publicDir, "index.html")]);
+  const data = await fs4.promises.readFile(p5.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
 };
@@ -469,107 +570,9 @@ function pathExists(r1, r2) {
 // packages/retro/cmd_export.ts
 var esbuild = __toModule(require("esbuild"));
 var fs5 = __toModule(require("fs"));
-
-// packages/retro/loggers.ts
-var p5 = __toModule(require("path"));
-var TERM_WIDTH = 35;
-function getTimeInfo() {
-  const date = new Date();
-  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  const am = date.getHours() < 12 ? "AM" : "PM";
-  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
-  return {hh, mm, ss, am, ms};
-}
-function formatMs(ms) {
-  switch (true) {
-    case ms < 250:
-      return `${ms}ms`;
-    default:
-      return `${(ms / 1e3).toFixed(2)}s`;
-  }
-}
-var once = false;
-function serveEvent(args) {
-  const {hh, mm, ss, am, ms} = getTimeInfo();
-  const dur = formatMs(args.timeInMS);
-  let color = normal;
-  if (args.status < 200 || args.status >= 300) {
-    color = red;
-  }
-  let dimColor = dim;
-  if (args.status < 200 || args.status >= 300) {
-    dimColor = dim.red;
-  }
-  let logger = (...args2) => console.log(...args2);
-  if (args.status < 200 || args.status >= 300) {
-    logger = (...args2) => console.error(...args2);
-  }
-  const path = args.path;
-  const path_ext = p5.extname(path);
-  const path_name = path.slice(1, -path_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
-  if (!once) {
-    logger();
-    once = true;
-  }
-  logger(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
-}
-function exportEvent(runtime, meta, start) {
-  const {hh, mm, ss, am, ms} = getTimeInfo();
-  const dur = formatMs(Date.now() - start);
-  const l1 = runtime.directories.srcPagesDir.length;
-  const l2 = runtime.directories.exportDir.length;
-  let color = white;
-  if (meta.route.type === "dynamic") {
-    color = cyan;
-  }
-  let dimColor = dim.white;
-  if (meta.route.type === "dynamic") {
-    dimColor = dim.cyan;
-  }
-  const src = meta.route.src.slice(l1);
-  const src_ext = p5.extname(src);
-  const src_name = src.slice(1, -src_ext.length);
-  const dst2 = meta.route.dst.slice(l2);
-  const dst_ext = p5.extname(dst2);
-  const dst_name = dst2.slice(1, -dst_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  console.log(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
-}
-
-// packages/retro/cmd_export.ts
 var p6 = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-
-// packages/retro/utils.ts
-function testStrictObject(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function testStrictArray(value) {
-  return typeof value === "object" && value !== null && Array.isArray(value);
-}
-function formatEsbuildMessage(msg, color) {
-  const loc = msg.location;
-  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
-
-	${loc.line} ${dim("\u2502")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
-}
-
-// packages/retro/cmd_export.ts
-function testServerPropsReturn(value) {
-  return testStrictObject(value);
-}
-function testServerPathsReturn(value) {
-  const ok = testStrictArray(value) && value.every((each) => {
-    const ok2 = testStrictObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && testStrictObject(each.props));
-    return ok2;
-  });
-  return ok;
-}
 async function exportPage(runtime, meta, mod) {
   let head = "<!-- <Head> -->";
   try {
@@ -610,7 +613,7 @@ async function resolveStaticRouteMeta(runtime, page, outfile) {
   if (typeof mod.serverProps === "function") {
     try {
       const serverProps = await mod.serverProps();
-      if (!testServerPropsReturn(serverProps)) {
+      if (!validateServerPropsReturn(serverProps)) {
         error(serverPropsReturn(page.src));
       }
       props = {
@@ -641,7 +644,7 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
     let paths = [];
     try {
       paths = await mod.serverPaths();
-      if (!testServerPathsReturn(paths)) {
+      if (!validateServerPathsReturn(paths)) {
         error(serverPathsReturn(page.src));
       }
     } catch (err) {
@@ -771,10 +774,6 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 `;
 }
 var cmd_export = async (runtime) => {
-  await runServerGuards(runtime.directories);
-  const data = await fs5.promises.readFile(p6.join(runtime.directories.publicDir, "index.html"));
-  runtime.document = data.toString();
-  runtime.pages = await parsePages(runtime.directories);
   const router = await resolveServerRouter(runtime);
   const appSource = await renderAppSource(runtime, router);
   const appSourcePath = p6.join(runtime.directories.cacheDir, "app.js");
@@ -1062,8 +1061,10 @@ Or 'retro usage' for usage.`);
     pages: []
   };
   if (runtime.command.type === "dev") {
+    await preflight(runtime);
     await cmd_dev_default(runtime);
   } else if (runtime.command.type === "export") {
+    await preflight(runtime);
     await cmd_export_default(runtime);
   } else if (runtime.command.type === "serve") {
     await cmd_serve_default(runtime);

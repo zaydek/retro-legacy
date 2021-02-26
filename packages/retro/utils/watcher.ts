@@ -1,5 +1,5 @@
-import fs from "fs"
-import path from "path"
+import * as fs from "fs"
+import * as p from "path"
 
 export function sleep(ms: number): Promise<void> {
 	return new Promise(resolve => setTimeout(resolve, ms))
@@ -19,7 +19,7 @@ export async function* watcher(root: string, { interval }: { interval: number })
 		}
 		if (stat.isDirectory()) {
 			for (const each of await fs.promises.readdir(entry)) {
-				const src = path.join(entry, each)
+				const src = p.join(entry, each)
 				const result = await read(src, { deep })
 				if (result !== "") {
 					if (!deep) {
