@@ -25,7 +25,6 @@ async function* gen(): AsyncGenerator<number, void, void> {
 		yield 5
 		await sleep(1e3)
 	}
-	// return "lol"
 }
 
 // watcher returns a function that checks whether sources have changed.
