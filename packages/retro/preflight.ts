@@ -2,9 +2,10 @@ import * as errs from "./errs"
 import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
+import * as resolvers from "./resolvers"
 import * as types from "./types"
 
-import { parsePages } from "./utils/parsePages"
+import parsePages from "./pages"
 
 // runServerGuards tests for the presence of runtime directories and
 // public/index.html.
@@ -82,7 +83,7 @@ export async function copyAll(src: string, dst: string, exclude: string[] = []):
 	for (const file of files) await fs.promises.copyFile(file, p.join(dst, file.slice(src.length)))
 }
 
-export default async function preflight(runtime: types.Runtime): Promise<void> {
+export default async function preflight(runtime: types.Runtime<types.DevCommand | types.ExportCommand>): Promise<void> {
 	// Run server guards:
 	await runServerGuards(runtime.directories)
 
@@ -92,8 +93,13 @@ export default async function preflight(runtime: types.Runtime): Promise<void> {
 		p.join(runtime.directories.publicDir, "index.html"),
 	])
 
-	// Read runtime.document and runtime.pages:
+	// Resolve runtime.document and runtime.pages:
 	const data = await fs.promises.readFile(p.join(runtime.directories.publicDir, "index.html"))
 	runtime.document = data.toString()
 	runtime.pages = await parsePages(runtime.directories)
+
+	// Resolve runtime.router from runtime.pages:
+	//
+	// TODO: Implement '---cache' here.
+	runtime.router = await resolvers.resolveRouter(runtime)
 }

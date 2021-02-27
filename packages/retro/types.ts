@@ -16,13 +16,11 @@ export interface ExportCommand {
 // ServeCommand describes the 'retro serve' command.
 export interface ServeCommand {
 	type: "serve"
-	mode: "spa" | "ssg"
+	// mode: "spa" | "ssg"
 	port: number
 }
 
 export type Command = DevCommand | ExportCommand | ServeCommand
-
-export type DevOrExportCommand = DevCommand | ExportCommand
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -60,6 +58,7 @@ export interface Runtime<Cmd = Command> {
 	directories: DirConfiguration
 	document: string
 	pages: PageInfo[]
+	router: Router
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -105,8 +104,8 @@ export interface RouteMeta {
 
 // LoadedRouteMeta describes a loaded server-resolved route (from __cache__).
 export interface LoadedRouteMeta {
+	mod: StaticPageModule | DynamicPageModule
 	meta: RouteMeta
-	module: StaticPageModule | DynamicPageModule
 }
 
 // Router describes the server-resolved route.

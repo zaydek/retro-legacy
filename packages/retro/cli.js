@@ -112,9 +112,117 @@ function error(...args) {
 
 // packages/retro/cmd_dev.ts
 var esbuild2 = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs"));
+
+// packages/retro/events.ts
+var p = __toModule(require("path"));
+var TERM_WIDTH = 40;
+function timestamp() {
+  const date = new Date();
+  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const am = date.getHours() < 12 ? "AM" : "PM";
+  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
+  return `${hh}:${mm}:${ss}.${ms} ${am}`;
+}
+function formatMs(ms) {
+  switch (true) {
+    case ms < 250:
+      return `${ms}ms`;
+    default:
+      return `${(ms / 1e3).toFixed(2)}s`;
+  }
+}
+function export_(runtime, meta, start) {
+  const dur = formatMs(Date.now() - start);
+  const l1 = runtime.directories.srcPagesDir.length;
+  const l2 = runtime.directories.exportDir.length;
+  let color = white;
+  if (meta.route.type === "dynamic") {
+    color = cyan;
+  }
+  let dimColor = dim.white;
+  if (meta.route.type === "dynamic") {
+    dimColor = dim.cyan;
+  }
+  const src = meta.route.src.slice(l1);
+  const src_ext = p.extname(src);
+  const src_name = src.slice(1, -src_ext.length);
+  const dst2 = meta.route.dst.slice(l2);
+  const dst_ext = p.extname(dst2);
+  const dst_name = dst2.slice(1, -dst_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
+  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+}
+function serve(args) {
+  const dur = formatMs(args.timeInMS);
+  let color = normal;
+  if (args.status < 200 || args.status >= 300) {
+    color = red;
+  }
+  let dimColor = dim;
+  if (args.status < 200 || args.status >= 300) {
+    dimColor = dim.red;
+  }
+  let logger = (...args2) => console.log(...args2);
+  if (args.status < 200 || args.status >= 300) {
+    logger = (...args2) => console.error(...args2);
+  }
+  const path = args.path;
+  const path_ext = p.extname(path);
+  const path_name = path.slice(1, -path_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
+  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+}
+
+// packages/retro/cmd_dev.ts
 var http = __toModule(require("http"));
-var p6 = __toModule(require("path"));
+
+// packages/retro/utils/formatEsbuild.ts
+function formatEsbuildMessage(msg, color) {
+  const loc = msg.location;
+  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
+
+	${loc.line} ${dim("\u2502")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+}
+
+// packages/retro/utils/modes.ts
+var p2 = __toModule(require("path"));
+function ssgify(url) {
+  if (url.endsWith("/"))
+    return url + "index.html";
+  if (p2.extname(url) === "")
+    return url + ".html";
+  return url;
+}
+
+// packages/retro/utils/prettyJSON.ts
+function prettyJSON(value) {
+  return JSON.stringify(value).replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
+}
+
+// packages/retro/utils/validators.ts
+function validateObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function validateArray(value) {
+  return typeof value === "object" && value !== null && Array.isArray(value);
+}
+function validateServerPropsReturn(value) {
+  return validateObject(value);
+}
+function validateServerPathsReturn(value) {
+  const ok = validateArray(value) && value.every((each) => {
+    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
+    return ok2;
+  });
+  return ok;
+}
+
+// packages/retro/utils/watcher.ts
+var fs = __toModule(require("fs"));
+var p3 = __toModule(require("path"));
 
 // packages/retro/errs.ts
 function missingHeadTemplateTag(path) {
@@ -237,96 +345,224 @@ function serveWithoutExport() {
   return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
 }
 
+// packages/retro/preflight.ts
+var fs4 = __toModule(require("fs"));
+var p6 = __toModule(require("path"));
+
 // packages/retro/resolvers.ts
 var esbuild = __toModule(require("esbuild"));
-
-// packages/retro/events.ts
-var p = __toModule(require("path"));
-var TERM_WIDTH = 40;
-function timestamp() {
-  const date = new Date();
-  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  const am = date.getHours() < 12 ? "AM" : "PM";
-  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
-  return `${hh}:${mm}:${ss}.${ms} ${am}`;
-}
-function formatMs(ms) {
-  switch (true) {
-    case ms < 250:
-      return `${ms}ms`;
-    default:
-      return `${(ms / 1e3).toFixed(2)}s`;
-  }
-}
-function export_(runtime, meta, start) {
-  const dur = formatMs(Date.now() - start);
-  const l1 = runtime.directories.srcPagesDir.length;
-  const l2 = runtime.directories.exportDir.length;
-  let color = white;
-  if (meta.route.type === "dynamic") {
-    color = cyan;
-  }
-  let dimColor = dim.white;
-  if (meta.route.type === "dynamic") {
-    dimColor = dim.cyan;
-  }
-  const src = meta.route.src.slice(l1);
-  const src_ext = p.extname(src);
-  const src_name = src.slice(1, -src_ext.length);
-  const dst2 = meta.route.dst.slice(l2);
-  const dst_ext = p.extname(dst2);
-  const dst_name = dst2.slice(1, -dst_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
-}
-var serveOnce = false;
-function serve(args) {
-  const dur = formatMs(args.timeInMS);
-  let color = normal;
-  if (args.status < 200 || args.status >= 300) {
-    color = red;
-  }
-  let dimColor = dim;
-  if (args.status < 200 || args.status >= 300) {
-    dimColor = dim.red;
-  }
-  let logger = (...args2) => console.log(...args2);
-  if (args.status < 200 || args.status >= 300) {
-    logger = (...args2) => console.error(...args2);
-  }
-  const path = args.path;
-  const path_ext = p.extname(path);
-  const path_name = path.slice(1, -path_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
-  if (!serveOnce) {
-    logger();
-    serveOnce = true;
-  }
-  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
-}
-
-// packages/retro/resolvers.ts
-var fs3 = __toModule(require("fs"));
+var fs2 = __toModule(require("fs"));
 var p4 = __toModule(require("path"));
 
 // packages/retro/resolvers-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
+async function renderRouteMetaToString(runtime, loaded) {
+  let head = "<!-- <Head> -->";
+  try {
+    if (typeof loaded.mod.Head === "function") {
+      const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(loaded.mod.Head, loaded.meta.props));
+      head = renderString.replace(/></g, ">\n		<").replace(/\/>/g, " />");
+    }
+  } catch (err) {
+    error(`${loaded.meta.route.src}.<Head>: ${err.message}`);
+  }
+  let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="root"></div>
+		<script src="/app.js"></script>`;
+  try {
+    if (typeof loaded.mod.default === "function") {
+      const renderString = ReactDOMServer.renderToString(React.createElement(loaded.mod.default, loaded.meta.props));
+      page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`);
+    }
+  } catch (err) {
+    error(`${loaded.meta.route.src}.<Page>: ${err.message}`);
+  }
+  const text = runtime.document.replace("%head%", head).replace("%page%", page);
+  return text;
+}
+async function renderRouterToString(runtime) {
+  const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
+  const distinctRoutes = runtime.pages.filter((route) => distinctComponents.includes(route.component)).sort((a, b) => a.component.localeCompare(b.component));
+  return `import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "../packages/router"
 
-// packages/retro/utils/formatEsbuild.ts
-function formatEsbuildMessage(msg, color) {
-  const loc = msg.location;
-  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
+// Components
+${distinctRoutes.map((route) => `import ${route.component} from "../${route.src}"`).join("\n")}
 
-	${loc.line} ${dim("\u2502")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+export default function App() {
+	return (
+		<Router>
+${Object.entries(runtime.router).map(([path, meta]) => `
+			<Route path="${path}">
+				<${meta.route.component} {...${prettyJSON(meta.props)}} />
+			</Route>`).join("\n") + "\n"}
+		</Router>
+	)
 }
 
-// packages/retro/utils/parsePages.ts
-var fs = __toModule(require("fs"));
-var p2 = __toModule(require("path"));
+${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
+	document.getElementById("root"),
+)` : `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`}
+`;
+}
+
+// packages/retro/resolvers.ts
+function formatter() {
+  let once = false;
+  return {
+    start() {
+      if (once)
+        return;
+      console.log();
+      once = true;
+    },
+    done() {
+      console.log();
+    }
+  };
+}
+var format2 = formatter();
+var service;
+async function resolveModule(runtime, page) {
+  const target = p4.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
+  try {
+    const result = await service.build({
+      bundle: true,
+      define: {
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+      },
+      entryPoints: [page.src],
+      external: ["react", "react-dom"],
+      format: "cjs",
+      inject: ["packages/retro/react-shim.js"],
+      loader: {".js": "jsx"},
+      logLevel: "silent",
+      outfile: target
+    });
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(formatEsbuildMessage(warning2, yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    error(formatEsbuildMessage(err.errors[0], bold.red));
+  }
+  let mod = {};
+  try {
+    mod = require(p4.join("..", "..", target));
+  } catch {
+  }
+  return mod;
+}
+async function resolveStaticRoute(runtime, page) {
+  let props = {path: page.path};
+  const mod = await resolveModule(runtime, page);
+  if ("serverProps" in mod && typeof mod.serverProps !== "function") {
+    error(serverPropsFunction(page.src));
+  } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
+    error(serverPathsMismatch(page.src));
+  }
+  if (typeof mod.serverProps === "function") {
+    try {
+      const serverProps = await mod.serverProps();
+      if (!validateServerPropsReturn(serverProps)) {
+        error(serverPropsReturn(page.src));
+      }
+      props = {
+        path: page.path,
+        ...serverProps
+      };
+    } catch (err) {
+      error(`${page.src}.serverProps: ${err.message}`);
+    }
+  }
+  const loaded = {mod, meta: {route: page, props}};
+  return loaded;
+}
+async function resolveDynamicRoutes(runtime, page) {
+  const loaded = [];
+  const mod = await resolveModule(runtime, page);
+  if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
+    error(serverPathsFunction(page.src));
+  } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
+    error(serverPropsMismatch(page.src));
+  }
+  if (typeof mod.serverPaths === "function") {
+    let paths = [];
+    try {
+      paths = await mod.serverPaths();
+      if (!validateServerPathsReturn(paths)) {
+        error(serverPathsReturn(page.src));
+      }
+    } catch (err) {
+      error(`${page.src}.serverPaths: ${err.message}`);
+    }
+    for (const path of paths) {
+      const path_ = p4.join(p4.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p4.join(runtime.directories.exportDir, path_ + ".html");
+      loaded.push({
+        mod,
+        meta: {
+          route: {
+            ...page,
+            dst: dst2,
+            path: path_
+          },
+          props: {
+            path: path_,
+            ...path.props
+          }
+        }
+      });
+    }
+  }
+  return loaded;
+}
+async function resolveRouter(runtime) {
+  const router = {};
+  service = await esbuild.startService();
+  for (const page of runtime.pages) {
+    let start = Date.now();
+    const loaded = [];
+    if (page.type === "static") {
+      const one = await resolveStaticRoute(runtime, page);
+      loaded.push(one);
+    } else {
+      const many = await resolveDynamicRoutes(runtime, page);
+      loaded.push(...many);
+    }
+    for (const each of loaded) {
+      if (router[each.meta.route.path] !== void 0) {
+        error(duplicatePathFound(each.meta.route, router[each.meta.route.path].route));
+      }
+      format2.start();
+      router[each.meta.route.path] = each.meta;
+      if (runtime.command.type === "export") {
+        const text = await renderRouteMetaToString(runtime, each);
+        await fs2.promises.mkdir(p4.dirname(each.meta.route.dst), {recursive: true});
+        await fs2.promises.writeFile(each.meta.route.dst, text);
+      }
+      export_(runtime, each.meta, start);
+      start = 0;
+    }
+  }
+  format2.done();
+  return router;
+}
+
+// packages/retro/pages.ts
+var fs3 = __toModule(require("fs"));
+var p5 = __toModule(require("path"));
 var supported = {
   ".js": true,
   ".jsx": true,
@@ -336,13 +572,13 @@ var supported = {
   ".mdx": true
 };
 function parsePath(path) {
-  const basename2 = p2.basename(path);
-  const ext = p2.extname(path);
+  const basename2 = p5.basename(path);
+  const ext = p5.extname(path);
   const name = basename2.slice(0, -ext.length);
   return {src: path, basename: basename2, name, ext};
 }
 function dst(directories, path) {
-  const syntax = p2.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
+  const syntax = p5.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length));
   return syntax.slice(0, -path.ext.length) + ".html";
 }
 function toComponentSyntax(directories, parsed, {dynamic}) {
@@ -351,7 +587,7 @@ function toComponentSyntax(directories, parsed, {dynamic}) {
     path = path.replace(dynamicRegex, "$1$3");
   }
   let syntax = "";
-  for (const part of path.split(p2.sep)) {
+  for (const part of path.split(p5.sep)) {
     if (!part.length)
       continue;
     syntax += part[0].toUpperCase() + part.slice(1);
@@ -395,10 +631,10 @@ function parsePage(directories, parsed) {
 async function readdirAll(src) {
   const arr = [];
   async function recurse(src2) {
-    const ls = await fs.promises.readdir(src2);
+    const ls = await fs3.promises.readdir(src2);
     for (const each of ls) {
-      const path = p2.join(src2, each);
-      if ((await fs.promises.stat(path)).isDirectory()) {
+      const path = p5.join(src2, each);
+      if ((await fs3.promises.stat(path)).isDirectory()) {
         arr.push(parsePath(path));
         await recurse(path);
         continue;
@@ -487,278 +723,7 @@ ${underline("https://tools.ietf.org/html/rfc3986")}`);
   return pages;
 }
 
-// packages/retro/utils/prettyJSON.ts
-function prettyJSON(str) {
-  return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
-}
-
-// packages/retro/utils/validators.ts
-function validateObject(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function validateArray(value) {
-  return typeof value === "object" && value !== null && Array.isArray(value);
-}
-function validateServerPropsReturn(value) {
-  return validateObject(value);
-}
-function validateServerPathsReturn(value) {
-  const ok = validateArray(value) && value.every((each) => {
-    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
-    return ok2;
-  });
-  return ok;
-}
-
-// packages/retro/utils/watcher.ts
-var fs2 = __toModule(require("fs"));
-var p3 = __toModule(require("path"));
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-async function* watcher(root, {interval}) {
-  const mtimeMsMap = {};
-  async function read(entry, {deep}) {
-    const stat = await fs2.promises.stat(entry);
-    const mtimeMs = mtimeMsMap[entry];
-    if (mtimeMs === void 0 || stat.mtimeMs !== mtimeMs) {
-      mtimeMsMap[entry] = stat.mtimeMs;
-      if (!deep) {
-        return entry;
-      }
-    }
-    if (stat.isDirectory()) {
-      for (const each of await fs2.promises.readdir(entry)) {
-        const src = p3.join(entry, each);
-        const result = await read(src, {deep});
-        if (result !== "") {
-          if (!deep) {
-            return result;
-          }
-        }
-      }
-    }
-    return "";
-  }
-  await read(root, {deep: true});
-  while (true) {
-    await sleep(interval);
-    const src = await read(root, {deep: false});
-    if (src !== "") {
-      yield src;
-    }
-  }
-}
-
-// packages/retro/resolvers-text.ts
-var renderServerRouteMetaToString = async (runtime, loaded) => {
-  let head = "<!-- <Head> -->";
-  try {
-    if (typeof loaded.module.Head === "function") {
-      const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(loaded.module.Head, loaded.meta.props));
-      head = renderString.replace(/></g, ">\n		<").replace(/\/>/g, " />");
-    }
-  } catch (err) {
-    error(`${loaded.meta.route.src}.<Head>: ${err.message}`);
-  }
-  let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root"></div>
-		<script src="/app.js"></script>`;
-  try {
-    if (typeof loaded.module.default === "function") {
-      const renderString = ReactDOMServer.renderToString(React.createElement(loaded.module.default, loaded.meta.props));
-      page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`);
-    }
-  } catch (err) {
-    error(`${loaded.meta.route.src}.<Page>: ${err.message}`);
-  }
-  const out = runtime.document.replace("%head%", head).replace("%page%", page);
-  return out;
-};
-var renderServerRouterToString = async (runtime, router) => {
-  const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
-  const distinctRoutes = runtime.pages.filter((route) => distinctComponents.includes(route.component)).sort((a, b) => a.component.localeCompare(b.component));
-  return `import React from "react"
-import ReactDOM from "react-dom"
-import { Route, Router } from "../packages/router"
-
-// Components
-${distinctRoutes.map((route) => `import ${route.component} from "../${route.src}"`).join("\n")}
-
-export default function App() {
-	return (
-		<Router>
-${Object.entries(router).map(([path, meta]) => `
-			<Route path="${path}">
-				<${meta.route.component}
-					{...${prettyJSON(JSON.stringify(meta.props))}
-				} />
-			</Route>`).join("\n") + "\n"}
-		</Router>
-	)
-}
-
-${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-	<React.StrictMode>
-		<App />
-	</React.StrictMode>,
-	document.getElementById("root"),
-)` : `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-	<App />,
-	document.getElementById("root"),
-)`}
-`;
-};
-
-// packages/retro/resolvers.ts
-var service;
-function formatter() {
-  let once = false;
-  return {
-    start() {
-      if (once)
-        return;
-      console.log();
-      once = true;
-    },
-    done() {
-      console.log();
-    }
-  };
-}
-var format2 = formatter();
-var resolveModule = async (runtime, page) => {
-  const target = p4.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
-  try {
-    const result = await service.build({
-      bundle: true,
-      define: {
-        __DEV__: process.env.__DEV__,
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-      },
-      entryPoints: [page.src],
-      external: ["react", "react-dom"],
-      format: "cjs",
-      inject: ["packages/retro/react-shim.js"],
-      loader: {".js": "jsx"},
-      logLevel: "silent",
-      outfile: target
-    });
-    if (result.warnings.length > 0) {
-      for (const warning2 of result.warnings) {
-        warning(formatEsbuildMessage(warning2, yellow));
-      }
-      process.exit(1);
-    }
-  } catch (err) {
-    error(formatEsbuildMessage(err.errors[0], bold.red));
-  }
-  let mod = {};
-  try {
-    mod = require(p4.join("..", "..", target));
-  } catch {
-  }
-  return mod;
-};
-var resolveStaticRoute = async (runtime, page) => {
-  let props = {path: page.path};
-  const mod = await resolveModule(runtime, page);
-  if ("serverProps" in mod && typeof mod.serverProps !== "function") {
-    error(serverPropsFunction(page.src));
-  } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
-    error(serverPathsMismatch(page.src));
-  }
-  if (typeof mod.serverProps === "function") {
-    try {
-      const serverProps = await mod.serverProps();
-      if (!validateServerPropsReturn(serverProps)) {
-        error(serverPropsReturn(page.src));
-      }
-      props = {
-        path: page.path,
-        ...serverProps
-      };
-    } catch (err) {
-      error(`${page.src}.serverProps: ${err.message}`);
-    }
-  }
-  const loaded = {meta: {route: page, props}, module: mod};
-  return loaded;
-};
-var resolveDynamicRoutes = async (runtime, page) => {
-  const loaded = [];
-  const mod = await resolveModule(runtime, page);
-  if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
-    error(serverPathsFunction(page.src));
-  } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
-    error(serverPropsMismatch(page.src));
-  }
-  if (typeof mod.serverPaths === "function") {
-    let paths = [];
-    try {
-      paths = await mod.serverPaths();
-      if (!validateServerPathsReturn(paths)) {
-        error(serverPathsReturn(page.src));
-      }
-    } catch (err) {
-      error(`${page.src}.serverPaths: ${err.message}`);
-    }
-    for (const path of paths) {
-      const path_ = p4.join(p4.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-      const dst2 = p4.join(runtime.directories.exportDir, path_ + ".html");
-      loaded.push({
-        meta: {
-          route: {
-            ...page,
-            dst: dst2,
-            path: path_
-          },
-          props: {
-            path: path_,
-            ...path.props
-          }
-        },
-        module: mod
-      });
-    }
-  }
-  return loaded;
-};
-var resolveServerRouter = async (runtime) => {
-  const router = {};
-  service = await esbuild.startService();
-  for (const page of runtime.pages) {
-    let start = Date.now();
-    const loaded = [];
-    if (page.type === "static") {
-      const one = await resolveStaticRoute(runtime, page);
-      loaded.push(one);
-    } else {
-      const many = await resolveDynamicRoutes(runtime, page);
-      loaded.push(...many);
-    }
-    for (const each of loaded) {
-      if (router[each.meta.route.path] !== void 0) {
-        error(duplicatePathFound(each.meta.route, router[each.meta.route.path].route));
-      }
-      format2.start();
-      router[each.meta.route.path] = each.meta;
-      if (runtime.command.type === "export") {
-        const text = await renderServerRouteMetaToString(runtime, each);
-        await fs3.promises.mkdir(p4.dirname(each.meta.route.dst), {recursive: true});
-        await fs3.promises.writeFile(each.meta.route.dst, text);
-        export_(runtime, each.meta, start);
-      }
-      start = 0;
-    }
-  }
-  format2.done();
-  return router;
-};
-
 // packages/retro/preflight.ts
-var fs4 = __toModule(require("fs"));
-var p5 = __toModule(require("path"));
 async function runServerGuards(directories) {
   const dirs = [
     directories.publicDir,
@@ -773,7 +738,7 @@ async function runServerGuards(directories) {
       fs4.promises.mkdir(dir, {recursive: true});
     }
   }
-  const path = p5.join(directories.publicDir, "index.html");
+  const path = p6.join(directories.publicDir, "index.html");
   try {
     const data = await fs4.promises.readFile(path);
     const text = data.toString();
@@ -810,109 +775,74 @@ async function copyAll(src, dst2, exclude = []) {
       directories.push(entry);
       const ls = await fs4.promises.readdir(entry);
       for (const each of ls) {
-        await recurse(p5.join(entry, each));
+        await recurse(p6.join(entry, each));
       }
     }
   }
   await recurse(src);
   for (const directory of directories)
-    await fs4.promises.mkdir(p5.join(dst2, directory.slice(src.length)), {recursive: true});
+    await fs4.promises.mkdir(p6.join(dst2, directory.slice(src.length)), {recursive: true});
   for (const file of files)
-    await fs4.promises.copyFile(file, p5.join(dst2, file.slice(src.length)));
+    await fs4.promises.copyFile(file, p6.join(dst2, file.slice(src.length)));
 }
 async function preflight(runtime) {
   await runServerGuards(runtime.directories);
   await fs4.promises.rmdir(runtime.directories.exportDir, {recursive: true});
-  await copyAll(runtime.directories.publicDir, p5.join(runtime.directories.exportDir, runtime.directories.publicDir), [
-    p5.join(runtime.directories.publicDir, "index.html")
+  await copyAll(runtime.directories.publicDir, p6.join(runtime.directories.exportDir, runtime.directories.publicDir), [
+    p6.join(runtime.directories.publicDir, "index.html")
   ]);
-  const data = await fs4.promises.readFile(p5.join(runtime.directories.publicDir, "index.html"));
+  const data = await fs4.promises.readFile(p6.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
+  runtime.router = await resolveRouter(runtime);
 }
 
 // packages/retro/cmd_dev.ts
 async function retro_dev(runtime) {
   await preflight(runtime);
-  const router = await resolveServerRouter(runtime);
-  const appContents = await renderServerRouterToString(runtime, router);
-  const appContentsPath = p6.join(runtime.directories.cacheDir, "app.js");
-  await fs5.promises.writeFile(appContentsPath, appContents);
-  try {
-    const result = await esbuild2.build({
-      bundle: true,
-      define: {
-        __DEV__: process.env.__DEV__,
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-      },
-      entryPoints: [appContentsPath],
-      inject: ["packages/retro/react-shim.js"],
-      loader: {".js": "jsx"},
-      logLevel: "silent",
-      minify: true,
-      outfile: p6.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length))
-    });
-    if (result.warnings.length > 0) {
-      for (const warning2 of result.warnings) {
-        warning(formatEsbuildMessage(warning2, yellow));
+  const result = await esbuild2.serve({
+    servedir: runtime.directories.exportDir,
+    onRequest: (args) => serve(args)
+  }, {});
+  const srvProxy = http.createServer((req, res) => {
+    const options2 = {
+      hostname: result.host,
+      port: result.port,
+      path: ssgify(req.url),
+      method: req.method,
+      headers: req.headers
+    };
+    const reqProxy = http.request(options2, (resProxy) => {
+      if (resProxy.statusCode === 404) {
+        res.writeHead(404, {"Content-Type": "text/plain"});
+        res.end("404 - Not Found");
+        return;
       }
-      process.exit(1);
-    }
-  } catch (err) {
-    error(formatEsbuildMessage(err.errors[0], bold.red));
-  }
-  const cache = {};
-  let callback;
-  async function watch() {
-    const generator = watcher("src", {interval: 100});
-    async function next() {
-      return (await generator.next()).value;
-    }
-    while (true) {
-      await next();
-      if (callback)
-        callback();
-    }
-  }
-  watch();
-  const srv = http.createServer(async (req, res) => {
-    if (req.url === "/~dev") {
-      callback = () => {
-        res.write("event: reload\n\n");
-      };
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive"
-      });
-      return;
-    }
-    if (router[req.url] === void 0) {
-      res.writeHead(404, {"Content-Type": "text/plain"});
-      res.end("404 - Not Found");
-      return;
-    }
-    const stat = await fs5.promises.stat(req.url);
-    const read = cache[req.url];
-    if (read !== void 0 && read.mtimeMs !== stat.mtimeMs) {
-      res.writeHead(200, {"Content-Type": "text/html"});
-      res.end(read.html);
-      return;
-    }
+      if (req.url === "/~dev") {
+        res.writeHead(200, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive"
+        });
+        return;
+      }
+      res.writeHead(resProxy.statusCode, resProxy.headers);
+      resProxy.pipe(res, {end: true});
+    });
+    req.pipe(reqProxy, {end: true});
   });
-  srv.listen(runtime.command.port);
+  srvProxy.listen(runtime.command.port);
 }
 
 // packages/retro/cmd_export.ts
 var esbuild3 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs"));
+var fs5 = __toModule(require("fs"));
 var p7 = __toModule(require("path"));
 async function cmd_export(runtime) {
   await preflight(runtime);
-  const router = await resolveServerRouter(runtime);
-  const appContents = await renderServerRouterToString(runtime, router);
+  const appContents = await renderRouterToString(runtime);
   const appContentsPath = p7.join(runtime.directories.cacheDir, "app.js");
-  await fs6.promises.writeFile(appContentsPath, appContents);
+  await fs5.promises.writeFile(appContentsPath, appContents);
   try {
     const result = await esbuild3.build({
       bundle: true,
@@ -940,22 +870,11 @@ async function cmd_export(runtime) {
 
 // packages/retro/cmd_serve.ts
 var esbuild4 = __toModule(require("esbuild"));
-var fs7 = __toModule(require("fs"));
+var fs6 = __toModule(require("fs"));
 var http2 = __toModule(require("http"));
-var p8 = __toModule(require("path"));
-function spaify(_) {
-  return "/";
-}
-function ssgify(url) {
-  if (url.endsWith("/"))
-    return url + "index.html";
-  if (p8.extname(url) === "")
-    return url + ".html";
-  return url;
-}
 async function cmd_serve(runtime) {
   try {
-    await fs7.promises.stat("__export__");
+    await fs6.promises.stat("__export__");
   } catch {
     error(serveWithoutExport);
   }
@@ -963,15 +882,11 @@ async function cmd_serve(runtime) {
     servedir: runtime.directories.exportDir,
     onRequest: (args) => serve(args)
   }, {});
-  let transformURL = ssgify;
-  if (runtime.command.mode === "spa") {
-    transformURL = spaify;
-  }
   const srvProxy = http2.createServer((req, res) => {
     const options2 = {
       hostname: result.host,
       port: result.port,
-      path: transformURL(req.url),
+      path: ssgify(req.url),
       method: req.method,
       headers: req.headers
     };
@@ -1016,7 +931,6 @@ var usage = `
 
 		Serve the production-ready build
 
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
 			--port=...       Port number (default 8000)
 
 	${bold("Repository")}
@@ -1116,21 +1030,11 @@ function parseExportCommandFlags(...args) {
 function parseServeCommandFlags(...args) {
   const cmd = {
     type: "serve",
-    mode: "ssg",
     port: 8e3
   };
   let badCmd = "";
   for (const arg of args) {
-    if (arg.startsWith("--mode")) {
-      if (arg === "--mode=spa") {
-        cmd.mode = "spa";
-      } else if (arg === "--mode=ssg") {
-        cmd.mode = "ssg";
-      } else {
-        badCmd = "--mode";
-        break;
-      }
-    } else if (arg.startsWith("--port")) {
+    if (arg.startsWith("--port")) {
       if (/^--port=\d+$/.test(arg)) {
         cmd.port = JSON.parse(arg.slice("--port=".length));
       } else {
@@ -1193,7 +1097,8 @@ ${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`);
       exportDir: process.env.EXPORT_DIR || "__export__"
     },
     document: "",
-    pages: []
+    pages: [],
+    router: {}
   };
   if (runtime.command.type === "dev") {
     await retro_dev(runtime);

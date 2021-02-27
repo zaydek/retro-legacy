@@ -1,4 +1,5 @@
 import * as esbuild from "esbuild"
+import * as events from "./events"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
@@ -11,98 +12,104 @@ import * as utils from "./utils"
 
 import preflight from "./preflight"
 
-interface ExportCache {
-	[key: string]: {
-		mtimeMs: number
-		html: string
-	}
-}
+// interface ExportCache {
+// 	[key: string]: {
+// 		mtimeMs: number
+// 		html: string
+// 	}
+// }
 
-// On start, cache the server-side props and paths.
-// - We need to know server props for Head(serverProps) and Page(serverProps)
-// - We need to know paths / server paths for the HTTP server (respond 200 or 404)
+// async function build(runtime: types.Runtime<types.DevCommand>): Promise<esbuild.BuildResult> {
+// 	const appContents = await resolversText.renderRouterToString(runtime)
+// 	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
+// 	await fs.promises.writeFile(appContentsPath, appContents)
 //
-// On 200 paths, export (w/ serverProps), cache, and serve the page
-// - Use a cache based on mtime to no-op idempotent requests
-// - Emit serve-sent events on esbuild warnings and errors
+// 	let result: esbuild.BuildResult
+// 	try {
+// 		result = await esbuild.build({
+// 			incremental: true, // TODO
 //
-// On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
+// 			bundle: true,
+// 			define: {
+// 				__DEV__: process.env.__DEV__!,
+// 				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+// 			},
+// 			entryPoints: [appContentsPath],
+// 			inject: ["packages/retro/react-shim.js"],
+// 			loader: { ".js": "jsx" },
+// 			logLevel: "silent", // TODO
+// 			minify: false,
+// 			outfile: p.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length)),
+// 			// plugins: [...configs.retro.plugins], // TODO
+// 		})
+// 		// TODO: Add support for hints.
+// 		if (result.warnings.length > 0) {
+// 			for (const warning of result.warnings) {
+// 				log.warning(utils.formatEsbuildMessage(warning, term.yellow))
+// 			}
+// 			process.exit(1)
+// 		}
+// 	} catch (err) {
+// 		// TODO: Differentiate esbuild errors.
+// 		log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
+// 	}
 //
+// 	return result!
+// }
+
+// const cache: ExportCache = {}
+
 export default async function retro_dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
 	await preflight(runtime)
 
-	//////////////////////////////////////////////////////////////////////////////
+	// let emit: () => void | undefined
+	//	const result = await build(runtime)
+	//	// TODO: Add esbuild error-handling here.
+	//
+	//	async function watch(): Promise<void> {
+	//		const generator = utils.watcher("src", { interval: 100 })
+	//		async function next(): Promise<string> {
+	//			return (await generator.next()).value
+	//		}
+	//
+	//		// TODO: Add event here.
+	//		while (true) {
+	//			await next()
+	//			await result.rebuild!()
+	//			// TODO: Add esbuild error-handling here.
+	//			if (emit) emit()
+	//		}
+	//	}
+	//
+	//	watch()
 
-	// TODO: Implement '---cache' here.
-	const router = await resolvers.resolveServerRouter(runtime)
+	// prettier-ignore
+	const result = await esbuild.serve({
+		servedir: runtime.directories.exportDir,
+		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
+	}, {})
 
-	const appContents = await resolversText.renderServerRouterToString(runtime, router)
-	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
-	await fs.promises.writeFile(appContentsPath, appContents)
-
-	try {
-		const result = await esbuild.build({
-			bundle: true,
-			define: {
-				__DEV__: process.env.__DEV__!,
-				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
-			},
-			entryPoints: [appContentsPath],
-			inject: ["packages/retro/react-shim.js"],
-			loader: { ".js": "jsx" },
-			logLevel: "silent", // TODO
-			minify: true,
-			outfile: p.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length)),
-			// plugins: [...configs.retro.plugins], // TODO
-		})
-		// TODO: Add support for hints.
-		if (result.warnings.length > 0) {
-			for (const warning of result.warnings) {
-				log.warning(utils.formatEsbuildMessage(warning, term.yellow))
+	const srvProxy = http.createServer((req, res) => {
+		const options = {
+			hostname: result.host,
+			port: result.port,
+			path: utils.ssgify(req.url!),
+			method: req.method,
+			headers: req.headers,
+		}
+		const reqProxy = http.request(options, resProxy => {
+			// /404
+			if (resProxy.statusCode === 404) {
+				res.writeHead(404, { "Content-Type": "text/plain" })
+				res.end("404 - Not Found")
+				return
 			}
-			process.exit(1)
-		}
-	} catch (err) {
-		// TODO: Differentiate esbuild errors.
-		log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
-	}
 
-	//////////////////////////////////////////////////////////////////////////////
-
-	// cache caches HTML based on '(await fs.promises.stat(...)).mtimeMs'.
-	const cache: ExportCache = {}
-
-	let callback: () => void | undefined
-
-	// TODO: Generate server router here.
-	// TODO: Implement esbuild here.
-
-	async function watch(): Promise<void> {
-		const generator = utils.watcher("src", { interval: 100 })
-		async function next(): Promise<string> {
-			return (await generator.next()).value
-		}
-
-		while (true) {
-			await next()
-
-			// TODO: Regenerate server router here.
-			// TODO: Implement esbuild here.
-
-			if (callback) callback()
-		}
-	}
-
-	watch()
-
-	const srv = http.createServer(
-		async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
-			// Server-sent events:
+			// /~dev
 			if (req.url === "/~dev") {
-				callback = (): void => {
-					// TODO: Emit a log event here.
-					res.write("event: reload\n\n")
-				}
+				// emit = (): void => {
+				// 	res.write("event: reload\n\n")
+				// }
 				res.writeHead(200, {
 					"Content-Type": "text/event-stream",
 					"Cache-Control": "no-cache",
@@ -111,32 +118,88 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 				return
 			}
 
-			// Bad path:
-			if (router[req.url!] === undefined) {
-				// TODO: Emit a log event here.
-				res.writeHead(404, { "Content-Type": "text/plain" })
-				res.end("404 - Not Found")
-				return
-			}
-			// Read from the cache:
-			const stat = await fs.promises.stat(req.url!)
-			const read = cache[req.url!]
-			if (read !== undefined && read.mtimeMs !== stat.mtimeMs) {
-				res.writeHead(200, { "Content-Type": "text/html" })
-				res.end(read.html)
-				return
-			}
+			// OK request:
+			res.writeHead(resProxy.statusCode!, resProxy.headers)
+			resProxy.pipe(res, { end: true })
+		})
+		req.pipe(reqProxy, { end: true })
+	})
+	srvProxy.listen(runtime.command.port)
 
-			// // Bad cache read; rerender and cache:
-			// const html = await renderToString() // TODO
-			// cache[req.url!] = {
-			// 	mtimeMs: stat.mtimeMs,
-			// 	html,
-			// }
-			// // TODO: Emit a log event here (incl. read from the cache or not).
-			// res.writeHead(200, { "Content-Type": "text/html" })
-			// res.end(html)
-		},
-	)
-	srv.listen(runtime.command.port)
+	//	const srv = http.createServer(
+	//		async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
+	//			// Server-sent events:
+	//			const start = Date.now()
+	//			if (req.url === "/~dev") {
+	//				emit = (): void => {
+	//					// TODO: Emit a log event here.
+	//					res.write("event: reload\n\n")
+	//				}
+	//				res.writeHead(200, {
+	//					"Content-Type": "text/event-stream",
+	//					"Cache-Control": "no-cache",
+	//					Connection: "keep-alive",
+	//				})
+	//				return
+	//			}
+	//
+	//			// if (req.url === runtime.directories.publicDir) {
+	//			// 	emit = (): void => {
+	//			// 		// TODO: Emit a log event here.
+	//			// 		res.write("event: reload\n\n")
+	//			// 	}
+	//			// 	res.writeHead(200, {
+	//			// 		"Content-Type": "text/event-stream",
+	//			// 		"Cache-Control": "no-cache",
+	//			// 		Connection: "keep-alive",
+	//			// 	})
+	//			// 	return
+	//			// }
+	//
+	//			// Bad path:
+	//			const meta = runtime.router[req.url!]
+	//			if (meta === undefined) {
+	//				// Synthetic serve request arguments:
+	//				events.serve({
+	//					remoteAddress: "",
+	//					method: "GET",
+	//					path: req.url!,
+	//					status: req.statusCode!,
+	//					timeInMS: Date.now() - start,
+	//				})
+	//				res.writeHead(404, { "Content-Type": "text/plain" })
+	//				res.end("404 - Not Found")
+	//				return
+	//			}
+	//
+	//			// Convert route to a page and regenerate component.esbuild.js:
+	//			const mod = await resolvers.resolveModule(runtime, { ...meta.route })
+	//
+	//			const loaded: types.LoadedRouteMeta = { mod, meta }
+	//			const text = await resolversText.renderRouteMetaToString(runtime, loaded)
+	//
+	//			res.writeHead(200, { "Content-Type": "text/html" })
+	//			res.end(text)
+	//		},
+	//	)
+	//	srv.listen(runtime.command.port)
 }
+
+// // Read from the cache:
+// const stat = await fs.promises.stat(req.url!)
+// const read = cache[req.url!]
+// if (read !== undefined && read.mtimeMs !== stat.mtimeMs) {
+// 	res.writeHead(200, { "Content-Type": "text/html" })
+// 	res.end(read.html)
+// 	return
+// }
+
+// // Bad cache read; rerender and cache:
+// const html = await renderToString() // TODO
+// cache[req.url!] = {
+// 	mtimeMs: stat.mtimeMs,
+// 	html,
+// }
+// // TODO: Emit a log event here (incl. read from the cache or not).
+// res.writeHead(200, { "Content-Type": "text/html" })
+// res.end(html)

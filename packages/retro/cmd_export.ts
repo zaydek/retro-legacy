@@ -2,7 +2,6 @@ import * as esbuild from "esbuild"
 import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
-import * as resolvers from "./resolvers"
 import * as resolversText from "./resolvers-text"
 import * as term from "../lib/term"
 import * as types from "./types"
@@ -13,10 +12,7 @@ import preflight from "./preflight"
 export default async function cmd_export(runtime: types.Runtime<types.ExportCommand>): Promise<void> {
 	await preflight(runtime)
 
-	// TODO: Implement '---cache' here.
-	const router = await resolvers.resolveServerRouter(runtime)
-
-	const appContents = await resolversText.renderServerRouterToString(runtime, router)
+	const appContents = await resolversText.renderRouterToString(runtime)
 	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
 	await fs.promises.writeFile(appContentsPath, appContents)
 

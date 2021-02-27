@@ -5,6 +5,8 @@ import * as types from "./types"
 
 const TERM_WIDTH = 40
 
+// let once = false
+
 function timestamp(): string {
 	const date = new Date()
 	const hh = String(date.getHours() % 12 || 12).padStart(2, "0")
@@ -50,7 +52,10 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
-	// ${dimColor(dst_ext)}
+	// if (!once) {
+	// 	console.log()
+	// 	once = true
+	// }
 	console.log(
 		`\x20${term.dim(timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
@@ -58,8 +63,6 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 			}`,
 	)
 }
-
-let serveOnce = false
 
 export function serve(args: esbuild.ServeOnRequestArgs): void {
 	type Logger = (...args: unknown[]) => void
@@ -87,10 +90,10 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
 
-	if (!serveOnce) {
-		logger()
-		serveOnce = true
-	}
+	// if (!once) {
+	// 	console.log()
+	// 	once = true
+	// }
 	logger(
 		`\x20${term.dim(timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(

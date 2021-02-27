@@ -1,8 +1,8 @@
 import * as fs from "fs"
-import * as log from "../../lib/log"
+import * as log from "../lib/log"
 import * as p from "path"
-import * as term from "../../lib/term"
-import * as types from "../types"
+import * as term from "../lib/term"
+import * as types from "./types"
 
 // prettier-ignore
 interface ParsedPath {
@@ -18,8 +18,8 @@ const supported: { [key: string]: boolean } = {
 	".jsx": true,
 	".ts":  true,
 	".tsx": true,
-	".md":  true,
-	".mdx": true,
+	".md":  true, // TODO
+	".mdx": true, // TODO
 }
 
 // parsePath parses path metadata so that syntax functions don’t need to
@@ -176,7 +176,7 @@ function testURICharacter(char: string): boolean {
 	return false
 }
 
-export async function parsePages(directories: types.DirConfiguration): Promise<types.PageInfo[]> {
+export default async function parsePages(directories: types.DirConfiguration): Promise<types.PageInfo[]> {
 	const arr = await readdirAll(directories.srcPagesDir)
 
 	// Step over:

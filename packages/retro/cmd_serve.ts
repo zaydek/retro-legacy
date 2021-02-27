@@ -4,25 +4,14 @@ import * as events from "./events"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
-import * as p from "path"
 import * as types from "./types"
+import * as utils from "./utils"
 
-// spaify converts a URL for SPA-mode.
+// This implementation is roughly based on:
 //
-// TODO: Write tests.
-function spaify(_: string): string {
-	return "/"
-}
-
-// ssgify converts a URL for SSG-mode.
+// - https://esbuild.github.io/api/#customizing-server-behavior
+// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 //
-// TODO: Write tests.
-function ssgify(url: string): string {
-	if (url.endsWith("/")) return url + "index.html"
-	if (p.extname(url) === "") return url + ".html"
-	return url
-}
-
 export default async function cmd_serve(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
 	try {
 		await fs.promises.stat("__export__")
@@ -36,21 +25,11 @@ export default async function cmd_serve(runtime: types.Runtime<types.ServeComman
 		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
 	}, {})
 
-	let transformURL = ssgify
-	if (runtime.command.mode === "spa") {
-		transformURL = spaify
-	}
-
-	// This implementation is roughly based on:
-	//
-	// - https://esbuild.github.io/api/#customizing-server-behavior
-	// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
-	//
 	const srvProxy = http.createServer((req, res) => {
 		const options = {
 			hostname: result.host,
 			port: result.port,
-			path: transformURL(req.url!),
+			path: utils.ssgify(req.url!),
 			method: req.method,
 			headers: req.headers,
 		}

@@ -6,6 +6,7 @@ import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
+// --mode=... Serve mode 'spa' or 'ssg' (default 'ssg')
 const usage = `
 	${term.bold("Usage:")}
 
@@ -32,7 +33,6 @@ const usage = `
 
 		Serve the production-ready build
 
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
 			--port=...       Port number (default 8000)
 
 	${term.bold("Repository")}
@@ -147,21 +147,21 @@ function parseExportCommandFlags(...args: string[]): types.ExportCommand {
 function parseServeCommandFlags(...args: string[]): types.ServeCommand {
 	const cmd: types.ServeCommand = {
 		type: "serve",
-		mode: "ssg",
+		// mode: "ssg",
 		port: 8000,
 	}
 	let badCmd = ""
 	for (const arg of args) {
-		if (arg.startsWith("--mode")) {
-			if (arg === "--mode=spa") {
-				cmd.mode = "spa"
-			} else if (arg === "--mode=ssg") {
-				cmd.mode = "ssg"
-			} else {
-				badCmd = "--mode"
-				break
-			}
-		} else if (arg.startsWith("--port")) {
+		// if (arg.startsWith("--mode")) {
+		// 	if (arg === "--mode=spa") {
+		// 		cmd.mode = "spa"
+		// 	} else if (arg === "--mode=ssg") {
+		// 		cmd.mode = "ssg"
+		// 	} else {
+		// 		badCmd = "--mode"
+		// 		break
+		// 	}
+		if (arg.startsWith("--port")) {
 			if (/^--port=\d+$/.test(arg)) {
 				cmd.port = JSON.parse(arg.slice("--port=".length))
 			} else {
@@ -241,7 +241,8 @@ ${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`)
 			exportDir:   process.env.EXPORT_DIR || "__export__",
 		},
 		document: "", // Defer to dev and export (preflight)
-		pages: [],    // Defer to dev and export (preflight)
+		pages:    [], // Defer to dev and export (preflight)
+		router:   {}, // Defer to dev and export (preflight)
 	}
 
 	if (runtime.command.type === "dev") {

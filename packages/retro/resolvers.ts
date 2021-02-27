@@ -9,29 +9,6 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-////////////////////////////////////////////////////////////////////////////////
-
-type resolveModule = (
-	runtime: types.Runtime<types.DevOrExportCommand>,
-	page: types.PageInfo,
-) => Promise<types.PageModule>
-
-type resolveStaticRoute = (
-	runtime: types.Runtime<types.DevOrExportCommand>,
-	page: types.StaticPageInfo,
-) => Promise<types.LoadedRouteMeta>
-
-type resolveDynamicRoutes = (
-	runtime: types.Runtime<types.DevOrExportCommand>,
-	page: types.DynamicPageInfo,
-) => Promise<types.LoadedRouteMeta[]>
-
-type resolveServerRouter = (runtime: types.Runtime<types.DevOrExportCommand>) => Promise<types.Router>
-
-////////////////////////////////////////////////////////////////////////////////
-
-let service: esbuild.Service
-
 interface Formatter {
 	start(): void
 	done(): void
@@ -53,9 +30,12 @@ function formatter(): Formatter {
 
 const format = formatter()
 
-////////////////////////////////////////////////////////////////////////////////
+let service: esbuild.Service
 
-const resolveModule: resolveModule = async (runtime, page) => {
+export async function resolveModule(
+	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
+	page: types.PageInfo,
+): Promise<types.PageModule> {
 	const target = p.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"))
 
 	// Cache components to an intermediary build artifact; component.esbuild.js.
@@ -102,7 +82,10 @@ const resolveModule: resolveModule = async (runtime, page) => {
 	return mod
 }
 
-const resolveStaticRoute: resolveStaticRoute = async (runtime, page) => {
+export async function resolveStaticRoute(
+	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
+	page: types.StaticPageInfo,
+): Promise<types.LoadedRouteMeta> {
 	let props: types.RouteProps = { path: page.path }
 
 	// Guard serverProps and serverPaths:
@@ -130,11 +113,14 @@ const resolveStaticRoute: resolveStaticRoute = async (runtime, page) => {
 		}
 	}
 
-	const loaded = { meta: { route: page, props }, module: mod }
+	const loaded = { mod, meta: { route: page, props } }
 	return loaded
 }
 
-const resolveDynamicRoutes: resolveDynamicRoutes = async (runtime, page) => {
+export async function resolveDynamicRoutes(
+	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
+	page: types.DynamicPageInfo,
+): Promise<types.LoadedRouteMeta[]> {
 	const loaded: types.LoadedRouteMeta[] = []
 
 	// Guard serverProps and serverPaths:
@@ -161,19 +147,19 @@ const resolveDynamicRoutes: resolveDynamicRoutes = async (runtime, page) => {
 			const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path)
 			const dst = p.join(runtime.directories.exportDir, path_ + ".html")
 			loaded.push({
+				mod,
 				meta: {
 					// prettier-ignore
 					route: {
 						...page,
-						dst,         // Recompute dst
-						path: path_, // Recompute path
+						dst,         // Add dst
+						path: path_, // Add path
 					},
 					props: {
 						path: path_, // Add path (takes precedence)
 						...path.props,
 					},
 				},
-				module: mod,
 			})
 		}
 	}
@@ -181,11 +167,13 @@ const resolveDynamicRoutes: resolveDynamicRoutes = async (runtime, page) => {
 	return loaded
 }
 
-// resolveServerRouter resolves serverProps and serverPaths and generates the
-// server router.
+// resolveRouter resolves serverProps and serverPaths and generates the server-
+// resolved router.
 //
 // TODO: Extract middleware so loggers can be externalized?
-export const resolveServerRouter: resolveServerRouter = async runtime => {
+export async function resolveRouter(
+	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
+): Promise<types.Router> {
 	const router: types.Router = {}
 
 	// TODO: Add --concurrent?
@@ -209,11 +197,11 @@ export const resolveServerRouter: resolveServerRouter = async runtime => {
 			format.start()
 			router[each.meta.route.path] = each.meta
 			if (runtime.command.type === "export") {
-				const text = await resolversText.renderServerRouteMetaToString(runtime, each)
+				const text = await resolversText.renderRouteMetaToString(runtime, each)
 				await fs.promises.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
 				await fs.promises.writeFile(each.meta.route.dst, text)
-				events.export_(runtime, each.meta, start)
 			}
+			events.export_(runtime, each.meta, start)
 			start = 0 // Reset
 		}
 	}

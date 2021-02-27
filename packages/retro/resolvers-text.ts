@@ -4,23 +4,13 @@ import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
 import * as utils from "./utils"
 
-////////////////////////////////////////////////////////////////////////////////
-
-type renderRouteMetaToString = (runtime: types.Runtime, loaded: types.LoadedRouteMeta) => Promise<string>
-
-type renderRouterToString = (runtime: types.Runtime<types.DevOrExportCommand>, router: types.Router) => Promise<string>
-
-////////////////////////////////////////////////////////////////////////////////
-
-// TODO: Write tests.
 // TODO: Add support for <Layout> components.
-export const renderServerRouteMetaToString: renderRouteMetaToString = async (runtime, loaded) => {
+// TODO: Write tests.
+export async function renderRouteMetaToString(runtime: types.Runtime, loaded: types.LoadedRouteMeta): Promise<string> {
 	let head = "<!-- <Head> -->"
 	try {
-		if (typeof loaded.module.Head === "function") {
-			const renderString = ReactDOMServer.renderToStaticMarkup(
-				React.createElement(loaded.module.Head, loaded.meta.props),
-			)
+		if (typeof loaded.mod.Head === "function") {
+			const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(loaded.mod.Head, loaded.meta.props))
 			head = renderString.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 		}
 	} catch (err) {
@@ -30,23 +20,23 @@ export const renderServerRouteMetaToString: renderRouteMetaToString = async (run
 	// TODO: Upgrade <script src="/app.js"> to <script src="/app.[hash].js">?
 	let page = `<noscript>You need to enable JavaScript to run this app.</noscript>\n\t\t<div id="root"></div>\n\t\t<script src="/app.js"></script>`
 	try {
-		if (typeof loaded.module.default === "function") {
-			const renderString = ReactDOMServer.renderToString(React.createElement(loaded.module.default, loaded.meta.props))
+		if (typeof loaded.mod.default === "function") {
+			const renderString = ReactDOMServer.renderToString(React.createElement(loaded.mod.default, loaded.meta.props))
 			page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`)
 		}
 	} catch (err) {
 		log.error(`${loaded.meta.route.src}.<Page>: ${err.message}`)
 	}
 
-	const out = runtime.document
+	const text = runtime.document
 		.replace("%head%", head) // %head% -> <Head>
 		.replace("%page%", page) // %page% -> <Page>
-	return out
+	return text
 }
 
-// TODO: Write tests.
 // TODO: Add support for <Layout> components.
-export const renderServerRouterToString: renderRouterToString = async (runtime, router) => {
+// TODO: Write tests.
+export async function renderRouterToString(runtime: types.Runtime): Promise<string> {
 	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?
 
 	const distinctRoutes = runtime.pages
@@ -64,13 +54,11 @@ export default function App() {
 	return (
 		<Router>
 ${
-	Object.entries(router)
+	Object.entries(runtime.router)
 		.map(
 			([path, meta]) => `
 			<Route path="${path}">
-				<${meta.route.component}
-					{...${utils.prettyJSON(JSON.stringify(meta.props))}
-				} />
+				<${meta.route.component} {...${utils.prettyJSON(meta.props)}} />
 			</Route>`,
 		)
 		.join("\n") + "\n"
