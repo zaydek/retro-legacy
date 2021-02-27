@@ -3,19 +3,11 @@ import * as http from "http"
 import * as types from "./types"
 import * as utils from "./utils"
 
-////////////////////////////////////////////////////////////////////////////////
-
 interface RenderCache {
 	[key: string]: {
 		mtimeMs: number
 		html: string
 	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-async function renderToString(): Promise<string> {
-	return "TODO"
 }
 
 // On start, cache the server-side props and paths.
@@ -28,7 +20,7 @@ async function renderToString(): Promise<string> {
 //
 // On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
 //
-const cmd_dev: types.cmd_dev = async runtime => {
+export default async function retro_dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
 	const router: types.ServerRouter = {}
 
 	// cache caches HTML based on '(await fs.promises.stat(...)).mtimeMs'.
@@ -88,18 +80,17 @@ const cmd_dev: types.cmd_dev = async runtime => {
 				res.end(read.html)
 				return
 			}
-			// Bad cache read; rerender and cache:
-			const html = await renderToString() // TODO
-			cache[req.url!] = {
-				mtimeMs: stat.mtimeMs,
-				html,
-			}
-			// TODO: Emit a log event here (incl. read from the cache or not).
-			res.writeHead(200, { "Content-Type": "text/html" })
-			res.end(html)
+
+			// // Bad cache read; rerender and cache:
+			// const html = await renderToString() // TODO
+			// cache[req.url!] = {
+			// 	mtimeMs: stat.mtimeMs,
+			// 	html,
+			// }
+			// // TODO: Emit a log event here (incl. read from the cache or not).
+			// res.writeHead(200, { "Content-Type": "text/html" })
+			// res.end(html)
 		},
 	)
 	srv.listen(runtime.command.port)
 }
-
-export default cmd_dev

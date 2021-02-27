@@ -1,4 +1,4 @@
-// DevCommand describes the 'retro dev [flags]' command.
+// DevCommand describes the 'retro dev' command.
 export interface DevCommand {
 	type: "dev"
 	cached: boolean
@@ -6,14 +6,14 @@ export interface DevCommand {
 	port: number
 }
 
-// ExportCommand describes the 'retro export [flags]' command.
+// ExportCommand describes the 'retro export' command.
 export interface ExportCommand {
 	type: "export"
 	cached: boolean
 	sourcemap: boolean
 }
 
-// ServeCommand describes the 'retro serve [flags]' command.
+// ServeCommand describes the 'retro serve' command.
 export interface ServeCommand {
 	type: "serve"
 	mode: "spa" | "ssg"
@@ -21,6 +21,8 @@ export interface ServeCommand {
 }
 
 export type Command = DevCommand | ExportCommand | ServeCommand
+
+export type DevOrExportCommand = DevCommand | ExportCommand
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -85,6 +87,12 @@ export interface DynamicPageModule extends PageModule {
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
+// LoadedServerRoute describes a loaded server route (from __cache__).
+export interface LoadedServerRouteMeta {
+	meta: ServerRouteMeta
+	mod: PageModule
+}
+
 // prettier-ignore
 export interface ServerRoute {
 	type:      "static" | "dynamic"
@@ -102,14 +110,3 @@ export interface ServerRouteMeta {
 export interface ServerRouter {
 	[key: string]: ServerRouteMeta
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-// cmd_dev handles 'retro dev [flags]'.
-export type cmd_dev = (runtime: Runtime<DevCommand>) => Promise<void>
-
-// cmd_export handles 'retro export [flags]'.
-export type cmd_export = (runtime: Runtime<ExportCommand>) => Promise<void>
-
-// cmd_serve handles 'retro serve [flags]'.
-export type cmd_serve = (runtime: Runtime<ServeCommand>) => Promise<void>

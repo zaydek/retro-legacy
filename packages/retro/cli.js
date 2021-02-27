@@ -879,12 +879,14 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 
 // packages/retro/cmd_export.ts
 var cmd_export = async (runtime) => {
-  const router = await resolveServerRouter(runtime);
+  let router = {};
+  if (!runtime.command.cached) {
+    router = await resolveServerRouter(runtime);
+  } else {
+  }
   const app = await renderServerRouterToString(runtime, router);
   const appPath = p6.join(runtime.directories.cacheDir, "app.js");
   await fs6.promises.writeFile(appPath, app);
-  const entryPoints = [appPath];
-  const outfile = p6.join(runtime.directories.exportDir, appPath.slice(runtime.directories.srcPagesDir.length));
   try {
     const result = await esbuild2.build({
       bundle: true,
@@ -892,13 +894,12 @@ var cmd_export = async (runtime) => {
         __DEV__: process.env.__DEV__,
         "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
       },
-      entryPoints,
-      format: "iife",
+      entryPoints: [appPath],
       inject: ["packages/retro/react-shim.js"],
       loader: {".js": "jsx"},
       logLevel: "silent",
       minify: true,
-      outfile
+      outfile: p6.join(runtime.directories.exportDir, appPath.slice(runtime.directories.srcPagesDir.length))
     });
     if (result.warnings.length > 0) {
       for (const warning2 of result.warnings) {
@@ -908,7 +909,6 @@ var cmd_export = async (runtime) => {
     }
   } catch (err) {
     error(err);
-    process.exit(1);
   }
 };
 var cmd_export_default = cmd_export;

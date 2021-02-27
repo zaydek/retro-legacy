@@ -6,6 +6,7 @@ import * as term from "../../lib/term"
 // loc.line | loc.lineText
 //            ~~~~~~~~~~~~
 //
+// TODO: Add support for hints.
 export function formatEsbuildMessage(msg: esbuild.Message, color: (...args: unknown[]) => void): string {
 	const loc = msg.location!
 	return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}

@@ -23,7 +23,7 @@ function ssgify(url: string): string {
 	return url
 }
 
-const serve: types.cmd_serve = async runtime => {
+export default async function cmd_serve(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
 	try {
 		await fs.promises.stat("__export__")
 	} catch {
@@ -69,5 +69,3 @@ const serve: types.cmd_serve = async runtime => {
 	})
 	srvProxy.listen(runtime.command.port)
 }
-
-export default serve
