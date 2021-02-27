@@ -547,6 +547,11 @@ async function preflight(runtime) {
   runtime.pages = await parsePages(runtime.directories);
 }
 
+// packages/retro/utils/prettyJSON.ts
+function prettyJSON(str) {
+  return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
+}
+
 // packages/retro/utils/validators.ts
 function validateObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -608,7 +613,7 @@ async function* watcher(root, {interval}) {
 // packages/retro/cmd_dev.ts
 var fs4 = __toModule(require("fs"));
 var http = __toModule(require("http"));
-function renderToString() {
+async function renderToString() {
   return "TODO";
 }
 var cmd_dev = async (runtime) => {
@@ -664,12 +669,17 @@ var cmd_dev = async (runtime) => {
 var cmd_dev_default = cmd_dev;
 
 // packages/retro/cmd_export.ts
+var esbuild2 = __toModule(require("esbuild"));
+var fs6 = __toModule(require("fs"));
+var p6 = __toModule(require("path"));
+
+// packages/retro/resolvers.ts
 var esbuild = __toModule(require("esbuild"));
 var fs5 = __toModule(require("fs"));
 var p5 = __toModule(require("path"));
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-async function exportPage(runtime, meta, mod) {
+var renderToString3 = async (runtime, meta, mod) => {
   let head = "<!-- <Head> -->";
   try {
     if (typeof mod.Head === "function") {
@@ -693,8 +703,8 @@ async function exportPage(runtime, meta, mod) {
   const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
   await fs5.promises.mkdir(p5.dirname(meta.route.dst), {recursive: true});
   await fs5.promises.writeFile(meta.route.dst, rendered);
-}
-async function resolveStaticRouteMeta(runtime, page, outfile) {
+};
+var resolveStaticRouteMeta = async (runtime, page, outfile) => {
   let props = {path: page.path};
   let mod;
   try {
@@ -721,10 +731,10 @@ async function resolveStaticRouteMeta(runtime, page, outfile) {
     }
   }
   const meta = {route: page, props};
-  await exportPage(runtime, meta, mod);
+  await renderToString3(runtime, meta, mod);
   return meta;
-}
-async function resolveDynamicRouteMetas(runtime, page, outfile) {
+};
+var resolveDynamicRouteMetas = async (runtime, page, outfile) => {
   const metas = [];
   let mod;
   try {
@@ -765,12 +775,12 @@ async function resolveDynamicRouteMetas(runtime, page, outfile) {
     }
   }
   for (const meta of metas) {
-    await exportPage(runtime, meta, mod);
+    await renderToString3(runtime, meta, mod);
   }
   return metas;
-}
+};
 var once2 = false;
-async function resolveServerRouter(runtime) {
+var resolveServerRouter = async (runtime) => {
   const router = {};
   const service = await esbuild.startService();
   for (const page of runtime.pages) {
@@ -831,11 +841,8 @@ async function resolveServerRouter(runtime) {
   }
   console.log();
   return router;
-}
-function prettyJSON(str) {
-  return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
-}
-async function renderAppSource(runtime, router) {
+};
+var renderServerRouterToString = async (runtime, router) => {
   const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
   const distinctRoutes = runtime.pages.filter((route) => distinctComponents.includes(route.component)).sort((a, b) => a.component.localeCompare(b.component));
   return `import React from "react"
@@ -868,16 +875,18 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 	document.getElementById("root"),
 )`}
 `;
-}
+};
+
+// packages/retro/cmd_export.ts
 var cmd_export = async (runtime) => {
   const router = await resolveServerRouter(runtime);
-  const appContents = await renderAppSource(runtime, router);
-  const appContentsPath = p5.join(runtime.directories.cacheDir, "app.js");
-  await fs5.promises.writeFile(appContentsPath, appContents);
-  const entryPoints = [appContentsPath];
-  const outfile = p5.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length));
+  const app = await renderServerRouterToString(runtime, router);
+  const appPath = p6.join(runtime.directories.cacheDir, "app.js");
+  await fs6.promises.writeFile(appPath, app);
+  const entryPoints = [appPath];
+  const outfile = p6.join(runtime.directories.exportDir, appPath.slice(runtime.directories.srcPagesDir.length));
   try {
-    const result = await esbuild.build({
+    const result = await esbuild2.build({
       bundle: true,
       define: {
         __DEV__: process.env.__DEV__,
@@ -905,27 +914,27 @@ var cmd_export = async (runtime) => {
 var cmd_export_default = cmd_export;
 
 // packages/retro/cmd_serve.ts
-var esbuild2 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs"));
+var esbuild3 = __toModule(require("esbuild"));
+var fs7 = __toModule(require("fs"));
 var http2 = __toModule(require("http"));
-var p6 = __toModule(require("path"));
+var p7 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p6.extname(url) === "")
+  if (p7.extname(url) === "")
     return url + ".html";
   return url;
 }
 var serve2 = async (runtime) => {
   try {
-    await fs6.promises.stat("__export__");
+    await fs7.promises.stat("__export__");
   } catch {
     error(serveWithoutExport);
   }
-  const result = await esbuild2.serve({
+  const result = await esbuild3.serve({
     servedir: runtime.directories.exportDir,
     onRequest: (args) => serveEvent(args)
   }, {});

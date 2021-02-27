@@ -3,7 +3,18 @@ import * as http from "http"
 import * as types from "./types"
 import * as utils from "./utils"
 
-function renderToString(): string {
+////////////////////////////////////////////////////////////////////////////////
+
+interface RenderCache {
+	[key: string]: {
+		mtimeMs: number
+		html: string
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+async function renderToString(): Promise<string> {
 	return "TODO"
 }
 
@@ -21,12 +32,7 @@ const cmd_dev: types.cmd_dev = async runtime => {
 	const router: types.ServerRouter = {}
 
 	// cache caches HTML based on '(await fs.promises.stat(...)).mtimeMs'.
-	const cache: {
-		[key: string]: {
-			mtimeMs: number
-			html: string
-		}
-	} = {}
+	const cache: RenderCache = {}
 
 	let callback: () => void | undefined
 
@@ -53,7 +59,7 @@ const cmd_dev: types.cmd_dev = async runtime => {
 
 	const srv = http.createServer(
 		async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
-			// Server-sent events: (takes precedence)
+			// Server-sent events:
 			if (req.url === "/~dev") {
 				callback = (): void => {
 					// TODO: Emit a log event here.
@@ -82,7 +88,7 @@ const cmd_dev: types.cmd_dev = async runtime => {
 				res.end(read.html)
 				return
 			}
-			// Render and cache:
+			// Bad cache read; rerender and cache:
 			const html = await renderToString() // TODO
 			cache[req.url!] = {
 				mtimeMs: stat.mtimeMs,

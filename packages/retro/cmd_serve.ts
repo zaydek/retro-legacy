@@ -23,22 +23,12 @@ function ssgify(url: string): string {
 	return url
 }
 
-// This implementation is roughly based on:
-//
-// - https://esbuild.github.io/api/#customizing-server-behavior
-// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
-//
 const serve: types.cmd_serve = async runtime => {
 	try {
 		await fs.promises.stat("__export__")
 	} catch {
 		log.error(errs.serveWithoutExport)
 	}
-
-	// setTimeout(() => {
-	// 	console.log()
-	// 	log.ok(term.underline(`http://localhost:${runtime.command.port}`))
-	// }, 25)
 
 	// prettier-ignore
 	const result = await esbuild.serve({
@@ -51,6 +41,11 @@ const serve: types.cmd_serve = async runtime => {
 		transformURL = spaify
 	}
 
+	// This implementation is roughly based on:
+	//
+	// - https://esbuild.github.io/api/#customizing-server-behavior
+	// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
+	//
 	const srvProxy = http.createServer((req, res) => {
 		const options = {
 			hostname: result.host,
@@ -66,6 +61,7 @@ const serve: types.cmd_serve = async runtime => {
 				res.end("404 - Not Found")
 				return
 			}
+			// OK request:
 			res.writeHead(resProxy.statusCode!, resProxy.headers)
 			resProxy.pipe(res, { end: true })
 		})
@@ -75,5 +71,3 @@ const serve: types.cmd_serve = async runtime => {
 }
 
 export default serve
-
-//// TODO: Write tests.
