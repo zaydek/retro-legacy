@@ -1,9 +1,9 @@
 import * as esbuild from "esbuild"
 import * as p from "path"
-import * as term from "../../lib/term"
-import * as types from "../types"
+import * as term from "../lib/term"
+import * as types from "./types"
 
-const TERM_WIDTH = 35
+const TERM_WIDTH = 40
 
 function timestamp(): string {
 	const date = new Date()
@@ -24,11 +24,9 @@ function formatMs(ms: number): string {
 	}
 }
 
-export function exportEvent(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
+export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
 	const dur = formatMs(Date.now() - start)
 
-	// TODO: If we make directories a global variable, we can just reference the
-	// global object.
 	const l1 = runtime.directories.srcPagesDir.length
 	const l2 = runtime.directories.exportDir.length
 
@@ -52,17 +50,18 @@ export function exportEvent(runtime: types.Runtime, meta: types.RouteMeta, start
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
+	// ${dimColor(dst_ext)}
 	console.log(
 		`\x20${term.dim(timestamp())}\x20\x20` +
-			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(
-				dst_name,
-			)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`,
+			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
+				start === 0 ? "" : ` ${dimColor(`(${dur})`)}`
+			}`,
 	)
 }
 
 let serveOnce = false
 
-export function serveEvent(args: esbuild.ServeOnRequestArgs): void {
+export function serve(args: esbuild.ServeOnRequestArgs): void {
 	type Logger = (...args: unknown[]) => void
 
 	const dur = formatMs(args.timeInMS)

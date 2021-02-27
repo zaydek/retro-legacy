@@ -111,21 +111,138 @@ function error(...args) {
 }
 
 // packages/retro/cmd_dev.ts
-var fs4 = __toModule(require("fs"));
+var esbuild2 = __toModule(require("esbuild"));
+var fs5 = __toModule(require("fs"));
 var http = __toModule(require("http"));
+var p6 = __toModule(require("path"));
 
-// packages/retro/utils/formatEsbuild.ts
-function formatEsbuildMessage(msg, color) {
-  const loc = msg.location;
-  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
+// packages/retro/errs.ts
+function missingHeadTemplateTag(path) {
+  return `${path}: Add ${magenta("'%head%'")} somewhere to ${magenta("'<head>'")}.
 
-	${loc.line} ${dim("\u2502")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+For example:
+
+${dim(`// ${path}`)}
+...
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	${magenta("%head%")}
+</head>
+...`;
+}
+function missingPageTemplateTag(path) {
+  return `${path}: Add ${magenta("'%page%'")} somewhere to ${magenta("'<body>'")}.
+
+For example:
+
+${dim(`// ${path}`)}
+...
+<body>
+	${magenta("%page%")}
+</body>
+...`;
+}
+function serverPropsFunction(src) {
+  return `${src}: ${magenta(`'typeof serverProps !== "function"'`)}; ${magenta("'serverProps'")} must be a synchronous or an asynchronous function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
 }
 
-// packages/retro/utils/logTypes.ts
+Or:
+
+${dim(`// ${src}`)}
+export async function serverProps() {
+	await ...
+	return { ... }
+}`;
+}
+function serverPathsFunction(src) {
+  return `${src}: ${magenta(`'typeof serverPaths !== "function"'`)}; ${magenta("'serverPaths'")} must be a synchronous or an asynchronous function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return { ... }
+}
+
+Or:
+
+${dim(`// ${src}`)}
+export async function serverPaths() {
+	await ...
+	return { ... }
+}`;
+}
+function serverPropsMismatch(src) {
+  return `${src}: Dynamic pages must use ${magenta("'serverPaths'")} not ${magenta("'serverProps'")}.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}`;
+}
+function serverPropsReturn(src) {
+  return `${src}.serverProps: Bad ${magenta("'serverProps'")} resolver.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}`;
+}
+function serverPathsReturn(src) {
+  return `${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ... },
+		{ path: "/foo/bar", props: ... },
+		{ path: "/foo/bar/baz", props: ... },
+	]
+}`;
+}
+function serverPathsMismatch(src) {
+  return `${src}: Non-dynamic pages must use ${magenta("'serverProps'")} not ${magenta("'serverPaths'")}.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ... }
+}`;
+}
+function duplicatePathFound(r1, r2) {
+  function caller(r) {
+    return r.type === "static" ? "serverProps" : "serverPaths";
+  }
+  return `${r1.src}.${caller(r1)}: Path ${magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`;
+}
+function serveWithoutExport() {
+  return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
+}
+
+// packages/retro/resolvers.ts
+var esbuild = __toModule(require("esbuild"));
+
+// packages/retro/events.ts
 var p = __toModule(require("path"));
-var TERM_WIDTH = 35;
+var TERM_WIDTH = 40;
 function timestamp() {
   const date = new Date();
   const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
@@ -143,7 +260,7 @@ function formatMs(ms) {
       return `${(ms / 1e3).toFixed(2)}s`;
   }
 }
-function exportEvent(runtime, meta, start) {
+function export_(runtime, meta, start) {
   const dur = formatMs(Date.now() - start);
   const l1 = runtime.directories.srcPagesDir.length;
   const l2 = runtime.directories.exportDir.length;
@@ -162,10 +279,10 @@ function exportEvent(runtime, meta, start) {
   const dst_ext = p.extname(dst2);
   const dst_name = dst2.slice(1, -dst_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
 }
 var serveOnce = false;
-function serveEvent(args) {
+function serve(args) {
   const dur = formatMs(args.timeInMS);
   let color = normal;
   if (args.status < 200 || args.status >= 300) {
@@ -188,6 +305,23 @@ function serveEvent(args) {
     serveOnce = true;
   }
   logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+}
+
+// packages/retro/resolvers.ts
+var fs3 = __toModule(require("fs"));
+var p4 = __toModule(require("path"));
+
+// packages/retro/resolvers-text.ts
+var React = __toModule(require("react"));
+var ReactDOMServer = __toModule(require("react-dom/server"));
+
+// packages/retro/utils/formatEsbuild.ts
+function formatEsbuildMessage(msg, color) {
+  const loc = msg.location;
+  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
+
+	${loc.line} ${dim("\u2502")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
 }
 
 // packages/retro/utils/parsePages.ts
@@ -416,261 +550,7 @@ async function* watcher(root, {interval}) {
   }
 }
 
-// packages/retro/errs.ts
-function missingHeadTemplateTag(path) {
-  return `${path}: Add ${magenta("'%head%'")} somewhere to ${magenta("'<head>'")}.
-
-For example:
-
-${dim(`// ${path}`)}
-...
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	${magenta("%head%")}
-</head>
-...`;
-}
-function missingPageTemplateTag(path) {
-  return `${path}: Add ${magenta("'%page%'")} somewhere to ${magenta("'<body>'")}.
-
-For example:
-
-${dim(`// ${path}`)}
-...
-<body>
-	${magenta("%page%")}
-</body>
-...`;
-}
-function serverPropsFunction(src) {
-  return `${src}: ${magenta(`'typeof serverProps !== "function"'`)}; ${magenta("'serverProps'")} must be a synchronous or an asynchronous function.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}
-
-Or:
-
-${dim(`// ${src}`)}
-export async function serverProps() {
-	await ...
-	return { ... }
-}`;
-}
-function serverPathsFunction(src) {
-  return `${src}: ${magenta(`'typeof serverPaths !== "function"'`)}; ${magenta("'serverPaths'")} must be a synchronous or an asynchronous function.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return { ... }
-}
-
-Or:
-
-${dim(`// ${src}`)}
-export async function serverPaths() {
-	await ...
-	return { ... }
-}`;
-}
-function serverPropsMismatch(src) {
-  return `${src}: Dynamic pages must use ${magenta("'serverPaths'")} not ${magenta("'serverProps'")}.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}`;
-}
-function serverPropsReturn(src) {
-  return `${src}.serverProps: Bad ${magenta("'serverProps'")} resolver.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}`;
-}
-function serverPathsReturn(src) {
-  return `${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}`;
-}
-function serverPathsMismatch(src) {
-  return `${src}: Non-dynamic pages must use ${magenta("'serverProps'")} not ${magenta("'serverPaths'")}.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
-}`;
-}
-function duplicatePathFound(r1, r2) {
-  function caller(r) {
-    return r.type === "static" ? "serverProps" : "serverPaths";
-  }
-  return `${r1.src}.${caller(r1)}: Path ${magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`;
-}
-function serveWithoutExport() {
-  return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
-}
-
-// packages/retro/preflight.ts
-var fs3 = __toModule(require("fs"));
-var p4 = __toModule(require("path"));
-async function runServerGuards(directories) {
-  const dirs = [
-    directories.publicDir,
-    directories.srcPagesDir,
-    directories.cacheDir,
-    directories.exportDir
-  ];
-  for (const dir of dirs) {
-    try {
-      await fs3.promises.stat(dir);
-    } catch (_) {
-      fs3.promises.mkdir(dir, {recursive: true});
-    }
-  }
-  const path = p4.join(directories.publicDir, "index.html");
-  try {
-    const data = await fs3.promises.readFile(path);
-    const text = data.toString();
-    if (!text.includes("%head")) {
-      error(missingHeadTemplateTag(path));
-    } else if (!text.includes("%page")) {
-      error(missingPageTemplateTag(path));
-    }
-  } catch (_) {
-    await fs3.promises.writeFile(path, `<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		%head%
-	</head>
-	<body>
-		%page%
-	</body>
-</html>
-`);
-  }
-}
-async function copyAll(src, dst2, exclude = []) {
-  const directories = [];
-  const files = [];
-  async function recurse(entry) {
-    if (exclude.includes(entry))
-      return;
-    const stat = await fs3.promises.stat(entry);
-    if (!stat.isDirectory()) {
-      files.push(entry);
-    } else {
-      directories.push(entry);
-      const ls = await fs3.promises.readdir(entry);
-      for (const each of ls) {
-        await recurse(p4.join(entry, each));
-      }
-    }
-  }
-  await recurse(src);
-  for (const directory of directories)
-    await fs3.promises.mkdir(p4.join(dst2, directory.slice(src.length)), {recursive: true});
-  for (const file of files)
-    await fs3.promises.copyFile(file, p4.join(dst2, file.slice(src.length)));
-}
-async function preflight(runtime) {
-  await runServerGuards(runtime.directories);
-  await fs3.promises.rmdir(runtime.directories.exportDir, {recursive: true});
-  await copyAll(runtime.directories.publicDir, p4.join(runtime.directories.exportDir, runtime.directories.publicDir), [
-    p4.join(runtime.directories.publicDir, "index.html")
-  ]);
-  const data = await fs3.promises.readFile(p4.join(runtime.directories.publicDir, "index.html"));
-  runtime.document = data.toString();
-  runtime.pages = await parsePages(runtime.directories);
-}
-
-// packages/retro/cmd_dev.ts
-async function retro_dev(runtime) {
-  await preflight(runtime);
-  const router = {};
-  const cache = {};
-  let callback;
-  async function watch() {
-    const generator = watcher("src", {interval: 100});
-    async function next() {
-      return (await generator.next()).value;
-    }
-    while (true) {
-      await next();
-      if (callback)
-        callback();
-    }
-  }
-  watch();
-  const srv = http.createServer(async (req, res) => {
-    if (req.url === "/~dev") {
-      callback = () => {
-        res.write("event: reload\n\n");
-      };
-      res.writeHead(200, {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive"
-      });
-      return;
-    }
-    if (router[req.url] === void 0) {
-      res.writeHead(404, {"Content-Type": "text/plain"});
-      res.end("404 - Not Found");
-      return;
-    }
-    const stat = await fs4.promises.stat(req.url);
-    const read = cache[req.url];
-    if (read !== void 0 && read.mtimeMs !== stat.mtimeMs) {
-      res.writeHead(200, {"Content-Type": "text/html"});
-      res.end(read.html);
-      return;
-    }
-  });
-  srv.listen(runtime.command.port);
-}
-
-// packages/retro/cmd_export.ts
-var esbuild2 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs"));
-var p6 = __toModule(require("path"));
-
-// packages/retro/resolvers.ts
-var esbuild = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs"));
-var p5 = __toModule(require("path"));
-
 // packages/retro/resolvers-text.ts
-var React = __toModule(require("react"));
-var ReactDOMServer = __toModule(require("react-dom/server"));
 var renderServerRouteMetaToString = async (runtime, loaded) => {
   let head = "<!-- <Head> -->";
   try {
@@ -748,7 +628,7 @@ function formatter() {
 }
 var format2 = formatter();
 var resolveModule = async (runtime, page) => {
-  const target = p5.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
+  const target = p4.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
   try {
     const result = await service.build({
       bundle: true,
@@ -775,7 +655,7 @@ var resolveModule = async (runtime, page) => {
   }
   let mod = {};
   try {
-    mod = require(p5.join("..", "..", target));
+    mod = require(p4.join("..", "..", target));
   } catch {
   }
   return mod;
@@ -824,8 +704,8 @@ var resolveDynamicRoutes = async (runtime, page) => {
       error(`${page.src}.serverPaths: ${err.message}`);
     }
     for (const path of paths) {
-      const path_ = p5.join(p5.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-      const dst2 = p5.join(runtime.directories.exportDir, path_ + ".html");
+      const path_ = p4.join(p4.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p4.join(runtime.directories.exportDir, path_ + ".html");
       loaded.push({
         meta: {
           route: {
@@ -865,10 +745,10 @@ var resolveServerRouter = async (runtime) => {
       router[each.meta.route.path] = each.meta;
       if (runtime.command.type === "export") {
         const text = await renderServerRouteMetaToString(runtime, each);
-        await fs5.promises.mkdir(p5.dirname(each.meta.route.dst), {recursive: true});
-        await fs5.promises.writeFile(each.meta.route.dst, text);
+        await fs3.promises.mkdir(p4.dirname(each.meta.route.dst), {recursive: true});
+        await fs3.promises.writeFile(each.meta.route.dst, text);
+        export_(runtime, each.meta, start);
       }
-      exportEvent(runtime, each.meta, start);
       start = 0;
     }
   }
@@ -876,13 +756,88 @@ var resolveServerRouter = async (runtime) => {
   return router;
 };
 
-// packages/retro/cmd_export.ts
-async function cmd_export(runtime) {
+// packages/retro/preflight.ts
+var fs4 = __toModule(require("fs"));
+var p5 = __toModule(require("path"));
+async function runServerGuards(directories) {
+  const dirs = [
+    directories.publicDir,
+    directories.srcPagesDir,
+    directories.cacheDir,
+    directories.exportDir
+  ];
+  for (const dir of dirs) {
+    try {
+      await fs4.promises.stat(dir);
+    } catch (_) {
+      fs4.promises.mkdir(dir, {recursive: true});
+    }
+  }
+  const path = p5.join(directories.publicDir, "index.html");
+  try {
+    const data = await fs4.promises.readFile(path);
+    const text = data.toString();
+    if (!text.includes("%head")) {
+      error(missingHeadTemplateTag(path));
+    } else if (!text.includes("%page")) {
+      error(missingPageTemplateTag(path));
+    }
+  } catch (_) {
+    await fs4.promises.writeFile(path, `<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%head%
+	</head>
+	<body>
+		%page%
+	</body>
+</html>
+`);
+  }
+}
+async function copyAll(src, dst2, exclude = []) {
+  const directories = [];
+  const files = [];
+  async function recurse(entry) {
+    if (exclude.includes(entry))
+      return;
+    const stat = await fs4.promises.stat(entry);
+    if (!stat.isDirectory()) {
+      files.push(entry);
+    } else {
+      directories.push(entry);
+      const ls = await fs4.promises.readdir(entry);
+      for (const each of ls) {
+        await recurse(p5.join(entry, each));
+      }
+    }
+  }
+  await recurse(src);
+  for (const directory of directories)
+    await fs4.promises.mkdir(p5.join(dst2, directory.slice(src.length)), {recursive: true});
+  for (const file of files)
+    await fs4.promises.copyFile(file, p5.join(dst2, file.slice(src.length)));
+}
+async function preflight(runtime) {
+  await runServerGuards(runtime.directories);
+  await fs4.promises.rmdir(runtime.directories.exportDir, {recursive: true});
+  await copyAll(runtime.directories.publicDir, p5.join(runtime.directories.exportDir, runtime.directories.publicDir), [
+    p5.join(runtime.directories.publicDir, "index.html")
+  ]);
+  const data = await fs4.promises.readFile(p5.join(runtime.directories.publicDir, "index.html"));
+  runtime.document = data.toString();
+  runtime.pages = await parsePages(runtime.directories);
+}
+
+// packages/retro/cmd_dev.ts
+async function retro_dev(runtime) {
   await preflight(runtime);
   const router = await resolveServerRouter(runtime);
   const appContents = await renderServerRouterToString(runtime, router);
   const appContentsPath = p6.join(runtime.directories.cacheDir, "app.js");
-  await fs6.promises.writeFile(appContentsPath, appContents);
+  await fs5.promises.writeFile(appContentsPath, appContents);
   try {
     const result = await esbuild2.build({
       bundle: true,
@@ -904,22 +859,97 @@ async function cmd_export(runtime) {
       process.exit(1);
     }
   } catch (err) {
-    error(err);
+    error(formatEsbuildMessage(err.errors[0], bold.red));
+  }
+  const cache = {};
+  let callback;
+  async function watch() {
+    const generator = watcher("src", {interval: 100});
+    async function next() {
+      return (await generator.next()).value;
+    }
+    while (true) {
+      await next();
+      if (callback)
+        callback();
+    }
+  }
+  watch();
+  const srv = http.createServer(async (req, res) => {
+    if (req.url === "/~dev") {
+      callback = () => {
+        res.write("event: reload\n\n");
+      };
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive"
+      });
+      return;
+    }
+    if (router[req.url] === void 0) {
+      res.writeHead(404, {"Content-Type": "text/plain"});
+      res.end("404 - Not Found");
+      return;
+    }
+    const stat = await fs5.promises.stat(req.url);
+    const read = cache[req.url];
+    if (read !== void 0 && read.mtimeMs !== stat.mtimeMs) {
+      res.writeHead(200, {"Content-Type": "text/html"});
+      res.end(read.html);
+      return;
+    }
+  });
+  srv.listen(runtime.command.port);
+}
+
+// packages/retro/cmd_export.ts
+var esbuild3 = __toModule(require("esbuild"));
+var fs6 = __toModule(require("fs"));
+var p7 = __toModule(require("path"));
+async function cmd_export(runtime) {
+  await preflight(runtime);
+  const router = await resolveServerRouter(runtime);
+  const appContents = await renderServerRouterToString(runtime, router);
+  const appContentsPath = p7.join(runtime.directories.cacheDir, "app.js");
+  await fs6.promises.writeFile(appContentsPath, appContents);
+  try {
+    const result = await esbuild3.build({
+      bundle: true,
+      define: {
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+      },
+      entryPoints: [appContentsPath],
+      inject: ["packages/retro/react-shim.js"],
+      loader: {".js": "jsx"},
+      logLevel: "silent",
+      minify: true,
+      outfile: p7.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length))
+    });
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(formatEsbuildMessage(warning2, yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    error(formatEsbuildMessage(err.errors[0], bold.red));
   }
 }
 
 // packages/retro/cmd_serve.ts
-var esbuild3 = __toModule(require("esbuild"));
+var esbuild4 = __toModule(require("esbuild"));
 var fs7 = __toModule(require("fs"));
 var http2 = __toModule(require("http"));
-var p7 = __toModule(require("path"));
+var p8 = __toModule(require("path"));
 function spaify(_) {
   return "/";
 }
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p7.extname(url) === "")
+  if (p8.extname(url) === "")
     return url + ".html";
   return url;
 }
@@ -929,9 +959,9 @@ async function cmd_serve(runtime) {
   } catch {
     error(serveWithoutExport);
   }
-  const result = await esbuild3.serve({
+  const result = await esbuild4.serve({
     servedir: runtime.directories.exportDir,
-    onRequest: (args) => serveEvent(args)
+    onRequest: (args) => serve(args)
   }, {});
   let transformURL = ssgify;
   if (runtime.command.mode === "spa") {

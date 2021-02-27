@@ -44,6 +44,6 @@ export default async function cmd_export(runtime: types.Runtime<types.ExportComm
 		}
 	} catch (err) {
 		// TODO: Differentiate esbuild errors.
-		log.error(err)
+		log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
 	}
 }

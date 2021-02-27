@@ -1,9 +1,9 @@
 import * as errs from "./errs"
 import * as esbuild from "esbuild"
+import * as events from "./events"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../lib/log"
-import * as loggers from "./utils/logTypes"
 import * as p from "path"
 import * as types from "./types"
 
@@ -33,7 +33,7 @@ export default async function cmd_serve(runtime: types.Runtime<types.ServeComman
 	// prettier-ignore
 	const result = await esbuild.serve({
 		servedir: runtime.directories.exportDir,
-		onRequest: (args: esbuild.ServeOnRequestArgs) => loggers.serveEvent(args),
+		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
 	}, {})
 
 	let transformURL = ssgify
