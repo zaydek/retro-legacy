@@ -10,7 +10,7 @@ type renderServerRouteMetaToString = (runtime: types.Runtime, loaded: types.Load
 
 type renderServerRouterToString = (
 	runtime: types.Runtime<types.DevOrExportCommand>,
-	router: types.ServerRouter,
+	router: types.Router,
 ) => Promise<string>
 
 ////////////////////////////////////////////////////////////////////////////////

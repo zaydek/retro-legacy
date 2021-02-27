@@ -121,8 +121,8 @@ export function serverProps() {
 }`
 }
 
-export function duplicatePathFound(r1: types.ServerRoute, r2: types.ServerRoute): string {
-	function caller(r: types.ServerRoute): string {
+export function duplicatePathFound(r1: types.Route, r2: types.Route): string {
+	function caller(r: types.Route): string {
 		return r.type === "static" ? "serverProps" : "serverPaths"
 	}
 	return `${r1.src}.${caller(r1)}: Path ${term.magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`

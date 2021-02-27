@@ -26,7 +26,7 @@ function getTimeInfo(): TimeInfo {
 function formatMs(ms: number): string {
 	switch (true) {
 		case ms < 250:
-			return `${ms}ms` // `${String(ms).padStart(3, "0")}ms`
+			return `${ms}ms`
 		default:
 			return `${(ms / 1e3).toFixed(2)}s`
 	}
@@ -74,7 +74,7 @@ export function serveEvent(args: esbuild.ServeOnRequestArgs): void {
 	)
 }
 
-export function exportEvent(runtime: types.Runtime, meta: types.ServerRouteMeta, start: number): void {
+export function exportEvent(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
 	const { hh, mm, ss, am, ms } = getTimeInfo()
 
 	const dur = formatMs(Date.now() - start)

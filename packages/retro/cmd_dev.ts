@@ -21,7 +21,7 @@ interface RenderCache {
 // On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
 //
 export default async function retro_dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
-	const router: types.ServerRouter = {}
+	const router: types.Router = {}
 
 	// cache caches HTML based on '(await fs.promises.stat(...)).mtimeMs'.
 	const cache: RenderCache = {}

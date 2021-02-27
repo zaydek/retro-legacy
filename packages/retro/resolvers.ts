@@ -23,12 +23,12 @@ type resolveDynamicRoutes = (
 	outfile: string,
 ) => Promise<types.LoadedServerRouteMeta[]>
 
-type resolveServerRouter = (runtime: types.Runtime<types.DevOrExportCommand>) => Promise<types.ServerRouter>
+type resolveServerRouter = (runtime: types.Runtime<types.DevOrExportCommand>) => Promise<types.Router>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const resolveStaticRoute: resolveStaticRoute = async (_, page, outfile) => {
-	let props: types.ServerResolvedProps = { path: page.path }
+	let props: types.RouteProps = { path: page.path }
 
 	// NOTE: Use try-catch to suppress esbuild dynamic import warning.
 	let mod: types.StaticPageModule
@@ -102,8 +102,8 @@ const resolveDynamicRoutes: resolveDynamicRoutes = async (runtime, page, outfile
 					// prettier-ignore
 					route: {
 						...page,
-						dst,         // Recompute 'dst'
-						path: path_, // Recompute 'path'
+						dst,         // Recompute dst
+						path: path_, // Recompute path
 					},
 					props: {
 						path: path_, // Add path (takes precedence)
@@ -142,7 +142,7 @@ function formatter(): Formatter {
 //
 // TODO: Extract middleware so loggers can be externalized?
 export const resolveServerRouter: resolveServerRouter = async runtime => {
-	const router: types.ServerRouter = {}
+	const router: types.Router = {}
 
 	const format = formatter()
 

@@ -27,29 +27,26 @@ export type DevOrExportCommand = DevCommand | ExportCommand
 ////////////////////////////////////////////////////////////////////////////////
 
 // DirConfiguration describes the directory configuration.
-// prettier-ignore
 export interface DirConfiguration {
-	publicDir:   string // e.g. "public"
+	publicDir: string // e.g. "public"
 	srcPagesDir: string // e.g. "src/pages"
-	cacheDir:    string // e.g. "__cache__"
-	exportDir:   string // e.g. "__export__"
+	cacheDir: string // e.g. "__cache__"
+	exportDir: string // e.g. "__export__"
 }
 
 // StaticPageMeta describes static page metadata.
-// prettier-ignore
 export interface StaticPageMeta {
-	type:      "static"
-	src:       string // e.g. "src/pages/index.js"
-	dst:       string // e.g. "dst/index.html"
-	path:      string // e.g. "/"
+	type: "static"
+	src: string // e.g. "src/pages/index.js"
+	dst: string // e.g. "dst/index.html"
+	path: string // e.g. "/"
 	component: string // e.g. "PageIndex"
 }
 
 // DynamicPageMeta describes dynamic page metadata.
-// prettier-ignore
 export interface DynamicPageMeta {
-	type:      "dynamic"
-	src:       string // e.g. "src/pages/[index].js"
+	type: "dynamic"
+	src: string // e.g. "src/pages/[index].js"
 	component: string // e.g. "DynamicPageIndex"
 }
 
@@ -65,46 +62,48 @@ export interface Runtime<Cmd = Command> {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// Props describes runtime props.
+// Props describes runtime props ambiguously.
 export type Props = { [key: string]: unknown }
 
 // DescriptServerProps describes runtime props resolved on the server.
-export type ServerResolvedProps = Props & { path: string }
+export type RouteProps = Props & { path: string }
 
 // StaticPageModule describes a static page module.
 export interface StaticPageModule {
-	Head?: (props: ServerResolvedProps) => JSX.Element
-	default?: (props: ServerResolvedProps) => JSX.Element
-	serverProps?(): Promise<ServerResolvedProps>
+	Head?: (props: RouteProps) => JSX.Element
+	default?: (props: RouteProps) => JSX.Element
+	serverProps?(): Promise<RouteProps>
 }
 
 // DynamicPageModule describes a dynamic page module.
 export interface DynamicPageModule {
-	Head?: (props: ServerResolvedProps) => JSX.Element
-	default?: (props: ServerResolvedProps) => JSX.Element
+	Head?: (props: RouteProps) => JSX.Element
+	default?: (props: RouteProps) => JSX.Element
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
 // LoadedServerRoute describes a loaded server route (from __cache__).
 export interface LoadedServerRouteMeta {
-	meta: ServerRouteMeta
+	meta: RouteMeta
 	module: StaticPageModule | DynamicPageModule
 }
 
-// prettier-ignore
-export interface ServerRoute {
-	type:      "static" | "dynamic"
-	src:       string // e.g. "src/pages/index.js"
-	dst:       string // e.g. "dst/index.html"
-	path:      string // e.g. "/"
+// Route describes a server-resolved route.
+export interface Route {
+	type: "static" | "dynamic"
+	src: string // e.g. "src/pages/index.js"
+	dst: string // e.g. "dst/index.html"
+	path: string // e.g. "/"
 	component: string // e.g. "PageIndex"
 }
 
-export interface ServerRouteMeta {
-	route: ServerRoute
-	props: ServerResolvedProps
+// RouteMeta describes a server-resolved route metadata.
+export interface RouteMeta {
+	route: Route
+	props: RouteProps
 }
 
-export interface ServerRouter {
-	[key: string]: ServerRouteMeta
+// Router describes the server-resolved route.
+export interface Router {
+	[key: string]: RouteMeta
 }
