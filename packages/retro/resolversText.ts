@@ -15,40 +15,39 @@ type renderServerRouterToString = (
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// TODO: Add support for <Layout> components.
 // TODO: Write tests.
 export const renderServerRouteMetaToString: renderServerRouteMetaToString = async (runtime, loaded) => {
-	// Render <Head>:
 	let head = "<!-- <Head> -->"
 	try {
-		if (typeof loaded.mod.Head === "function") {
-			const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(loaded.mod.Head, loaded.meta.props))
+		if (typeof loaded.module.Head === "function") {
+			const renderString = ReactDOMServer.renderToStaticMarkup(
+				React.createElement(loaded.module.Head, loaded.meta.props),
+			)
 			head = renderString.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 		}
 	} catch (err) {
 		log.error(`${loaded.meta.route.src}.<Head>: ${err.message}`)
 	}
 
-	// Render <Page>:
-	//
 	// TODO: Upgrade <script src="/app.js"> to <script src="/app.[hash].js">?
 	let page = `<noscript>You need to enable JavaScript to run this app.</noscript>\n\t\t<div id="root"></div>\n\t\t<script src="/app.js"></script>`
 	try {
-		if (typeof loaded.mod.default === "function") {
-			const renderString = ReactDOMServer.renderToString(React.createElement(loaded.mod.default, loaded.meta.props))
+		if (typeof loaded.module.default === "function") {
+			const renderString = ReactDOMServer.renderToString(React.createElement(loaded.module.default, loaded.meta.props))
 			page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`)
 		}
 	} catch (err) {
 		log.error(`${loaded.meta.route.src}.<Page>: ${err.message}`)
 	}
 
-	// Done:
-	// prettier-ignore
 	const out = runtime.document
 		.replace("%head%", head) // %head% -> <Head>
 		.replace("%page%", page) // %page% -> <Page>
 	return out
 }
 
+// TODO: Add support for <Layout> components.
 // TODO: Write tests.
 export const renderServerRouterToString: renderServerRouterToString = async (runtime, router) => {
 	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?

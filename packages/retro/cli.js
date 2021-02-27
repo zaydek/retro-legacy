@@ -613,10 +613,7 @@ async function* watcher(root, {interval}) {
 // packages/retro/cmd_dev.ts
 var fs4 = __toModule(require("fs"));
 var http = __toModule(require("http"));
-async function renderToString() {
-  return "TODO";
-}
-var cmd_dev = async (runtime) => {
+async function retro_dev(runtime) {
   const router = {};
   const cache = {};
   let callback;
@@ -656,17 +653,9 @@ var cmd_dev = async (runtime) => {
       res.end(read.html);
       return;
     }
-    const html = await renderToString();
-    cache[req.url] = {
-      mtimeMs: stat.mtimeMs,
-      html
-    };
-    res.writeHead(200, {"Content-Type": "text/html"});
-    res.end(html);
   });
   srv.listen(runtime.command.port);
-};
-var cmd_dev_default = cmd_dev;
+}
 
 // packages/retro/cmd_export.ts
 var esbuild2 = __toModule(require("esbuild"));
@@ -677,170 +666,33 @@ var p6 = __toModule(require("path"));
 var esbuild = __toModule(require("esbuild"));
 var fs5 = __toModule(require("fs"));
 var p5 = __toModule(require("path"));
+
+// packages/retro/resolversText.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-var renderToString3 = async (runtime, meta, mod) => {
+var renderServerRouteMetaToString = async (runtime, loaded) => {
   let head = "<!-- <Head> -->";
   try {
-    if (typeof mod.Head === "function") {
-      const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, meta.props));
+    if (typeof loaded.module.Head === "function") {
+      const renderString = ReactDOMServer.renderToStaticMarkup(React.createElement(loaded.module.Head, loaded.meta.props));
       head = renderString.replace(/></g, ">\n		<").replace(/\/>/g, " />");
     }
   } catch (err) {
-    error(`${meta.route.src}.Head: ${err.message}`);
+    error(`${loaded.meta.route.src}.<Head>: ${err.message}`);
   }
   let page = `<noscript>You need to enable JavaScript to run this app.</noscript>
 		<div id="root"></div>
 		<script src="/app.js"></script>`;
   try {
-    if (typeof mod.default === "function") {
-      const renderString = ReactDOMServer.renderToString(React.createElement(mod.default, meta.props));
+    if (typeof loaded.module.default === "function") {
+      const renderString = ReactDOMServer.renderToString(React.createElement(loaded.module.default, loaded.meta.props));
       page = page.replace(`<div id="root"></div>`, `<div id="root">${renderString}</div>`);
     }
   } catch (err) {
-    error(`${meta.route.src}.default: ${err.message}`);
+    error(`${loaded.meta.route.src}.<Page>: ${err.message}`);
   }
-  const rendered = runtime.document.replace("%head%", head).replace("%page%", page);
-  await fs5.promises.mkdir(p5.dirname(meta.route.dst), {recursive: true});
-  await fs5.promises.writeFile(meta.route.dst, rendered);
-};
-var resolveStaticRouteMeta = async (runtime, page, outfile) => {
-  let props = {path: page.path};
-  let mod;
-  try {
-    mod = require(p5.join("..", "..", outfile));
-  } catch {
-  }
-  if ("serverProps" in mod && typeof mod.serverProps !== "function") {
-    error(serverPropsFunction(page.src));
-  } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
-    error(serverPathsMismatch(page.src));
-  }
-  if (typeof mod.serverProps === "function") {
-    try {
-      const serverProps = await mod.serverProps();
-      if (!validateServerPropsReturn(serverProps)) {
-        error(serverPropsReturn(page.src));
-      }
-      props = {
-        path: page.path,
-        ...serverProps
-      };
-    } catch (err) {
-      error(`${page.src}.serverProps: ${err.message}`);
-    }
-  }
-  const meta = {route: page, props};
-  await renderToString3(runtime, meta, mod);
-  return meta;
-};
-var resolveDynamicRouteMetas = async (runtime, page, outfile) => {
-  const metas = [];
-  let mod;
-  try {
-    mod = require(p5.join("..", "..", outfile));
-  } catch {
-  }
-  if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
-    error(serverPathsFunction(page.src));
-  } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
-    error(serverPropsMismatch(page.src));
-  }
-  if (typeof mod.serverPaths === "function") {
-    let paths = [];
-    try {
-      paths = await mod.serverPaths();
-      if (!validateServerPathsReturn(paths)) {
-        error(serverPathsReturn(page.src));
-      }
-    } catch (err) {
-      error(`${page.src}.serverPaths: ${err.message}`);
-    }
-    for (const path of paths) {
-      const path_ = p5.join(p5.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
-      const dst2 = p5.join(runtime.directories.exportDir, path_ + ".html");
-      metas.push({
-        route: {
-          type: "dynamic",
-          src: page.src,
-          dst: dst2,
-          path: path_,
-          component: page.component
-        },
-        props: {
-          path: path_,
-          ...path.props
-        }
-      });
-    }
-  }
-  for (const meta of metas) {
-    await renderToString3(runtime, meta, mod);
-  }
-  return metas;
-};
-var once2 = false;
-var resolveServerRouter = async (runtime) => {
-  const router = {};
-  const service = await esbuild.startService();
-  for (const page of runtime.pages) {
-    const entryPoints = [page.src];
-    const outfile = p5.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
-    try {
-      const result = await service.build({
-        bundle: true,
-        define: {
-          __DEV__: process.env.__DEV__,
-          "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-        },
-        entryPoints,
-        external: ["react", "react-dom"],
-        format: "cjs",
-        inject: ["packages/retro/react-shim.js"],
-        loader: {".js": "jsx"},
-        logLevel: "silent",
-        outfile
-      });
-      if (result.warnings.length > 0) {
-        for (const warning2 of result.warnings) {
-          warning(formatEsbuildMessage(warning2, yellow));
-        }
-        process.exit(1);
-      }
-    } catch (err) {
-      error(formatEsbuildMessage(err.errors[0], bold.red));
-    }
-    let start = Date.now();
-    if (page.type === "static") {
-      const meta = await resolveStaticRouteMeta(runtime, page, outfile);
-      if (router[meta.route.path] !== void 0) {
-        error(duplicatePathFound(meta.route, router[meta.route.path].route));
-      }
-      router[meta.route.path] = meta;
-      if (!once2) {
-        console.log();
-        once2 = true;
-      }
-      exportEvent(runtime, meta, start);
-    }
-    if (page.type === "dynamic") {
-      const metas = await resolveDynamicRouteMetas(runtime, page, outfile);
-      for (const meta of metas) {
-        if (router[meta.route.path] !== void 0) {
-          error(duplicatePathFound(meta.route, router[meta.route.path].route));
-        }
-        router[meta.route.path] = meta;
-        if (!once2) {
-          console.log();
-          once2 = true;
-        }
-        exportEvent(runtime, meta, start);
-        start = 0;
-      }
-    }
-  }
-  console.log();
-  return router;
+  const out = runtime.document.replace("%head%", head).replace("%page%", page);
+  return out;
 };
 var renderServerRouterToString = async (runtime, router) => {
   const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
@@ -877,16 +729,158 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 `;
 };
 
-// packages/retro/cmd_export.ts
-var cmd_export = async (runtime) => {
-  let router = {};
-  if (!runtime.command.cached) {
-    router = await resolveServerRouter(runtime);
-  } else {
+// packages/retro/resolvers.ts
+var resolveStaticRoute = async (_, page, outfile) => {
+  let props = {path: page.path};
+  let mod;
+  try {
+    mod = require(p5.join("..", "..", outfile));
+  } catch {
   }
-  const app = await renderServerRouterToString(runtime, router);
-  const appPath = p6.join(runtime.directories.cacheDir, "app.js");
-  await fs6.promises.writeFile(appPath, app);
+  if ("serverProps" in mod && typeof mod.serverProps !== "function") {
+    error(serverPropsFunction(page.src));
+  } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
+    error(serverPathsMismatch(page.src));
+  }
+  if (typeof mod.serverProps === "function") {
+    try {
+      const serverProps = await mod.serverProps();
+      if (!validateServerPropsReturn(serverProps)) {
+        error(serverPropsReturn(page.src));
+      }
+      props = {
+        path: page.path,
+        ...serverProps
+      };
+    } catch (err) {
+      error(`${page.src}.serverProps: ${err.message}`);
+    }
+  }
+  const loaded = {meta: {route: page, props}, module: mod};
+  return loaded;
+};
+var resolveDynamicRoutes = async (runtime, page, outfile) => {
+  const loaded = [];
+  let mod;
+  try {
+    mod = require(p5.join("..", "..", outfile));
+  } catch {
+  }
+  if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
+    error(serverPathsFunction(page.src));
+  } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
+    error(serverPropsMismatch(page.src));
+  }
+  if (typeof mod.serverPaths === "function") {
+    let paths = [];
+    try {
+      paths = await mod.serverPaths();
+      if (!validateServerPathsReturn(paths)) {
+        error(serverPathsReturn(page.src));
+      }
+    } catch (err) {
+      error(`${page.src}.serverPaths: ${err.message}`);
+    }
+    for (const path of paths) {
+      const path_ = p5.join(p5.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path);
+      const dst2 = p5.join(runtime.directories.exportDir, path_ + ".html");
+      loaded.push({
+        meta: {
+          route: {
+            ...page,
+            dst: dst2,
+            path: path_
+          },
+          props: {
+            path: path_,
+            ...path.props
+          }
+        },
+        module: mod
+      });
+    }
+  }
+  return loaded;
+};
+function formatter() {
+  let once2 = false;
+  return {
+    start() {
+      if (once2)
+        return;
+      console.log();
+      once2 = true;
+    },
+    end() {
+      console.log();
+    }
+  };
+}
+var resolveServerRouter = async (runtime) => {
+  const router = {};
+  const format2 = formatter();
+  const service = await esbuild.startService();
+  for (const page of runtime.pages) {
+    const entryPoints = [page.src];
+    const outfile = p5.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
+    try {
+      const result = await service.build({
+        bundle: true,
+        define: {
+          __DEV__: process.env.__DEV__,
+          "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+        },
+        entryPoints,
+        external: ["react", "react-dom"],
+        format: "cjs",
+        inject: ["packages/retro/react-shim.js"],
+        loader: {".js": "jsx"},
+        logLevel: "silent",
+        outfile
+      });
+      if (result.warnings.length > 0) {
+        for (const warning2 of result.warnings) {
+          warning(formatEsbuildMessage(warning2, yellow));
+        }
+        process.exit(1);
+      }
+    } catch (err) {
+      error(formatEsbuildMessage(err.errors[0], bold.red));
+    }
+    let start = Date.now();
+    const loaded = [];
+    if (page.type === "static") {
+      const one = await resolveStaticRoute(runtime, page, outfile);
+      loaded.push(one);
+    } else {
+      const many = await resolveDynamicRoutes(runtime, page, outfile);
+      loaded.push(...many);
+    }
+    for (const each of loaded) {
+      if (router[each.meta.route.path] !== void 0) {
+        error(duplicatePathFound(each.meta.route, router[each.meta.route.path].route));
+      }
+      format2.start();
+      router[each.meta.route.path] = each.meta;
+      if (runtime.command.type === "export") {
+        const text = await renderServerRouteMetaToString(runtime, each);
+        await fs5.promises.mkdir(p5.dirname(each.meta.route.dst), {recursive: true});
+        await fs5.promises.writeFile(each.meta.route.dst, text);
+      }
+      exportEvent(runtime, each.meta, start);
+      start = 0;
+    }
+  }
+  format2.end();
+  return router;
+};
+
+// packages/retro/cmd_export.ts
+async function cmd_export(runtime) {
+  const router = await resolveServerRouter(runtime);
+  const appContents = await renderServerRouterToString(runtime, router);
+  const appContentsPath = p6.join(runtime.directories.cacheDir, "app.js");
+  await fs6.promises.writeFile(appContentsPath, appContents);
   try {
     const result = await esbuild2.build({
       bundle: true,
@@ -894,12 +888,12 @@ var cmd_export = async (runtime) => {
         __DEV__: process.env.__DEV__,
         "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
       },
-      entryPoints: [appPath],
+      entryPoints: [appContentsPath],
       inject: ["packages/retro/react-shim.js"],
       loader: {".js": "jsx"},
       logLevel: "silent",
       minify: true,
-      outfile: p6.join(runtime.directories.exportDir, appPath.slice(runtime.directories.srcPagesDir.length))
+      outfile: p6.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length))
     });
     if (result.warnings.length > 0) {
       for (const warning2 of result.warnings) {
@@ -910,8 +904,7 @@ var cmd_export = async (runtime) => {
   } catch (err) {
     error(err);
   }
-};
-var cmd_export_default = cmd_export;
+}
 
 // packages/retro/cmd_serve.ts
 var esbuild3 = __toModule(require("esbuild"));
@@ -928,7 +921,7 @@ function ssgify(url) {
     return url + ".html";
   return url;
 }
-var serve2 = async (runtime) => {
+async function cmd_serve(runtime) {
   try {
     await fs7.promises.stat("__export__");
   } catch {
@@ -962,8 +955,7 @@ var serve2 = async (runtime) => {
     req.pipe(reqProxy, {end: true});
   });
   srvProxy.listen(runtime.command.port);
-};
-var cmd_serve_default = serve2;
+}
 
 // packages/retro/cli.ts
 var usage = `${bold("Usage:")}
@@ -1168,12 +1160,12 @@ ${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`);
   };
   if (runtime.command.type === "dev") {
     await preflight(runtime);
-    await cmd_dev_default(runtime);
+    await retro_dev(runtime);
   } else if (runtime.command.type === "export") {
     await preflight(runtime);
-    await cmd_export_default(runtime);
+    await cmd_export(runtime);
   } else if (runtime.command.type === "serve") {
-    await cmd_serve_default(runtime);
+    await cmd_serve(runtime);
   }
 }
 process.on("uncaughtException", (err) => {

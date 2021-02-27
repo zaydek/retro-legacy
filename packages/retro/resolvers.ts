@@ -19,7 +19,7 @@ type resolveStaticRoute = (
 
 type resolveDynamicRoutes = (
 	runtime: types.Runtime<types.DevOrExportCommand>,
-	page: types.PageMeta, // TODO: Can we change to dynamic page meta?
+	page: types.DynamicPageMeta, // TODO: Can we change to dynamic page meta?
 	outfile: string,
 ) => Promise<types.LoadedServerRouteMeta[]>
 
@@ -30,11 +30,9 @@ type resolveServerRouter = (runtime: types.Runtime<types.DevOrExportCommand>) =>
 const resolveStaticRoute: resolveStaticRoute = async (_, page, outfile) => {
 	let props: types.ServerResolvedProps = { path: page.path }
 
-	// NOTE: Use try-catch to suppress esbuild warning.
+	// NOTE: Use try-catch to suppress esbuild dynamic import warning.
 	let mod: types.StaticPageModule
 	try {
-		// TODO: Change to new import syntax?
-		// https://github.com/evanw/esbuild/releases/tag/v0.8.53
 		mod = require(p.join("..", "..", outfile))
 	} catch {}
 
@@ -54,7 +52,7 @@ const resolveStaticRoute: resolveStaticRoute = async (_, page, outfile) => {
 			}
 			props = {
 				// @ts-ignore
-				path: page.path, // Add path
+				path: page.path, // Add path (takes precedence)
 				...serverProps,
 			}
 		} catch (err) {
@@ -62,7 +60,7 @@ const resolveStaticRoute: resolveStaticRoute = async (_, page, outfile) => {
 		}
 	}
 
-	const loaded = { meta: { route: page, props }, mod: mod! }
+	const loaded = { meta: { route: page, props }, module: mod! }
 	return loaded
 }
 
@@ -101,20 +99,18 @@ const resolveDynamicRoutes: resolveDynamicRoutes = async (runtime, page, outfile
 			const dst = p.join(runtime.directories.exportDir, path_ + ".html")
 			loaded.push({
 				meta: {
-					// TODO: Refactor route?
+					// prettier-ignore
 					route: {
-						type: "dynamic",
-						src: page.src,
-						dst,
-						path: path_,
-						component: page.component,
+						...page,
+						dst,         // Recompute 'dst'
+						path: path_, // Recompute 'path'
 					},
 					props: {
-						path: path_, // Add path
+						path: path_, // Add path (takes precedence)
 						...path.props,
 					},
 				},
-				mod: mod!,
+				module: mod!,
 			})
 		}
 	}
@@ -193,6 +189,8 @@ export const resolveServerRouter: resolveServerRouter = async runtime => {
 			log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
 		}
 
+		let start = Date.now()
+
 		// Aggregate resolved metas:
 		const loaded: types.LoadedServerRouteMeta[] = []
 		if (page.type === "static") {
@@ -203,15 +201,17 @@ export const resolveServerRouter: resolveServerRouter = async runtime => {
 			loaded.push(...many)
 		}
 
-		let start = Date.now()
 		for (const each of loaded) {
 			if (router[each.meta.route.path] !== undefined) {
 				log.error(errs.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
 			}
 			format.start()
 			router[each.meta.route.path] = each.meta
+
+			// Export components (__export__):
 			if (runtime.command.type === "export") {
 				const text = await resolversText.renderServerRouteMetaToString(runtime, each)
+				await fs.promises.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
 				await fs.promises.writeFile(each.meta.route.dst, text)
 			}
 			loggers.exportEvent(runtime, each.meta, start)
