@@ -30,17 +30,22 @@ const cmd_dev: types.cmd_dev = async runtime => {
 
 	let callback: () => void | undefined
 
+	// TODO: Generate server router here.
 	// TODO: Implement esbuild here.
 
 	async function watch(): Promise<void> {
-		const gen = utils.watcher("src", { interval: 100 })
+		const generator = utils.watcher("src", { interval: 100 })
+		async function next(): Promise<string> {
+			return (await generator.next()).value
+		}
+
 		while (true) {
-			const src = await (await gen.next()).value
-			if (src !== "") {
-				// TODO: Regenerate server router here.
-				// TODO: Implement esbuild here.
-				if (callback) callback()
-			}
+			await next()
+
+			// TODO: Regenerate server router here.
+			// TODO: Implement esbuild here.
+
+			if (callback) callback()
 		}
 	}
 

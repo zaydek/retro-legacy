@@ -616,13 +616,14 @@ var cmd_dev = async (runtime) => {
   const cache = {};
   let callback;
   async function watch() {
-    const gen = watcher("src", {interval: 100});
+    const generator = watcher("src", {interval: 100});
+    async function next() {
+      return (await generator.next()).value;
+    }
     while (true) {
-      const src = await (await gen.next()).value;
-      if (src !== "") {
-        if (callback)
-          callback();
-      }
+      await next();
+      if (callback)
+        callback();
     }
   }
   watch();
@@ -956,38 +957,37 @@ var serve2 = async (runtime) => {
 var cmd_serve_default = serve2;
 
 // packages/retro/cli.ts
-var usage = `
-  ${bold("Usage:")}
+var usage = `${bold("Usage:")}
 
-    retro dev          Start the dev server
-    retro export       Export the production-ready build (SSG)
-    retro serve        Serve the production-ready build
+  retro dev        Start the dev server
+  retro export     Export the production-ready build (SSG)
+  retro serve      Serve the production-ready build
 
-  ${bold("retro dev")}
+${bold("retro dev")}
 
-    Start the dev server
+  Start the dev server
 
-      --cached=...     Use cached resources (default false)
-      --sourcemap=...  Add source maps (default true)
-      --port=...       Port number (default 8000)
+  --cached=...     Use cached resources (default false)
+  --sourcemap=...  Add source maps (default true)
+  --port=...       Port number (default 8000)
 
-  ${bold("retro export")}
+${bold("retro export")}
 
-    Export the production-ready build (SSG)
+  Export the production-ready build (SSG)
 
-      --cached=...     Use cached resources (default false)
-      --sourcemap=...  Add source maps (default true)
+  --cached=...     Use cached resources (default false)
+  --sourcemap=...  Add source maps (default true)
 
-  ${bold("retro serve")}
+${bold("retro serve")}
 
-    Serve the production-ready build
+  Serve the production-ready build
 
-      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-      --port=...       Port number (default 8000)
+  --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+  --port=...       Port number (default 8000)
 
-  ${bold("Repository")}
+${bold("Repository")}
 
-    ${underline("https://github.com/zaydek/retro")}
+  ${underline("https://github.com/zaydek/retro")}
 `;
 var cmds = `
 retro dev     Start the dev server

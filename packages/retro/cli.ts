@@ -7,39 +7,37 @@ import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
-// NOTE: Use spaces for usage.
-const usage = `
-  ${term.bold("Usage:")}
+const usage = `${term.bold("Usage:")}
 
-    retro dev          Start the dev server
-    retro export       Export the production-ready build (SSG)
-    retro serve        Serve the production-ready build
+\x20\x20retro dev        Start the dev server
+\x20\x20retro export     Export the production-ready build (SSG)
+\x20\x20retro serve      Serve the production-ready build
 
-  ${term.bold("retro dev")}
+${term.bold("retro dev")}
 
-    Start the dev server
+\x20\x20Start the dev server
 
-      --cached=...     Use cached resources (default false)
-      --sourcemap=...  Add source maps (default true)
-      --port=...       Port number (default 8000)
+\x20\x20--cached=...     Use cached resources (default false)
+\x20\x20--sourcemap=...  Add source maps (default true)
+\x20\x20--port=...       Port number (default 8000)
 
-  ${term.bold("retro export")}
+${term.bold("retro export")}
 
-    Export the production-ready build (SSG)
+\x20\x20Export the production-ready build (SSG)
 
-      --cached=...     Use cached resources (default false)
-      --sourcemap=...  Add source maps (default true)
+\x20\x20--cached=...     Use cached resources (default false)
+\x20\x20--sourcemap=...  Add source maps (default true)
 
-  ${term.bold("retro serve")}
+${term.bold("retro serve")}
 
-    Serve the production-ready build
+\x20\x20Serve the production-ready build
 
-      --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-      --port=...       Port number (default 8000)
+\x20\x20--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+\x20\x20--port=...       Port number (default 8000)
 
-  ${term.bold("Repository")}
+${term.bold("Repository")}
 
-    ${term.underline("https://github.com/zaydek/retro")}
+\x20\x20${term.underline("https://github.com/zaydek/retro")}
 `
 
 const cmds = `
@@ -229,16 +227,16 @@ ${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`)
 
 	// prettier-ignore
 	const runtime: types.Runtime = {
-    command: command!,
-    directories: {
-      publicDir:   process.env.PUBLIC_DIR || "public",
-      srcPagesDir: process.env.PAGES_DIR  || "src/pages",
-      cacheDir:    process.env.CACHE_DIR  || "__cache__",
-      exportDir:   process.env.EXPORT_DIR || "__export__",
-    },
-    document: "", // Defer to dev and export
-    pages: [],    // Defer to dev and export
-  }
+		command: command!,
+		directories: {
+			publicDir:   process.env.PUBLIC_DIR || "public",
+			srcPagesDir: process.env.PAGES_DIR  || "src/pages",
+			cacheDir:    process.env.CACHE_DIR  || "__cache__",
+			exportDir:   process.env.EXPORT_DIR || "__export__",
+		},
+		document: "", // Defer to dev and export
+		pages: [],    // Defer to dev and export
+	}
 
 	if (runtime.command.type === "dev") {
 		await utils.preflight(runtime)

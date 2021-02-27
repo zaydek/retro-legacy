@@ -74,7 +74,7 @@ export function serveEvent(args: esbuild.ServeOnRequestArgs): void {
 	)
 }
 
-export function exportEvent(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
+export function exportEvent(runtime: types.Runtime, meta: types.ServerRouteMeta, start: number): void {
 	const { hh, mm, ss, am, ms } = getTimeInfo()
 
 	const dur = formatMs(Date.now() - start)
