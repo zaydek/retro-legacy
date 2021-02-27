@@ -44,19 +44,19 @@ var options = [
 ];
 function build(...codes) {
   const set = new Set(codes);
-  function format2(...args) {
+  function format3(...args) {
     const coded = [...set].join("");
     return coded + args.join(" ").replaceAll("[0m", "[0m" + coded) + "[0m";
   }
   for (const {name, code} of options) {
-    Object.defineProperty(format2, name, {
+    Object.defineProperty(format3, name, {
       enumerable: true,
       get() {
         return build(...[...codes, code]);
       }
     });
   }
-  return format2;
+  return format3;
 }
 var normal = build("[0m");
 var bold = build("[1m");
@@ -126,14 +126,14 @@ function formatEsbuildMessage(msg, color) {
 // packages/retro/utils/logTypes.ts
 var p = __toModule(require("path"));
 var TERM_WIDTH = 35;
-function getTimeInfo() {
+function timestamp() {
   const date = new Date();
   const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
   const mm = String(date.getMinutes()).padStart(2, "0");
   const ss = String(date.getSeconds()).padStart(2, "0");
   const am = date.getHours() < 12 ? "AM" : "PM";
   const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
-  return {hh, mm, ss, am, ms};
+  return `${hh}:${mm}:${ss}.${ms} ${am}`;
 }
 function formatMs(ms) {
   switch (true) {
@@ -143,34 +143,7 @@ function formatMs(ms) {
       return `${(ms / 1e3).toFixed(2)}s`;
   }
 }
-var once = false;
-function serveEvent(args) {
-  const {hh, mm, ss, am, ms} = getTimeInfo();
-  const dur = formatMs(args.timeInMS);
-  let color = normal;
-  if (args.status < 200 || args.status >= 300) {
-    color = red;
-  }
-  let dimColor = dim;
-  if (args.status < 200 || args.status >= 300) {
-    dimColor = dim.red;
-  }
-  let logger = (...args2) => console.log(...args2);
-  if (args.status < 200 || args.status >= 300) {
-    logger = (...args2) => console.error(...args2);
-  }
-  const path = args.path;
-  const path_ext = p.extname(path);
-  const path_name = path.slice(1, -path_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
-  if (!once) {
-    logger();
-    once = true;
-  }
-  logger(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
-}
 function exportEvent(runtime, meta, start) {
-  const {hh, mm, ss, am, ms} = getTimeInfo();
   const dur = formatMs(Date.now() - start);
   const l1 = runtime.directories.srcPagesDir.length;
   const l2 = runtime.directories.exportDir.length;
@@ -189,7 +162,32 @@ function exportEvent(runtime, meta, start) {
   const dst_ext = p.extname(dst2);
   const dst_name = dst2.slice(1, -dst_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  console.log(` ${dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+}
+var serveOnce = false;
+function serveEvent(args) {
+  const dur = formatMs(args.timeInMS);
+  let color = normal;
+  if (args.status < 200 || args.status >= 300) {
+    color = red;
+  }
+  let dimColor = dim;
+  if (args.status < 200 || args.status >= 300) {
+    dimColor = dim.red;
+  }
+  let logger = (...args2) => console.log(...args2);
+  if (args.status < 200 || args.status >= 300) {
+    logger = (...args2) => console.error(...args2);
+  }
+  const path = args.path;
+  const path_ext = p.extname(path);
+  const path_name = path.slice(1, -path_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
+  if (!serveOnce) {
+    logger();
+    serveOnce = true;
+  }
+  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
 }
 
 // packages/retro/utils/parsePages.ts
@@ -734,8 +732,23 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 
 // packages/retro/resolvers.ts
 var service;
+function formatter() {
+  let once = false;
+  return {
+    start() {
+      if (once)
+        return;
+      console.log();
+      once = true;
+    },
+    done() {
+      console.log();
+    }
+  };
+}
+var format2 = formatter();
 var resolveModule = async (runtime, page) => {
-  const out = p5.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
+  const target = p5.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
   try {
     const result = await service.build({
       bundle: true,
@@ -749,7 +762,7 @@ var resolveModule = async (runtime, page) => {
       inject: ["packages/retro/react-shim.js"],
       loader: {".js": "jsx"},
       logLevel: "silent",
-      outfile: out
+      outfile: target
     });
     if (result.warnings.length > 0) {
       for (const warning2 of result.warnings) {
@@ -762,7 +775,7 @@ var resolveModule = async (runtime, page) => {
   }
   let mod = {};
   try {
-    mod = require(p5.join("..", "..", out));
+    mod = require(p5.join("..", "..", target));
   } catch {
   }
   return mod;
@@ -831,23 +844,8 @@ var resolveDynamicRoutes = async (runtime, page) => {
   }
   return loaded;
 };
-function formatter() {
-  let once2 = false;
-  return {
-    start() {
-      if (once2)
-        return;
-      console.log();
-      once2 = true;
-    },
-    end() {
-      console.log();
-    }
-  };
-}
 var resolveServerRouter = async (runtime) => {
   const router = {};
-  const format2 = formatter();
   service = await esbuild.startService();
   for (const page of runtime.pages) {
     let start = Date.now();
@@ -874,7 +872,7 @@ var resolveServerRouter = async (runtime) => {
       start = 0;
     }
   }
-  format2.end();
+  format2.done();
   return router;
 };
 

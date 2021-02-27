@@ -208,14 +208,13 @@ export const resolveServerRouter: resolveServerRouter = async runtime => {
 			}
 			format.start()
 			router[each.meta.route.path] = each.meta
-
-			// Export components (__export__):
 			if (runtime.command.type === "export") {
 				const text = await resolversText.renderServerRouteMetaToString(runtime, each)
 				await fs.promises.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
 				await fs.promises.writeFile(each.meta.route.dst, text)
 			}
 			loggers.exportEvent(runtime, each.meta, start)
+			// start = Date.now()
 			start = 0 // Reset
 		}
 	}

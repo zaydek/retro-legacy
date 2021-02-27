@@ -3,24 +3,16 @@ import * as p from "path"
 import * as term from "../../lib/term"
 import * as types from "../types"
 
-interface TimeInfo {
-	hh: string // e.g. "03"
-	mm: string // e.g. "04"
-	ss: string // e.g. "05"
-	am: string // e.g. "AM"
-	ms: string // e.g. "000"
-}
-
 const TERM_WIDTH = 35
 
-function getTimeInfo(): TimeInfo {
+function timestamp(): string {
 	const date = new Date()
 	const hh = String(date.getHours() % 12 || 12).padStart(2, "0")
 	const mm = String(date.getMinutes()).padStart(2, "0")
 	const ss = String(date.getSeconds()).padStart(2, "0")
 	const am = date.getHours() < 12 ? "AM" : "PM"
 	const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0")
-	return { hh, mm, ss, am, ms }
+	return `${hh}:${mm}:${ss}.${ms} ${am}`
 }
 
 function formatMs(ms: number): string {
@@ -32,51 +24,7 @@ function formatMs(ms: number): string {
 	}
 }
 
-let once = false
-
-export function serveEvent(args: esbuild.ServeOnRequestArgs): void {
-	type Logger = (...args: unknown[]) => void
-
-	const { hh, mm, ss, am, ms } = getTimeInfo()
-
-	const dur = formatMs(args.timeInMS)
-
-	let color = term.normal
-	if (args.status < 200 || args.status >= 300) {
-		color = term.red
-	}
-
-	let dimColor = term.dim
-	if (args.status < 200 || args.status >= 300) {
-		dimColor = term.dim.red
-	}
-
-	let logger: Logger = (...args) => console.log(...args)
-	if (args.status < 200 || args.status >= 300) {
-		logger = (...args) => console.error(...args) // eslint-disable-line
-	}
-
-	const path = args.path
-	const path_ext = p.extname(path)
-	const path_name = path.slice(1, -path_ext.length)
-
-	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
-
-	if (!once) {
-		logger()
-		once = true
-	}
-	logger(
-		`\x20${term.dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}\x20\x20` +
-			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
-				`(${dur})`,
-			)}`,
-	)
-}
-
 export function exportEvent(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
-	const { hh, mm, ss, am, ms } = getTimeInfo()
-
 	const dur = formatMs(Date.now() - start)
 
 	// TODO: If we make directories a global variable, we can just reference the
@@ -105,9 +53,49 @@ export function exportEvent(runtime: types.Runtime, meta: types.RouteMeta, start
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
 	console.log(
-		`\x20${term.dim(`${hh}:${mm}:${ss}.${ms} ${am}`)}\x20\x20` +
+		`\x20${term.dim(timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(
 				dst_name,
 			)}${dimColor(dst_ext)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`,
+	)
+}
+
+let serveOnce = false
+
+export function serveEvent(args: esbuild.ServeOnRequestArgs): void {
+	type Logger = (...args: unknown[]) => void
+
+	const dur = formatMs(args.timeInMS)
+
+	let color = term.normal
+	if (args.status < 200 || args.status >= 300) {
+		color = term.red
+	}
+
+	let dimColor = term.dim
+	if (args.status < 200 || args.status >= 300) {
+		dimColor = term.dim.red
+	}
+
+	let logger: Logger = (...args) => console.log(...args)
+	if (args.status < 200 || args.status >= 300) {
+		logger = (...args) => console.error(...args) // eslint-disable-line
+	}
+
+	const path = args.path
+	const path_ext = p.extname(path)
+	const path_name = path.slice(1, -path_ext.length)
+
+	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
+
+	if (!serveOnce) {
+		logger()
+		serveOnce = true
+	}
+	logger(
+		`\x20${term.dim(timestamp())}\x20\x20` +
+			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
+				`(${dur})`,
+			)}`,
 	)
 }
