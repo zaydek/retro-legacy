@@ -2,11 +2,11 @@ import * as esbuild from "esbuild"
 import * as events from "./events"
 import * as fs from "fs"
 import * as http from "http"
-import * as log from "../lib/log"
+// import * as log from "../lib/log"
 import * as p from "path"
 import * as resolvers from "./resolvers"
 import * as resolversText from "./resolvers-text"
-import * as term from "../lib/term"
+// import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
@@ -86,30 +86,13 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 	// prettier-ignore
 	const result = await esbuild.serve({
 		servedir: runtime.directories.exportDir,
-		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
+		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args)
 	}, {})
 
-	const srvProxy = http.createServer((req, res) => {
-		const options = {
-			hostname: result.host,
-			port: result.port,
-			path: utils.ssgify(req.url!),
-			method: req.method,
-			headers: req.headers,
-		}
-		const reqProxy = http.request(options, resProxy => {
-			// /404
-			if (resProxy.statusCode === 404) {
-				res.writeHead(404, { "Content-Type": "text/plain" })
-				res.end("404 - Not Found")
-				return
-			}
-
-			// /~dev
+	const srvProxy = http.createServer(
+		async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
+			// Handle /~dev:
 			if (req.url === "/~dev") {
-				// emit = (): void => {
-				// 	res.write("event: reload\n\n")
-				// }
 				res.writeHead(200, {
 					"Content-Type": "text/event-stream",
 					"Cache-Control": "no-cache",
@@ -118,71 +101,48 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 				return
 			}
 
-			// OK request:
-			res.writeHead(resProxy.statusCode!, resProxy.headers)
-			resProxy.pipe(res, { end: true })
-		})
-		req.pipe(reqProxy, { end: true })
-	})
-	srvProxy.listen(runtime.command.port)
+			const meta = runtime.router[req.url!]
+			if (meta !== undefined) {
+				// Convert route to a page and regenerate component.esbuild.js:
+				const mod = await resolvers.resolveModule(runtime, { ...meta.route })
+				const loaded: types.LoadedRouteMeta = { mod, meta }
 
-	//	const srv = http.createServer(
-	//		async (req: http.IncomingMessage, res: http.ServerResponse): Promise<void> => {
-	//			// Server-sent events:
-	//			const start = Date.now()
-	//			if (req.url === "/~dev") {
-	//				emit = (): void => {
-	//					// TODO: Emit a log event here.
-	//					res.write("event: reload\n\n")
-	//				}
-	//				res.writeHead(200, {
-	//					"Content-Type": "text/event-stream",
-	//					"Cache-Control": "no-cache",
-	//					Connection: "keep-alive",
-	//				})
-	//				return
-	//			}
-	//
-	//			// if (req.url === runtime.directories.publicDir) {
-	//			// 	emit = (): void => {
-	//			// 		// TODO: Emit a log event here.
-	//			// 		res.write("event: reload\n\n")
-	//			// 	}
-	//			// 	res.writeHead(200, {
-	//			// 		"Content-Type": "text/event-stream",
-	//			// 		"Cache-Control": "no-cache",
-	//			// 		Connection: "keep-alive",
-	//			// 	})
-	//			// 	return
-	//			// }
-	//
-	//			// Bad path:
-	//			const meta = runtime.router[req.url!]
-	//			if (meta === undefined) {
-	//				// Synthetic serve request arguments:
-	//				events.serve({
-	//					remoteAddress: "",
-	//					method: "GET",
-	//					path: req.url!,
-	//					status: req.statusCode!,
-	//					timeInMS: Date.now() - start,
-	//				})
-	//				res.writeHead(404, { "Content-Type": "text/plain" })
-	//				res.end("404 - Not Found")
-	//				return
-	//			}
-	//
-	//			// Convert route to a page and regenerate component.esbuild.js:
-	//			const mod = await resolvers.resolveModule(runtime, { ...meta.route })
-	//
-	//			const loaded: types.LoadedRouteMeta = { mod, meta }
-	//			const text = await resolversText.renderRouteMetaToString(runtime, loaded)
-	//
-	//			res.writeHead(200, { "Content-Type": "text/html" })
-	//			res.end(text)
-	//		},
-	//	)
-	//	srv.listen(runtime.command.port)
+				// Write to disk:
+				const out = await resolversText.renderRouteMetaToString(runtime, loaded)
+				await fs.promises.mkdir(p.dirname(loaded.meta.route.dst), { recursive: true })
+				await fs.promises.writeFile(loaded.meta.route.dst, out)
+
+				// Done:
+				res.writeHead(200, { "Content-Type": "text/html" })
+				res.end(out)
+				return
+			}
+
+			// Defer to esbuild-managed server:
+			const options = {
+				hostname: result.host,
+				port: result.port,
+				path: utils.ssgify(req.url!),
+				method: req.method,
+				headers: req.headers,
+			}
+
+			const reqProxy = http.request(options, (resProxy: http.IncomingMessage): void => {
+				// Handle 404:
+				if (resProxy.statusCode === 404) {
+					res.writeHead(404, { "Content-Type": "text/plain" })
+					res.end("404 - Not Found")
+					return
+				}
+				// Handle 200:
+				res.writeHead(resProxy.statusCode!, resProxy.headers)
+				resProxy.pipe(res, { end: true })
+			})
+			req.pipe(reqProxy, { end: true })
+		},
+	)
+
+	srvProxy.listen(runtime.command.port)
 }
 
 // // Read from the cache:

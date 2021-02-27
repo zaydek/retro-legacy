@@ -25,7 +25,7 @@ export default async function cmd_serve(runtime: types.Runtime<types.ServeComman
 		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
 	}, {})
 
-	const srvProxy = http.createServer((req, res) => {
+	const srvProxy = http.createServer((req: http.IncomingMessage, res: http.ServerResponse): void => {
 		const options = {
 			hostname: result.host,
 			port: result.port,
@@ -33,14 +33,14 @@ export default async function cmd_serve(runtime: types.Runtime<types.ServeComman
 			method: req.method,
 			headers: req.headers,
 		}
-		const reqProxy = http.request(options, resProxy => {
-			// Bad request:
+		const reqProxy = http.request(options, (resProxy: http.IncomingMessage): void => {
+			// Handle 404:
 			if (resProxy.statusCode === 404) {
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				return
 			}
-			// OK request:
+			// Handle 200:
 			res.writeHead(resProxy.statusCode!, resProxy.headers)
 			resProxy.pipe(res, { end: true })
 		})

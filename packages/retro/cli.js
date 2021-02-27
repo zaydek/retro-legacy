@@ -176,53 +176,9 @@ function serve(args) {
 }
 
 // packages/retro/cmd_dev.ts
+var fs5 = __toModule(require("fs"));
 var http = __toModule(require("http"));
-
-// packages/retro/utils/formatEsbuild.ts
-function formatEsbuildMessage(msg, color) {
-  const loc = msg.location;
-  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
-
-	${loc.line} ${dim("\u2502")} ${loc.lineText}
-	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
-}
-
-// packages/retro/utils/modes.ts
-var p2 = __toModule(require("path"));
-function ssgify(url) {
-  if (url.endsWith("/"))
-    return url + "index.html";
-  if (p2.extname(url) === "")
-    return url + ".html";
-  return url;
-}
-
-// packages/retro/utils/prettyJSON.ts
-function prettyJSON(value) {
-  return JSON.stringify(value).replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
-}
-
-// packages/retro/utils/validators.ts
-function validateObject(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function validateArray(value) {
-  return typeof value === "object" && value !== null && Array.isArray(value);
-}
-function validateServerPropsReturn(value) {
-  return validateObject(value);
-}
-function validateServerPathsReturn(value) {
-  const ok = validateArray(value) && value.every((each) => {
-    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
-    return ok2;
-  });
-  return ok;
-}
-
-// packages/retro/utils/watcher.ts
-var fs = __toModule(require("fs"));
-var p3 = __toModule(require("path"));
+var p7 = __toModule(require("path"));
 
 // packages/retro/errs.ts
 function missingHeadTemplateTag(path) {
@@ -345,10 +301,6 @@ function serveWithoutExport() {
   return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
 }
 
-// packages/retro/preflight.ts
-var fs4 = __toModule(require("fs"));
-var p6 = __toModule(require("path"));
-
 // packages/retro/resolvers.ts
 var esbuild = __toModule(require("esbuild"));
 var fs2 = __toModule(require("fs"));
@@ -357,6 +309,54 @@ var p4 = __toModule(require("path"));
 // packages/retro/resolvers-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
+
+// packages/retro/utils/formatEsbuild.ts
+function formatEsbuildMessage(msg, color) {
+  const loc = msg.location;
+  return `${loc.file}:${loc.line}:${loc.column}: ${msg.text}
+
+	${loc.line} ${dim("\u2502")} ${loc.lineText}
+	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+}
+
+// packages/retro/utils/modes.ts
+var p2 = __toModule(require("path"));
+function ssgify(url) {
+  if (url.endsWith("/"))
+    return url + "index.html";
+  if (p2.extname(url) === "")
+    return url + ".html";
+  return url;
+}
+
+// packages/retro/utils/prettyJSON.ts
+function prettyJSON(value) {
+  return JSON.stringify(value).replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
+}
+
+// packages/retro/utils/validators.ts
+function validateObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function validateArray(value) {
+  return typeof value === "object" && value !== null && Array.isArray(value);
+}
+function validateServerPropsReturn(value) {
+  return validateObject(value);
+}
+function validateServerPathsReturn(value) {
+  const ok = validateArray(value) && value.every((each) => {
+    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
+    return ok2;
+  });
+  return ok;
+}
+
+// packages/retro/utils/watcher.ts
+var fs = __toModule(require("fs"));
+var p3 = __toModule(require("path"));
+
+// packages/retro/resolvers-text.ts
 async function renderRouteMetaToString(runtime, loaded) {
   let head = "<!-- <Head> -->";
   try {
@@ -378,8 +378,8 @@ async function renderRouteMetaToString(runtime, loaded) {
   } catch (err) {
     error(`${loaded.meta.route.src}.<Page>: ${err.message}`);
   }
-  const text = runtime.document.replace("%head%", head).replace("%page%", page);
-  return text;
+  const out = runtime.document.replace("%head%", head).replace("%page%", page);
+  return out;
 }
 async function renderRouterToString(runtime) {
   const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
@@ -548,9 +548,9 @@ async function resolveRouter(runtime) {
       format2.start();
       router[each.meta.route.path] = each.meta;
       if (runtime.command.type === "export") {
-        const text = await renderRouteMetaToString(runtime, each);
+        const out = await renderRouteMetaToString(runtime, each);
         await fs2.promises.mkdir(p4.dirname(each.meta.route.dst), {recursive: true});
-        await fs2.promises.writeFile(each.meta.route.dst, text);
+        await fs2.promises.writeFile(each.meta.route.dst, out);
       }
       export_(runtime, each.meta, start);
       start = 0;
@@ -559,6 +559,10 @@ async function resolveRouter(runtime) {
   format2.done();
   return router;
 }
+
+// packages/retro/preflight.ts
+var fs4 = __toModule(require("fs"));
+var p6 = __toModule(require("path"));
 
 // packages/retro/pages.ts
 var fs3 = __toModule(require("fs"));
@@ -804,7 +808,26 @@ async function retro_dev(runtime) {
     servedir: runtime.directories.exportDir,
     onRequest: (args) => serve(args)
   }, {});
-  const srvProxy = http.createServer((req, res) => {
+  const srvProxy = http.createServer(async (req, res) => {
+    if (req.url === "/~dev") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive"
+      });
+      return;
+    }
+    const meta = runtime.router[req.url];
+    if (meta !== void 0) {
+      const mod = await resolveModule(runtime, {...meta.route});
+      const loaded = {mod, meta};
+      const out = await renderRouteMetaToString(runtime, loaded);
+      await fs5.promises.mkdir(p7.dirname(loaded.meta.route.dst), {recursive: true});
+      await fs5.promises.writeFile(loaded.meta.route.dst, out);
+      res.writeHead(200, {"Content-Type": "text/html"});
+      res.end(out);
+      return;
+    }
     const options2 = {
       hostname: result.host,
       port: result.port,
@@ -818,14 +841,6 @@ async function retro_dev(runtime) {
         res.end("404 - Not Found");
         return;
       }
-      if (req.url === "/~dev") {
-        res.writeHead(200, {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive"
-        });
-        return;
-      }
       res.writeHead(resProxy.statusCode, resProxy.headers);
       resProxy.pipe(res, {end: true});
     });
@@ -836,13 +851,13 @@ async function retro_dev(runtime) {
 
 // packages/retro/cmd_export.ts
 var esbuild3 = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs"));
-var p7 = __toModule(require("path"));
+var fs6 = __toModule(require("fs"));
+var p8 = __toModule(require("path"));
 async function cmd_export(runtime) {
   await preflight(runtime);
   const appContents = await renderRouterToString(runtime);
-  const appContentsPath = p7.join(runtime.directories.cacheDir, "app.js");
-  await fs5.promises.writeFile(appContentsPath, appContents);
+  const appContentsPath = p8.join(runtime.directories.cacheDir, "app.js");
+  await fs6.promises.writeFile(appContentsPath, appContents);
   try {
     const result = await esbuild3.build({
       bundle: true,
@@ -855,7 +870,7 @@ async function cmd_export(runtime) {
       loader: {".js": "jsx"},
       logLevel: "silent",
       minify: true,
-      outfile: p7.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length))
+      outfile: p8.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length))
     });
     if (result.warnings.length > 0) {
       for (const warning2 of result.warnings) {
@@ -870,11 +885,11 @@ async function cmd_export(runtime) {
 
 // packages/retro/cmd_serve.ts
 var esbuild4 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs"));
+var fs7 = __toModule(require("fs"));
 var http2 = __toModule(require("http"));
 async function cmd_serve(runtime) {
   try {
-    await fs6.promises.stat("__export__");
+    await fs7.promises.stat("__export__");
   } catch {
     error(serveWithoutExport);
   }

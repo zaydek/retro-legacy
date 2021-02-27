@@ -28,10 +28,10 @@ export async function renderRouteMetaToString(runtime: types.Runtime, loaded: ty
 		log.error(`${loaded.meta.route.src}.<Page>: ${err.message}`)
 	}
 
-	const text = runtime.document
+	const out = runtime.document
 		.replace("%head%", head) // %head% -> <Head>
 		.replace("%page%", page) // %page% -> <Page>
-	return text
+	return out
 }
 
 // TODO: Add support for <Layout> components.

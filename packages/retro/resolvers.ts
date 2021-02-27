@@ -196,11 +196,14 @@ export async function resolveRouter(
 			}
 			format.start()
 			router[each.meta.route.path] = each.meta
+
+			// Write to disk:
 			if (runtime.command.type === "export") {
-				const text = await resolversText.renderRouteMetaToString(runtime, each)
+				const out = await resolversText.renderRouteMetaToString(runtime, each)
 				await fs.promises.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
-				await fs.promises.writeFile(each.meta.route.dst, text)
+				await fs.promises.writeFile(each.meta.route.dst, out)
 			}
+
 			events.export_(runtime, each.meta, start)
 			start = 0 // Reset
 		}
