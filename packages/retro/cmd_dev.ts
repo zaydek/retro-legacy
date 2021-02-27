@@ -3,6 +3,8 @@ import * as http from "http"
 import * as types from "./types"
 import * as utils from "./utils"
 
+import preflight from "./preflight"
+
 interface RenderCache {
 	[key: string]: {
 		mtimeMs: number
@@ -21,6 +23,8 @@ interface RenderCache {
 // On watch events, rebuild app.js and emit server-sent events (refresh, esbuild warnings and errors)
 //
 export default async function retro_dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
+	await preflight(runtime)
+
 	const router: types.Router = {}
 
 	// cache caches HTML based on '(await fs.promises.stat(...)).mtimeMs'.

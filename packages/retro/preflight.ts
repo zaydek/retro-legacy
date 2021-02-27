@@ -1,10 +1,10 @@
-import * as errs from "../errs"
+import * as errs from "./errs"
 import * as fs from "fs"
-import * as log from "../../lib/log"
+import * as log from "../lib/log"
 import * as p from "path"
-import * as types from "../types"
+import * as types from "./types"
 
-import { parsePages } from "./parsePages"
+import { parsePages } from "./utils/parsePages"
 
 // runServerGuards tests for the presence of runtime directories and
 // public/index.html.
@@ -82,7 +82,7 @@ export async function copyAll(src: string, dst: string, exclude: string[] = []):
 	for (const file of files) await fs.promises.copyFile(file, p.join(dst, file.slice(src.length)))
 }
 
-export async function preflight(runtime: types.Runtime): Promise<void> {
+export default async function preflight(runtime: types.Runtime): Promise<void> {
 	// Run server guards:
 	await runServerGuards(runtime.directories)
 

@@ -84,6 +84,9 @@ export interface DynamicPageModule {
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
+// PageModule describes a page module.
+export type PageModule = StaticPageModule | DynamicPageModule
+
 // Route describes a server-resolved route.
 // prettier-ignore
 export interface Route {

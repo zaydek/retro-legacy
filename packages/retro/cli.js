@@ -110,6 +110,10 @@ function error(...args) {
   process.exit(0);
 }
 
+// packages/retro/cmd_dev.ts
+var fs4 = __toModule(require("fs"));
+var http = __toModule(require("http"));
+
 // packages/retro/utils/formatEsbuild.ts
 function formatEsbuildMessage(msg, color) {
   const loc = msg.location;
@@ -351,6 +355,69 @@ ${underline("https://tools.ietf.org/html/rfc3986")}`);
   return pages;
 }
 
+// packages/retro/utils/prettyJSON.ts
+function prettyJSON(str) {
+  return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
+}
+
+// packages/retro/utils/validators.ts
+function validateObject(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function validateArray(value) {
+  return typeof value === "object" && value !== null && Array.isArray(value);
+}
+function validateServerPropsReturn(value) {
+  return validateObject(value);
+}
+function validateServerPathsReturn(value) {
+  const ok = validateArray(value) && value.every((each) => {
+    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
+    return ok2;
+  });
+  return ok;
+}
+
+// packages/retro/utils/watcher.ts
+var fs2 = __toModule(require("fs"));
+var p3 = __toModule(require("path"));
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function* watcher(root, {interval}) {
+  const mtimeMsMap = {};
+  async function read(entry, {deep}) {
+    const stat = await fs2.promises.stat(entry);
+    const mtimeMs = mtimeMsMap[entry];
+    if (mtimeMs === void 0 || stat.mtimeMs !== mtimeMs) {
+      mtimeMsMap[entry] = stat.mtimeMs;
+      if (!deep) {
+        return entry;
+      }
+    }
+    if (stat.isDirectory()) {
+      for (const each of await fs2.promises.readdir(entry)) {
+        const src = p3.join(entry, each);
+        const result = await read(src, {deep});
+        if (result !== "") {
+          if (!deep) {
+            return result;
+          }
+        }
+      }
+    }
+    return "";
+  }
+  await read(root, {deep: true});
+  while (true) {
+    await sleep(interval);
+    const src = await read(root, {deep: false});
+    if (src !== "") {
+      yield src;
+    }
+  }
+}
+
 // packages/retro/errs.ts
 function missingHeadTemplateTag(path) {
   return `${path}: Add ${magenta("'%head%'")} somewhere to ${magenta("'<head>'")}.
@@ -472,9 +539,9 @@ function serveWithoutExport() {
   return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
 }
 
-// packages/retro/utils/preflight.ts
-var fs2 = __toModule(require("fs"));
-var p3 = __toModule(require("path"));
+// packages/retro/preflight.ts
+var fs3 = __toModule(require("fs"));
+var p4 = __toModule(require("path"));
 async function runServerGuards(directories) {
   const dirs = [
     directories.publicDir,
@@ -484,14 +551,14 @@ async function runServerGuards(directories) {
   ];
   for (const dir of dirs) {
     try {
-      await fs2.promises.stat(dir);
+      await fs3.promises.stat(dir);
     } catch (_) {
-      fs2.promises.mkdir(dir, {recursive: true});
+      fs3.promises.mkdir(dir, {recursive: true});
     }
   }
-  const path = p3.join(directories.publicDir, "index.html");
+  const path = p4.join(directories.publicDir, "index.html");
   try {
-    const data = await fs2.promises.readFile(path);
+    const data = await fs3.promises.readFile(path);
     const text = data.toString();
     if (!text.includes("%head")) {
       error(missingHeadTemplateTag(path));
@@ -499,7 +566,7 @@ async function runServerGuards(directories) {
       error(missingPageTemplateTag(path));
     }
   } catch (_) {
-    await fs2.promises.writeFile(path, `<!DOCTYPE html>
+    await fs3.promises.writeFile(path, `<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -519,101 +586,37 @@ async function copyAll(src, dst2, exclude = []) {
   async function recurse(entry) {
     if (exclude.includes(entry))
       return;
-    const stat = await fs2.promises.stat(entry);
+    const stat = await fs3.promises.stat(entry);
     if (!stat.isDirectory()) {
       files.push(entry);
     } else {
       directories.push(entry);
-      const ls = await fs2.promises.readdir(entry);
+      const ls = await fs3.promises.readdir(entry);
       for (const each of ls) {
-        await recurse(p3.join(entry, each));
+        await recurse(p4.join(entry, each));
       }
     }
   }
   await recurse(src);
   for (const directory of directories)
-    await fs2.promises.mkdir(p3.join(dst2, directory.slice(src.length)), {recursive: true});
+    await fs3.promises.mkdir(p4.join(dst2, directory.slice(src.length)), {recursive: true});
   for (const file of files)
-    await fs2.promises.copyFile(file, p3.join(dst2, file.slice(src.length)));
+    await fs3.promises.copyFile(file, p4.join(dst2, file.slice(src.length)));
 }
 async function preflight(runtime) {
   await runServerGuards(runtime.directories);
-  await fs2.promises.rmdir(runtime.directories.exportDir, {recursive: true});
-  await copyAll(runtime.directories.publicDir, p3.join(runtime.directories.exportDir, runtime.directories.publicDir), [
-    p3.join(runtime.directories.publicDir, "index.html")
+  await fs3.promises.rmdir(runtime.directories.exportDir, {recursive: true});
+  await copyAll(runtime.directories.publicDir, p4.join(runtime.directories.exportDir, runtime.directories.publicDir), [
+    p4.join(runtime.directories.publicDir, "index.html")
   ]);
-  const data = await fs2.promises.readFile(p3.join(runtime.directories.publicDir, "index.html"));
+  const data = await fs3.promises.readFile(p4.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
 }
 
-// packages/retro/utils/prettyJSON.ts
-function prettyJSON(str) {
-  return str.replace(/^{"/, `{ "`).replace(/":"/g, `": "`).replace(/","/g, `", "`).replace(/"}$/, `" }`);
-}
-
-// packages/retro/utils/validators.ts
-function validateObject(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function validateArray(value) {
-  return typeof value === "object" && value !== null && Array.isArray(value);
-}
-function validateServerPropsReturn(value) {
-  return validateObject(value);
-}
-function validateServerPathsReturn(value) {
-  const ok = validateArray(value) && value.every((each) => {
-    const ok2 = validateObject(each) && ("path" in each && typeof each.path === "string") && ("props" in each && validateServerPropsReturn(each.props));
-    return ok2;
-  });
-  return ok;
-}
-
-// packages/retro/utils/watcher.ts
-var fs3 = __toModule(require("fs"));
-var p4 = __toModule(require("path"));
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-async function* watcher(root, {interval}) {
-  const mtimeMsMap = {};
-  async function read(entry, {deep}) {
-    const stat = await fs3.promises.stat(entry);
-    const mtimeMs = mtimeMsMap[entry];
-    if (mtimeMs === void 0 || stat.mtimeMs !== mtimeMs) {
-      mtimeMsMap[entry] = stat.mtimeMs;
-      if (!deep) {
-        return entry;
-      }
-    }
-    if (stat.isDirectory()) {
-      for (const each of await fs3.promises.readdir(entry)) {
-        const src = p4.join(entry, each);
-        const result = await read(src, {deep});
-        if (result !== "") {
-          if (!deep) {
-            return result;
-          }
-        }
-      }
-    }
-    return "";
-  }
-  await read(root, {deep: true});
-  while (true) {
-    await sleep(interval);
-    const src = await read(root, {deep: false});
-    if (src !== "") {
-      yield src;
-    }
-  }
-}
-
 // packages/retro/cmd_dev.ts
-var fs4 = __toModule(require("fs"));
-var http = __toModule(require("http"));
 async function retro_dev(runtime) {
+  await preflight(runtime);
   const router = {};
   const cache = {};
   let callback;
@@ -667,7 +670,7 @@ var esbuild = __toModule(require("esbuild"));
 var fs5 = __toModule(require("fs"));
 var p5 = __toModule(require("path"));
 
-// packages/retro/resolversText.ts
+// packages/retro/resolvers-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
 var renderServerRouteMetaToString = async (runtime, loaded) => {
@@ -730,13 +733,43 @@ ${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process
 };
 
 // packages/retro/resolvers.ts
-var resolveStaticRoute = async (_, page, outfile) => {
-  let props = {path: page.path};
-  let mod;
+var service;
+var resolveModule = async (runtime, page) => {
+  const out = p5.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"));
   try {
-    mod = require(p5.join("..", "..", outfile));
+    const result = await service.build({
+      bundle: true,
+      define: {
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+      },
+      entryPoints: [page.src],
+      external: ["react", "react-dom"],
+      format: "cjs",
+      inject: ["packages/retro/react-shim.js"],
+      loader: {".js": "jsx"},
+      logLevel: "silent",
+      outfile: out
+    });
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(formatEsbuildMessage(warning2, yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    error(formatEsbuildMessage(err.errors[0], bold.red));
+  }
+  let mod = {};
+  try {
+    mod = require(p5.join("..", "..", out));
   } catch {
   }
+  return mod;
+};
+var resolveStaticRoute = async (runtime, page) => {
+  let props = {path: page.path};
+  const mod = await resolveModule(runtime, page);
   if ("serverProps" in mod && typeof mod.serverProps !== "function") {
     error(serverPropsFunction(page.src));
   } else if ("serverPaths" in mod && typeof mod.serverPaths === "function") {
@@ -759,13 +792,9 @@ var resolveStaticRoute = async (_, page, outfile) => {
   const loaded = {meta: {route: page, props}, module: mod};
   return loaded;
 };
-var resolveDynamicRoutes = async (runtime, page, outfile) => {
+var resolveDynamicRoutes = async (runtime, page) => {
   const loaded = [];
-  let mod;
-  try {
-    mod = require(p5.join("..", "..", outfile));
-  } catch {
-  }
+  const mod = await resolveModule(runtime, page);
   if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
     error(serverPathsFunction(page.src));
   } else if ("serverProps" in mod && typeof mod.serverProps === "function") {
@@ -819,41 +848,15 @@ function formatter() {
 var resolveServerRouter = async (runtime) => {
   const router = {};
   const format2 = formatter();
-  const service = await esbuild.startService();
+  service = await esbuild.startService();
   for (const page of runtime.pages) {
-    const entryPoints = [page.src];
-    const outfile = p5.join(runtime.directories.cacheDir, page.src.replace(/\.(jsx?|tsx?|mdx?)$/, ".esbuild.js"));
-    try {
-      const result = await service.build({
-        bundle: true,
-        define: {
-          __DEV__: process.env.__DEV__,
-          "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-        },
-        entryPoints,
-        external: ["react", "react-dom"],
-        format: "cjs",
-        inject: ["packages/retro/react-shim.js"],
-        loader: {".js": "jsx"},
-        logLevel: "silent",
-        outfile
-      });
-      if (result.warnings.length > 0) {
-        for (const warning2 of result.warnings) {
-          warning(formatEsbuildMessage(warning2, yellow));
-        }
-        process.exit(1);
-      }
-    } catch (err) {
-      error(formatEsbuildMessage(err.errors[0], bold.red));
-    }
     let start = Date.now();
     const loaded = [];
     if (page.type === "static") {
-      const one = await resolveStaticRoute(runtime, page, outfile);
+      const one = await resolveStaticRoute(runtime, page);
       loaded.push(one);
     } else {
-      const many = await resolveDynamicRoutes(runtime, page, outfile);
+      const many = await resolveDynamicRoutes(runtime, page);
       loaded.push(...many);
     }
     for (const each of loaded) {
@@ -877,6 +880,7 @@ var resolveServerRouter = async (runtime) => {
 
 // packages/retro/cmd_export.ts
 async function cmd_export(runtime) {
+  await preflight(runtime);
   const router = await resolveServerRouter(runtime);
   const appContents = await renderServerRouterToString(runtime, router);
   const appContentsPath = p6.join(runtime.directories.cacheDir, "app.js");
@@ -959,38 +963,42 @@ async function cmd_serve(runtime) {
 
 // packages/retro/cli.ts
 var usage = `
- ${bold("Usage:")}
+	${bold("Usage:")}
 
-   retro dev        Start the dev server
-   retro export     Export the production-ready build (SSG)
-   retro serve      Serve the production-ready build
+		retro dev          Start the dev server
+		retro export       Export the production-ready build (SSG)
+		retro serve        Serve the production-ready build
 
- ${bold("retro dev")}
+	${bold("retro dev")}
 
-   Start the dev server
+		Start the dev server
 
-   --cached=...     Use cached resources (default false)
-   --sourcemap=...  Add source maps (default true)
-   --port=...       Port number (default 8000)
+			--cached=...     Use cached resources (default false)
+			--sourcemap=...  Add source maps (default true)
+			--port=...       Port number (default 8000)
 
- ${bold("retro export")}
+	${bold("retro export")}
 
-   Export the production-ready build (SSG)
+		Export the production-ready build (SSG)
 
-   --cached=...     Use cached resources (default false)
-   --sourcemap=...  Add source maps (default true)
+			--cached=...     Use cached resources (default false)
+			--sourcemap=...  Add source maps (default true)
 
- ${bold("retro serve")}
+	${bold("retro serve")}
 
-   Serve the production-ready build
+		Serve the production-ready build
 
-   --mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-   --port=...       Port number (default 8000)
+			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+			--port=...       Port number (default 8000)
 
- ${bold("Repository")}
+	${bold("Repository")}
 
-   ${underline("https://github.com/zaydek/retro")}
-`;
+		${underline("https://github.com/zaydek/retro")}
+`.split("\n").map((each) => {
+  if (each.length === 0)
+    return;
+  return " " + each.replace("	", " ");
+}).join("\n");
 var cmds = `
 retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
@@ -1160,10 +1168,8 @@ ${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`);
     pages: []
   };
   if (runtime.command.type === "dev") {
-    await preflight(runtime);
     await retro_dev(runtime);
   } else if (runtime.command.type === "export") {
-    await preflight(runtime);
     await cmd_export(runtime);
   } else if (runtime.command.type === "serve") {
     await cmd_serve(runtime);

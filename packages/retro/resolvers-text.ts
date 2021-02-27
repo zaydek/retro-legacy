@@ -12,8 +12,8 @@ type renderRouterToString = (runtime: types.Runtime<types.DevOrExportCommand>, r
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: Add support for <Layout> components.
 // TODO: Write tests.
+// TODO: Add support for <Layout> components.
 export const renderServerRouteMetaToString: renderRouteMetaToString = async (runtime, loaded) => {
 	let head = "<!-- <Head> -->"
 	try {
@@ -44,8 +44,8 @@ export const renderServerRouteMetaToString: renderRouteMetaToString = async (run
 	return out
 }
 
-// TODO: Add support for <Layout> components.
 // TODO: Write tests.
+// TODO: Add support for <Layout> components.
 export const renderServerRouterToString: renderRouterToString = async (runtime, router) => {
 	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?
 

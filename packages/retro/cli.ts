@@ -1,45 +1,50 @@
 import * as log from "../lib/log"
 import * as term from "../lib/term"
 import * as types from "./types"
-import * as utils from "./utils"
 
 import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
 const usage = `
-\x20${term.bold("Usage:")}
+	${term.bold("Usage:")}
 
-\x20\x20\x20retro dev        Start the dev server
-\x20\x20\x20retro export     Export the production-ready build (SSG)
-\x20\x20\x20retro serve      Serve the production-ready build
+		retro dev          Start the dev server
+		retro export       Export the production-ready build (SSG)
+		retro serve        Serve the production-ready build
 
-\x20${term.bold("retro dev")}
+	${term.bold("retro dev")}
 
-\x20\x20\x20Start the dev server
+		Start the dev server
 
-\x20\x20\x20--cached=...     Use cached resources (default false)
-\x20\x20\x20--sourcemap=...  Add source maps (default true)
-\x20\x20\x20--port=...       Port number (default 8000)
+			--cached=...     Use cached resources (default false)
+			--sourcemap=...  Add source maps (default true)
+			--port=...       Port number (default 8000)
 
-\x20${term.bold("retro export")}
+	${term.bold("retro export")}
 
-\x20\x20\x20Export the production-ready build (SSG)
+		Export the production-ready build (SSG)
 
-\x20\x20\x20--cached=...     Use cached resources (default false)
-\x20\x20\x20--sourcemap=...  Add source maps (default true)
+			--cached=...     Use cached resources (default false)
+			--sourcemap=...  Add source maps (default true)
 
-\x20${term.bold("retro serve")}
+	${term.bold("retro serve")}
 
-\x20\x20\x20Serve the production-ready build
+		Serve the production-ready build
 
-\x20\x20\x20--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-\x20\x20\x20--port=...       Port number (default 8000)
+			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+			--port=...       Port number (default 8000)
 
-\x20${term.bold("Repository")}
+	${term.bold("Repository")}
 
-\x20\x20\x20${term.underline("https://github.com/zaydek/retro")}
+		${term.underline("https://github.com/zaydek/retro")}
 `
+	.split("\n")
+	.map(each => {
+		if (each.length === 0) return
+		return " " + each.replace("\t", "\x20")
+	})
+	.join("\n")
 
 const cmds = `
 retro dev     Start the dev server
@@ -235,15 +240,13 @@ ${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`)
 			cacheDir:    process.env.CACHE_DIR  || "__cache__",
 			exportDir:   process.env.EXPORT_DIR || "__export__",
 		},
-		document: "", // Defer to dev and export
-		pages: [],    // Defer to dev and export
+		document: "", // Defer to dev and export (preflight)
+		pages: [],    // Defer to dev and export (preflight)
 	}
 
 	if (runtime.command.type === "dev") {
-		await utils.preflight(runtime)
 		await cmd_dev(runtime as types.Runtime<types.DevCommand>)
 	} else if (runtime.command.type === "export") {
-		await utils.preflight(runtime)
 		await cmd_export(runtime as types.Runtime<types.ExportCommand>)
 	} else if (runtime.command.type === "serve") {
 		await cmd_serve(runtime as types.Runtime<types.ServeCommand>)

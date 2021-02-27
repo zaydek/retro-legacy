@@ -3,12 +3,16 @@ import * as fs from "fs"
 import * as log from "../lib/log"
 import * as p from "path"
 import * as resolvers from "./resolvers"
-import * as resolversText from "./resolversText"
+import * as resolversText from "./resolvers-text"
 import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
+import preflight from "./preflight"
+
 export default async function cmd_export(runtime: types.Runtime<types.ExportCommand>): Promise<void> {
+	await preflight(runtime)
+
 	// TODO: Implement '---cache' here.
 	const router = await resolvers.resolveServerRouter(runtime)
 
