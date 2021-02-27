@@ -9,6 +9,7 @@ import * as types from "./types"
 import * as utils from "./utils"
 
 export default async function cmd_export(runtime: types.Runtime<types.ExportCommand>): Promise<void> {
+	// TODO: Implement '---cache' here.
 	const router = await resolvers.resolveServerRouter(runtime)
 
 	const appContents = await resolversText.renderServerRouterToString(runtime, router)

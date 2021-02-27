@@ -15,13 +15,13 @@ type resolveStaticRoute = (
 	runtime: types.Runtime<types.DevOrExportCommand>,
 	page: types.StaticPageMeta,
 	outfile: string,
-) => Promise<types.LoadedServerRouteMeta>
+) => Promise<types.LoadedRouteMeta>
 
 type resolveDynamicRoutes = (
 	runtime: types.Runtime<types.DevOrExportCommand>,
 	page: types.DynamicPageMeta, // TODO: Can we change to dynamic page meta?
 	outfile: string,
-) => Promise<types.LoadedServerRouteMeta[]>
+) => Promise<types.LoadedRouteMeta[]>
 
 type resolveServerRouter = (runtime: types.Runtime<types.DevOrExportCommand>) => Promise<types.Router>
 
@@ -65,7 +65,7 @@ const resolveStaticRoute: resolveStaticRoute = async (_, page, outfile) => {
 }
 
 const resolveDynamicRoutes: resolveDynamicRoutes = async (runtime, page, outfile) => {
-	const loaded: types.LoadedServerRouteMeta[] = []
+	const loaded: types.LoadedRouteMeta[] = []
 
 	// NOTE: Use try-catch to suppress esbuild warning.
 	let mod: types.DynamicPageModule
@@ -159,6 +159,8 @@ export const resolveServerRouter: resolveServerRouter = async runtime => {
 		//
 		// Previously, there was a prototype that used 'ts-node -T' that was simpler
 		// but slower.
+		//
+		// TODO: Extract resolveModule?
 		try {
 			// NOTE: Externalize "react" and "react-dom" to prevent a runtime React
 			// error: You might have mismatching versions of React and the renderer
@@ -192,7 +194,7 @@ export const resolveServerRouter: resolveServerRouter = async runtime => {
 		let start = Date.now()
 
 		// Aggregate resolved metas:
-		const loaded: types.LoadedServerRouteMeta[] = []
+		const loaded: types.LoadedRouteMeta[] = []
 		if (page.type === "static") {
 			const one = await resolveStaticRoute(runtime, page, outfile)
 			loaded.push(one)

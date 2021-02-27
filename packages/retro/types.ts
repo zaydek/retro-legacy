@@ -82,12 +82,6 @@ export interface DynamicPageModule {
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
-// LoadedServerRoute describes a loaded server route (from __cache__).
-export interface LoadedServerRouteMeta {
-	meta: RouteMeta
-	module: StaticPageModule | DynamicPageModule
-}
-
 // Route describes a server-resolved route.
 export interface Route {
 	type: "static" | "dynamic"
@@ -101,6 +95,12 @@ export interface Route {
 export interface RouteMeta {
 	route: Route
 	props: RouteProps
+}
+
+// LoadedRouteMeta describes a loaded server-resolved route (from __cache__).
+export interface LoadedRouteMeta {
+	meta: RouteMeta
+	module: StaticPageModule | DynamicPageModule
 }
 
 // Router describes the server-resolved route.

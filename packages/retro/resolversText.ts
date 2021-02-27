@@ -6,18 +6,15 @@ import * as utils from "./utils"
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type renderServerRouteMetaToString = (runtime: types.Runtime, loaded: types.LoadedServerRouteMeta) => Promise<string>
+type renderRouteMetaToString = (runtime: types.Runtime, loaded: types.LoadedRouteMeta) => Promise<string>
 
-type renderServerRouterToString = (
-	runtime: types.Runtime<types.DevOrExportCommand>,
-	router: types.Router,
-) => Promise<string>
+type renderRouterToString = (runtime: types.Runtime<types.DevOrExportCommand>, router: types.Router) => Promise<string>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
-export const renderServerRouteMetaToString: renderServerRouteMetaToString = async (runtime, loaded) => {
+export const renderServerRouteMetaToString: renderRouteMetaToString = async (runtime, loaded) => {
 	let head = "<!-- <Head> -->"
 	try {
 		if (typeof loaded.module.Head === "function") {
@@ -49,7 +46,7 @@ export const renderServerRouteMetaToString: renderServerRouteMetaToString = asyn
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
-export const renderServerRouterToString: renderServerRouterToString = async (runtime, router) => {
+export const renderServerRouterToString: renderRouterToString = async (runtime, router) => {
 	const distinctComponents = [...new Set(runtime.pages.map(each => each.component))] // TODO: Change to router?
 
 	const distinctRoutes = runtime.pages
