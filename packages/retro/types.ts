@@ -27,37 +27,39 @@ export type DevOrExportCommand = DevCommand | ExportCommand
 ////////////////////////////////////////////////////////////////////////////////
 
 // DirConfiguration describes the directory configuration.
+// prettier-ignore
 export interface DirConfiguration {
-	publicDir: string // e.g. "public"
+	publicDir: string   // e.g. "public"
 	srcPagesDir: string // e.g. "src/pages"
-	cacheDir: string // e.g. "__cache__"
-	exportDir: string // e.g. "__export__"
+	cacheDir: string    // e.g. "__cache__"
+	exportDir: string   // e.g. "__export__"
 }
 
-// StaticPageMeta describes static page metadata.
-export interface StaticPageMeta {
+// StaticPageInfo describes static page metadata.
+// prettier-ignore
+export interface StaticPageInfo {
 	type: "static"
-	src: string // e.g. "src/pages/index.js"
-	dst: string // e.g. "dst/index.html"
-	path: string // e.g. "/"
+	src: string       // e.g. "src/pages/index.js"
+	dst: string       // e.g. "dst/index.html"
+	path: string      // e.g. "/"
 	component: string // e.g. "PageIndex"
 }
 
-// DynamicPageMeta describes dynamic page metadata.
-export interface DynamicPageMeta {
+// DynamicPageInfo describes dynamic page metadata.
+// prettier-ignore
+export interface DynamicPageInfo {
 	type: "dynamic"
-	src: string // e.g. "src/pages/[index].js"
+	src: string       // e.g. "src/pages/[index].js"
 	component: string // e.g. "DynamicPageIndex"
 }
 
-export type PageMeta = StaticPageMeta | DynamicPageMeta
+export type PageInfo = StaticPageInfo | DynamicPageInfo
 
-// Runtime a meta data structure for the runtime.
 export interface Runtime<Cmd = Command> {
 	command: Cmd
 	directories: DirConfiguration
 	document: string
-	pages: PageMeta[]
+	pages: PageInfo[]
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -83,11 +85,12 @@ export interface DynamicPageModule {
 }
 
 // Route describes a server-resolved route.
+// prettier-ignore
 export interface Route {
 	type: "static" | "dynamic"
-	src: string // e.g. "src/pages/index.js"
-	dst: string // e.g. "dst/index.html"
-	path: string // e.g. "/"
+	src: string       // e.g. "src/pages/index.js"
+	dst: string       // e.g. "dst/index.html"
+	path: string      // e.g. "/"
 	component: string // e.g. "PageIndex"
 }
 

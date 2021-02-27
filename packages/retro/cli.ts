@@ -7,37 +7,38 @@ import cmd_dev from "./cmd_dev"
 import cmd_export from "./cmd_export"
 import cmd_serve from "./cmd_serve"
 
-const usage = `${term.bold("Usage:")}
+const usage = `
+\x20${term.bold("Usage:")}
 
-\x20\x20retro dev        Start the dev server
-\x20\x20retro export     Export the production-ready build (SSG)
-\x20\x20retro serve      Serve the production-ready build
+\x20\x20\x20retro dev        Start the dev server
+\x20\x20\x20retro export     Export the production-ready build (SSG)
+\x20\x20\x20retro serve      Serve the production-ready build
 
-${term.bold("retro dev")}
+\x20${term.bold("retro dev")}
 
-\x20\x20Start the dev server
+\x20\x20\x20Start the dev server
 
-\x20\x20--cached=...     Use cached resources (default false)
-\x20\x20--sourcemap=...  Add source maps (default true)
-\x20\x20--port=...       Port number (default 8000)
+\x20\x20\x20--cached=...     Use cached resources (default false)
+\x20\x20\x20--sourcemap=...  Add source maps (default true)
+\x20\x20\x20--port=...       Port number (default 8000)
 
-${term.bold("retro export")}
+\x20${term.bold("retro export")}
 
-\x20\x20Export the production-ready build (SSG)
+\x20\x20\x20Export the production-ready build (SSG)
 
-\x20\x20--cached=...     Use cached resources (default false)
-\x20\x20--sourcemap=...  Add source maps (default true)
+\x20\x20\x20--cached=...     Use cached resources (default false)
+\x20\x20\x20--sourcemap=...  Add source maps (default true)
 
-${term.bold("retro serve")}
+\x20${term.bold("retro serve")}
 
-\x20\x20Serve the production-ready build
+\x20\x20\x20Serve the production-ready build
 
-\x20\x20--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
-\x20\x20--port=...       Port number (default 8000)
+\x20\x20\x20--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg')
+\x20\x20\x20--port=...       Port number (default 8000)
 
-${term.bold("Repository")}
+\x20${term.bold("Repository")}
 
-\x20\x20${term.underline("https://github.com/zaydek/retro")}
+\x20\x20\x20${term.underline("https://github.com/zaydek/retro")}
 `
 
 const cmds = `

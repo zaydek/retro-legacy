@@ -77,8 +77,8 @@ function toPathSyntax(directories: types.DirConfiguration, parsed: ParsedPath): 
 }
 
 // TODO: Write tests.
-function createStaticPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.StaticPageMeta {
-	const component: types.StaticPageMeta = {
+function createStaticPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.StaticPageInfo {
+	const component: types.StaticPageInfo = {
 		type: "static",
 		src: parsed.src,
 		dst: dst(directories, parsed),
@@ -89,8 +89,8 @@ function createStaticPageMeta(directories: types.DirConfiguration, parsed: Parse
 }
 
 // TODO: Write tests.
-function createDynamicPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.DynamicPageMeta {
-	const component: types.DynamicPageMeta = {
+function createDynamicPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.DynamicPageInfo {
+	const component: types.DynamicPageInfo = {
 		type: "dynamic",
 		src: parsed.src,
 		component: toComponentSyntax(directories, parsed, { dynamic: true }),
@@ -108,7 +108,7 @@ function createDynamicPageMeta(directories: types.DirConfiguration, parsed: Pars
 // TODO: Write tests.
 const dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
-function parsePage(directories: types.DirConfiguration, parsed: ParsedPath): types.PageMeta {
+function parsePage(directories: types.DirConfiguration, parsed: ParsedPath): types.PageInfo {
 	const path = toPathSyntax(directories, parsed)
 	if (dynamicRegex.test(path)) {
 		return createDynamicPageMeta(directories, parsed)
@@ -176,7 +176,7 @@ function testURICharacter(char: string): boolean {
 	return false
 }
 
-export async function parsePages(directories: types.DirConfiguration): Promise<types.PageMeta[]> {
+export async function parsePages(directories: types.DirConfiguration): Promise<types.PageInfo[]> {
 	const arr = await readdirAll(directories.srcPagesDir)
 
 	// Step over:
@@ -186,7 +186,7 @@ export async function parsePages(directories: types.DirConfiguration): Promise<t
 	// - "component_"
 	// - "component$"
 	//
-	// TODO: Add support for "layout" here?
+	// TODO: Add support for <Layout> components.
 	const arr2 = arr.filter(path => {
 		if (path.name.startsWith("_") || path.name.startsWith("$")) {
 			return false
@@ -226,7 +226,7 @@ URI characters are described by RFC 3986:
 ${term.underline("https://tools.ietf.org/html/rfc3986")}`)
 	}
 
-	const pages: types.PageMeta[] = []
+	const pages: types.PageInfo[] = []
 	for (const parsed of arr2) {
 		pages.push(parsePage(directories, parsed))
 	}

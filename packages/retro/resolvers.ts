@@ -13,13 +13,13 @@ import * as utils from "./utils"
 
 type resolveStaticRoute = (
 	runtime: types.Runtime<types.DevOrExportCommand>,
-	page: types.StaticPageMeta,
+	page: types.StaticPageInfo,
 	outfile: string,
 ) => Promise<types.LoadedRouteMeta>
 
 type resolveDynamicRoutes = (
 	runtime: types.Runtime<types.DevOrExportCommand>,
-	page: types.DynamicPageMeta, // TODO: Can we change to dynamic page meta?
+	page: types.DynamicPageInfo, // TODO: Can we change to dynamic page meta?
 	outfile: string,
 ) => Promise<types.LoadedRouteMeta[]>
 
