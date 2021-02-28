@@ -1,4 +1,4 @@
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as http from "http"
 import * as path from "path"
 
@@ -10,7 +10,7 @@ async function* watcher(root: string, { interval }: { interval: number }): Async
 	const modTimes: { [key: string]: number } = {}
 
 	async function read(entry: string, { deep }: { deep: boolean }): Promise<string> {
-		const stat = await fs.promises.stat(entry)
+		const stat = await fs.stat(entry)
 		const modTime = modTimes[entry]
 		if (modTime === undefined || stat.mtimeMs !== modTime) {
 			modTimes[entry] = stat.mtimeMs
@@ -19,7 +19,7 @@ async function* watcher(root: string, { interval }: { interval: number }): Async
 			}
 		}
 		if (stat.isDirectory()) {
-			for (const each of await fs.promises.readdir(entry)) {
+			for (const each of await fs.readdir(entry)) {
 				const src = path.join(entry, each)
 				const result = await read(src, { deep })
 				if (result !== "") {
@@ -51,7 +51,7 @@ async function* watcher(root: string, { interval }: { interval: number }): Async
 //
 // 	// scan scans for a changes source.
 // 	async function scan(entry: string, { deep }: { deep: boolean }): Promise<string> {
-// 		const stat = await fs.promises.stat(entry)
+// 		const stat = await fs.stat(entry)
 // 		const modTime = modTimes[entry]
 // 		if (modTime === undefined || stat.mtimeMs !== modTime) {
 // 			modTimes[entry] = stat.mtimeMs
@@ -60,7 +60,7 @@ async function* watcher(root: string, { interval }: { interval: number }): Async
 // 			}
 // 		}
 // 		if (stat.isDirectory()) {
-// 			for (const each of await fs.promises.readdir(entry)) {
+// 			for (const each of await fs.readdir(entry)) {
 // 				const src = path.join(entry, each)
 // 				const result = await scan(src, { deep })
 // 				if (result !== "") {

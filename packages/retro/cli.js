@@ -817,16 +817,17 @@ async function retro_dev(runtime) {
       });
       return;
     }
-    const meta = runtime.router[req.url];
+    let path = req.url;
+    if (p7.extname(req.url) === ".html") {
+      path = path.slice(0, -5);
+    }
+    const meta = runtime.router[path];
     if (meta !== void 0) {
       const mod = await resolveModule(runtime, {...meta.route});
       const loaded = {mod, meta};
       const out = await renderRouteMetaToString(runtime, loaded);
       await fs5.promises.mkdir(p7.dirname(loaded.meta.route.dst), {recursive: true});
       await fs5.promises.writeFile(loaded.meta.route.dst, out);
-      res.writeHead(200, {"Content-Type": "text/html"});
-      res.end(out);
-      return;
     }
     const options2 = {
       hostname: result.host,

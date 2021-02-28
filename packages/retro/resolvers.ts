@@ -1,7 +1,7 @@
 import * as errs from "./errs"
 import * as esbuild from "esbuild"
 import * as events from "./events"
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as log from "../lib/log"
 import * as p from "path"
 import * as resolversText from "./resolvers-text"
@@ -200,8 +200,8 @@ export async function resolveRouter(
 			// Write to disk:
 			if (runtime.command.type === "export") {
 				const out = await resolversText.renderRouteMetaToString(runtime, each)
-				await fs.promises.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
-				await fs.promises.writeFile(each.meta.route.dst, out)
+				await fs.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
+				await fs.writeFile(each.meta.route.dst, out)
 			}
 
 			events.export_(runtime, each.meta, start)

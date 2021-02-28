@@ -1,6 +1,6 @@
 import * as esbuild from "esbuild"
 import * as events from "./events"
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as http from "http"
 // import * as log from "../lib/log"
 import * as p from "path"
@@ -22,7 +22,7 @@ import preflight from "./preflight"
 // async function build(runtime: types.Runtime<types.DevCommand>): Promise<esbuild.BuildResult> {
 // 	const appContents = await resolversText.renderRouterToString(runtime)
 // 	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
-// 	await fs.promises.writeFile(appContentsPath, appContents)
+// 	await fs.writeFile(appContentsPath, appContents)
 //
 // 	let result: esbuild.BuildResult
 // 	try {
@@ -101,24 +101,25 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 				return
 			}
 
-			const meta = runtime.router[req.url!]
+			// Compute the path from the URL:
+			let path = req.url!
+			if (p.extname(req.url!) === ".html") {
+				path = path.slice(0, -5)
+			}
+
+			const meta = runtime.router[path]
 			if (meta !== undefined) {
-				// Convert route to a page and regenerate component.esbuild.js:
+				// Regenerate component.esbuild.js:
 				const mod = await resolvers.resolveModule(runtime, { ...meta.route })
 				const loaded: types.LoadedRouteMeta = { mod, meta }
 
 				// Write to disk:
 				const out = await resolversText.renderRouteMetaToString(runtime, loaded)
-				await fs.promises.mkdir(p.dirname(loaded.meta.route.dst), { recursive: true })
-				await fs.promises.writeFile(loaded.meta.route.dst, out)
-
-				// Done:
-				res.writeHead(200, { "Content-Type": "text/html" })
-				res.end(out)
-				return
+				await fs.mkdir(p.dirname(loaded.meta.route.dst), { recursive: true })
+				await fs.writeFile(loaded.meta.route.dst, out)
 			}
 
-			// Defer to esbuild-managed server:
+			// Defer to esbuild:
 			const options = {
 				hostname: result.host,
 				port: result.port,
@@ -146,7 +147,7 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 }
 
 // // Read from the cache:
-// const stat = await fs.promises.stat(req.url!)
+// const stat = await fs.stat(req.url!)
 // const read = cache[req.url!]
 // if (read !== undefined && read.mtimeMs !== stat.mtimeMs) {
 // 	res.writeHead(200, { "Content-Type": "text/html" })

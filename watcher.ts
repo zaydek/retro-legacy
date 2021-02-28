@@ -1,5 +1,5 @@
 import * as http from "http"
-import * as fs from "fs"
+import * as fs from "fs/promises"
 // import * as fs from "fs"
 
 const SSE_PATH = "/__events__"
@@ -33,7 +33,7 @@ async function watcher(src: string): Promise<() => Generator<string>> {
 
 	// check checks whether sources have changed.
 	const check = async (entry: string, { deep }: { deep: boolean }): Promise<string> => {
-		const stat = await fs.promises.stat(entry)
+		const stat = await fs.stat(entry)
 		// Check for changes:
 		const modTime = modTimes[entry]
 		if (modTime === undefined || stat.mtimeMs !== modTime) {
@@ -44,7 +44,7 @@ async function watcher(src: string): Promise<() => Generator<string>> {
 		}
 		// Recurse on directories:
 		if (stat.isDirectory()) {
-			for (const nested of await fs.promises.readdir(entry)) {
+			for (const nested of await fs.readdir(entry)) {
 				const next = p.join(entry, nested)
 				const result = await check(next, { deep })
 				if (result !== "") {

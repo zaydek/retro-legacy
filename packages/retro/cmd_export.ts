@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild"
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as log from "../lib/log"
 import * as p from "path"
 import * as resolversText from "./resolvers-text"
@@ -14,7 +14,7 @@ export default async function cmd_export(runtime: types.Runtime<types.ExportComm
 
 	const appContents = await resolversText.renderRouterToString(runtime)
 	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
-	await fs.promises.writeFile(appContentsPath, appContents)
+	await fs.writeFile(appContentsPath, appContents)
 
 	try {
 		const result = await esbuild.build({

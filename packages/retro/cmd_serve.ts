@@ -1,7 +1,7 @@
 import * as errs from "./errs"
 import * as esbuild from "esbuild"
 import * as events from "./events"
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as http from "http"
 import * as log from "../lib/log"
 import * as types from "./types"
@@ -14,7 +14,7 @@ import * as utils from "./utils"
 //
 export default async function cmd_serve(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
 	try {
-		await fs.promises.stat("__export__")
+		await fs.stat("__export__")
 	} catch {
 		log.error(errs.serveWithoutExport)
 	}

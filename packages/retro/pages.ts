@@ -1,4 +1,4 @@
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as log from "../lib/log"
 import * as p from "path"
 import * as term from "../lib/term"
@@ -119,10 +119,10 @@ function parsePage(directories: types.DirConfiguration, parsed: ParsedPath): typ
 async function readdirAll(src: string): Promise<ParsedPath[]> {
 	const arr: ParsedPath[] = []
 	async function recurse(src: string): Promise<void> {
-		const ls = await fs.promises.readdir(src)
+		const ls = await fs.readdir(src)
 		for (const each of ls) {
 			const path = p.join(src, each)
-			if ((await fs.promises.stat(path)).isDirectory()) {
+			if ((await fs.stat(path)).isDirectory()) {
 				arr.push(parsePath(path))
 				await recurse(path)
 				continue
