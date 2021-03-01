@@ -176,7 +176,7 @@ function serve(args) {
 }
 
 // packages/retro/cmd_dev.ts
-var fs5 = __toModule(require("fs"));
+var fs5 = __toModule(require("fs/promises"));
 var http = __toModule(require("http"));
 var p7 = __toModule(require("path"));
 
@@ -303,7 +303,7 @@ function serveWithoutExport() {
 
 // packages/retro/resolvers.ts
 var esbuild = __toModule(require("esbuild"));
-var fs2 = __toModule(require("fs"));
+var fs2 = __toModule(require("fs/promises"));
 var p4 = __toModule(require("path"));
 
 // packages/retro/resolvers-text.ts
@@ -353,7 +353,7 @@ function validateServerPathsReturn(value) {
 }
 
 // packages/retro/utils/watcher.ts
-var fs = __toModule(require("fs"));
+var fs = __toModule(require("fs/promises"));
 var p3 = __toModule(require("path"));
 
 // packages/retro/resolvers-text.ts
@@ -549,8 +549,8 @@ async function resolveRouter(runtime) {
       router[each.meta.route.path] = each.meta;
       if (runtime.command.type === "export") {
         const out = await renderRouteMetaToString(runtime, each);
-        await fs2.promises.mkdir(p4.dirname(each.meta.route.dst), {recursive: true});
-        await fs2.promises.writeFile(each.meta.route.dst, out);
+        await fs2.mkdir(p4.dirname(each.meta.route.dst), {recursive: true});
+        await fs2.writeFile(each.meta.route.dst, out);
       }
       export_(runtime, each.meta, start);
       start = 0;
@@ -561,11 +561,11 @@ async function resolveRouter(runtime) {
 }
 
 // packages/retro/preflight.ts
-var fs4 = __toModule(require("fs"));
+var fs4 = __toModule(require("fs/promises"));
 var p6 = __toModule(require("path"));
 
 // packages/retro/pages.ts
-var fs3 = __toModule(require("fs"));
+var fs3 = __toModule(require("fs/promises"));
 var p5 = __toModule(require("path"));
 var supported = {
   ".js": true,
@@ -635,10 +635,10 @@ function parsePage(directories, parsed) {
 async function readdirAll(src) {
   const arr = [];
   async function recurse(src2) {
-    const ls = await fs3.promises.readdir(src2);
+    const ls = await fs3.readdir(src2);
     for (const each of ls) {
       const path = p5.join(src2, each);
-      if ((await fs3.promises.stat(path)).isDirectory()) {
+      if ((await fs3.stat(path)).isDirectory()) {
         arr.push(parsePath(path));
         await recurse(path);
         continue;
@@ -737,14 +737,14 @@ async function runServerGuards(directories) {
   ];
   for (const dir of dirs) {
     try {
-      await fs4.promises.stat(dir);
+      await fs4.stat(dir);
     } catch (_) {
-      fs4.promises.mkdir(dir, {recursive: true});
+      fs4.mkdir(dir, {recursive: true});
     }
   }
   const path = p6.join(directories.publicDir, "index.html");
   try {
-    const data = await fs4.promises.readFile(path);
+    const data = await fs4.readFile(path);
     const text = data.toString();
     if (!text.includes("%head")) {
       error(missingHeadTemplateTag(path));
@@ -752,7 +752,7 @@ async function runServerGuards(directories) {
       error(missingPageTemplateTag(path));
     }
   } catch (_) {
-    await fs4.promises.writeFile(path, `<!DOCTYPE html>
+    await fs4.writeFile(path, `<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -772,12 +772,12 @@ async function copyAll(src, dst2, exclude = []) {
   async function recurse(entry) {
     if (exclude.includes(entry))
       return;
-    const stat = await fs4.promises.stat(entry);
-    if (!stat.isDirectory()) {
+    const stat5 = await fs4.stat(entry);
+    if (!stat5.isDirectory()) {
       files.push(entry);
     } else {
       directories.push(entry);
-      const ls = await fs4.promises.readdir(entry);
+      const ls = await fs4.readdir(entry);
       for (const each of ls) {
         await recurse(p6.join(entry, each));
       }
@@ -785,17 +785,17 @@ async function copyAll(src, dst2, exclude = []) {
   }
   await recurse(src);
   for (const directory of directories)
-    await fs4.promises.mkdir(p6.join(dst2, directory.slice(src.length)), {recursive: true});
+    await fs4.mkdir(p6.join(dst2, directory.slice(src.length)), {recursive: true});
   for (const file of files)
-    await fs4.promises.copyFile(file, p6.join(dst2, file.slice(src.length)));
+    await fs4.copyFile(file, p6.join(dst2, file.slice(src.length)));
 }
 async function preflight(runtime) {
   await runServerGuards(runtime.directories);
-  await fs4.promises.rmdir(runtime.directories.exportDir, {recursive: true});
+  await fs4.rmdir(runtime.directories.exportDir, {recursive: true});
   await copyAll(runtime.directories.publicDir, p6.join(runtime.directories.exportDir, runtime.directories.publicDir), [
     p6.join(runtime.directories.publicDir, "index.html")
   ]);
-  const data = await fs4.promises.readFile(p6.join(runtime.directories.publicDir, "index.html"));
+  const data = await fs4.readFile(p6.join(runtime.directories.publicDir, "index.html"));
   runtime.document = data.toString();
   runtime.pages = await parsePages(runtime.directories);
   runtime.router = await resolveRouter(runtime);
@@ -826,8 +826,8 @@ async function retro_dev(runtime) {
       const mod = await resolveModule(runtime, {...meta.route});
       const loaded = {mod, meta};
       const out = await renderRouteMetaToString(runtime, loaded);
-      await fs5.promises.mkdir(p7.dirname(loaded.meta.route.dst), {recursive: true});
-      await fs5.promises.writeFile(loaded.meta.route.dst, out);
+      await fs5.mkdir(p7.dirname(loaded.meta.route.dst), {recursive: true});
+      await fs5.writeFile(loaded.meta.route.dst, out);
     }
     const options2 = {
       hostname: result.host,
@@ -852,13 +852,13 @@ async function retro_dev(runtime) {
 
 // packages/retro/cmd_export.ts
 var esbuild3 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs"));
+var fs6 = __toModule(require("fs/promises"));
 var p8 = __toModule(require("path"));
 async function cmd_export(runtime) {
   await preflight(runtime);
   const appContents = await renderRouterToString(runtime);
   const appContentsPath = p8.join(runtime.directories.cacheDir, "app.js");
-  await fs6.promises.writeFile(appContentsPath, appContents);
+  await fs6.writeFile(appContentsPath, appContents);
   try {
     const result = await esbuild3.build({
       bundle: true,
@@ -886,11 +886,11 @@ async function cmd_export(runtime) {
 
 // packages/retro/cmd_serve.ts
 var esbuild4 = __toModule(require("esbuild"));
-var fs7 = __toModule(require("fs"));
+var fs7 = __toModule(require("fs/promises"));
 var http2 = __toModule(require("http"));
 async function cmd_serve(runtime) {
   try {
-    await fs7.promises.stat("__export__");
+    await fs7.stat("__export__");
   } catch {
     error(serveWithoutExport);
   }
