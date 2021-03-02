@@ -5,7 +5,7 @@ import * as path from "path"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import parsePageInfosFromDirectories from "./pages2" // TODO
+import parsePageInfosFromDirectories from "./pages"
 
 export default function newRuntimeFromCommand(command: types.Command): types.Runtime<typeof command> {
 	const runtime: types.Runtime = {

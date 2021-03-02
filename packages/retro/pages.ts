@@ -1,234 +1,118 @@
-import * as fs from "fs/promises"
+import * as errors from "./errors"
 import * as log from "../lib/log"
-import * as p from "path"
-import * as term from "../lib/term"
+import * as path from "path"
 import * as types from "./types"
+import * as utils from "./utils"
 
-// prettier-ignore
-interface ParsedPath {
-	src:      string // e.g. "path/to/basename.ext"
-	basename: string // e.g. "basename.ext"
-	name:     string // e.g. "basename"
-	ext:      string // e.g. ".ext"
-}
+const dynamicPathRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
-// prettier-ignore
-const supported: { [key: string]: boolean } = {
-	".js":  true,
-	".jsx": true,
-	".ts":  true,
-	".tsx": true,
-	".md":  true, // TODO
-	".mdx": true, // TODO
-}
-
-// parsePath parses path metadata so that syntax functions don’t need to
-// re-parse path metadata.
-function parsePath(path: string): ParsedPath {
-	const basename = p.basename(path)
-	const ext = p.extname(path)
-	const name = basename.slice(0, -ext.length)
-	return { src: path, basename, name, ext }
+// "src/pages/index.js" -> "/"
+// "src/pages/page.js" -> "/page"
+// "src/pages/nested/page.js" -> "/nested/page"
+//
+// TODO: Write tests.
+function path_(dirs: types.Directories, pathInfo: utils.PathInfo): string {
+	const out = pathInfo.src.slice(dirs.srcPagesDirectory.length, -pathInfo.ext.length)
+	if (out.endsWith("/index")) {
+		return out.slice(0, -"index".length)
+	}
+	return out
 }
 
 // src/pages/index.js -> __export__/index.html
+// src/pages/page.js -> __export__/page.html
+// src/pages/nested/page.js -> __export__/nested/page.html
 //
 // TODO: Write tests.
-function dst(directories: types.DirConfiguration, path: ParsedPath): string {
-	const syntax = p.join(directories.exportDir, path.src.slice(directories.srcPagesDir.length))
-	return syntax.slice(0, -path.ext.length) + ".html"
+function dst(dirs: types.Directories, pathInfo: utils.PathInfo): string {
+	const out = path.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length))
+	return out.slice(0, -pathInfo.ext.length) + ".html"
 }
 
-// "src/pages/component.js"          -> "PageComponent"
-// "src/pages/nested/component.js"   -> "PageNestedComponent"
-// "src/pages/[component].js"        -> "DynamicPageComponent"
-// "src/pages/nested/[component].js" -> "DynamicPageNestedComponent"
+// src/pages/index.js -> StaticIndex
+// src/pages/page.js -> StaticPage
+// src/pages/nested/page.js -> StaticNestedPage
 //
 // TODO: Write tests.
-function toComponentSyntax(
-	directories: types.DirConfiguration,
-	parsed: ParsedPath,
-	{ dynamic }: { dynamic: boolean },
-): string {
-	let path = toPathSyntax(directories, parsed)
-	if (dynamic) {
-		// Remove "[" and "]":
-		path = path.replace(dynamicRegex, "$1$3")
+function component(dirs: types.Directories, pathInfo: utils.PathInfo, { dynamic }: { dynamic: boolean }): string {
+	let out = ""
+	const parts = path_(dirs, pathInfo).split(path.sep)
+	for (let part of parts) {
+		if (part.startsWith("[") && part.endsWith("]")) {
+			part = part.slice(1, -1) // Remove "[" and "]" syntax
+		}
+		if (part.length === 0) continue
+		out += part[0]!.toUpperCase() + part.slice(1)
 	}
-	let syntax = ""
-	for (const part of path.split(p.sep)) {
-		if (!part.length) continue
-		syntax += part[0]!.toUpperCase() + part.slice(1)
-	}
-	syntax = syntax || "Index"
-	return (dynamic ? "DynamicPage" : "Page") + syntax[0]!.toUpperCase() + syntax.slice(1)
-}
-
-// "src/pages/index.js"       -> "/"
-// "src/pages/hello-world.js" -> "/hello-world"
-//
-// TODO: Write tests.
-function toPathSyntax(directories: types.DirConfiguration, parsed: ParsedPath): string {
-	const syntax = parsed.src.slice(directories.srcPagesDir.length, -parsed.ext.length)
-	if (syntax.endsWith("/index")) {
-		return syntax.slice(0, -"index".length)
-	}
-	return syntax
+	out =
+		(!dynamic ? "Static" : "Dynamic") + // Prefix
+		(out ?? "Index") // Suffix
+	return out
 }
 
 // TODO: Write tests.
-function createStaticPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.StaticPageInfo {
-	const component: types.StaticPageInfo = {
+function newPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.StaticPageInfo {
+	const out: types.StaticPageInfo = {
 		type: "static",
-		src: parsed.src,
-		dst: dst(directories, parsed),
-		path: toPathSyntax(directories, parsed),
-		component: toComponentSyntax(directories, parsed, { dynamic: false }),
+		src: pathInfo.src,
+		dst: dst(dirs, pathInfo),
+		path: path_(dirs, pathInfo),
+		component: component(dirs, pathInfo, { dynamic: false }),
 	}
-	return component
+	return out
 }
 
 // TODO: Write tests.
-function createDynamicPageMeta(directories: types.DirConfiguration, parsed: ParsedPath): types.DynamicPageInfo {
-	const component: types.DynamicPageInfo = {
+function newDynamicPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.DynamicPageInfo {
+	const out: types.DynamicPageInfo = {
 		type: "dynamic",
-		src: parsed.src,
-		component: toComponentSyntax(directories, parsed, { dynamic: true }),
+		src: pathInfo.src,
+		component: component(dirs, pathInfo, { dynamic: true }),
 	}
-	return component
+	return out
 }
 
-// Matches:
-//
-// - $1 -> "/"
-// - $2 -> "["
-// - $3 -> ...
-// - $4 -> "]"
-//
-// TODO: Write tests.
-const dynamicRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
-
-function parsePage(directories: types.DirConfiguration, parsed: ParsedPath): types.PageInfo {
-	const path = toPathSyntax(directories, parsed)
-	if (dynamicRegex.test(path)) {
-		return createDynamicPageMeta(directories, parsed)
-	}
-	return createStaticPageMeta(directories, parsed)
+const supportedExts: { [key: string]: boolean } = {
+	".js": true,
+	".jsx": true,
+	".ts": true,
+	".tsx": true,
+	".md": true, // TODO
+	".mdx": true, // TODO
 }
 
-async function readdirAll(src: string): Promise<ParsedPath[]> {
-	const arr: ParsedPath[] = []
-	async function recurse(src: string): Promise<void> {
-		const ls = await fs.readdir(src)
-		for (const each of ls) {
-			const path = p.join(src, each)
-			if ((await fs.stat(path)).isDirectory()) {
-				arr.push(parsePath(path))
-				await recurse(path)
-				continue
-			}
-			arr.push(parsePath(path))
-		}
-	}
-	await recurse(src)
-	return arr
-}
+export default async function parsePageInfosFromDirectories(dirs: types.Directories): Promise<types.PageInfo[]> {
+	const srcs = await utils.readdirAll(dirs.srcPagesDirectory)
 
-// testURICharacter tests whether a character matches URI reserved or unreserved
-// characters based on RFC 3986.
-function testURICharacter(char: string): boolean {
-	// prettier-ignore
-	if ((char >= "a" && char <= "z") || // ALPHA LOWER
-			(char >= "A" && char <= "Z") || // ALPHA LOWER
-			(char >= "0" && char <= "9")) { // DIGIT
-		return true
-	}
-	// https://tools.ietf.org/html/rfc3986#section-2.3
-	switch (char) {
-		case "-":
-		case ".":
-		case "_":
-		case "~":
-			return true
-	}
-	// https://tools.ietf.org/html/rfc3986#section-2.2
-	switch (char) {
-		case ":":
-		case "/":
-		case "?":
-		case "#":
-		case "[":
-		case "]":
-		case "@":
-		case "!":
-		case "$":
-		case "&":
-		case "'":
-		case "(":
-		case ")":
-		case "*":
-		case "+":
-		case ",":
-		case ";":
-		case "=":
-			return true
-	}
-	return false
-}
-
-export default async function parsePages(directories: types.DirConfiguration): Promise<types.PageInfo[]> {
-	const arr = await readdirAll(directories.srcPagesDir)
-
-	// Step over:
-	//
-	// - "_component"
-	// - "$component"
-	// - "component_"
-	// - "component$"
-	//
 	// TODO: Add support for <Layout> components.
-	const arr2 = arr.filter(path => {
-		if (path.name.startsWith("_") || path.name.startsWith("$")) {
-			return false
-		} else if (path.name.endsWith("_") || path.name.endsWith("$")) {
-			return false
-		}
-		return supported[path.ext] === true
-	})
+	const pathInfos = srcs
+		.map(src => utils.parsePathInfo(src))
+		.filter(pathInfo => {
+			if (/^(_|$)|($|_)$/.test(pathInfo.name)) {
+				return false
+			}
+			return supportedExts[pathInfo.ext] !== undefined
+		})
 
 	const badSrcs: string[] = []
-	for (const { src } of arr2) {
-		for (let x = 0; x < src.length; x++) {
-			if (!testURICharacter(src[x]!)) {
-				badSrcs.push(src)
-			}
+	for (const pathInfo of pathInfos) {
+		if (!utils.testURISafe(pathInfo.src)) {
+			badSrcs.push(pathInfo.src)
 		}
 	}
 
 	if (badSrcs.length > 0) {
-		// TODO: Extract to errors?
-		log.error(`These pages use non-URI characters:
-
-${badSrcs.map(each => "- " + each).join("\n")}
-
-URI characters are described by RFC 3986:
-
-2.2. Unreserved Characters
-
-	ALPHA / DIGIT / "-" / "." / "_" / "~"
-
-2.3. Reserved Characters
-
-	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-	           / "*" / "+" / "," / ";" / "="
-
-${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`)
+		log.error(errors.pagesUseNonURICharacters(badSrcs))
 	}
 
 	const pages: types.PageInfo[] = []
-	for (const parsed of arr2) {
-		pages.push(parsePage(directories, parsed))
+	for (const pathInfo of pathInfos) {
+		const syntax = path_(dirs, pathInfo)
+		if (!dynamicPathRegex.test(syntax)) {
+			pages.push(newPageInfo(dirs, pathInfo))
+		} else {
+			pages.push(newDynamicPageInfo(dirs, pathInfo))
+		}
 	}
 	return pages
 }
