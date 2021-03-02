@@ -1,195 +1,201 @@
+// import * as events from "./events"
+// import * as fs from "fs/promises"
+// import * as resolversText from "./router-text"
 import * as errors from "./errors"
 import * as esbuild from "esbuild"
-import * as events from "./events"
-import * as fs from "fs/promises"
 import * as log from "../lib/log"
-import * as p from "path"
-import * as resolversText from "./router-text"
+import * as path from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-const format = utils.newFormatter()
+////////////////////////////////////////////////////////////////////////////////
+// Types
+////////////////////////////////////////////////////////////////////////////////
+
+type Resolve = <ModuleKind extends types.PageModule>(
+	runtime: types.Runtime,
+	info: types.PageInfo | types.RouteInfo,
+) => Promise<ModuleKind>
+
+type ResolveStaticRoute = (runtime: types.Runtime, info: types.StaticPageInfo) => Promise<InMemoryRoute>
+
+type ResolveDynamicRoutes = (runtime: types.Runtime, info: types.DynamicPageInfo) => Promise<InMemoryRoute[]>
+
+interface InMemoryRoute {
+	module: types.PageModule
+	routeInfo: types.RouteInfo
+	descriptProps: types.DescriptProps
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 let service: esbuild.Service
 
-export async function resolveModule(
-	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
-	page: types.PageInfo,
-): Promise<types.PageModule> {
-	const target = p.join(runtime.directories.cacheDirectory, page.src.replace(/\.*$/, ".esbuild.js"))
+export const resolveModule: Resolve = async <ModuleKind>(
+	runtime: types.Runtime,
+	info: types.PageInfo | types.RouteInfo,
+) => {
+	const src = info.src
+	const dst = path.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"))
 
-	// Cache components to an intermediary build artifact; component.esbuild.js.
-	// These artifacts enable interop with Node.js because require doesn’t
-	// understand a) JSX and b) TypeScript.
-	//
-	// Previously, there was a prototype that used 'ts-node -T' that was simpler
-	// but slower.
 	try {
-		// Use 'external: ["react", "react-dom"]' to prevent a runtime React error:
-		// You might have mismatching versions of React and the renderer (such as
-		// React DOM).
 		const result = await service.build({
 			bundle: true,
 			define: {
 				__DEV__: process.env.__DEV__!,
 				"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV!),
 			},
-			entryPoints: [page.src],
+			entryPoints: [src],
 			external: ["react", "react-dom"],
-			format: "cjs", // Use "cjs" to enable require(...)
+			format: "cjs",
 			inject: ["packages/retro/react-shim.js"],
-			loader: { ".js": "jsx" },
-			logLevel: "silent", // TODO
-			outfile: target,
+			loader: {
+				".js": "jsx",
+			},
+			logLevel: "silent",
+			outfile: dst,
 			// plugins: [...configs.retro.plugins], // TODO
 		})
 		if (result.warnings.length > 0) {
 			for (const warning of result.warnings) {
-				log.warning(utils.formatEsbuildMessage(warning, term.yellow))
+				log.warning(utils.format_esbuild(warning, term.yellow))
 			}
 			process.exit(1)
 		}
 	} catch (err) {
-		// TODO: Differentiate esbuild errors.
-		log.error(utils.formatEsbuildMessage((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
+		if (!("errors" in err) || !("warnings" in err)) throw err
+		log.error(utils.format_esbuild((err as esbuild.BuildFailure).errors[0]!, term.bold.red))
 	}
 
-	let mod: types.PageModule = {}
+	// See https://github.com/evanw/esbuild/issues/661.
+	let module_: ModuleKind
+	try {
+		module_ = require(path.join("..", "..", dst))
+	} catch {}
 
-	// Use try-catch to suppress esbuild dynamic import warning.
-	// prettier-ignore
-	try { mod = require(p.join("..", "..", target)) } catch {}
-	return mod
+	return module_!
 }
 
-export async function resolveStaticRoute(
-	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
-	page: types.StaticPageInfo,
-): Promise<types.LoadedRouteMeta> {
-	let props: types.RouteProps = { path: page.path }
-
-	// Guard serverProps and serverPaths:
-	const mod = (await resolveModule(runtime, page)) as types.StaticPageModule
-	if ("serverProps" in mod && typeof mod.serverProps !== "function") {
-		log.error(errors.serverPropsFunction(page.src))
-	} else if ("serverPaths" in mod && typeof (mod as { [key: string]: unknown }).serverPaths === "function") {
-		log.error(errors.serverPathsMismatch(page.src))
+export const resolveStaticRoute: ResolveStaticRoute = async (runtime, info) => {
+	const module_ = await resolveModule<types.StaticPageModule>(runtime, info)
+	if (!utils.validateStaticModuleExports(module_)) {
+		log.error(errors.badStaticPageExports(info.src))
 	}
 
-	// Resolve serverProps:
-	if (typeof mod.serverProps === "function") {
+	let props = {}
+	if (typeof module_.serverProps === "function") {
 		try {
-			const serverProps = await mod.serverProps!()
-			if (!utils.validateServerPropsReturn(serverProps)) {
-				log.error(errors.serverPropsReturn(page.src))
-			}
-			props = {
-				// @ts-ignore
-				path: page.path, // Add path (takes precedence)
-				...serverProps,
+			await module_.serverProps!()
+			if (!utils.validateServerPropsReturn(props)) {
+				log.error(errors.badServerPropsResolver(info.src))
 			}
 		} catch (err) {
-			log.error(`${page.src}.serverProps: ${err.message}`)
+			log.error(`${info.src}.serverProps: ${err.message}`)
 		}
 	}
 
-	const loaded = { mod, meta: { route: page, props } }
-	return loaded
+	const routeInfo = info
+	const descriptProps = { path: info.path, ...props }
+
+	return { module: module_, routeInfo, descriptProps }
 }
 
-export async function resolveDynamicRoutes(
-	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
-	page: types.DynamicPageInfo,
-): Promise<types.LoadedRouteMeta[]> {
-	const loaded: types.LoadedRouteMeta[] = []
+export const resolveDynamicRoutes: ResolveDynamicRoutes = async (runtime, info) => {
+	const cache: InMemoryRoute[] = []
 
-	// Guard serverProps and serverPaths:
-	const mod = (await resolveModule(runtime, page)) as types.DynamicPageModule
-	if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
-		log.error(errors.serverPathsFunction(page.src))
-	} else if ("serverProps" in mod && typeof (mod as { [key: string]: unknown }).serverProps === "function") {
-		log.error(errors.serverPropsMismatch(page.src))
+	const module_ = await resolveModule<types.DynamicPageModule>(runtime, info)
+	if (!utils.validateDynamicModuleExports(module_)) {
+		log.error(errors.badDynamicPageExports(info.src))
 	}
 
-	// Resolve serverPaths:
-	if (typeof mod.serverPaths === "function") {
-		let paths: { path: string; props: types.Props }[] = []
-		try {
-			paths = await mod.serverPaths!()
-			if (!utils.validateServerPathsReturn(paths)) {
-				log.error(errors.serverPathsReturn(page.src))
-			}
-		} catch (err) {
-			log.error(`${page.src}.serverPaths: ${err.message}`)
+	let paths: { path: string; props: types.Props }[] = []
+	try {
+		paths = await module_.serverPaths!()
+		if (!utils.validateServerPathsReturn(paths)) {
+			log.error(errors.badServerPathsResolver(info.src))
 		}
-
-		for (const path of paths) {
-			const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDirectory.length), path.path)
-			const dst = p.join(runtime.directories.exportDirectory, path_ + ".html")
-			loaded.push({
-				mod,
-				meta: {
-					// prettier-ignore
-					route: {
-						...page,
-						dst,         // Add dst
-						path: path_, // Add path
-					},
-					props: {
-						path: path_, // Add path (takes precedence)
-						...path.props,
-					},
-				},
-			})
-		}
+	} catch (err) {
+		log.error(`${info.src}.serverPaths: ${err.message}`)
 	}
 
-	return loaded
+	for (const meta of paths) {
+		const path_ = path.join(path.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path)
+		const dst = path.join(runtime.directories.exportDirectory, path_ + ".html")
+		cache.push({
+			module: module_,
+			routeInfo: {
+				...info,
+				dst,
+				path: path_,
+			},
+			descriptProps: {
+				path: path_, // Add path
+				...meta.props,
+			},
+		})
+	}
+	return cache
 }
 
 // resolveRouter resolves serverProps and serverPaths and generates the server-
 // resolved router.
 //
-// TODO: Extract middleware so loggers can be externalized?
-export async function resolveRouter(
-	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
-): Promise<types.Router> {
+// TODO: Add support for hooks or middleware so logging can be externalized?
+export async function resolveRouter(runtime: types.Runtime): Promise<types.Router> {
 	const router: types.Router = {}
 
-	// TODO: Add --concurrent?
-	service = await esbuild.startService()
-	for (const page of runtime.pages) {
-		let start = Date.now()
-
-		const loaded: types.LoadedRouteMeta[] = []
-		if (page.type === "static") {
-			const one = await resolveStaticRoute(runtime, page)
-			loaded.push(one)
+	const cache: InMemoryRoute[] = []
+	for (const pageInfo of runtime.pageInfos) {
+		const cache: InMemoryRoute[] = []
+		if (pageInfo.type === "static") {
+			const one = await resolveStaticRoute(runtime, pageInfo)
+			cache.push(one)
 		} else {
-			const many = await resolveDynamicRoutes(runtime, page)
-			loaded.push(...many)
-		}
-
-		for (const each of loaded) {
-			if (router[each.meta.route.path] !== undefined) {
-				log.error(errors.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
-			}
-			format.format()
-			router[each.meta.route.path] = each.meta
-
-			// Write to disk:
-			if (runtime.command.type === "export") {
-				const out = await resolversText.renderRouteMetaToString(runtime, each)
-				await fs.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
-				await fs.writeFile(each.meta.route.dst, out)
-			}
-
-			events.export_(runtime, each.meta, start)
-			start = 0 // Reset
+			const many = await resolveDynamicRoutes(runtime, pageInfo)
+			cache.push(...many)
 		}
 	}
 
-	format.done()
+	// ...
+
 	return router
+
+	//	const router: types.Router = {}
+	//
+	//	// TODO: Add support for --concurrent here?
+	//	service = await esbuild.startService()
+	//	for (const pageInfo of runtime.pages) {
+	//		let start = Date.now()
+	//
+	//		const loaded: types.LoadedRouteMeta[] = []
+	//		if (pageInfo.type === "static") {
+	//			const one = await resolveStaticRoute(runtime, pageInfo)
+	//			loaded.push(one)
+	//		} else {
+	//			const many = await resolveDynamicRoutes(runtime, pageInfo)
+	//			loaded.push(...many)
+	//		}
+	//
+	//		for (const each of loaded) {
+	//			if (router[each.meta.route.path] !== undefined) {
+	//				log.error(errors.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
+	//			}
+	//			format.format()
+	//			router[each.meta.route.path] = each.meta
+	//
+	//			// Write to disk:
+	//			if (runtime.command.type === "export") {
+	//				const out = await resolversText.renderRouteMetaToString(runtime, each)
+	//				await fs.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
+	//				await fs.writeFile(each.meta.route.dst, out)
+	//			}
+	//
+	//			events.export_(runtime, each.meta, start)
+	//			start = 0 // Reset
+	//		}
+	//	}
+	//
+	//	format.done()
+	//	return router
 }

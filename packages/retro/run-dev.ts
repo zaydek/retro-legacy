@@ -4,8 +4,8 @@ import * as fs from "fs/promises"
 import * as http from "http"
 // import * as log from "../lib/log"
 import * as p from "path"
-import * as resolvers from "./resolvers"
-import * as resolversText from "./resolvers-text"
+import * as resolvers from "./router"
+import * as resolversText from "./router-text"
 // import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
@@ -57,7 +57,7 @@ import * as utils from "./utils"
 
 // const cache: ExportCache = {}
 
-export default async function retro_dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
+export default async function runDev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
 	// let emit: () => void | undefined
 	//	const result = await build(runtime)
 	//	// TODO: Add esbuild error-handling here.

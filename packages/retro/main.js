@@ -125,10 +125,10 @@ ${dim(`// ${path6}`)}
 	</body>
 </html>`;
 }
-function pagesUseNonURICharacters(badSrcs) {
+function pagesUseNonURICharacters(pages) {
   return `These pages use non-URI characters:
 
-${badSrcs.map((page) => "- " + page).join("\n")}
+${pages.map((page) => "- " + page).join("\n")}
 
 URI characters are described by RFC 3986:
 
@@ -217,6 +217,22 @@ function formatEsbuildMessage(msg, color) {
 
 	${loc.line} ${dim("\u2502")} ${loc.lineText}
 	${" ".repeat(String(loc.line).length)} ${dim("\u2502")} ${" ".repeat(loc.column)}${color("~".repeat(loc.length))}`;
+}
+
+// packages/retro/utils/formatter.ts
+function newFormatter(logger = (...args) => console.log(...args)) {
+  let once = false;
+  return {
+    format(...args) {
+      if (once)
+        return;
+      logger(...args);
+      once = true;
+    },
+    done(...args) {
+      logger(...args);
+    }
+  };
 }
 
 // packages/retro/utils/fs.ts
@@ -639,7 +655,7 @@ var esbuild2 = __toModule(require("esbuild"));
 // packages/retro/events.ts
 var p2 = __toModule(require("path"));
 var TERM_WIDTH = 40;
-var once = false;
+var formatter = newFormatter();
 function formatMS(ms) {
   switch (true) {
     case ms < 250:
@@ -666,10 +682,7 @@ function serve(args) {
   const path_ext = p2.extname(path6);
   const path_name = path6.slice(1, -path_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
-  if (!once) {
-    console.log();
-    once = true;
-  }
+  formatter.format();
   logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
 }
 
@@ -678,12 +691,12 @@ var fs5 = __toModule(require("fs/promises"));
 var http = __toModule(require("http"));
 var p4 = __toModule(require("path"));
 
-// packages/retro/resolvers.ts
+// packages/retro/router.ts
 var esbuild = __toModule(require("esbuild"));
 var fs4 = __toModule(require("fs/promises"));
 var p3 = __toModule(require("path"));
 
-// packages/retro/resolvers-text.ts
+// packages/retro/router-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
 async function renderRouteMetaToString(runtime, loaded) {
@@ -710,55 +723,9 @@ async function renderRouteMetaToString(runtime, loaded) {
   const out = runtime.document.replace("%head%", head).replace("%page%", page);
   return out;
 }
-async function renderRouterToString(runtime) {
-  const distinctComponents = [...new Set(runtime.pages.map((each) => each.component))];
-  const distinctRoutes = runtime.pages.filter((route) => distinctComponents.includes(route.component)).sort((a, b) => a.component.localeCompare(b.component));
-  return `import React from "react"
-import ReactDOM from "react-dom"
-import { Route, Router } from "../packages/router"
 
-// Components
-${distinctRoutes.map((route) => `import ${route.component} from "../${route.src}"`).join("\n")}
-
-export default function App() {
-	return (
-		<Router>
-${Object.entries(runtime.router).map(([path6, meta]) => `
-			<Route path="${path6}">
-				<${meta.route.component} {...${JSON.stringify(meta.props)}} />
-			</Route>`).join("\n") + "\n"}
-		</Router>
-	)
-}
-
-${JSON.parse(process.env.STRICT_MODE || "true") ? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-	<React.StrictMode>
-		<App />
-	</React.StrictMode>,
-	document.getElementById("root"),
-)` : `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
-	<App />,
-	document.getElementById("root"),
-)`}
-`;
-}
-
-// packages/retro/resolvers.ts
-function formatter() {
-  let once2 = false;
-  return {
-    start() {
-      if (once2)
-        return;
-      console.log();
-      once2 = true;
-    },
-    done() {
-      console.log();
-    }
-  };
-}
-var format2 = formatter();
+// packages/retro/router.ts
+var format2 = newFormatter();
 var service;
 async function resolveModule(runtime, page) {
   const target = p3.join(runtime.directories.cacheDirectory, page.src.replace(/\.*$/, ".esbuild.js"));
@@ -795,7 +762,7 @@ async function resolveModule(runtime, page) {
 }
 
 // packages/retro/run-dev.ts
-async function retro_dev(runtime) {
+async function runDev(runtime) {
   const result = await esbuild2.serve({
     servedir: runtime.directories.exportDirectory,
     onRequest: (args) => serve(args)
@@ -843,49 +810,21 @@ async function retro_dev(runtime) {
 }
 
 // packages/retro/run-export.ts
-var esbuild3 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs/promises"));
-var p5 = __toModule(require("path"));
-async function cmd_export(runtime) {
-  const appContents = await renderRouterToString(runtime);
-  const appContentsPath = p5.join(runtime.directories.cacheDirectory, "app.js");
-  await fs6.writeFile(appContentsPath, appContents);
-  try {
-    const result = await esbuild3.build({
-      bundle: true,
-      define: {
-        __DEV__: process.env.__DEV__,
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-      },
-      entryPoints: [appContentsPath],
-      inject: ["packages/retro/react-shim.js"],
-      loader: {".js": "jsx"},
-      logLevel: "silent",
-      minify: true,
-      outfile: p5.join(runtime.directories.exportDirectory, appContentsPath.slice(runtime.directories.srcPagesDirectory.length))
-    });
-    if (result.warnings.length > 0) {
-      for (const warning2 of result.warnings) {
-        warning(formatEsbuildMessage(warning2, yellow));
-      }
-      process.exit(1);
-    }
-  } catch (err) {
-    error(formatEsbuildMessage(err.errors[0], bold.red));
-  }
+async function runExport(runtime) {
+  console.log(runtime.router);
 }
 
 // packages/retro/run-serve.ts
-var esbuild4 = __toModule(require("esbuild"));
-var fs7 = __toModule(require("fs/promises"));
+var esbuild3 = __toModule(require("esbuild"));
+var fs6 = __toModule(require("fs/promises"));
 var http2 = __toModule(require("http"));
 async function runServe(runtime) {
   try {
-    await fs7.stat(runtime.directories.exportDirectory);
+    await fs6.stat(runtime.directories.exportDirectory);
   } catch {
     error(serveWithMissingExportDirectory);
   }
-  const result = await esbuild4.serve({
+  const result = await esbuild3.serve({
     servedir: runtime.directories.exportDirectory,
     onRequest: (args) => serve(args)
   }, {});
@@ -998,10 +937,10 @@ async function main() {
   const run = runtime.command.type;
   switch (run) {
     case "dev":
-      await retro_dev(runtime);
+      await runDev(runtime);
       break;
     case "export":
-      await cmd_export(runtime);
+      await runExport(runtime);
       break;
     case "serve":
       await runServe(runtime);

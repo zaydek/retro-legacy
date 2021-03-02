@@ -9,16 +9,13 @@ function testURICharacterSafe(char: string): boolean {
 	) {
 		return true
 	}
-	// https://tools.ietf.org/html/rfc3986#section-2.3
 	switch (char) {
+		// https://tools.ietf.org/html/rfc3986#section-2.3
 		case "-":
 		case ".":
 		case "_":
 		case "~":
-			return true
-	}
-	// https://tools.ietf.org/html/rfc3986#section-2.2
-	switch (char) {
+		// https://tools.ietf.org/html/rfc3986#section-2.2
 		case ":":
 		case "/":
 		case "?":

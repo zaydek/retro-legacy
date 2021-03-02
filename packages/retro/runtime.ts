@@ -8,7 +8,7 @@ import * as utils from "./utils"
 import parsePageInfosFromDirectories from "./pages"
 
 export default async function newRuntimeFromCommand(command: types.Command): Promise<types.Runtime<typeof command>> {
-	const runtime: types.Runtime = {
+	const runtime: types.Runtime<typeof command> = {
 		command,
 		directories: {
 			publicDirectory: "public",
@@ -17,7 +17,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			exportDirectory: "__export__",
 		},
 		document: "",
-		pages: [],
+		pageInfos: [],
 		router: {},
 
 		// guards runs server guards.
@@ -80,7 +80,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 
 		// resolvePages resolves and or refreshes this.pages.
 		async resolvePages(): Promise<void> {
-			this.pages = await parsePageInfosFromDirectories(this.directories)
+			this.pageInfos = await parsePageInfosFromDirectories(this.directories)
 		},
 
 		// resolveRouter resolves and or refreshes this.router.

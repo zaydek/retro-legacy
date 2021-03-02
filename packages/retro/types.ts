@@ -57,10 +57,10 @@ export interface Props {
 	[key: string]: unknown
 }
 
-export type RouteProps = Props & { path: string }
+export type DescriptProps = Props & { path: string }
 
 // prettier-ignore
-export interface Route {
+export interface RouteInfo {
 	type: "static" | "dynamic"
 	src: string       // e.g. "src/pages/index.js"
 	dst: string       // e.g. "dst/index.html"
@@ -68,52 +68,39 @@ export interface Route {
 	component: string // e.g. "PageIndex"
 }
 
+export interface StaticPageModule {
+	Head?: (props: DescriptProps) => JSX.Element
+	default?: (props: DescriptProps) => JSX.Element
+	serverProps?(): Promise<Props>
+}
+
+export interface DynamicPageModule {
+	Head?: (props: DescriptProps) => JSX.Element
+	default?: (props: DescriptProps) => JSX.Element
+	serverPaths(): Promise<{ path: string; props: Props }[]>
+}
+
+export type PageModule = StaticPageModule | DynamicPageModule
+
 export interface RouteMeta {
-	route: Route
-	props: RouteProps
+	routeInfo: RouteInfo
+	descriptProps: DescriptProps
 }
 
 export interface Router {
 	[key: string]: RouteMeta
 }
 
-export interface Runtime<Cmd = Command> {
-	command: Cmd
+export interface Runtime<CommandKind extends Command = Command> {
+	command: CommandKind
 	directories: Directories
 	document: string
-	pages: PageInfo[] // The filesystem-based pages
-	router: Router // The server-resolved router
+	pageInfos: PageInfo[]
+	router: Router
 	guards(): Promise<void>
 	resolveDocument(): Promise<void>
 	resolvePages(): Promise<void>
 	resolveRouter(): Promise<void>
 	purgeCacheDirectory(): Promise<void>
 	purgeExportDirectory(): Promise<void>
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// TODO
-////////////////////////////////////////////////////////////////////////////////
-
-// StaticPageModule describes a static page module.
-export interface StaticPageModule {
-	Head?: (props: RouteProps) => JSX.Element
-	default?: (props: RouteProps) => JSX.Element
-	serverProps?(): Promise<RouteProps>
-}
-
-// DynamicPageModule describes a dynamic page module.
-export interface DynamicPageModule {
-	Head?: (props: RouteProps) => JSX.Element
-	default?: (props: RouteProps) => JSX.Element
-	serverPaths(): Promise<{ path: string; props: Props }[]>
-}
-
-// PageModule describes a page module.
-export type PageModule = StaticPageModule | DynamicPageModule
-
-// LoadedRouteMeta describes a loaded server-resolved route (from __cache__).
-export interface LoadedRouteMeta {
-	mod: StaticPageModule | DynamicPageModule
-	meta: RouteMeta
 }

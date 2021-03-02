@@ -82,78 +82,32 @@ ${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Server API (static pages)
+// Server API
 ////////////////////////////////////////////////////////////////////////////////
 
-export function serverPropsFunction(src: string): string {
-	return `${src}.serverProps: ${term.magenta("'serverProps'")} must be a function.
+export function badStaticPageExports(src: string): string {
+	return `${src}: Bad static page exports.
 
-For example:
+Page exports should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverProps() {
 	return { ${term.dim("...")} }
 }
 
-Or:
+export function Head({ path, ...serverProps }) {
+	return <title>Hello, world!</title>
+}
 
-${term.dim(`// ${src}`)}
-export async function serverProps() {
-	await ${term.dim("...")}
-	return { ${term.dim("...")} }
+export default function Page({ path, ...serverProps }) {
+	return <h1>Hello, world!</h1>
 }`
 }
 
-export function serverPropsReturn(src: string): string {
-	return `${src}.serverProps: Bad ${term.magenta("'serverProps'")} resolver.
+export function badDynamicPageExports(src: string): string {
+	return `${src}: Bad dynamic page exports.
 
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverProps() {
-	return { ${term.dim("...")} }
-}`
-}
-
-export function serverPathsMismatch(src: string): string {
-	return `${src}: Use ${term.magenta("'serverProps'")} for non-dynamic pages, not ${term.magenta("'serverPaths'")}.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverProps() {
-	return { ${term.dim("...")} }
-}`
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Server API (dynamic pages)
-////////////////////////////////////////////////////////////////////////////////
-
-export function serverPathsFunction(src: string): string {
-	return `${src}.serverPaths: ${term.magenta("'serverPaths'")} must be a function.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverPaths() {
-	return { ${term.dim("...")} }
-}
-
-Or:
-
-${term.dim(`// ${src}`)}
-export async function serverPaths() {
-	await ${term.dim("...")}
-	return { ${term.dim("...")} }
-}`
-}
-
-export function serverPathsReturn(src: string): string {
-	return `
-${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
-
-For example:
+Dynamic page exports should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverPaths() {
@@ -162,13 +116,33 @@ export function serverPaths() {
 		{ path: "/foo/bar", props: ${term.dim("...")} },
 		{ path: "/foo/bar/baz", props: ${term.dim("...")} },
 	]
+}
+
+export function Head({ path, ...serverProps }) {
+	return <title>Hello, world!</title>
+}
+
+export default function Page({ path, ...serverProps }) {
+	return <h1>Hello, world!</h1>
 }`
 }
 
-export function serverPropsMismatch(src: string): string {
-	return `${src}: Use ${term.magenta("'serverPaths'")} for dynamic pages, not ${term.magenta("'serverProps'")}.
+export function badServerPropsResolver(src: string): string {
+	return `${src}.serverProps: Bad ${term.magenta("'serverProps'")} resolver.
 
-For example:
+Your ${term.magenta("'serverProps'")} resolver should look something like this:
+
+${term.dim(`// ${src}`)}
+export function serverProps() {
+	return { ${term.dim("...")} }
+}`
+}
+
+export function badServerPathsResolver(src: string): string {
+	return `
+${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
+
+Your ${term.magenta("'serverPaths'")} resolver should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverPaths() {
@@ -184,8 +158,8 @@ export function serverPaths() {
 // Server API (miscellaneous)
 ////////////////////////////////////////////////////////////////////////////////
 
-export function duplicatePathFound(r1: types.Route, r2: types.Route): string {
-	function caller(r: types.Route): string {
+export function duplicatePathFound(r1: types.RouteInfo, r2: types.RouteInfo): string {
+	function caller(r: types.RouteInfo): string {
 		return r.type === "static" ? "serverProps" : "serverPaths"
 	}
 	return `${r1.src}.${caller(r1)}: Path ${term.magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`

@@ -48,7 +48,6 @@ function component(dirs: types.Directories, pathInfo: utils.PathInfo, { dynamic 
 	return out
 }
 
-// TODO: Write tests.
 function newPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.StaticPageInfo {
 	const out: types.StaticPageInfo = {
 		type: "static",
@@ -60,7 +59,6 @@ function newPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.S
 	return out
 }
 
-// TODO: Write tests.
 function newDynamicPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.DynamicPageInfo {
 	const out: types.DynamicPageInfo = {
 		type: "dynamic",
@@ -70,13 +68,11 @@ function newDynamicPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): 
 	return out
 }
 
-const supportedExts: { [key: string]: boolean } = {
+const supported: { [key: string]: boolean } = {
 	".js": true,
 	".jsx": true,
 	".ts": true,
 	".tsx": true,
-	".md": true, // TODO
-	".mdx": true, // TODO
 }
 
 export default async function parsePageInfosFromDirectories(dirs: types.Directories): Promise<types.PageInfo[]> {
@@ -89,7 +85,7 @@ export default async function parsePageInfosFromDirectories(dirs: types.Director
 			if (/^(_|$)|($|_)$/.test(pathInfo.name)) {
 				return false
 			}
-			return supportedExts[pathInfo.ext] !== undefined
+			return supported[pathInfo.ext] !== undefined
 		})
 
 	const badSrcs: string[] = []
@@ -107,10 +103,10 @@ export default async function parsePageInfosFromDirectories(dirs: types.Director
 	for (const pathInfo of pathInfos) {
 		const syntax = path_(dirs, pathInfo)
 		if (!dynamicPathRegex.test(syntax)) {
-			pages.push(newPageInfo(dirs, pathInfo))
-		} else {
 			pages.push(newDynamicPageInfo(dirs, pathInfo))
+			continue
 		}
+		pages.push(newPageInfo(dirs, pathInfo))
 	}
 	return pages
 }
