@@ -1,30 +1,6 @@
 import * as term from "../lib/term"
 import * as types from "./types"
 
-// // detab removes leading tabs.
-// function detab(str: string): string {
-// 	const arr = str.trim().split("\n")
-//
-// 	let min = 0
-// 	for (const each of arr) {
-// 		if (each.length === 0) continue
-// 		let x = 0
-// 		while (x < each.length) {
-// 			if (each[x] !== "\t") {
-// 				// No-op
-// 				break
-// 			}
-// 			x++
-// 		}
-// 		if (x < min) {
-// 			min = x
-// 		}
-// 	}
-//
-// 	const out = arr.map(each => each.slice(min)).join("\n")
-// 	return out
-// }
-
 ////////////////////////////////////////////////////////////////////////////////
 // CLI
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,6 +55,30 @@ ${term.dim(`// ${path}`)}
 		${term.dim("...")}
 	</body>
 </html>`
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Pages
+////////////////////////////////////////////////////////////////////////////////
+
+export function pagesUseNonURICharacters(badSrcs: string[]): string {
+	return `These pages use non-URI characters:
+
+${badSrcs.map(page => "- " + page).join("\n")}
+
+URI characters are described by RFC 3986:
+
+2.2. Unreserved Characters
+
+	ALPHA / DIGIT / "-" / "." / "_" / "~"
+
+2.3. Reserved Characters
+
+	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+	${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="
+
+${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
 }
 
 ////////////////////////////////////////////////////////////////////////////////

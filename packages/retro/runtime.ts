@@ -5,6 +5,8 @@ import * as path from "path"
 import * as types from "./types"
 import * as utils from "./utils"
 
+import parsePageInfosFromDirectories from "./pages2" // TODO
+
 export default function newRuntimeFromCommand(command: types.Command): types.Runtime<typeof command> {
 	const runtime: types.Runtime = {
 		command,
@@ -24,9 +26,12 @@ export default function newRuntimeFromCommand(command: types.Command): types.Run
 
 		// runServerGuards runs server guards that ensure safe development.
 		async runServerGuards(): Promise<void> {
-			// Guard directories:
-			const d = runtime.directories
-			const dirs = [d.publicDirectory, d.srcPagesDirectory, d.cacheDirectory, d.exportDirectory]
+			const dirs = [
+				runtime.directories.publicDirectory,
+				runtime.directories.srcPagesDirectory,
+				runtime.directories.cacheDirectory,
+				runtime.directories.exportDirectory,
+			]
 
 			for (const dir of dirs) {
 				try {
@@ -36,7 +41,6 @@ export default function newRuntimeFromCommand(command: types.Command): types.Run
 				}
 			}
 
-			// Guard public/index.html:
 			const src = path.join(runtime.directories.publicDirectory, "index.html")
 
 			try {
@@ -78,7 +82,7 @@ export default function newRuntimeFromCommand(command: types.Command): types.Run
 		},
 		// resolvePages resolves and or refreshes this.pages.
 		async resolvePages(): Promise<void> {
-			// this.pages = await parsePages(this.directories)
+			this.pages = await parsePageInfosFromDirectories(this.directories)
 		},
 		// resolveRouter resolves and or refreshes this.router.
 		async resolveRouter(): Promise<void> {

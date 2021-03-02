@@ -1,4 +1,4 @@
-import * as p from "path"
+import * as path from "path"
 
 // spaify converts a URL for SPA-mode.
 //
@@ -12,6 +12,6 @@ export function spaify(_: string): string {
 // TODO: Write tests.
 export function ssgify(url: string): string {
 	if (url.endsWith("/")) return url + "index.html"
-	if (p.extname(url) === "") return url + ".html"
+	if (path.extname(url) === "") return url + ".html"
 	return url
 }
