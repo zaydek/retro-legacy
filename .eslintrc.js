@@ -78,7 +78,7 @@ module.exports = {
 			{
 				allowExpressions: false,
 				allowTypedFunctionExpressions: true,
-				allowHigherOrderFunctions: false,
+				allowHigherOrderFunctions: true,
 				allowDirectConstAssertionInArrowFunctions: false,
 				allowConciseArrowFunctionExpressionsStartingWithVoid: false,
 			},

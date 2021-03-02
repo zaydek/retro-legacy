@@ -101,30 +101,30 @@ async function main(): Promise<void> {
 			break
 	}
 
-	// prettier-ignore
-	const runtime: types.Runtime = {
-		command: command!,
+	//	// prettier-ignore
+	//	const runtime: types.Runtime = {
+	//		command: command!,
+	//
+	//		// NOTE: Directories can be overridden as environmental variables. Retro
+	//		// does not (yet?) support configuration files.
+	//		directories: {
+	//			publicDir:   process.env.PUBLIC_DIR ?? "public",
+	//			srcPagesDir: process.env.PAGES_DIR  ?? "src/pages",
+	//			cacheDir:    process.env.CACHE_DIR  ?? "__cache__",
+	//			exportDir:   process.env.EXPORT_DIR ?? "__export__",
+	//		},
+	//		document: "", // Defer to dev and export (preflight)
+	//		pages:    [], // Defer to dev and export (preflight)
+	//		router:   {}, // Defer to dev and export (preflight)
+	//	}
 
-		// NOTE: Directories can be overridden as environmental variables. Retro
-		// does not (yet?) support configuration files.
-		directories: {
-			publicDir:   process.env.PUBLIC_DIR ?? "public",
-			srcPagesDir: process.env.PAGES_DIR  ?? "src/pages",
-			cacheDir:    process.env.CACHE_DIR  ?? "__cache__",
-			exportDir:   process.env.EXPORT_DIR ?? "__export__",
-		},
-		document: "", // Defer to dev and export (preflight)
-		pages:    [], // Defer to dev and export (preflight)
-		router:   {}, // Defer to dev and export (preflight)
-	}
-
-	if (runtime.command.type === "dev") {
-		await cmd_dev(runtime as types.Runtime<types.DevCommand>)
-	} else if (runtime.command.type === "export") {
-		await cmd_export(runtime as types.Runtime<types.ExportCommand>)
-	} else if (runtime.command.type === "serve") {
-		await cmd_serve(runtime as types.Runtime<types.ServeCommand>)
-	}
+	// if (runtime.command.type === "dev") {
+	// 	await cmd_dev(runtime as types.Runtime<types.DevCommand>)
+	// } else if (runtime.command.type === "export") {
+	// 	await cmd_export(runtime as types.Runtime<types.ExportCommand>)
+	// } else if (runtime.command.type === "serve") {
+	// 	await cmd_serve(runtime as types.Runtime<types.ServeCommand>)
+	// }
 }
 
 process.on("uncaughtException", (err: Error): void => {

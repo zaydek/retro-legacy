@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////////////
-// Command-line interface
+// CLI
 ////////////////////////////////////////////////////////////////////////////////
 
 export interface DevCommand {
@@ -24,17 +24,17 @@ export interface ServeCommand {
 export type Command = DevCommand | ExportCommand | ServeCommand
 
 ////////////////////////////////////////////////////////////////////////////////
+// Runtime
+////////////////////////////////////////////////////////////////////////////////
 
-// DirConfiguration describes the directory configuration.
 // prettier-ignore
-export interface DirConfiguration {
-	publicDir: string   // e.g. "public"
-	srcPagesDir: string // e.g. "src/pages"
-	cacheDir: string    // e.g. "__cache__"
-	exportDir: string   // e.g. "__export__"
+export interface Directories {
+	publicDirectory: string   // e.g. "public"
+	srcPagesDirectory: string // e.g. "src/pages"
+	cacheDirectory: string    // e.g. "__cache__"
+	exportDirectory: string   // e.g. "__export__"
 }
 
-// StaticPageInfo describes static page metadata.
 // prettier-ignore
 export interface StaticPageInfo {
 	type: "static"
@@ -44,7 +44,6 @@ export interface StaticPageInfo {
 	component: string // e.g. "PageIndex"
 }
 
-// DynamicPageInfo describes dynamic page metadata.
 // prettier-ignore
 export interface DynamicPageInfo {
 	type: "dynamic"
@@ -54,21 +53,47 @@ export interface DynamicPageInfo {
 
 export type PageInfo = StaticPageInfo | DynamicPageInfo
 
+export interface Props {
+	[key: string]: unknown
+}
+
+export type RouteProps = Props & { path: string }
+
+// prettier-ignore
+export interface Route {
+	type: "static" | "dynamic"
+	src: string       // e.g. "src/pages/index.js"
+	dst: string       // e.g. "dst/index.html"
+	path: string      // e.g. "/"
+	component: string // e.g. "PageIndex"
+}
+
+export interface RouteMeta {
+	route: Route
+	props: RouteProps
+}
+
+export interface Router {
+	[key: string]: RouteMeta
+}
+
 export interface Runtime<Cmd = Command> {
 	command: Cmd
-	directories: DirConfiguration
+	directories: Directories
 	document: string
-	pages: PageInfo[]
-	router: Router
+	pages: PageInfo[] // The filesystem-based pages
+	router: Router // The server-resolved router
+	runServerGuards(): Promise<void>
+	resolveDocument(): Promise<void>
+	resolvePages(): Promise<void>
+	resolveRouter(): Promise<void>
+	purgeCacheDirectory(): Promise<void>
+	purgeExportDirectory(): Promise<void>
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-// Props describes runtime props ambiguously.
-export type Props = { [key: string]: unknown }
-
-// DescriptServerProps describes runtime props resolved on the server.
-export type RouteProps = Props & { path: string }
+// TODO
+////////////////////////////////////////////////////////////////////////////////
 
 // StaticPageModule describes a static page module.
 export interface StaticPageModule {
@@ -87,29 +112,8 @@ export interface DynamicPageModule {
 // PageModule describes a page module.
 export type PageModule = StaticPageModule | DynamicPageModule
 
-// Route describes a server-resolved route.
-// prettier-ignore
-export interface Route {
-	type: "static" | "dynamic"
-	src: string       // e.g. "src/pages/index.js"
-	dst: string       // e.g. "dst/index.html"
-	path: string      // e.g. "/"
-	component: string // e.g. "PageIndex"
-}
-
-// RouteMeta describes a server-resolved route metadata.
-export interface RouteMeta {
-	route: Route
-	props: RouteProps
-}
-
 // LoadedRouteMeta describes a loaded server-resolved route (from __cache__).
 export interface LoadedRouteMeta {
 	mod: StaticPageModule | DynamicPageModule
 	meta: RouteMeta
-}
-
-// Router describes the server-resolved route.
-export interface Router {
-	[key: string]: RouteMeta
 }
