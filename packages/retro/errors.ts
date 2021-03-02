@@ -28,15 +28,15 @@ For example:
 
 ${term.dim(`// ${path}`)}
 <!DOCTYPE html>
-	<head lang="en">
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		${term.magenta("%head%")}
-		${term.dim("...")}
-	</head>
-	<body>
-		${term.dim("...")}
-	</body>
+  <head lang="en">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    ${term.magenta("%head%")}
+    ${term.dim("...")}
+  </head>
+  <body>
+    ${term.dim("...")}
+  </body>
 </html>`
 }
 
@@ -47,13 +47,13 @@ For example:
 
 ${term.dim(`// ${path}`)}
 <!DOCTYPE html>
-	<head lang="en">
-		${term.dim("...")}
-	</head>
-	<body>
-		${term.magenta("%page%")}
-		${term.dim("...")}
-	</body>
+  <head lang="en">
+    ${term.dim("...")}
+  </head>
+  <body>
+    ${term.magenta("%page%")}
+    ${term.dim("...")}
+  </body>
 </html>`
 }
 
@@ -70,13 +70,13 @@ URI characters are described by RFC 3986:
 
 2.2. Unreserved Characters
 
-	ALPHA / DIGIT / "-" / "." / "_" / "~"
+  ALPHA / DIGIT / "-" / "." / "_" / "~"
 
 2.3. Reserved Characters
 
-	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-	${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="
+  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+  ${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="
 
 ${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
 }
@@ -92,15 +92,15 @@ Page exports should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverProps() {
-	return { ${term.dim("...")} }
+  return { ${term.dim("...")} }
 }
 
 export function Head({ path, ...serverProps }) {
-	return <title>Hello, world!</title>
+  return <title>Hello, world!</title>
 }
 
 export default function Page({ path, ...serverProps }) {
-	return <h1>Hello, world!</h1>
+  return <h1>Hello, world!</h1>
 }`
 }
 
@@ -111,46 +111,45 @@ Dynamic page exports should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverPaths() {
-	return [
-		{ path: "/foo", props: ${term.dim("...")} },
-		{ path: "/foo/bar", props: ${term.dim("...")} },
-		{ path: "/foo/bar/baz", props: ${term.dim("...")} },
-	]
+  return [
+    { path: "/foo", props: ${term.dim("...")} },
+    { path: "/foo/bar", props: ${term.dim("...")} },
+    { path: "/foo/bar/baz", props: ${term.dim("...")} },
+  ]
 }
 
 export function Head({ path, ...serverProps }) {
-	return <title>Hello, world!</title>
+  return <title>Hello, world!</title>
 }
 
 export default function Page({ path, ...serverProps }) {
-	return <h1>Hello, world!</h1>
+  return <h1>Hello, world!</h1>
 }`
 }
 
 export function badServerPropsResolver(src: string): string {
 	return `${src}.serverProps: Bad ${term.magenta("'serverProps'")} resolver.
 
-Your ${term.magenta("'serverProps'")} resolver should look something like this:
+${term.magenta("'serverProps'")} resolvers should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverProps() {
-	return { ${term.dim("...")} }
+  return { ${term.dim("...")} }
 }`
 }
 
 export function badServerPathsResolver(src: string): string {
-	return `
-${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
+	return `${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
 
-Your ${term.magenta("'serverPaths'")} resolver should look something like this:
+${term.magenta("'serverPaths'")} resolvers should look something like this:
 
 ${term.dim(`// ${src}`)}
 export function serverPaths() {
-	return [
-		{ path: "/foo", props: ${term.dim("...")} },
-		{ path: "/foo/bar", props: ${term.dim("...")} },
-		{ path: "/foo/bar/baz", props: ${term.dim("...")} },
-	]
+  return [
+    { path: "/foo", props: ${term.dim("...")} },
+    { path: "/foo/bar", props: ${term.dim("...")} },
+    { path: "/foo/bar/baz", props: ${term.dim("...")} },
+  ]
 }`
 }
 

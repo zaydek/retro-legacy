@@ -6,6 +6,7 @@ import * as types from "./types"
 import * as utils from "./utils"
 
 import parsePageInfosFromDirectories from "./pages"
+import resolveRouter from "./router"
 
 export default async function newRuntimeFromCommand(command: types.Command): Promise<types.Runtime<typeof command>> {
 	const runtime: types.Runtime<typeof command> = {
@@ -85,7 +86,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 
 		// resolveRouter resolves and or refreshes this.router.
 		async resolveRouter(): Promise<void> {
-			// ...
+			this.router = await resolveRouter(this)
 		},
 
 		// purgeCacheDirectory purges __cache__.
@@ -107,7 +108,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 	}
 
 	async function start(): Promise<void> {
-		if (runtime.command.type === "export") {
+		if (runtime.command.type === "serve") {
 			// No-op
 			return
 		}

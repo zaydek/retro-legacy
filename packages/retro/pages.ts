@@ -82,7 +82,7 @@ export default async function parsePageInfosFromDirectories(dirs: types.Director
 	const pathInfos = srcs
 		.map(src => utils.parsePathInfo(src))
 		.filter(pathInfo => {
-			if (/^(_|$)|($|_)$/.test(pathInfo.name)) {
+			if (/^[_$]|[_$]$/.test(pathInfo.name)) {
 				return false
 			}
 			return supported[pathInfo.ext] !== undefined
@@ -102,7 +102,7 @@ export default async function parsePageInfosFromDirectories(dirs: types.Director
 	const pages: types.PageInfo[] = []
 	for (const pathInfo of pathInfos) {
 		const syntax = path_(dirs, pathInfo)
-		if (!dynamicPathRegex.test(syntax)) {
+		if (dynamicPathRegex.test(syntax)) {
 			pages.push(newDynamicPageInfo(dirs, pathInfo))
 			continue
 		}

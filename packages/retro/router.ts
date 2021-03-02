@@ -1,41 +1,20 @@
-// import * as events from "./events"
-// import * as fs from "fs/promises"
-// import * as resolversText from "./router-text"
 import * as errors from "./errors"
 import * as esbuild from "esbuild"
+import * as events from "./events"
+import * as fs from "fs"
 import * as log from "../lib/log"
 import * as path from "path"
+import * as resolversText from "./router-text"
 import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////
-
-type Resolve = <ModuleKind extends types.PageModule>(
-	runtime: types.Runtime,
-	info: types.PageInfo | types.RouteInfo,
-) => Promise<ModuleKind>
-
-type ResolveStaticRoute = (runtime: types.Runtime, info: types.StaticPageInfo) => Promise<InMemoryRoute>
-
-type ResolveDynamicRoutes = (runtime: types.Runtime, info: types.DynamicPageInfo) => Promise<InMemoryRoute[]>
-
-interface InMemoryRoute {
-	module: types.PageModule
-	routeInfo: types.RouteInfo
-	descriptProps: types.DescriptProps
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 let service: esbuild.Service
 
-export const resolveModule: Resolve = async <ModuleKind>(
+async function resolve<ModuleKind extends types.PageModule>(
 	runtime: types.Runtime,
 	info: types.PageInfo | types.RouteInfo,
-) => {
+): Promise<ModuleKind> {
 	const src = info.src
 	const dst = path.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"))
 
@@ -77,8 +56,8 @@ export const resolveModule: Resolve = async <ModuleKind>(
 	return module_!
 }
 
-export const resolveStaticRoute: ResolveStaticRoute = async (runtime, info) => {
-	const module_ = await resolveModule<types.StaticPageModule>(runtime, info)
+async function resolveStaticRoute(runtime: types.Runtime, info: types.StaticPageInfo): Promise<types.RouteMeta> {
+	const module_ = await resolve<types.StaticPageModule>(runtime, info)
 	if (!utils.validateStaticModuleExports(module_)) {
 		log.error(errors.badStaticPageExports(info.src))
 	}
@@ -101,10 +80,10 @@ export const resolveStaticRoute: ResolveStaticRoute = async (runtime, info) => {
 	return { module: module_, routeInfo, descriptProps }
 }
 
-export const resolveDynamicRoutes: ResolveDynamicRoutes = async (runtime, info) => {
-	const cache: InMemoryRoute[] = []
+async function resolveDynamicRoutes(runtime: types.Runtime, info: types.DynamicPageInfo): Promise<types.RouteMeta[]> {
+	const metas: types.RouteMeta[] = []
 
-	const module_ = await resolveModule<types.DynamicPageModule>(runtime, info)
+	const module_ = await resolve<types.DynamicPageModule>(runtime, info)
 	if (!utils.validateDynamicModuleExports(module_)) {
 		log.error(errors.badDynamicPageExports(info.src))
 	}
@@ -122,7 +101,7 @@ export const resolveDynamicRoutes: ResolveDynamicRoutes = async (runtime, info) 
 	for (const meta of paths) {
 		const path_ = path.join(path.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path)
 		const dst = path.join(runtime.directories.exportDirectory, path_ + ".html")
-		cache.push({
+		metas.push({
 			module: module_,
 			routeInfo: {
 				...info,
@@ -135,67 +114,49 @@ export const resolveDynamicRoutes: ResolveDynamicRoutes = async (runtime, info) 
 			},
 		})
 	}
-	return cache
+	return metas
 }
 
 // resolveRouter resolves serverProps and serverPaths and generates the server-
 // resolved router.
 //
 // TODO: Add support for hooks or middleware so logging can be externalized?
-export async function resolveRouter(runtime: types.Runtime): Promise<types.Router> {
+export default async function resolveRouter(runtime: types.Runtime): Promise<types.Router> {
 	const router: types.Router = {}
 
-	const cache: InMemoryRoute[] = []
+	service = await esbuild.startService()
+
+	const cache: types.RouteMeta[] = []
 	for (const pageInfo of runtime.pageInfos) {
-		const cache: InMemoryRoute[] = []
 		if (pageInfo.type === "static") {
-			const one = await resolveStaticRoute(runtime, pageInfo)
-			cache.push(one)
+			const meta = await resolveStaticRoute(runtime, pageInfo)
+			if (router[meta.routeInfo.path] !== undefined) {
+				log.error(errors.duplicatePathFound(meta.routeInfo, router[meta.routeInfo.path]!.routeInfo))
+			}
+			cache.push(meta)
 		} else {
-			const many = await resolveDynamicRoutes(runtime, pageInfo)
-			cache.push(...many)
+			const metas = await resolveDynamicRoutes(runtime, pageInfo)
+			for (const one of metas) {
+				if (router[one.routeInfo.path] !== undefined) {
+					log.error(errors.duplicatePathFound(one.routeInfo, router[one.routeInfo.path]!.routeInfo))
+				}
+			}
+			cache.push(...metas)
 		}
 	}
 
-	// ...
+	// TODO: Add support for --concurrent here?
+	for (const meta of cache) {
+		const start = Date.now()
+		if (runtime.command.type === "export") {
+			const out = await resolversText.renderRouteMetaToString(runtime, meta)
+			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
+			await fs.promises.writeFile(meta.routeInfo.dst, out)
+		}
+		router[meta.routeInfo.path] = meta
+		events.export_(runtime, meta, start)
+	}
 
+	console.log()
 	return router
-
-	//	const router: types.Router = {}
-	//
-	//	// TODO: Add support for --concurrent here?
-	//	service = await esbuild.startService()
-	//	for (const pageInfo of runtime.pages) {
-	//		let start = Date.now()
-	//
-	//		const loaded: types.LoadedRouteMeta[] = []
-	//		if (pageInfo.type === "static") {
-	//			const one = await resolveStaticRoute(runtime, pageInfo)
-	//			loaded.push(one)
-	//		} else {
-	//			const many = await resolveDynamicRoutes(runtime, pageInfo)
-	//			loaded.push(...many)
-	//		}
-	//
-	//		for (const each of loaded) {
-	//			if (router[each.meta.route.path] !== undefined) {
-	//				log.error(errors.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
-	//			}
-	//			format.format()
-	//			router[each.meta.route.path] = each.meta
-	//
-	//			// Write to disk:
-	//			if (runtime.command.type === "export") {
-	//				const out = await resolversText.renderRouteMetaToString(runtime, each)
-	//				await fs.mkdir(p.dirname(each.meta.route.dst), { recursive: true })
-	//				await fs.writeFile(each.meta.route.dst, out)
-	//			}
-	//
-	//			events.export_(runtime, each.meta, start)
-	//			start = 0 // Reset
-	//		}
-	//	}
-	//
-	//	format.done()
-	//	return router
 }

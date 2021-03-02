@@ -8,8 +8,7 @@ import * as types from "./types"
 // import * as utils from "./utils"
 
 export default async function runExport(runtime: types.Runtime<types.ExportCommand>): Promise<void> {
-	console.log(runtime.router)
-
+	//	console.log(runtime.router)
 	//	const appContents = await textResolvers.renderRouterToString(runtime)
 	//	const appContentsPath = p.join(runtime.directories.cacheDirectory, "app.js")
 	//	await fs.writeFile(appContentsPath, appContents)

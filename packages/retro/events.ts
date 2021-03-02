@@ -26,20 +26,20 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 	const l2 = runtime.directories.exportDirectory.length
 
 	let color = term.white
-	if (meta.route.type === "dynamic") {
+	if (meta.routeInfo.type === "dynamic") {
 		color = term.cyan
 	}
 
 	let dimColor = term.dim.white
-	if (meta.route.type === "dynamic") {
+	if (meta.routeInfo.type === "dynamic") {
 		dimColor = term.dim.cyan
 	}
 
-	const src = meta.route.src.slice(l1)
+	const src = meta.routeInfo.src.slice(l1)
 	const src_ext = p.extname(src)
 	const src_name = src.slice(1, -src_ext.length)
 
-	const dst = meta.route.dst.slice(l2)
+	const dst = meta.routeInfo.dst.slice(l2)
 	const dst_ext = p.extname(dst)
 	const dst_name = dst.slice(1, -dst_ext.length)
 

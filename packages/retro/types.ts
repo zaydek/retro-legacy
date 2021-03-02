@@ -82,7 +82,15 @@ export interface DynamicPageModule {
 
 export type PageModule = StaticPageModule | DynamicPageModule
 
+// export interface RouteMeta {
+// 	routeInfo: RouteInfo
+// 	descriptProps: DescriptProps
+// }
+//
+// export type LoadedRouteMeta = RouteMeta & { module: PageModule }
+
 export interface RouteMeta {
+	module: PageModule
 	routeInfo: RouteInfo
 	descriptProps: DescriptProps
 }
