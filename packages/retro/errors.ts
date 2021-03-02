@@ -22,7 +22,7 @@ ${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`
 ////////////////////////////////////////////////////////////////////////////////
 
 export function missingDocumentHeadTag(path: string): string {
-	return `${path}: Add ${term.magenta("'%head%'")} somewhere to ${term.magenta("'<head>'")}.
+	return `${path}: Add ${term.magenta("'%head%'")} to ${term.magenta("'<head>'")}.
 
 For example:
 
@@ -41,7 +41,7 @@ ${term.dim(`// ${path}`)}
 }
 
 export function missingDocumentPageTag(path: string): string {
-	return `${path}: Add ${term.magenta("'%page%'")} somewhere to ${term.magenta("'<body>'")}.
+	return `${path}: Add ${term.magenta("'%page%'")} to ${term.magenta("'<body>'")}.
 
 For example:
 
@@ -61,10 +61,10 @@ ${term.dim(`// ${path}`)}
 // Pages
 ////////////////////////////////////////////////////////////////////////////////
 
-export function pagesUseNonURICharacters(badSrcs: string[]): string {
+export function pagesUseNonURICharacters(pages: string[]): string {
 	return `These pages use non-URI characters:
 
-${badSrcs.map(page => "- " + page).join("\n")}
+${pages.map(page => "- " + page).join("\n")}
 
 URI characters are described by RFC 3986:
 
@@ -195,7 +195,7 @@ export function duplicatePathFound(r1: types.Route, r2: types.Route): string {
 // Serve command
 ////////////////////////////////////////////////////////////////////////////////
 
-export function serveWithoutExport(): string {
+export function serveWithMissingExportDirectory(): string {
 	return `It looks like you’re trying to run ${term.magenta("'retro serve'")} before ${term.magenta(
 		"'retro export'",
 	)}. Try ${term.magenta("'retro export && retro serve'")}.`

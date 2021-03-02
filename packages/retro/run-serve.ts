@@ -12,39 +12,40 @@ import * as utils from "./utils"
 // - https://esbuild.github.io/api/#customizing-server-behavior
 // - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 //
-export default async function cmd_serve(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
+export default async function runServe(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
 	try {
-		await fs.stat("__export__")
+		await fs.stat(runtime.directories.exportDirectory)
 	} catch {
-		log.error(errors.serveWithoutExport)
+		log.error(errors.serveWithMissingExportDirectory)
 	}
 
 	// prettier-ignore
 	const result = await esbuild.serve({
-		servedir: runtime.directories.exportDir,
+		servedir: runtime.directories.exportDirectory,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
 	}, {})
 
-	const srvProxy = http.createServer((req: http.IncomingMessage, res: http.ServerResponse): void => {
-		const options = {
+	const serverProxy = http.createServer((req: http.IncomingMessage, res: http.ServerResponse): void => {
+		const opts = {
 			hostname: result.host,
 			port: result.port,
 			path: utils.ssgify(req.url!),
 			method: req.method,
 			headers: req.headers,
 		}
-		const reqProxy = http.request(options, (resProxy: http.IncomingMessage): void => {
+		const requestProxy = http.request(opts, (responseProxy: http.IncomingMessage): void => {
 			// Handle 404:
-			if (resProxy.statusCode === 404) {
+			if (responseProxy.statusCode === 404) {
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				return
 			}
 			// Handle 200:
-			res.writeHead(resProxy.statusCode!, resProxy.headers)
-			resProxy.pipe(res, { end: true })
+			res.writeHead(responseProxy.statusCode!, responseProxy.headers)
+			responseProxy.pipe(res, { end: true })
 		})
-		req.pipe(reqProxy, { end: true })
+		req.pipe(requestProxy, { end: true })
 	})
-	srvProxy.listen(runtime.command.port)
+
+	serverProxy.listen(runtime.command.port)
 }

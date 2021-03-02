@@ -20,8 +20,8 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 		pages: [],
 		router: {},
 
-		// runServerGuards runs server guards that ensure safe development.
-		async runServerGuards(): Promise<void> {
+		// guards runs server guards.
+		async guards(): Promise<void> {
 			const dirs = [
 				runtime.directories.publicDirectory,
 				runtime.directories.srcPagesDirectory,
@@ -63,9 +63,9 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			const buf = await fs.promises.readFile(src)
 			const str = buf.toString()
 
-			if (str.includes("%head")) {
+			if (!str.includes("%head")) {
 				log.error(errors.missingDocumentHeadTag(src))
-			} else if (str.includes("%page")) {
+			} else if (!str.includes("%page")) {
 				log.error(errors.missingDocumentPageTag(src))
 			}
 		},
@@ -95,23 +95,28 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 
 		// purgeExportDirectory purges __export__.
 		async purgeExportDirectory(): Promise<void> {
-			const excludes = [path.join(runtime.directories.srcPagesDirectory, "index.html")]
-			await fs.promises.rmdir(runtime.directories.exportDirectory, { recursive: true })
+			const dirs = runtime.directories
+
+			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
 			await utils.copyAll(
-				runtime.directories.publicDirectory,
-				path.join(runtime.directories.exportDirectory, runtime.directories.publicDirectory),
-				excludes,
+				dirs.publicDirectory,
+				path.join(dirs.exportDirectory, dirs.publicDirectory),
+				path.join(dirs.srcPagesDirectory, "index.html"),
 			)
 		},
 	}
 
-	const once = async (): Promise<void> => {
-		await runtime.runServerGuards()
+	async function start(): Promise<void> {
+		if (runtime.command.type === "export") {
+			// No-op
+			return
+		}
+		await runtime.guards()
 		await runtime.resolveDocument()
 		await runtime.resolvePages()
 		await runtime.resolveRouter()
 	}
 
-	await once()
+	await start()
 	return runtime
 }

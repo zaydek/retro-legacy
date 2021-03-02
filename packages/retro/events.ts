@@ -2,35 +2,28 @@ import * as esbuild from "esbuild"
 import * as p from "path"
 import * as term from "../lib/term"
 import * as types from "./types"
+import * as utils from "./utils"
 
 const TERM_WIDTH = 40
 
-// let once = false
+const formatter = utils.newFormatter()
 
-function timestamp(): string {
-	const date = new Date()
-	const hh = String(date.getHours() % 12 || 12).padStart(2, "0")
-	const mm = String(date.getMinutes()).padStart(2, "0")
-	const ss = String(date.getSeconds()).padStart(2, "0")
-	const am = date.getHours() < 12 ? "AM" : "PM"
-	const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0")
-	return `${hh}:${mm}:${ss}.${ms} ${am}`
-}
-
-function formatMs(ms: number): string {
+function formatMS(ms: number): string {
 	switch (true) {
 		case ms < 250:
+			// 250ms
 			return `${ms}ms`
 		default:
+			// 0.25ms
 			return `${(ms / 1e3).toFixed(2)}s`
 	}
 }
 
 export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
-	const dur = formatMs(Date.now() - start)
+	const dur = formatMS(Date.now() - start)
 
-	const l1 = runtime.directories.srcPagesDir.length
-	const l2 = runtime.directories.exportDir.length
+	const l1 = runtime.directories.srcPagesDirectory.length
+	const l2 = runtime.directories.exportDirectory.length
 
 	let color = term.white
 	if (meta.route.type === "dynamic") {
@@ -52,12 +45,9 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
-	// if (!once) {
-	// 	console.log()
-	// 	once = true
-	// }
+	formatter.format()
 	console.log(
-		`\x20${term.dim(timestamp())}\x20\x20` +
+		`\x20${term.dim(utils.timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
 				start === 0 ? "" : ` ${dimColor(`(${dur})`)}`
 			}`,
@@ -65,9 +55,7 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 }
 
 export function serve(args: esbuild.ServeOnRequestArgs): void {
-	type Logger = (...args: unknown[]) => void
-
-	const dur = formatMs(args.timeInMS)
+	const dur = formatMS(args.timeInMS)
 
 	let color = term.normal
 	if (args.status < 200 || args.status >= 300) {
@@ -79,7 +67,7 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 		dimColor = term.dim.red
 	}
 
-	let logger: Logger = (...args) => console.log(...args)
+	let logger = (...args: unknown[]): void => console.log(...args)
 	if (args.status < 200 || args.status >= 300) {
 		logger = (...args) => console.error(...args) // eslint-disable-line
 	}
@@ -90,12 +78,9 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
 
-	// if (!once) {
-	// 	console.log()
-	// 	once = true
-	// }
+	formatter.format()
 	logger(
-		`\x20${term.dim(timestamp())}\x20\x20` +
+		`\x20${term.dim(utils.timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
 				`(${dur})`,
 			)}`,

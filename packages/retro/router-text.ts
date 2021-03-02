@@ -2,7 +2,6 @@ import * as log from "../lib/log"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as types from "./types"
-import * as utils from "./utils"
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
@@ -58,7 +57,7 @@ ${
 		.map(
 			([path, meta]) => `
 			<Route path="${path}">
-				<${meta.route.component} {...${utils.prettyJSON(meta.props)}} />
+				<${meta.route.component} {...${JSON.stringify(meta.props)}} />
 			</Route>`,
 		)
 		.join("\n") + "\n"
@@ -68,14 +67,14 @@ ${
 }
 
 ${
-	JSON.parse(process.env.STRICT_MODE || "true")
-		? `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+	JSON.parse(process.env.STRICT_MODE ?? "true") === "true"
+		? `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
 	<React.StrictMode>
 		<App />
 	</React.StrictMode>,
 	document.getElementById("root"),
 )`
-		: `ReactDOM.${JSON.parse(process.env.RENDER || "false") ? "render" : "hydrate"}(
+		: `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
 	<App />,
 	document.getElementById("root"),
 )`

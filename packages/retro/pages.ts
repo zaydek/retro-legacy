@@ -44,9 +44,7 @@ function component(dirs: types.Directories, pathInfo: utils.PathInfo, { dynamic 
 		if (part.length === 0) continue
 		out += part[0]!.toUpperCase() + part.slice(1)
 	}
-	out =
-		(!dynamic ? "Static" : "Dynamic") + // Prefix
-		(out ?? "Index") // Suffix
+	out = (!dynamic ? "Static" : "Dynamic") + (out ?? "Index")
 	return out
 }
 

@@ -83,7 +83,7 @@ export interface Runtime<Cmd = Command> {
 	document: string
 	pages: PageInfo[] // The filesystem-based pages
 	router: Router // The server-resolved router
-	runServerGuards(): Promise<void>
+	guards(): Promise<void>
 	resolveDocument(): Promise<void>
 	resolvePages(): Promise<void>
 	resolveRouter(): Promise<void>

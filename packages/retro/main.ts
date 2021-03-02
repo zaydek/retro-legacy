@@ -4,10 +4,11 @@ import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import cmd_dev from "./cmd_dev"
-import cmd_export from "./cmd_export"
-import cmd_serve from "./cmd_serve"
 import newCLI from "./cli"
+import newRuntimeFromCommand from "./runtime"
+import runDev from "./run-dev"
+import runExport from "./run-export"
+import runServe from "./run-serve"
 
 // space converts tabs to one space; "\x20".
 function space(str: string): string {
@@ -66,9 +67,9 @@ async function main(): Promise<void> {
 		runCommand = argv[1]!
 	}
 
-	const cli = newCLI(...argv.slice(2))
-
 	let command: types.Command
+
+	const cli = newCLI(...argv.slice(2))
 	switch (runCommand) {
 		// Version:
 		case "version":
@@ -101,30 +102,20 @@ async function main(): Promise<void> {
 			break
 	}
 
-	//	// prettier-ignore
-	//	const runtime: types.Runtime = {
-	//		command: command!,
-	//
-	//		// NOTE: Directories can be overridden as environmental variables. Retro
-	//		// does not (yet?) support configuration files.
-	//		directories: {
-	//			publicDir:   process.env.PUBLIC_DIR ?? "public",
-	//			srcPagesDir: process.env.PAGES_DIR  ?? "src/pages",
-	//			cacheDir:    process.env.CACHE_DIR  ?? "__cache__",
-	//			exportDir:   process.env.EXPORT_DIR ?? "__export__",
-	//		},
-	//		document: "", // Defer to dev and export (preflight)
-	//		pages:    [], // Defer to dev and export (preflight)
-	//		router:   {}, // Defer to dev and export (preflight)
-	//	}
+	const runtime = await newRuntimeFromCommand(command!)
 
-	// if (runtime.command.type === "dev") {
-	// 	await cmd_dev(runtime as types.Runtime<types.DevCommand>)
-	// } else if (runtime.command.type === "export") {
-	// 	await cmd_export(runtime as types.Runtime<types.ExportCommand>)
-	// } else if (runtime.command.type === "serve") {
-	// 	await cmd_serve(runtime as types.Runtime<types.ServeCommand>)
-	// }
+	const run = runtime.command.type
+	switch (run) {
+		case "dev":
+			await runDev(runtime as types.Runtime<types.DevCommand>)
+			break
+		case "export":
+			await runExport(runtime as types.Runtime<types.ExportCommand>)
+			break
+		case "serve":
+			await runServe(runtime as types.Runtime<types.ServeCommand>)
+			break
+	}
 }
 
 process.on("uncaughtException", (err: Error): void => {

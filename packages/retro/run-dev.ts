@@ -10,8 +10,6 @@ import * as resolversText from "./resolvers-text"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import preflight from "./preflight"
-
 // interface ExportCache {
 // 	[key: string]: {
 // 		mtimeMs: number
@@ -39,7 +37,7 @@ import preflight from "./preflight"
 // 			loader: { ".js": "jsx" },
 // 			logLevel: "silent", // TODO
 // 			minify: false,
-// 			outfile: p.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length)),
+// 			outfile: p.join(runtime.directories.exportDirectory, appContentsPath.slice(runtime.directories.srcPagesDir.length)),
 // 			// plugins: [...configs.retro.plugins], // TODO
 // 		})
 // 		// TODO: Add support for hints.
@@ -60,8 +58,6 @@ import preflight from "./preflight"
 // const cache: ExportCache = {}
 
 export default async function retro_dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
-	await preflight(runtime)
-
 	// let emit: () => void | undefined
 	//	const result = await build(runtime)
 	//	// TODO: Add esbuild error-handling here.
@@ -85,7 +81,7 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 
 	// prettier-ignore
 	const result = await esbuild.serve({
-		servedir: runtime.directories.exportDir,
+		servedir: runtime.directories.exportDirectory,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args)
 	}, {})
 

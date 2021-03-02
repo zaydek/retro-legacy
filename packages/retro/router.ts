@@ -4,31 +4,12 @@ import * as events from "./events"
 import * as fs from "fs/promises"
 import * as log from "../lib/log"
 import * as p from "path"
-import * as resolversText from "./resolvers-text"
+import * as resolversText from "./router-text"
 import * as term from "../lib/term"
 import * as types from "./types"
 import * as utils from "./utils"
 
-interface Formatter {
-	start(): void
-	done(): void
-}
-
-function formatter(): Formatter {
-	let once = false
-	return {
-		start(): void {
-			if (once) return
-			console.log()
-			once = true
-		},
-		done(): void {
-			console.log()
-		},
-	}
-}
-
-const format = formatter()
+const format = utils.newFormatter()
 
 let service: esbuild.Service
 
@@ -36,7 +17,7 @@ export async function resolveModule(
 	runtime: types.Runtime<types.DevCommand | types.ExportCommand>,
 	page: types.PageInfo,
 ): Promise<types.PageModule> {
-	const target = p.join(runtime.directories.cacheDir, page.src.replace(/\.*$/, ".esbuild.js"))
+	const target = p.join(runtime.directories.cacheDirectory, page.src.replace(/\.*$/, ".esbuild.js"))
 
 	// Cache components to an intermediary build artifact; component.esbuild.js.
 	// These artifacts enable interop with Node.js because require doesn’t
@@ -144,8 +125,8 @@ export async function resolveDynamicRoutes(
 		}
 
 		for (const path of paths) {
-			const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDir.length), path.path)
-			const dst = p.join(runtime.directories.exportDir, path_ + ".html")
+			const path_ = p.join(p.dirname(page.src).slice(runtime.directories.srcPagesDirectory.length), path.path)
+			const dst = p.join(runtime.directories.exportDirectory, path_ + ".html")
 			loaded.push({
 				mod,
 				meta: {
@@ -194,7 +175,7 @@ export async function resolveRouter(
 			if (router[each.meta.route.path] !== undefined) {
 				log.error(errors.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
 			}
-			format.start()
+			format.format()
 			router[each.meta.route.path] = each.meta
 
 			// Write to disk:

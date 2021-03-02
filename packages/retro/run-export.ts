@@ -2,18 +2,14 @@ import * as esbuild from "esbuild"
 import * as fs from "fs/promises"
 import * as log from "../lib/log"
 import * as p from "path"
-import * as resolversText from "./resolvers-text"
 import * as term from "../lib/term"
+import * as textResolvers from "./resolvers-text"
 import * as types from "./types"
 import * as utils from "./utils"
 
-import preflight from "./preflight"
-
 export default async function cmd_export(runtime: types.Runtime<types.ExportCommand>): Promise<void> {
-	await preflight(runtime)
-
-	const appContents = await resolversText.renderRouterToString(runtime)
-	const appContentsPath = p.join(runtime.directories.cacheDir, "app.js")
+	const appContents = await textResolvers.renderRouterToString(runtime)
+	const appContentsPath = p.join(runtime.directories.cacheDirectory, "app.js")
 	await fs.writeFile(appContentsPath, appContents)
 
 	try {
@@ -28,7 +24,10 @@ export default async function cmd_export(runtime: types.Runtime<types.ExportComm
 			loader: { ".js": "jsx" },
 			logLevel: "silent", // TODO
 			minify: true,
-			outfile: p.join(runtime.directories.exportDir, appContentsPath.slice(runtime.directories.srcPagesDir.length)),
+			outfile: p.join(
+				runtime.directories.exportDirectory,
+				appContentsPath.slice(runtime.directories.srcPagesDirectory.length),
+			),
 			// plugins: [...configs.retro.plugins], // TODO
 		})
 		// TODO: Add support for hints.
