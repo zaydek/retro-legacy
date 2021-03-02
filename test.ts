@@ -1,21 +1,48 @@
-function detab(str: string): string {
-	let offsets: number[] = []
+import * as fs from "fs"
+import * as path from "path"
 
-	const arr = str.trimEnd().split("\n")
-	for (const each of arr) {
-		if (each.length === 0) continue
-		let offset = 0
-		while (offset < each.length) {
-			if (each[offset] !== "\t") {
-				// No-op
-				break
+export async function readdirAll(entry: string, excludes: string[] = []): Promise<string[]> {
+	const ctx: string[] = []
+
+	async function recurse(entry: string): Promise<void> {
+		const ls = await fs.promises.readdir(entry)
+		const items = ls.map(item => path.join(entry, item)) // Add entry
+		for (const item of items) {
+			if (excludes.includes(item)) continue
+			const stats = await fs.promises.stat(item)
+			if (stats.isDirectory()) {
+				ctx.push(item)
+				await recurse(item)
+				continue
 			}
-			offset++
+			ctx.push(item)
 		}
-		offsets.push(offset)
 	}
 
-	offsets = offsets.filter(each => each !== 0)
-	const offset = Math.min(...offsets)
-	return arr.map(each => each.slice(offset)).join("\n")
+	await recurse(entry)
+	return ctx
 }
+
+export async function copyAll(src_dir: string, dst_dir: string, excludes: string[] = []): Promise<void> {
+	const dirs: string[] = []
+	const srcs: string[] = []
+
+	const ctx = await readdirAll(src_dir, excludes)
+	for (const item of ctx) {
+		const stats = await fs.promises.stat(item)
+		if (!stats.isDirectory()) {
+			srcs.push(item)
+		} else {
+			dirs.push(item)
+		}
+	}
+
+	for (const dir of dirs) await fs.promises.mkdir(path.join(dst_dir, dir.slice(src_dir.length)), { recursive: true })
+	for (const src of srcs) await fs.promises.copyFile(src, path.join(dst_dir, src.slice(src_dir.length)))
+}
+
+async function run(): Promise<void> {
+	await copyAll("src", "haha", ["src/pages/haha.js"])
+}
+
+run()

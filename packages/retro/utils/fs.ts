@@ -1,14 +1,14 @@
 import * as fs from "fs"
 import * as path from "path"
 
-export async function readdirAll(entry: string, exclude: string[] = []): Promise<string[]> {
+export async function readdirAll(entry: string, excludes: string[] = []): Promise<string[]> {
 	const ctx: string[] = []
 
 	async function recurse(entry: string): Promise<void> {
 		const ls = await fs.promises.readdir(entry)
 		const items = ls.map(item => path.join(entry, item)) // Add entry
 		for (const item of items) {
-			if (exclude.includes(item)) continue
+			if (excludes.includes(item)) continue
 			const stats = await fs.promises.stat(item)
 			if (stats.isDirectory()) {
 				ctx.push(item)
@@ -23,17 +23,17 @@ export async function readdirAll(entry: string, exclude: string[] = []): Promise
 	return ctx
 }
 
-export async function copyAll(src_dir: string, dst_dir: string, exclude: string[] = []): Promise<void> {
+export async function copyAll(src_dir: string, dst_dir: string, excludes: string[] = []): Promise<void> {
 	const dirs: string[] = []
 	const srcs: string[] = []
 
-	const ctx = await readdirAll(src_dir, exclude)
+	const ctx = await readdirAll(src_dir, excludes)
 	for (const item of ctx) {
 		const stats = await fs.promises.stat(item)
 		if (!stats.isDirectory()) {
-			dirs.push(item)
-		} else {
 			srcs.push(item)
+		} else {
+			dirs.push(item)
 		}
 	}
 

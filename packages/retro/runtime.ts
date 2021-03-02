@@ -7,18 +7,14 @@ import * as utils from "./utils"
 
 import parsePageInfosFromDirectories from "./pages"
 
-export default function newRuntimeFromCommand(command: types.Command): types.Runtime<typeof command> {
+export default async function newRuntimeFromCommand(command: types.Command): Promise<types.Runtime<typeof command>> {
 	const runtime: types.Runtime = {
 		command,
-
-		// NOTE: Directories can be overridden as environmental variables. Retro
-		// does not (yet?) support a configuration file.
-		// prettier-ignore
 		directories: {
-			publicDirectory:   process.env.PUBLIC_DIR ?? "public",
-			srcPagesDirectory: process.env.PAGES_DIR  ?? "src/pages",
-			cacheDirectory:    process.env.CACHE_DIR  ?? "__cache__",
-			exportDirectory:   process.env.EXPORT_DIR ?? "__export__",
+			publicDirectory: "public",
+			srcPagesDirectory: "src/pages",
+			cacheDirectory: "__cache__",
+			exportDirectory: "__export__",
 		},
 		document: "",
 		pages: [],
@@ -73,6 +69,7 @@ export default function newRuntimeFromCommand(command: types.Command): types.Run
 				log.error(errors.missingDocumentPageTag(src))
 			}
 		},
+
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
 			const src = path.join(this.directories.publicDirectory, "index.html")
@@ -80,27 +77,41 @@ export default function newRuntimeFromCommand(command: types.Command): types.Run
 			const str = buf.toString()
 			this.document = str
 		},
+
 		// resolvePages resolves and or refreshes this.pages.
 		async resolvePages(): Promise<void> {
 			this.pages = await parsePageInfosFromDirectories(this.directories)
 		},
+
 		// resolveRouter resolves and or refreshes this.router.
 		async resolveRouter(): Promise<void> {
 			// ...
 		},
+
 		// purgeCacheDirectory purges __cache__.
 		async purgeCacheDirectory(): Promise<void> {
-			// ...
+			await fs.promises.rmdir(runtime.directories.cacheDirectory, { recursive: true })
 		},
+
 		// purgeExportDirectory purges __export__.
 		async purgeExportDirectory(): Promise<void> {
-			// ...
+			const excludes = [path.join(runtime.directories.srcPagesDirectory, "index.html")]
+			await fs.promises.rmdir(runtime.directories.exportDirectory, { recursive: true })
+			await utils.copyAll(
+				runtime.directories.publicDirectory,
+				path.join(runtime.directories.exportDirectory, runtime.directories.publicDirectory),
+				excludes,
+			)
 		},
 	}
 
-	runtime.runServerGuards()
-	runtime.resolveDocument()
-	runtime.resolvePages()
-	runtime.resolveRouter()
+	const once = async (): Promise<void> => {
+		await runtime.runServerGuards()
+		await runtime.resolveDocument()
+		await runtime.resolvePages()
+		await runtime.resolveRouter()
+	}
+
+	await once()
 	return runtime
 }
