@@ -1,9 +1,36 @@
 import * as term from "../lib/term"
 import * as types from "./types"
 
-// badRunCommand describes a bad CLI run command.
-export function badRunCommand(run: string): string {
-	return `Bad command ${term.magenta(`'${run}'`)}.
+// // detab removes leading tabs.
+// function detab(str: string): string {
+// 	const arr = str.trim().split("\n")
+//
+// 	let min = 0
+// 	for (const each of arr) {
+// 		if (each.length === 0) continue
+// 		let x = 0
+// 		while (x < each.length) {
+// 			if (each[x] !== "\t") {
+// 				// No-op
+// 				break
+// 			}
+// 			x++
+// 		}
+// 		if (x < min) {
+// 			min = x
+// 		}
+// 	}
+//
+// 	const out = arr.map(each => each.slice(min)).join("\n")
+// 	return out
+// }
+
+////////////////////////////////////////////////////////////////////////////////
+// CLI
+////////////////////////////////////////////////////////////////////////////////
+
+export function badCLIRunCommand(run: string): string {
+	return `Bad run command ${term.magenta(`'${run}'`)}.
 
 Supported commands:
 
@@ -14,8 +41,11 @@ retro serve   Serve the production-ready build
 ${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`
 }
 
-// missingHeadTemplateTag describes public/index.html without %head%.
-export function missingHeadTemplateTag(path: string): string {
+////////////////////////////////////////////////////////////////////////////////
+// Document (index.html)
+////////////////////////////////////////////////////////////////////////////////
+
+export function missingDocumentHeadTag(path: string): string {
 	return `${path}: Add ${term.magenta("'%head%'")} somewhere to ${term.magenta("'<head>'")}.
 
 For example:
@@ -34,8 +64,7 @@ ${term.dim(`// ${path}`)}
 </html>`
 }
 
-// missingPageTemplateTag describes public/index.html without %page%.
-export function missingPageTemplateTag(path: string): string {
+export function missingDocumentPageTag(path: string): string {
 	return `${path}: Add ${term.magenta("'%page%'")} somewhere to ${term.magenta("'<body>'")}.
 
 For example:
@@ -52,67 +81,29 @@ ${term.dim(`// ${path}`)}
 </html>`
 }
 
-// serverPropsFunction describes an exported, non-function serverProps.
+////////////////////////////////////////////////////////////////////////////////
+// Server API (static pages)
+////////////////////////////////////////////////////////////////////////////////
+
 export function serverPropsFunction(src: string): string {
-	return `${src}.serverProps: ${term.magenta("'typeof serverProps !== \"function\"'")}; ${term.magenta(
-		"'serverProps'",
-	)} must be a function.
+	return `${src}.serverProps: ${term.magenta("'serverProps'")} must be a function.
 
 For example:
 
 ${term.dim(`// ${src}`)}
 export function serverProps() {
-	return { ... }
+	return { ${term.dim("...")} }
 }
 
 Or:
 
 ${term.dim(`// ${src}`)}
 export async function serverProps() {
-	await ...
-	return { ... }
+	await ${term.dim("...")}
+	return { ${term.dim("...")} }
 }`
 }
 
-// serverPathsFunction describes an exported, non-function serverPaths.
-export function serverPathsFunction(src: string): string {
-	return `${src}.serverPaths: ${term.magenta("'typeof serverPaths !== \"function\"'")}; ${term.magenta(
-		"'serverPaths'",
-	)} must be a function.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverPaths() {
-	return { ... }
-}
-
-Or:
-
-${term.dim(`// ${src}`)}
-export async function serverPaths() {
-	await ...
-	return { ... }
-}`
-}
-
-// TODO: Add a descriptive comment.
-export function serverPropsMismatch(src: string): string {
-	return `${src}: Dynamic pages must use ${term.magenta("'serverPaths'")} not ${term.magenta("'serverProps'")}.
-
-For example:
-
-${term.dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
-}`
-}
-
-// TODO: Add a descriptive comment.
 export function serverPropsReturn(src: string): string {
 	return `${src}.serverProps: Bad ${term.magenta("'serverProps'")} resolver.
 
@@ -120,39 +111,79 @@ For example:
 
 ${term.dim(`// ${src}`)}
 export function serverProps() {
-	return { ... }
+	return { ${term.dim("...")} }
 }`
 }
 
-// TODO: Add a descriptive comment.
+export function serverPathsMismatch(src: string): string {
+	return `${src}: Use ${term.magenta("'serverProps'")} for non-dynamic pages, not ${term.magenta("'serverPaths'")}.
+
+For example:
+
+${term.dim(`// ${src}`)}
+export function serverProps() {
+	return { ${term.dim("...")} }
+}`
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Server API (dynamic pages)
+////////////////////////////////////////////////////////////////////////////////
+
+export function serverPathsFunction(src: string): string {
+	return `${src}.serverPaths: ${term.magenta("'serverPaths'")} must be a function.
+
+For example:
+
+${term.dim(`// ${src}`)}
+export function serverPaths() {
+	return { ${term.dim("...")} }
+}
+
+Or:
+
+${term.dim(`// ${src}`)}
+export async function serverPaths() {
+	await ${term.dim("...")}
+	return { ${term.dim("...")} }
+}`
+}
+
 export function serverPathsReturn(src: string): string {
-	return `${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
+	return `
+${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
 
 For example:
 
 ${term.dim(`// ${src}`)}
 export function serverPaths() {
 	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
+		{ path: "/foo", props: ${term.dim("...")} },
+		{ path: "/foo/bar", props: ${term.dim("...")} },
+		{ path: "/foo/bar/baz", props: ${term.dim("...")} },
 	]
 }`
 }
 
-// TODO: Add a descriptive comment.
-export function serverPathsMismatch(src: string): string {
-	return `${src}: Non-dynamic pages must use ${term.magenta("'serverProps'")} not ${term.magenta("'serverPaths'")}.
+export function serverPropsMismatch(src: string): string {
+	return `${src}: Use ${term.magenta("'serverPaths'")} for dynamic pages, not ${term.magenta("'serverProps'")}.
 
 For example:
 
 ${term.dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ${term.dim("...")} },
+		{ path: "/foo/bar", props: ${term.dim("...")} },
+		{ path: "/foo/bar/baz", props: ${term.dim("...")} },
+	]
 }`
 }
 
-// TODO: Add a descriptive comment.
+////////////////////////////////////////////////////////////////////////////////
+// Server API (miscellaneous)
+////////////////////////////////////////////////////////////////////////////////
+
 export function duplicatePathFound(r1: types.Route, r2: types.Route): string {
 	function caller(r: types.Route): string {
 		return r.type === "static" ? "serverProps" : "serverPaths"
@@ -160,8 +191,12 @@ export function duplicatePathFound(r1: types.Route, r2: types.Route): string {
 	return `${r1.src}.${caller(r1)}: Path ${term.magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`
 }
 
-// TODO: Add a descriptive comment.
-// prettier-ignore
+////////////////////////////////////////////////////////////////////////////////
+// Serve command
+////////////////////////////////////////////////////////////////////////////////
+
 export function serveWithoutExport(): string {
-	return `It looks like you’re trying to run ${term.magenta("'retro serve'")} before ${term.magenta("'retro export'")}. Try ${term.magenta("'retro export && retro serve'")}.`
+	return `It looks like you’re trying to run ${term.magenta("'retro serve'")} before ${term.magenta(
+		"'retro export'",
+	)}. Try ${term.magenta("'retro export && retro serve'")}.`
 }

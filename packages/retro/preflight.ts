@@ -33,9 +33,9 @@ async function runServerGuards(directories: types.DirConfiguration): Promise<voi
 		const data = await fs.readFile(path)
 		const text = data.toString()
 		if (!text.includes("%head")) {
-			log.error(errors.missingHeadTemplateTag(path))
+			log.error(errors.missingDocumentHeadTag(path))
 		} else if (!text.includes("%page")) {
-			log.error(errors.missingPageTemplateTag(path))
+			log.error(errors.missingDocumentPageTag(path))
 		}
 	} catch (_) {
 		await fs.writeFile(

@@ -97,7 +97,7 @@ async function main(): Promise<void> {
 			command = cli.parseServeCommand()
 			break
 		default:
-			log.error(errors.badRunCommand(runCommand))
+			log.error(errors.badCLIRunCommand(runCommand))
 			break
 	}
 

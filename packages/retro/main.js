@@ -80,8 +80,8 @@ var bgCyan = build("[46m");
 var bgWhite = build("[47m");
 
 // packages/retro/errors.ts
-function badRunCommand(run) {
-  return `Bad command ${magenta(`'${run}'`)}.
+function badCLIRunCommand(run) {
+  return `Bad run command ${magenta(`'${run}'`)}.
 
 Supported commands:
 
@@ -91,7 +91,7 @@ retro serve   Serve the production-ready build
 
 ${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`;
 }
-function missingHeadTemplateTag(path) {
+function missingDocumentHeadTag(path) {
   return `${path}: Add ${magenta("'%head%'")} somewhere to ${magenta("'<head>'")}.
 
 For example:
@@ -109,7 +109,7 @@ ${dim(`// ${path}`)}
 	</body>
 </html>`;
 }
-function missingPageTemplateTag(path) {
+function missingDocumentPageTag(path) {
   return `${path}: Add ${magenta("'%page%'")} somewhere to ${magenta("'<body>'")}.
 
 For example:
@@ -126,53 +126,21 @@ ${dim(`// ${path}`)}
 </html>`;
 }
 function serverPropsFunction(src) {
-  return `${src}.serverProps: ${magenta(`'typeof serverProps !== "function"'`)}; ${magenta("'serverProps'")} must be a function.
+  return `${src}.serverProps: ${magenta("'serverProps'")} must be a function.
 
 For example:
 
 ${dim(`// ${src}`)}
 export function serverProps() {
-	return { ... }
+	return { ${dim("...")} }
 }
 
 Or:
 
 ${dim(`// ${src}`)}
 export async function serverProps() {
-	await ...
-	return { ... }
-}`;
-}
-function serverPathsFunction(src) {
-  return `${src}.serverPaths: ${magenta(`'typeof serverPaths !== "function"'`)}; ${magenta("'serverPaths'")} must be a function.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return { ... }
-}
-
-Or:
-
-${dim(`// ${src}`)}
-export async function serverPaths() {
-	await ...
-	return { ... }
-}`;
-}
-function serverPropsMismatch(src) {
-  return `${src}: Dynamic pages must use ${magenta("'serverPaths'")} not ${magenta("'serverProps'")}.
-
-For example:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
-	]
+	await ${dim("...")}
+	return { ${dim("...")} }
 }`;
 }
 function serverPropsReturn(src) {
@@ -182,31 +150,64 @@ For example:
 
 ${dim(`// ${src}`)}
 export function serverProps() {
-	return { ... }
+	return { ${dim("...")} }
+}`;
+}
+function serverPathsMismatch(src) {
+  return `${src}: Use ${magenta("'serverProps'")} for non-dynamic pages, not ${magenta("'serverPaths'")}.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+	return { ${dim("...")} }
+}`;
+}
+function serverPathsFunction(src) {
+  return `${src}.serverPaths: ${magenta("'serverPaths'")} must be a function.
+
+For example:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+	return { ${dim("...")} }
+}
+
+Or:
+
+${dim(`// ${src}`)}
+export async function serverPaths() {
+	await ${dim("...")}
+	return { ${dim("...")} }
 }`;
 }
 function serverPathsReturn(src) {
-  return `${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
+  return `
+${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
 
 For example:
 
 ${dim(`// ${src}`)}
 export function serverPaths() {
 	return [
-		{ path: "/foo", props: ... },
-		{ path: "/foo/bar", props: ... },
-		{ path: "/foo/bar/baz", props: ... },
+		{ path: "/foo", props: ${dim("...")} },
+		{ path: "/foo/bar", props: ${dim("...")} },
+		{ path: "/foo/bar/baz", props: ${dim("...")} },
 	]
 }`;
 }
-function serverPathsMismatch(src) {
-  return `${src}: Non-dynamic pages must use ${magenta("'serverProps'")} not ${magenta("'serverPaths'")}.
+function serverPropsMismatch(src) {
+  return `${src}: Use ${magenta("'serverPaths'")} for dynamic pages, not ${magenta("'serverProps'")}.
 
 For example:
 
 ${dim(`// ${src}`)}
-export function serverProps() {
-	return { ... }
+export function serverPaths() {
+	return [
+		{ path: "/foo", props: ${dim("...")} },
+		{ path: "/foo/bar", props: ${dim("...")} },
+		{ path: "/foo/bar/baz", props: ${dim("...")} },
+	]
 }`;
 }
 function duplicatePathFound(r1, r2) {
@@ -774,9 +775,9 @@ async function runServerGuards(directories) {
     const data = await fs4.readFile(path);
     const text = data.toString();
     if (!text.includes("%head")) {
-      error(missingHeadTemplateTag(path));
+      error(missingDocumentHeadTag(path));
     } else if (!text.includes("%page")) {
-      error(missingPageTemplateTag(path));
+      error(missingDocumentPageTag(path));
     }
   } catch (_) {
     await fs4.writeFile(path, `<!DOCTYPE html>
@@ -1150,7 +1151,7 @@ async function main() {
       command = cli.parseServeCommand();
       break;
     default:
-      error(badRunCommand(runCommand));
+      error(badCLIRunCommand(runCommand));
       break;
   }
   const runtime = {
