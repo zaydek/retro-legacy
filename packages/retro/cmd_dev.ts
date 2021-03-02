@@ -102,7 +102,7 @@ export default async function retro_dev(runtime: types.Runtime<types.DevCommand>
 			}
 
 			// Compute the path from the URL:
-			let path = req.url!
+			let path = req.url
 			if (p.extname(req.url!) === ".html") {
 				path = path.slice(0, -5)
 			}
