@@ -79,121 +79,35 @@ var bgMagenta = build("[45m");
 var bgCyan = build("[46m");
 var bgWhite = build("[47m");
 
-// packages/lib/log.ts
-function format(...args) {
-  if (args.length === 1 && args[0] instanceof Error) {
-    return format(args[0].message);
-  }
-  return args.join(" ").split("\n").map((each, x) => {
-    if (x === 0)
-      return each;
-    if (each === "")
-      return each;
-    return " " + each.replace("	", "  ");
-  }).join("\n");
-}
-function warning(...args) {
-  const message = format(...args);
-  console.warn(` ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}`);
-  console.warn();
-}
-function error(...args) {
-  const message = format(...args);
-  const traceEnabled = process.env["STACK_TRACE"] === "true";
-  if (!traceEnabled) {
-    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
-    console.error();
-  } else {
-    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
-    console.error();
-  }
-  process.exit(0);
-}
+// packages/retro/errors.ts
+function badRunCommand(run) {
+  return `Bad command ${magenta(`'${run}'`)}.
 
-// packages/retro/cmd_dev.ts
-var esbuild2 = __toModule(require("esbuild"));
+Supported commands:
 
-// packages/retro/events.ts
-var p = __toModule(require("path"));
-var TERM_WIDTH = 40;
-function timestamp() {
-  const date = new Date();
-  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
-  const am = date.getHours() < 12 ? "AM" : "PM";
-  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
-  return `${hh}:${mm}:${ss}.${ms} ${am}`;
-}
-function formatMs(ms) {
-  switch (true) {
-    case ms < 250:
-      return `${ms}ms`;
-    default:
-      return `${(ms / 1e3).toFixed(2)}s`;
-  }
-}
-function export_(runtime, meta, start) {
-  const dur = formatMs(Date.now() - start);
-  const l1 = runtime.directories.srcPagesDir.length;
-  const l2 = runtime.directories.exportDir.length;
-  let color = white;
-  if (meta.route.type === "dynamic") {
-    color = cyan;
-  }
-  let dimColor = dim.white;
-  if (meta.route.type === "dynamic") {
-    dimColor = dim.cyan;
-  }
-  const src = meta.route.src.slice(l1);
-  const src_ext = p.extname(src);
-  const src_name = src.slice(1, -src_ext.length);
-  const dst2 = meta.route.dst.slice(l2);
-  const dst_ext = p.extname(dst2);
-  const dst_name = dst2.slice(1, -dst_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
-}
-function serve(args) {
-  const dur = formatMs(args.timeInMS);
-  let color = normal;
-  if (args.status < 200 || args.status >= 300) {
-    color = red;
-  }
-  let dimColor = dim;
-  if (args.status < 200 || args.status >= 300) {
-    dimColor = dim.red;
-  }
-  let logger = (...args2) => console.log(...args2);
-  if (args.status < 200 || args.status >= 300) {
-    logger = (...args2) => console.error(...args2);
-  }
-  const path = args.path;
-  const path_ext = p.extname(path);
-  const path_name = path.slice(1, -path_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
-  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
-}
+retro dev     Start the dev server
+retro export  Export the production-ready build (SSG)
+retro serve   Serve the production-ready build
 
-// packages/retro/cmd_dev.ts
-var fs5 = __toModule(require("fs/promises"));
-var http = __toModule(require("http"));
-var p7 = __toModule(require("path"));
-
-// packages/retro/errs.ts
+${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`;
+}
 function missingHeadTemplateTag(path) {
   return `${path}: Add ${magenta("'%head%'")} somewhere to ${magenta("'<head>'")}.
 
 For example:
 
 ${dim(`// ${path}`)}
-...
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1" />
-	${magenta("%head%")}
-</head>
-...`;
+<!DOCTYPE html>
+	<head lang="en">
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		${magenta("%head%")}
+		${dim("...")}
+	</head>
+	<body>
+		${dim("...")}
+	</body>
+</html>`;
 }
 function missingPageTemplateTag(path) {
   return `${path}: Add ${magenta("'%page%'")} somewhere to ${magenta("'<body>'")}.
@@ -201,14 +115,18 @@ function missingPageTemplateTag(path) {
 For example:
 
 ${dim(`// ${path}`)}
-...
-<body>
-	${magenta("%page%")}
-</body>
-...`;
+<!DOCTYPE html>
+	<head lang="en">
+		${dim("...")}
+	</head>
+	<body>
+		${magenta("%page%")}
+		${dim("...")}
+	</body>
+</html>`;
 }
 function serverPropsFunction(src) {
-  return `${src}: ${magenta(`'typeof serverProps !== "function"'`)}; ${magenta("'serverProps'")} must be a synchronous or an asynchronous function.
+  return `${src}.serverProps: ${magenta(`'typeof serverProps !== "function"'`)}; ${magenta("'serverProps'")} must be a function.
 
 For example:
 
@@ -226,7 +144,7 @@ export async function serverProps() {
 }`;
 }
 function serverPathsFunction(src) {
-  return `${src}: ${magenta(`'typeof serverPaths !== "function"'`)}; ${magenta("'serverPaths'")} must be a synchronous or an asynchronous function.
+  return `${src}.serverPaths: ${magenta(`'typeof serverPaths !== "function"'`)}; ${magenta("'serverPaths'")} must be a function.
 
 For example:
 
@@ -301,14 +219,46 @@ function serveWithoutExport() {
   return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
 }
 
-// packages/retro/resolvers.ts
-var esbuild = __toModule(require("esbuild"));
-var fs2 = __toModule(require("fs/promises"));
-var p4 = __toModule(require("path"));
+// packages/lib/log.ts
+function format(...args) {
+  if (args.length === 1 && args[0] instanceof Error) {
+    return format(args[0].message);
+  }
+  return args.join(" ").split("\n").map((each, x) => {
+    if (x === 0)
+      return each;
+    if (each === "")
+      return each;
+    return " " + each.replace("	", "  ");
+  }).join("\n");
+}
+function warning(...args) {
+  const message = format(...args);
+  console.warn(` ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}`);
+  console.warn();
+}
+function error(...args) {
+  const message = format(...args);
+  const traceEnabled = process.env["STACK_TRACE"] === "true";
+  if (!traceEnabled) {
+    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
+    console.error();
+  } else {
+    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
+    console.error();
+  }
+  process.exit(0);
+}
 
-// packages/retro/resolvers-text.ts
-var React = __toModule(require("react"));
-var ReactDOMServer = __toModule(require("react-dom/server"));
+// packages/retro/utils/env.ts
+function setEnvDevelopment() {
+  process.env["__DEV__"] = "true";
+  process.env["NODE_ENV"] = "development";
+}
+function setEnvProduction() {
+  process.env["__DEV__"] = "false";
+  process.env["NODE_ENV"] = "production";
+}
 
 // packages/retro/utils/formatEsbuild.ts
 function formatEsbuildMessage(msg, color) {
@@ -320,11 +270,11 @@ function formatEsbuildMessage(msg, color) {
 }
 
 // packages/retro/utils/modes.ts
-var p2 = __toModule(require("path"));
+var p = __toModule(require("path"));
 function ssgify(url) {
   if (url.endsWith("/"))
     return url + "index.html";
-  if (p2.extname(url) === "")
+  if (p.extname(url) === "")
     return url + ".html";
   return url;
 }
@@ -354,9 +304,86 @@ function validateServerPathsReturn(value) {
 
 // packages/retro/utils/watcher.ts
 var fs = __toModule(require("fs/promises"));
+var p2 = __toModule(require("path"));
+
+// packages/retro/cmd_dev.ts
+var esbuild2 = __toModule(require("esbuild"));
+
+// packages/retro/events.ts
 var p3 = __toModule(require("path"));
+var TERM_WIDTH = 40;
+function timestamp() {
+  const date = new Date();
+  const hh = String(date.getHours() % 12 || 12).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  const am = date.getHours() < 12 ? "AM" : "PM";
+  const ms = String(date.getMilliseconds()).slice(0, 3).padStart(3, "0");
+  return `${hh}:${mm}:${ss}.${ms} ${am}`;
+}
+function formatMs(ms) {
+  switch (true) {
+    case ms < 250:
+      return `${ms}ms`;
+    default:
+      return `${(ms / 1e3).toFixed(2)}s`;
+  }
+}
+function export_(runtime, meta, start) {
+  const dur = formatMs(Date.now() - start);
+  const l1 = runtime.directories.srcPagesDir.length;
+  const l2 = runtime.directories.exportDir.length;
+  let color = white;
+  if (meta.route.type === "dynamic") {
+    color = cyan;
+  }
+  let dimColor = dim.white;
+  if (meta.route.type === "dynamic") {
+    dimColor = dim.cyan;
+  }
+  const src = meta.route.src.slice(l1);
+  const src_ext = p3.extname(src);
+  const src_name = src.slice(1, -src_ext.length);
+  const dst2 = meta.route.dst.slice(l2);
+  const dst_ext = p3.extname(dst2);
+  const dst_name = dst2.slice(1, -dst_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
+  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+}
+function serve(args) {
+  const dur = formatMs(args.timeInMS);
+  let color = normal;
+  if (args.status < 200 || args.status >= 300) {
+    color = red;
+  }
+  let dimColor = dim;
+  if (args.status < 200 || args.status >= 300) {
+    dimColor = dim.red;
+  }
+  let logger = (...args2) => console.log(...args2);
+  if (args.status < 200 || args.status >= 300) {
+    logger = (...args2) => console.error(...args2);
+  }
+  const path = args.path;
+  const path_ext = p3.extname(path);
+  const path_name = path.slice(1, -path_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
+  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+}
+
+// packages/retro/cmd_dev.ts
+var fs5 = __toModule(require("fs/promises"));
+var http = __toModule(require("http"));
+var p7 = __toModule(require("path"));
+
+// packages/retro/resolvers.ts
+var esbuild = __toModule(require("esbuild"));
+var fs2 = __toModule(require("fs/promises"));
+var p4 = __toModule(require("path"));
 
 // packages/retro/resolvers-text.ts
+var React = __toModule(require("react"));
+var ReactDOMServer = __toModule(require("react-dom/server"));
 async function renderRouteMetaToString(runtime, loaded) {
   let head = "<!-- <Head> -->";
   try {
@@ -718,7 +745,7 @@ URI characters are described by RFC 3986:
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
 	           / "*" / "+" / "," / ";" / "="
 
-${underline("https://tools.ietf.org/html/rfc3986")}`);
+${underline.cyan("https://tools.ietf.org/html/rfc3986")}`);
   }
   const pages = [];
   for (const parsed of arr2) {
@@ -921,7 +948,137 @@ async function cmd_serve(runtime) {
 }
 
 // packages/retro/cli.ts
-var usage = `
+function newCLI(...args) {
+  return {
+    parseDevCommand() {
+      const command = {
+        type: "dev",
+        cached: false,
+        sourcemap: true,
+        port: 8e3
+      };
+      let badCommand = "";
+      for (const arg of args) {
+        if (arg.startsWith("--cached")) {
+          if (arg === "--cached") {
+            command.cached = true;
+          } else if (arg === "--cached=true" || arg === "--cached=false") {
+            command.cached = JSON.parse(arg.slice("--cached=".length));
+          } else {
+            badCommand = "--cached";
+            break;
+          }
+        } else if (arg.startsWith("--sourcemap")) {
+          if (arg === "--sourcemap") {
+            command.sourcemap = true;
+          } else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
+            command.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
+          } else {
+            badCommand = "--sourcemap";
+            break;
+          }
+        } else if (arg.startsWith("--port")) {
+          if (/^--port=\d+$/.test(arg)) {
+            command.port = JSON.parse(arg.slice("--port=".length));
+          } else {
+            badCommand = "--port";
+            break;
+          }
+        } else {
+          badCommand = arg;
+        }
+      }
+      if (badCommand !== "") {
+        error(`Bad command ${magenta(`'${badCommand}'`)}. Use ${magenta("'retro help'")} for help.`);
+      }
+      if (command.port < 1e3 || command.port >= 1e4) {
+        error(`${magenta("'--port'")} must be between 1000-9999.`);
+      }
+      return command;
+    },
+    parseExportCommand() {
+      const command = {
+        type: "export",
+        cached: false,
+        sourcemap: true
+      };
+      let badCommand = "";
+      for (const arg of args) {
+        if (arg.startsWith("--cached")) {
+          if (arg === "--cached") {
+            command.cached = true;
+          } else if (arg === "--cached=true" || arg === "--cached=false") {
+            command.cached = JSON.parse(arg.slice("--cached=".length));
+          } else {
+            badCommand = "--cached";
+            break;
+          }
+        } else if (arg.startsWith("--sourcemap")) {
+          if (arg === "--sourcemap") {
+            command.sourcemap = true;
+          } else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
+            command.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
+          } else {
+            badCommand = "--sourcemap";
+            break;
+          }
+        } else {
+          badCommand = arg;
+        }
+      }
+      if (badCommand !== "") {
+        error(`Bad command ${magenta(`'${badCommand}'`)}. Use ${magenta("'retro help'")} for help.`);
+      }
+      return command;
+    },
+    parseServeCommand() {
+      const command = {
+        type: "serve",
+        mode: "ssg",
+        port: 8e3
+      };
+      let badCommand = "";
+      for (const arg of args) {
+        if (arg.startsWith("--mode")) {
+          if (arg === "--mode=spa") {
+            command.mode = "spa";
+          } else if (arg === "--mode=ssg") {
+            command.mode = "ssg";
+          } else {
+            badCommand = "--mode";
+            break;
+          }
+        } else if (arg.startsWith("--port")) {
+          if (/^--port=\d+$/.test(arg)) {
+            command.port = JSON.parse(arg.slice("--port=".length));
+          } else {
+            badCommand = "--port";
+            break;
+          }
+        } else {
+          badCommand = arg;
+        }
+      }
+      if (badCommand !== "") {
+        error(`Bad command ${magenta(`'${badCommand}'`)}. Use ${magenta("'retro help'")} for help.`);
+      }
+      if (command.port < 1e3 || command.port >= 1e4) {
+        error(`${magenta("'--port'")} must be between 1000-9999.`);
+      }
+      return command;
+    }
+  };
+}
+
+// packages/retro/main.ts
+function space(str) {
+  return str.split("\n").map((each) => {
+    if (each.length === 0)
+      return;
+    return each.replace("	", " ");
+  }).join("\n");
+}
+var usage = space(`
 	${bold("Usage:")}
 
 		retro dev          Start the dev server
@@ -934,6 +1091,7 @@ var usage = `
 
 			--cached=...     Use cached resources (default false)
 			--sourcemap=...  Add source maps (default true)
+			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
 			--port=...       Port number (default 8000)
 
 	${bold("retro export")}
@@ -947,170 +1105,61 @@ var usage = `
 
 		Serve the production-ready build
 
+			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
 			--port=...       Port number (default 8000)
 
 	${bold("Repository")}
 
-		${underline("https://github.com/zaydek/retro")}
-`.split("\n").map((each) => {
-  if (each.length === 0)
-    return;
-  return " " + each.replace("	", " ");
-}).join("\n");
-var cmds = `
-retro dev     Start the dev server
-retro export  Export the production-ready build (SSG)
-retro serve   Serve the production-ready build
-`.trim();
-function parseDevCommandFlags(...args) {
-  const cmd = {
-    type: "dev",
-    cached: false,
-    sourcemap: true,
-    port: 8e3
-  };
-  let badCmd = "";
-  for (const arg of args) {
-    if (arg.startsWith("--cached")) {
-      if (arg === "--cached") {
-        cmd.cached = true;
-      } else if (arg === "--cached=true" || arg === "--cached=false") {
-        cmd.cached = JSON.parse(arg.slice("--cached=".length));
-      } else {
-        badCmd = "--cached";
-        break;
-      }
-    } else if (arg.startsWith("--sourcemap")) {
-      if (arg === "--sourcemap") {
-        cmd.sourcemap = true;
-      } else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
-        cmd.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
-      } else {
-        badCmd = "--sourcemap";
-        break;
-      }
-    } else if (arg.startsWith("--port")) {
-      if (/^--port=\d+$/.test(arg)) {
-        cmd.port = JSON.parse(arg.slice("--port=".length));
-      } else {
-        badCmd = "--port";
-        break;
-      }
-    } else {
-      badCmd = arg;
-    }
+		${bold.underline.cyan("https://github.com/zaydek/retro")}
+`);
+async function main() {
+  const argv = process.argv;
+  if (process.argv0 === "node") {
+    argv.shift();
   }
-  if (badCmd !== "") {
-    error(`Bad command ${magenta(`'${badCmd}'`)}. You can use ${magenta("'retro help'")} for help.`);
+  let runCommand = "usage";
+  if (argv.length >= 2) {
+    runCommand = argv[1];
   }
-  if (cmd.port < 1e3 || cmd.port >= 1e4) {
-    error(`${magenta("'--port'")} must be between 1000-9999.`);
-  }
-  return cmd;
-}
-function parseExportCommandFlags(...args) {
-  const cmd = {
-    type: "export",
-    cached: false,
-    sourcemap: true
-  };
-  let badCmd = "";
-  for (const arg of args) {
-    if (arg.startsWith("--cached")) {
-      if (arg === "--cached") {
-        cmd.cached = true;
-      } else if (arg === "--cached=true" || arg === "--cached=false") {
-        cmd.cached = JSON.parse(arg.slice("--cached=".length));
-      } else {
-        badCmd = "--cached";
-        break;
-      }
-    } else if (arg.startsWith("--sourcemap")) {
-      if (arg === "--sourcemap") {
-        cmd.sourcemap = true;
-      } else if (arg === "--sourcemap=true" || arg === "--sourcemap=false") {
-        cmd.sourcemap = JSON.parse(arg.slice("--sourcemap=".length));
-      } else {
-        badCmd = "--sourcemap";
-        break;
-      }
-    } else {
-      badCmd = arg;
-    }
-  }
-  if (badCmd !== "") {
-    error(`Bad command ${magenta(`'${badCmd}'`)}. You can use ${magenta("'retro help'")} for help.`);
-  }
-  return cmd;
-}
-function parseServeCommandFlags(...args) {
-  const cmd = {
-    type: "serve",
-    port: 8e3
-  };
-  let badCmd = "";
-  for (const arg of args) {
-    if (arg.startsWith("--port")) {
-      if (/^--port=\d+$/.test(arg)) {
-        cmd.port = JSON.parse(arg.slice("--port=".length));
-      } else {
-        badCmd = "--port";
-        break;
-      }
-    } else {
-      badCmd = arg;
-    }
-  }
-  if (badCmd !== "") {
-    error(`Bad command ${magenta(`'${badCmd}'`)}. You can use ${magenta("'retro help'")} for help.`);
-  }
-  if (cmd.port < 1e3 || cmd.port >= 1e4) {
-    error(`${magenta("'--port'")} must be between 1000-9999.`);
-  }
-  return cmd;
-}
-async function run() {
-  const args = process.argv0 === "node" ? process.argv.slice(1) : process.argv;
-  if (args.length === 1) {
-    console.log(usage.replace("	", " ".repeat(2)));
-    process.exit(0);
-  }
+  const cli = newCLI(...argv.slice(2));
   let command;
-  const arg = args[1];
-  if (arg === "version" || arg === "--version" || arg === "--v") {
-    console.log(process.env["RETRO_VERSION"] || "TODO");
-    process.exit(0);
-  } else if (arg === "usage" || arg === "--usage" || arg === "help" || arg === "--help") {
-    console.log(usage.replace("	", " ".repeat(2)));
-    process.exit(0);
-  } else if (arg === "dev") {
-    process.env["__DEV__"] = "true";
-    process.env["NODE_ENV"] = "development";
-    command = parseDevCommandFlags(...args.slice(2));
-  } else if (arg === "export") {
-    process.env["__DEV__"] = "false";
-    process.env["NODE_ENV"] = "production";
-    command = parseExportCommandFlags(...args.slice(2));
-  } else if (arg === "serve") {
-    process.env["__DEV__"] = "false";
-    process.env["NODE_ENV"] = "production";
-    command = parseServeCommandFlags(...args.slice(2));
-  } else {
-    error(`No such command ${magenta(`'${arg}'`)}.
-
-Supported commands:
-
-${cmds}
-
-${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`);
+  switch (runCommand) {
+    case "version":
+    case "--version":
+    case "--v":
+      console.log(process.env["RETRO_VERSION"] ?? "TODO");
+      process.exit(0);
+    case "usage":
+    case "--usage":
+      console.log(usage);
+      process.exit(0);
+    case "help":
+    case "--help":
+      console.log(usage);
+      process.exit(0);
+    case "dev":
+      setEnvDevelopment();
+      command = cli.parseDevCommand();
+      break;
+    case "export":
+      setEnvProduction();
+      command = cli.parseExportCommand();
+      break;
+    case "serve":
+      setEnvProduction();
+      command = cli.parseServeCommand();
+      break;
+    default:
+      error(badRunCommand(runCommand));
+      break;
   }
   const runtime = {
     command,
     directories: {
-      publicDir: process.env.PUBLIC_DIR || "public",
-      srcPagesDir: process.env.PAGES_DIR || "src/pages",
-      cacheDir: process.env.CACHE_DIR || "__cache__",
-      exportDir: process.env.EXPORT_DIR || "__export__"
+      publicDir: process.env.PUBLIC_DIR ?? "public",
+      srcPagesDir: process.env.PAGES_DIR ?? "src/pages",
+      cacheDir: process.env.CACHE_DIR ?? "__cache__",
+      exportDir: process.env.EXPORT_DIR ?? "__export__"
     },
     document: "",
     pages: [],
@@ -1129,5 +1178,5 @@ process.on("uncaughtException", (err) => {
   err.message = `UncaughtException: ${err.message}`;
   error(err);
 });
-run();
-//# sourceMappingURL=cli.js.map
+main();
+//# sourceMappingURL=main.js.map

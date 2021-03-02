@@ -206,7 +206,7 @@ export default async function parsePages(directories: types.DirConfiguration): P
 	}
 
 	if (badSrcs.length > 0) {
-		// TODO: Extract to errs?
+		// TODO: Extract to errors?
 		log.error(`These pages use non-URI characters:
 
 ${badSrcs.map(each => "- " + each).join("\n")}
@@ -223,7 +223,7 @@ URI characters are described by RFC 3986:
 	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
 	           / "*" / "+" / "," / ";" / "="
 
-${term.underline("https://tools.ietf.org/html/rfc3986")}`)
+${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`)
 	}
 
 	const pages: types.PageInfo[] = []

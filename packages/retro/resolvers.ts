@@ -1,4 +1,4 @@
-import * as errs from "./errs"
+import * as errors from "./errors"
 import * as esbuild from "esbuild"
 import * as events from "./events"
 import * as fs from "fs/promises"
@@ -91,9 +91,9 @@ export async function resolveStaticRoute(
 	// Guard serverProps and serverPaths:
 	const mod = (await resolveModule(runtime, page)) as types.StaticPageModule
 	if ("serverProps" in mod && typeof mod.serverProps !== "function") {
-		log.error(errs.serverPropsFunction(page.src))
+		log.error(errors.serverPropsFunction(page.src))
 	} else if ("serverPaths" in mod && typeof (mod as { [key: string]: unknown }).serverPaths === "function") {
-		log.error(errs.serverPathsMismatch(page.src))
+		log.error(errors.serverPathsMismatch(page.src))
 	}
 
 	// Resolve serverProps:
@@ -101,7 +101,7 @@ export async function resolveStaticRoute(
 		try {
 			const serverProps = await mod.serverProps!()
 			if (!utils.validateServerPropsReturn(serverProps)) {
-				log.error(errs.serverPropsReturn(page.src))
+				log.error(errors.serverPropsReturn(page.src))
 			}
 			props = {
 				// @ts-ignore
@@ -126,9 +126,9 @@ export async function resolveDynamicRoutes(
 	// Guard serverProps and serverPaths:
 	const mod = (await resolveModule(runtime, page)) as types.DynamicPageModule
 	if ("serverPaths" in mod && typeof mod.serverPaths !== "function") {
-		log.error(errs.serverPathsFunction(page.src))
+		log.error(errors.serverPathsFunction(page.src))
 	} else if ("serverProps" in mod && typeof (mod as { [key: string]: unknown }).serverProps === "function") {
-		log.error(errs.serverPropsMismatch(page.src))
+		log.error(errors.serverPropsMismatch(page.src))
 	}
 
 	// Resolve serverPaths:
@@ -137,7 +137,7 @@ export async function resolveDynamicRoutes(
 		try {
 			paths = await mod.serverPaths!()
 			if (!utils.validateServerPathsReturn(paths)) {
-				log.error(errs.serverPathsReturn(page.src))
+				log.error(errors.serverPathsReturn(page.src))
 			}
 		} catch (err) {
 			log.error(`${page.src}.serverPaths: ${err.message}`)
@@ -192,7 +192,7 @@ export async function resolveRouter(
 
 		for (const each of loaded) {
 			if (router[each.meta.route.path] !== undefined) {
-				log.error(errs.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
+				log.error(errors.duplicatePathFound(each.meta.route, router[each.meta.route.path]!.route))
 			}
 			format.start()
 			router[each.meta.route.path] = each.meta

@@ -1,4 +1,4 @@
-import * as errs from "./errs"
+import * as errors from "./errors"
 import * as esbuild from "esbuild"
 import * as events from "./events"
 import * as fs from "fs/promises"
@@ -16,7 +16,7 @@ export default async function cmd_serve(runtime: types.Runtime<types.ServeComman
 	try {
 		await fs.stat("__export__")
 	} catch {
-		log.error(errs.serveWithoutExport)
+		log.error(errors.serveWithoutExport)
 	}
 
 	// prettier-ignore

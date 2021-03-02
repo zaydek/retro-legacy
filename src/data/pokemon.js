@@ -2,15 +2,15 @@
 export default [
 	{
 		name: "Bulbasaur",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Ivysaur",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Venusaur",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Charmander",
@@ -22,7 +22,7 @@ export default [
 	},
 	{
 		name: "Charizard",
-		type: "Fire · Flying",
+		type: "Fire & Flying",
 	},
 	{
 		name: "Squirtle",
@@ -46,31 +46,31 @@ export default [
 	},
 	{
 		name: "Butterfree",
-		type: "Bug · Flying",
+		type: "Bug & Flying",
 	},
 	{
 		name: "Weedle",
-		type: "Bug · Poison",
+		type: "Bug & Poison",
 	},
 	{
 		name: "Kakuna",
-		type: "Bug · Poison",
+		type: "Bug & Poison",
 	},
 	{
 		name: "Beedrill",
-		type: "Bug · Poison",
+		type: "Bug & Poison",
 	},
 	{
 		name: "Pidgey",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Pidgeotto",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Pidgeot",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Rattata",
@@ -82,11 +82,11 @@ export default [
 	},
 	{
 		name: "Spearow",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Fearow",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Ekans",
@@ -122,7 +122,7 @@ export default [
 	},
 	{
 		name: "Nidoqueen",
-		type: "Poison · Ground",
+		type: "Poison & Ground",
 	},
 	{
 		name: "Nidoran♂",
@@ -134,7 +134,7 @@ export default [
 	},
 	{
 		name: "Nidoking",
-		type: "Poison · Ground",
+		type: "Poison & Ground",
 	},
 	{
 		name: "Clefairy",
@@ -154,47 +154,47 @@ export default [
 	},
 	{
 		name: "Jigglypuff",
-		type: "Normal · Fairy",
+		type: "Normal & Fairy",
 	},
 	{
 		name: "Wigglytuff",
-		type: "Normal · Fairy",
+		type: "Normal & Fairy",
 	},
 	{
 		name: "Zubat",
-		type: "Poison · Flying",
+		type: "Poison & Flying",
 	},
 	{
 		name: "Golbat",
-		type: "Poison · Flying",
+		type: "Poison & Flying",
 	},
 	{
 		name: "Oddish",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Gloom",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Vileplume",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Paras",
-		type: "Bug · Grass",
+		type: "Bug & Grass",
 	},
 	{
 		name: "Parasect",
-		type: "Bug · Grass",
+		type: "Bug & Grass",
 	},
 	{
 		name: "Venonat",
-		type: "Bug · Poison",
+		type: "Bug & Poison",
 	},
 	{
 		name: "Venomoth",
-		type: "Bug · Poison",
+		type: "Bug & Poison",
 	},
 	{
 		name: "Diglett",
@@ -246,7 +246,7 @@ export default [
 	},
 	{
 		name: "Poliwrath",
-		type: "Water · Fighting",
+		type: "Water & Fighting",
 	},
 	{
 		name: "Abra",
@@ -274,35 +274,35 @@ export default [
 	},
 	{
 		name: "Bellsprout",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Weepinbell",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Victreebel",
-		type: "Grass · Poison",
+		type: "Grass & Poison",
 	},
 	{
 		name: "Tentacool",
-		type: "Water · Poison",
+		type: "Water & Poison",
 	},
 	{
 		name: "Tentacruel",
-		type: "Water · Poison",
+		type: "Water & Poison",
 	},
 	{
 		name: "Geodude",
-		type: "Rock · Ground",
+		type: "Rock & Ground",
 	},
 	{
 		name: "Graveler",
-		type: "Rock · Ground",
+		type: "Rock & Ground",
 	},
 	{
 		name: "Golem",
-		type: "Rock · Ground",
+		type: "Rock & Ground",
 	},
 	{
 		name: "Ponyta",
@@ -314,31 +314,31 @@ export default [
 	},
 	{
 		name: "Slowpoke",
-		type: "Water · Psychic",
+		type: "Water & Psychic",
 	},
 	{
 		name: "Slowbro",
-		type: "Water · Psychic",
+		type: "Water & Psychic",
 	},
 	{
 		name: "Magnemite",
-		type: "Electric · Steel",
+		type: "Electric & Steel",
 	},
 	{
 		name: "Magneton",
-		type: "Electric · Steel",
+		type: "Electric & Steel",
 	},
 	{
 		name: "Farfetch'd",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Doduo",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Dodrio",
-		type: "Normal · Flying",
+		type: "Normal & Flying",
 	},
 	{
 		name: "Seel",
@@ -346,7 +346,7 @@ export default [
 	},
 	{
 		name: "Dewgong",
-		type: "Water · Ice",
+		type: "Water & Ice",
 	},
 	{
 		name: "Grimer",
@@ -362,23 +362,23 @@ export default [
 	},
 	{
 		name: "Cloyster",
-		type: "Water · Ice",
+		type: "Water & Ice",
 	},
 	{
 		name: "Gastly",
-		type: "Ghost · Poison",
+		type: "Ghost & Poison",
 	},
 	{
 		name: "Haunter",
-		type: "Ghost · Poison",
+		type: "Ghost & Poison",
 	},
 	{
 		name: "Gengar",
-		type: "Ghost · Poison",
+		type: "Ghost & Poison",
 	},
 	{
 		name: "Onix",
-		type: "Rock · Ground",
+		type: "Rock & Ground",
 	},
 	{
 		name: "Drowzee",
@@ -406,11 +406,11 @@ export default [
 	},
 	{
 		name: "Exeggcute",
-		type: "Grass · Psychic",
+		type: "Grass & Psychic",
 	},
 	{
 		name: "Exeggutor",
-		type: "Grass · Psychic",
+		type: "Grass & Psychic",
 	},
 	{
 		name: "Cubone",
@@ -442,11 +442,11 @@ export default [
 	},
 	{
 		name: "Rhyhorn",
-		type: "Ground · Rock",
+		type: "Ground & Rock",
 	},
 	{
 		name: "Rhydon",
-		type: "Ground · Rock",
+		type: "Ground & Rock",
 	},
 	{
 		name: "Chansey",
@@ -482,19 +482,19 @@ export default [
 	},
 	{
 		name: "Starmie",
-		type: "Water · Psychic",
+		type: "Water & Psychic",
 	},
 	{
 		name: "Mr. Mime",
-		type: "Psychic · Fairy",
+		type: "Psychic & Fairy",
 	},
 	{
 		name: "Scyther",
-		type: "Bug · Flying",
+		type: "Bug & Flying",
 	},
 	{
 		name: "Jynx",
-		type: "Ice · Psychic",
+		type: "Ice & Psychic",
 	},
 	{
 		name: "Electabuzz",
@@ -518,11 +518,11 @@ export default [
 	},
 	{
 		name: "Gyarados",
-		type: "Water · Flying",
+		type: "Water & Flying",
 	},
 	{
 		name: "Lapras",
-		type: "Water · Ice",
+		type: "Water & Ice",
 	},
 	{
 		name: "Ditto",
@@ -550,23 +550,23 @@ export default [
 	},
 	{
 		name: "Omanyte",
-		type: "Rock · Water",
+		type: "Rock & Water",
 	},
 	{
 		name: "Omastar",
-		type: "Rock · Water",
+		type: "Rock & Water",
 	},
 	{
 		name: "Kabuto",
-		type: "Rock · Water",
+		type: "Rock & Water",
 	},
 	{
 		name: "Kabutops",
-		type: "Rock · Water",
+		type: "Rock & Water",
 	},
 	{
 		name: "Aerodactyl",
-		type: "Rock · Flying",
+		type: "Rock & Flying",
 	},
 	{
 		name: "Snorlax",
@@ -574,15 +574,15 @@ export default [
 	},
 	{
 		name: "Articuno",
-		type: "Ice · Flying",
+		type: "Ice & Flying",
 	},
 	{
 		name: "Zapdos",
-		type: "Electric · Flying",
+		type: "Electric & Flying",
 	},
 	{
 		name: "Moltres",
-		type: "Fire · Flying",
+		type: "Fire & Flying",
 	},
 	{
 		name: "Dratini",
@@ -594,7 +594,7 @@ export default [
 	},
 	{
 		name: "Dragonite",
-		type: "Dragon · Flying",
+		type: "Dragon & Flying",
 	},
 	{
 		name: "Mewtwo",

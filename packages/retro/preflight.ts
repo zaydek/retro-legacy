@@ -1,4 +1,4 @@
-import * as errs from "./errs"
+import * as errors from "./errors"
 import * as fs from "fs/promises"
 import * as log from "../lib/log"
 import * as p from "path"
@@ -33,9 +33,9 @@ async function runServerGuards(directories: types.DirConfiguration): Promise<voi
 		const data = await fs.readFile(path)
 		const text = data.toString()
 		if (!text.includes("%head")) {
-			log.error(errs.missingHeadTemplateTag(path))
+			log.error(errors.missingHeadTemplateTag(path))
 		} else if (!text.includes("%page")) {
-			log.error(errs.missingPageTemplateTag(path))
+			log.error(errors.missingPageTemplateTag(path))
 		}
 	} catch (_) {
 		await fs.writeFile(

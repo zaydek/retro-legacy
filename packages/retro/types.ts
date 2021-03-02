@@ -1,4 +1,7 @@
-// DevCommand describes the 'retro dev' command.
+////////////////////////////////////////////////////////////////////////////////
+// Command-line interface
+////////////////////////////////////////////////////////////////////////////////
+
 export interface DevCommand {
 	type: "dev"
 	cached: boolean
@@ -6,17 +9,15 @@ export interface DevCommand {
 	port: number
 }
 
-// ExportCommand describes the 'retro export' command.
 export interface ExportCommand {
 	type: "export"
 	cached: boolean
 	sourcemap: boolean
 }
 
-// ServeCommand describes the 'retro serve' command.
 export interface ServeCommand {
 	type: "serve"
-	// mode: "spa" | "ssg"
+	mode: "spa" | "ssg"
 	port: number
 }
 
