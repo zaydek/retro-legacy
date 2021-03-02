@@ -3,52 +3,7 @@ import * as fs from "fs"
 import * as log from "../lib/log"
 import * as path from "path"
 import * as types from "./types"
-
-const assertDirectories = (runtime: types.Runtime) => async (): Promise<void> => {
-	const d = runtime.directories
-	const dirs = [d.publicDirectory, d.srcPagesDirectory, d.cacheDirectory, d.exportDirectory]
-
-	for (const dir of dirs) {
-		try {
-			await fs.promises.stat(dir)
-		} catch (err) {
-			fs.promises.mkdir(dir, { recursive: true })
-		}
-	}
-}
-
-const assertPublicIndexHTML = (runtime: types.Runtime) => async (): Promise<void> => {
-	const src = path.join(runtime.directories.publicDirectory, "index.html")
-
-	try {
-		fs.promises.stat(src)
-	} catch (err) {
-		await fs.promises.writeFile(
-			src,
-			`<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		%head%
-	</head>
-	<body>
-		%page%
-	</body>
-</html>
-`, // EOF
-		)
-	}
-
-	const buf = await fs.promises.readFile(src)
-	const str = buf.toString()
-
-	if (str.includes("%head")) {
-		log.error(errors.missingDocumentHeadTag(src))
-	} else if (str.includes("%page")) {
-		log.error(errors.missingDocumentPageTag(src))
-	}
-}
+import * as utils from "./utils"
 
 export default function newRuntimeFromCommand(command: types.Command): types.Runtime<typeof command> {
 	const runtime: types.Runtime = {
@@ -69,12 +24,55 @@ export default function newRuntimeFromCommand(command: types.Command): types.Run
 
 		// runServerGuards runs server guards that ensure safe development.
 		async runServerGuards(): Promise<void> {
-			await assertDirectories(this)()
-			await assertPublicIndexHTML(this)()
+			// Guard directories:
+			const d = runtime.directories
+			const dirs = [d.publicDirectory, d.srcPagesDirectory, d.cacheDirectory, d.exportDirectory]
+
+			for (const dir of dirs) {
+				try {
+					await fs.promises.stat(dir)
+				} catch (err) {
+					fs.promises.mkdir(dir, { recursive: true })
+				}
+			}
+
+			// Guard public/index.html:
+			const src = path.join(runtime.directories.publicDirectory, "index.html")
+
+			try {
+				fs.promises.stat(src)
+			} catch (err) {
+				await fs.promises.writeFile(
+					src,
+					utils.detab(`
+						<!DOCTYPE html>
+						<html lang="en">
+							<head>
+								<meta charset="utf-8" />
+								<meta name="viewport" content="width=device-width, initial-scale=1" />
+								%head%
+							</head>
+							<body>
+								%page%
+							</body>
+						</html>
+					`),
+				)
+			}
+
+			const buf = await fs.promises.readFile(src)
+			const str = buf.toString()
+
+			if (str.includes("%head")) {
+				log.error(errors.missingDocumentHeadTag(src))
+			} else if (str.includes("%page")) {
+				log.error(errors.missingDocumentPageTag(src))
+			}
 		},
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
-			const buf = await fs.promises.readFile(path.join(this.directories.publicDirectory, "index.html"))
+			const src = path.join(this.directories.publicDirectory, "index.html")
+			const buf = await fs.promises.readFile(src)
 			const str = buf.toString()
 			this.document = str
 		},

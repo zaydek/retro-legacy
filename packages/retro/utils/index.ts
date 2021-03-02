@@ -1,3 +1,4 @@
+export * from "./detab"
 export * from "./env"
 export * from "./formatEsbuild"
 export * from "./modes"
