@@ -8,50 +8,49 @@ import * as utils from "./utils"
 import newCLI from "./cli"
 import newRuntimeFromCommand from "./runtime"
 
-// space converts tabs to one space; "\x20".
-function space(str: string): string {
+function format(str: string): string {
 	return str
 		.split("\n")
-		.map(each => {
-			if (each.length === 0) return
-			return each.replace("\t", "\x20") // "\t" -> "\x20"
+		.map(substr => {
+			if (substr.length === 0) return substr
+			return "\x20" + substr.replace("\t", "\x20\x20")
 		})
 		.join("\n")
 }
 
-const usage = space(`
-	${terminal.bold("Usage:")}
+const usage = format(`
+${terminal.bold("Usage:")}
 
-		retro dev          Start the dev server
-		retro export       Export the production-ready build (SSG)
-		retro serve        Serve the production-ready build
+	retro dev          Start the dev server
+	retro export       Export the production-ready build (SSG)
+	retro serve        Serve the production-ready build
 
-	${terminal.bold("retro dev")}
+${terminal.bold("retro dev")}
 
-		Start the dev server
+	Start the dev server
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
-			--port=...       Port number (default 8000)
+		--cached=...     Use cached resources (default false)
+		--sourcemap=...  Add source maps (default true)
+		--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
+		--port=...       Port number (default 8000)
 
-	${terminal.bold("retro export")}
+${terminal.bold("retro export")}
 
-		Export the production-ready build (SSG)
+	Export the production-ready build (SSG)
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
+		--cached=...     Use cached resources (default false)
+		--sourcemap=...  Add source maps (default true)
 
-	${terminal.bold("retro serve")}
+${terminal.bold("retro serve")}
 
-		Serve the production-ready build
+	Serve the production-ready build
 
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
-			--port=...       Port number (default 8000)
+		--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
+		--port=...       Port number (default 8000)
 
-	${terminal.bold("Repository")}
+${terminal.bold("Repository")}
 
-		${terminal.bold.underline.cyan("https://github.com/zaydek/retro")}
+	${terminal.bold.underline.cyan("https://github.com/zaydek/retro")}
 `)
 
 async function main(): Promise<void> {

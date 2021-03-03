@@ -76,9 +76,7 @@ URI characters are described by RFC 3986:
 
   gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
   sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-  ${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="
-
-${terminal.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
+  ${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="`
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -48,19 +48,19 @@ var options = [
 ];
 function build(...codes) {
   const set = new Set(codes);
-  function format3(...args) {
+  function format4(...args) {
     const coded = [...set].join("");
     return coded + args.join(" ").replaceAll("[0m", "[0m" + coded) + "[0m";
   }
   for (const {name, code} of options) {
-    Object.defineProperty(format3, name, {
+    Object.defineProperty(format4, name, {
       enumerable: true,
       get() {
         return build(...[...codes, code]);
       }
     });
   }
-  return format3;
+  return format4;
 }
 var normal = build("[0m");
 var bold = build("[1m");
@@ -144,9 +144,7 @@ URI characters are described by RFC 3986:
 
   gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
   sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-  ${" ".repeat(11)}/ "*" / "+" / "," / ";" / "="
-
-${underline.cyan("https://tools.ietf.org/html/rfc3986")}`;
+  ${" ".repeat(11)}/ "*" / "+" / "," / ";" / "="`;
 }
 function badStaticPageExports(src) {
   return `${src}: Bad static page exports.
@@ -767,7 +765,7 @@ async function newFromRuntime(runtime) {
 }
 
 // packages/retro/commands/export.ts
-async function export_2(runtime) {
+async function exportHTML(runtime) {
   let once = false;
   for (const meta of Object.values(runtime.router)) {
     const start = Date.now();
@@ -781,6 +779,8 @@ async function export_2(runtime) {
     export_(runtime, meta, start);
   }
   console.log();
+}
+async function exportJS(runtime) {
   const src = path5.join(runtime.directories.cacheDirectory, "app.js");
   const dst2 = path5.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
   const contents = await renderRouterToString(runtime.router);
@@ -798,6 +798,10 @@ async function export_2(runtime) {
       throw err;
     error(format2(err.errors[0], bold.red));
   }
+}
+async function export_2(runtime) {
+  await exportHTML(runtime);
+  await exportJS(runtime);
 }
 
 // packages/retro/cli.ts
@@ -1095,46 +1099,46 @@ async function newRuntimeFromCommand(command) {
 }
 
 // packages/retro/main.ts
-function space(str) {
-  return str.split("\n").map((each) => {
-    if (each.length === 0)
-      return;
-    return each.replace("	", " ");
+function format3(str) {
+  return str.split("\n").map((substr) => {
+    if (substr.length === 0)
+      return substr;
+    return " " + substr.replace("	", "  ");
   }).join("\n");
 }
-var usage = space(`
-	${bold("Usage:")}
+var usage = format3(`
+${bold("Usage:")}
 
-		retro dev          Start the dev server
-		retro export       Export the production-ready build (SSG)
-		retro serve        Serve the production-ready build
+	retro dev          Start the dev server
+	retro export       Export the production-ready build (SSG)
+	retro serve        Serve the production-ready build
 
-	${bold("retro dev")}
+${bold("retro dev")}
 
-		Start the dev server
+	Start the dev server
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
-			--port=...       Port number (default 8000)
+		--cached=...     Use cached resources (default false)
+		--sourcemap=...  Add source maps (default true)
+		--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
+		--port=...       Port number (default 8000)
 
-	${bold("retro export")}
+${bold("retro export")}
 
-		Export the production-ready build (SSG)
+	Export the production-ready build (SSG)
 
-			--cached=...     Use cached resources (default false)
-			--sourcemap=...  Add source maps (default true)
+		--cached=...     Use cached resources (default false)
+		--sourcemap=...  Add source maps (default true)
 
-	${bold("retro serve")}
+${bold("retro serve")}
 
-		Serve the production-ready build
+	Serve the production-ready build
 
-			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
-			--port=...       Port number (default 8000)
+		--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
+		--port=...       Port number (default 8000)
 
-	${bold("Repository")}
+${bold("Repository")}
 
-		${bold.underline.cyan("https://github.com/zaydek/retro")}
+	${bold.underline.cyan("https://github.com/zaydek/retro")}
 `);
 async function main() {
   const argv = process.argv;
