@@ -105,10 +105,9 @@ export interface Runtime<CommandKind extends Command = Command> {
 	document: string
 	pageInfos: PageInfo[]
 	router: Router
-	guards(): Promise<void>
+	runServerGuards(): Promise<void>
+	purge(): Promise<void>
 	resolveDocument(): Promise<void>
 	resolvePages(): Promise<void>
 	resolveRouter(): Promise<void>
-	purgeCacheDirectory(): Promise<void>
-	purgeExportDirectory(): Promise<void>
 }

@@ -71,7 +71,6 @@ async function main(): Promise<void> {
 
 	const cli = newCLI(...argv.slice(2))
 	switch (runCommand) {
-		// Version:
 		case "version":
 		case "--version":
 		case "--v":
@@ -103,9 +102,7 @@ async function main(): Promise<void> {
 	}
 
 	const runtime = await newRuntimeFromCommand(command!)
-
-	const run = runtime.command.type
-	switch (run) {
+	switch (runtime.command.type) {
 		case "dev":
 			await runDev(runtime as types.Runtime<types.DevCommand>)
 			break

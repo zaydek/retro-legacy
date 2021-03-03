@@ -1,7 +1,7 @@
 import * as fs from "fs"
 import * as path from "path"
 
-export async function readdirAll(entry: string, ...excludes: string[]): Promise<string[]> {
+export async function readdirAll(entry: string, excludes: string[] = []): Promise<string[]> {
 	const ctx: string[] = []
 
 	async function recurse(entry: string): Promise<void> {
@@ -23,11 +23,11 @@ export async function readdirAll(entry: string, ...excludes: string[]): Promise<
 	return ctx
 }
 
-export async function copyAll(src_dir: string, dst_dir: string, ...excludes: string[]): Promise<void> {
+export async function copyAll(src_dir: string, dst_dir: string, excludes: string[] = []): Promise<void> {
 	const dirs: string[] = []
 	const srcs: string[] = []
 
-	const ctx = await readdirAll(src_dir, ...excludes)
+	const ctx = await readdirAll(src_dir, excludes)
 	for (const item of ctx) {
 		const stats = await fs.promises.stat(item)
 		if (!stats.isDirectory()) {
@@ -37,6 +37,13 @@ export async function copyAll(src_dir: string, dst_dir: string, ...excludes: str
 		}
 	}
 
-	for (const dir of dirs) await fs.promises.mkdir(path.join(dst_dir, dir.slice(src_dir.length)), { recursive: true })
-	for (const src of srcs) await fs.promises.copyFile(src, path.join(dst_dir, src.slice(src_dir.length)))
+	for (const dir of dirs) {
+		const target = path.join(dst_dir, dir.slice(src_dir.length))
+		await fs.promises.mkdir(target, { recursive: true })
+	}
+
+	for (const src of srcs) {
+		const target = path.join(dst_dir, src.slice(src_dir.length))
+		await fs.promises.copyFile(src, target)
+	}
 }

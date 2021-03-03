@@ -125,6 +125,7 @@ export default async function resolveRouter(runtime: types.Runtime): Promise<typ
 	const router: types.Router = {}
 
 	service = await esbuild.startService()
+	setTimeout(service.stop, 0)
 
 	const cache: types.RouteMeta[] = []
 	for (const pageInfo of runtime.pageInfos) {
@@ -149,9 +150,9 @@ export default async function resolveRouter(runtime: types.Runtime): Promise<typ
 	for (const meta of cache) {
 		const start = Date.now()
 		if (runtime.command.type === "export") {
-			const out = await resolversText.renderRouteMetaToString(runtime, meta)
+			const str = await resolversText.renderRouteMetaToString(runtime.document, meta)
 			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-			await fs.promises.writeFile(meta.routeInfo.dst, out)
+			await fs.promises.writeFile(meta.routeInfo.dst, str)
 		}
 		router[meta.routeInfo.path] = meta
 		events.export_(runtime, meta, start)

@@ -38,9 +38,10 @@ function component(dirs: types.Directories, pathInfo: utils.PathInfo, { dynamic 
 	let out = ""
 	const parts = path_(dirs, pathInfo).split(path.sep)
 	for (let part of parts) {
-		if (part.startsWith("[") && part.endsWith("]")) {
-			part = part.slice(1, -1) // Remove "[" and "]" syntax
-		}
+		// if (part.startsWith("[") && part.endsWith("]")) {
+		// 	part = part.slice(1, -1) // Remove "[" and "]" syntax
+		// }
+		part = part.replace(/[^a-zA-Z_0-9]+/g, "")
 		if (part.length === 0) continue
 		out += part[0]!.toUpperCase() + part.slice(1)
 	}

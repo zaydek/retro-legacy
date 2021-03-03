@@ -21,8 +21,8 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 		pageInfos: [],
 		router: {},
 
-		// guards runs server guards.
-		async guards(): Promise<void> {
+		// runServerGuards runs server guards.
+		async runServerGuards(): Promise<void> {
 			const dirs = [
 				runtime.directories.publicDirectory,
 				runtime.directories.srcPagesDirectory,
@@ -71,6 +71,20 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			}
 		},
 
+		// purge purges __cache__ and __export__.
+		async purge(): Promise<void> {
+			const dirs = runtime.directories
+
+			await fs.promises.rmdir(dirs.cacheDirectory, { recursive: true })
+			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
+
+			const excludes = [path.join(dirs.srcPagesDirectory, "index.html")]
+
+			// TODO: Do we actually need this line of code?
+			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
+			await utils.copyAll(dirs.publicDirectory, path.join(dirs.exportDirectory, dirs.publicDirectory), excludes)
+		},
+
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
 			const src = path.join(this.directories.publicDirectory, "index.html")
@@ -88,23 +102,6 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 		async resolveRouter(): Promise<void> {
 			this.router = await resolveRouter(this)
 		},
-
-		// purgeCacheDirectory purges __cache__.
-		async purgeCacheDirectory(): Promise<void> {
-			await fs.promises.rmdir(runtime.directories.cacheDirectory, { recursive: true })
-		},
-
-		// purgeExportDirectory purges __export__.
-		async purgeExportDirectory(): Promise<void> {
-			const dirs = runtime.directories
-
-			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
-			await utils.copyAll(
-				dirs.publicDirectory,
-				path.join(dirs.exportDirectory, dirs.publicDirectory),
-				path.join(dirs.srcPagesDirectory, "index.html"),
-			)
-		},
 	}
 
 	async function start(): Promise<void> {
@@ -112,7 +109,8 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			// No-op
 			return
 		}
-		await runtime.guards()
+		await runtime.runServerGuards()
+		await runtime.purge() // TODO
 		await runtime.resolveDocument()
 		await runtime.resolvePages()
 		await runtime.resolveRouter()

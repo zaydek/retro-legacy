@@ -1,4 +1,4 @@
-export function detab(str: string): string {
+export function detab(str: string, keep = 0): string {
 	let offsets: number[] = []
 
 	const arr = str.trimEnd().split("\n")
@@ -17,5 +17,5 @@ export function detab(str: string): string {
 
 	offsets = offsets.filter(each => each !== 0)
 	const offset = Math.min(...offsets)
-	return arr.map(each => each.slice(offset)).join("\n") + "\n" // EOF
+	return arr.map(each => "\t".repeat(keep) + each.slice(offset)).join("\n") + "\n" // EOF
 }

@@ -91,12 +91,12 @@ retro serve   Serve the production-ready build
 
 ${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`;
 }
-function missingDocumentHeadTag(path7) {
-  return `${path7}: Add ${magenta("'%head%'")} to ${magenta("'<head>'")}.
+function missingDocumentHeadTag(path8) {
+  return `${path8}: Add ${magenta("'%head%'")} to ${magenta("'<head>'")}.
 
 For example:
 
-${dim(`// ${path7}`)}
+${dim(`// ${path8}`)}
 <!DOCTYPE html>
   <head lang="en">
     <meta charset="utf-8" />
@@ -109,12 +109,12 @@ ${dim(`// ${path7}`)}
   </body>
 </html>`;
 }
-function missingDocumentPageTag(path7) {
-  return `${path7}: Add ${magenta("'%page%'")} to ${magenta("'<body>'")}.
+function missingDocumentPageTag(path8) {
+  return `${path8}: Add ${magenta("'%page%'")} to ${magenta("'<body>'")}.
 
 For example:
 
-${dim(`// ${path7}`)}
+${dim(`// ${path8}`)}
 <!DOCTYPE html>
   <head lang="en">
     ${dim("...")}
@@ -250,7 +250,7 @@ function error(...args) {
 }
 
 // packages/retro/utils/detab.ts
-function detab(str) {
+function detab(str, keep = 0) {
   let offsets = [];
   const arr = str.trimEnd().split("\n");
   for (const each of arr) {
@@ -267,7 +267,7 @@ function detab(str) {
   }
   offsets = offsets.filter((each) => each !== 0);
   const offset = Math.min(...offsets);
-  return arr.map((each) => each.slice(offset)).join("\n") + "\n";
+  return arr.map((each) => "	".repeat(keep) + each.slice(offset)).join("\n") + "\n";
 }
 
 // packages/retro/utils/env.ts
@@ -283,10 +283,16 @@ function setEnvProduction() {
 // packages/retro/utils/esbuild.ts
 function format_esbuild(msg, color) {
   const meta = msg.location;
-  return `${meta.file}:${meta.line}:${meta.column}: ${msg.text}
+  const namespace = `${meta.file}:${meta.line}:${meta.column}`;
+  const error2 = `esbuild: ${msg.text}`;
+  let code = "";
+  code += `${meta.lineText.slice(0, meta.column)}`;
+  code += `${color(meta.lineText.slice(meta.column, meta.column + meta.length))}`;
+  code += `${meta.lineText.slice(meta.column + meta.length)}`;
+  return `${namespace}: ${error2}
 
-	${meta.line} ${dim("\u2502")} ${meta.lineText}
-	${" ".repeat(String(meta.line).length)} ${dim("\u2502")} ${" ".repeat(meta.column)}${color("~".repeat(meta.length))}`;
+	${meta.line} ${dim("|")} ${code}
+	${" ".repeat(String(meta.line).length)}   ${" ".repeat(meta.column)}${color("~".repeat(meta.length))}`;
 }
 
 // packages/retro/utils/format.ts
@@ -308,7 +314,7 @@ function newFormatter(logger = (...args) => console.log(...args)) {
 // packages/retro/utils/fs.ts
 var fs = __toModule(require("fs"));
 var path = __toModule(require("path"));
-async function readdirAll(entry, ...excludes) {
+async function readdirAll(entry, excludes = []) {
   const ctx = [];
   async function recurse(entry2) {
     const ls = await fs.promises.readdir(entry2);
@@ -328,10 +334,10 @@ async function readdirAll(entry, ...excludes) {
   await recurse(entry);
   return ctx;
 }
-async function copyAll(src_dir, dst_dir, ...excludes) {
+async function copyAll(src_dir, dst_dir, excludes = []) {
   const dirs = [];
   const srcs = [];
-  const ctx = await readdirAll(src_dir, ...excludes);
+  const ctx = await readdirAll(src_dir, excludes);
   for (const item of ctx) {
     const stats = await fs.promises.stat(item);
     if (!stats.isDirectory()) {
@@ -340,10 +346,14 @@ async function copyAll(src_dir, dst_dir, ...excludes) {
       dirs.push(item);
     }
   }
-  for (const dir of dirs)
-    await fs.promises.mkdir(path.join(dst_dir, dir.slice(src_dir.length)), {recursive: true});
-  for (const src of srcs)
-    await fs.promises.copyFile(src, path.join(dst_dir, src.slice(src_dir.length)));
+  for (const dir of dirs) {
+    const target = path.join(dst_dir, dir.slice(src_dir.length));
+    await fs.promises.mkdir(target, {recursive: true});
+  }
+  for (const src of srcs) {
+    const target = path.join(dst_dir, src.slice(src_dir.length));
+    await fs.promises.copyFile(src, target);
+  }
 }
 
 // packages/retro/utils/modes.ts
@@ -614,9 +624,7 @@ function component(dirs, pathInfo, {dynamic}) {
   let out = "";
   const parts = path_(dirs, pathInfo).split(path4.sep);
   for (let part of parts) {
-    if (part.startsWith("[") && part.endsWith("]")) {
-      part = part.slice(1, -1);
-    }
+    part = part.replace(/[^a-zA-Z_0-9]+/g, "");
     if (part.length === 0)
       continue;
     out += part[0].toUpperCase() + part.slice(1);
@@ -728,9 +736,9 @@ function serve(args) {
   if (args.status < 200 || args.status >= 300) {
     logger = (...args2) => console.error(...args2);
   }
-  const path7 = args.path;
-  const path_ext = p2.extname(path7);
-  const path_name = path7.slice(1, -path_ext.length);
+  const path8 = args.path;
+  const path_ext = p2.extname(path8);
+  const path_name = path8.slice(1, -path_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
   formatter.format();
   logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
@@ -743,7 +751,7 @@ var path5 = __toModule(require("path"));
 // packages/retro/router-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-async function renderRouteMetaToString(runtime, meta) {
+async function renderRouteMetaToString(tmpl, meta) {
   let head = "<!-- <Head { path, ...serverProps }> -->";
   try {
     if (typeof meta.module.Head === "function") {
@@ -753,8 +761,11 @@ async function renderRouteMetaToString(runtime, meta) {
   } catch (err) {
     error(`${meta.routeInfo.src}.<Head>: ${err.message}`);
   }
-  let body = `<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root"></div>
+  let body = "";
+  body += `<noscript>You need to enable JavaScript to run this app.</noscript>`;
+  body += `
+		<div id="root"></div>`;
+  body += `
 		<script src="/app.js"></script>`;
   try {
     if (typeof meta.module.default === "function") {
@@ -764,8 +775,43 @@ async function renderRouteMetaToString(runtime, meta) {
   } catch (err) {
     error(`${meta.routeInfo.src}.<Page>: ${err.message}`);
   }
-  const out = runtime.document.replace("%head%", head).replace("%page%", body);
+  const out = tmpl.replace("%head%", head).replace("%page%", body);
   return out;
+}
+async function renderRouterToString(router) {
+  const map = new Map();
+  for (const meta of Object.values(router)) {
+    map.set(meta.routeInfo.src, meta.routeInfo.component);
+  }
+  const routes = Array.from(map);
+  return `import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "../packages/router"
+
+// Components
+${routes.map(([src, component2]) => `import ${component2} from "../${src}"`).join("\n")}
+
+export default function App() {
+	return (
+		<Router>
+${Object.entries(router).map(([path8, meta]) => `
+			<Route path="${path8}">
+				<${meta.routeInfo.component} {...${JSON.stringify(meta.descriptProps)}} />
+			</Route>`).join("\n") + "\n"}
+		</Router>
+	)
+}
+
+${JSON.parse(process.env.STRICT_MODE ?? "true") === "true" ? `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
+	document.getElementById("root"),
+)` : `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`}
+`;
 }
 
 // packages/retro/router.ts
@@ -864,6 +910,7 @@ async function resolveDynamicRoutes(runtime, info) {
 async function resolveRouter(runtime) {
   const router = {};
   service = await esbuild.startService();
+  setTimeout(service.stop, 0);
   const cache = [];
   for (const pageInfo of runtime.pageInfos) {
     if (pageInfo.type === "static") {
@@ -885,9 +932,9 @@ async function resolveRouter(runtime) {
   for (const meta of cache) {
     const start = Date.now();
     if (runtime.command.type === "export") {
-      const out = await renderRouteMetaToString(runtime, meta);
+      const str = await renderRouteMetaToString(runtime.document, meta);
       await fs3.promises.mkdir(path5.dirname(meta.routeInfo.dst), {recursive: true});
-      await fs3.promises.writeFile(meta.routeInfo.dst, out);
+      await fs3.promises.writeFile(meta.routeInfo.dst, str);
     }
     router[meta.routeInfo.path] = meta;
     export_(runtime, meta, start);
@@ -909,7 +956,7 @@ async function newRuntimeFromCommand(command) {
     document: "",
     pageInfos: [],
     router: {},
-    async guards() {
+    async runServerGuards() {
       const dirs = [
         runtime.directories.publicDirectory,
         runtime.directories.srcPagesDirectory,
@@ -949,6 +996,14 @@ async function newRuntimeFromCommand(command) {
         error(missingDocumentPageTag(src));
       }
     },
+    async purge() {
+      const dirs = runtime.directories;
+      await fs4.promises.rmdir(dirs.cacheDirectory, {recursive: true});
+      await fs4.promises.rmdir(dirs.exportDirectory, {recursive: true});
+      const excludes = [path6.join(dirs.srcPagesDirectory, "index.html")];
+      await fs4.promises.mkdir(path6.join(dirs.exportDirectory, dirs.publicDirectory), {recursive: true});
+      await copyAll(dirs.publicDirectory, path6.join(dirs.exportDirectory, dirs.publicDirectory), excludes);
+    },
     async resolveDocument() {
       const src = path6.join(this.directories.publicDirectory, "index.html");
       const buf = await fs4.promises.readFile(src);
@@ -960,21 +1015,14 @@ async function newRuntimeFromCommand(command) {
     },
     async resolveRouter() {
       this.router = await resolveRouter(this);
-    },
-    async purgeCacheDirectory() {
-      await fs4.promises.rmdir(runtime.directories.cacheDirectory, {recursive: true});
-    },
-    async purgeExportDirectory() {
-      const dirs = runtime.directories;
-      await fs4.promises.rmdir(dirs.exportDirectory, {recursive: true});
-      await copyAll(dirs.publicDirectory, path6.join(dirs.exportDirectory, dirs.publicDirectory), path6.join(dirs.srcPagesDirectory, "index.html"));
     }
   };
   async function start() {
     if (runtime.command.type === "serve") {
       return;
     }
-    await runtime.guards();
+    await runtime.runServerGuards();
+    await runtime.purge();
     await runtime.resolveDocument();
     await runtime.resolvePages();
     await runtime.resolveRouter();
@@ -988,20 +1036,52 @@ async function runDev(runtime) {
 }
 
 // packages/retro/run-export.ts
+var esbuild2 = __toModule(require("esbuild"));
+var fs5 = __toModule(require("fs"));
+var path7 = __toModule(require("path"));
 async function runExport(runtime) {
+  const contents = await renderRouterToString(runtime.router);
+  const src = path7.join(runtime.directories.cacheDirectory, "app.js");
+  const dst2 = path7.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
+  await fs5.promises.writeFile(src, contents);
+  try {
+    const result = await esbuild2.build({
+      bundle: true,
+      define: {
+        __DEV__: process.env.__DEV__,
+        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+      },
+      entryPoints: [src],
+      inject: ["packages/retro/react-shim.js"],
+      loader: {".js": "jsx"},
+      logLevel: "silent",
+      minify: true,
+      outfile: dst2
+    });
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(format_esbuild(warning2, yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    if (!("errors" in err) || !("warnings" in err))
+      throw err;
+    error(format_esbuild(err.errors[0], bold.red));
+  }
 }
 
 // packages/retro/run-serve.ts
-var esbuild2 = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs/promises"));
+var esbuild3 = __toModule(require("esbuild"));
+var fs6 = __toModule(require("fs/promises"));
 var http = __toModule(require("http"));
 async function runServe(runtime) {
   try {
-    await fs5.stat(runtime.directories.exportDirectory);
+    await fs6.stat(runtime.directories.exportDirectory);
   } catch {
     error(serveWithMissingExportDirectory);
   }
-  const result = await esbuild2.serve({
+  const result = await esbuild3.serve({
     servedir: runtime.directories.exportDirectory,
     onRequest: (args) => serve(args)
   }, {});
@@ -1111,8 +1191,7 @@ async function main() {
       break;
   }
   const runtime = await newRuntimeFromCommand(command);
-  const run = runtime.command.type;
-  switch (run) {
+  switch (runtime.command.type) {
     case "dev":
       await runDev(runtime);
       break;
