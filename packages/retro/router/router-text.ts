@@ -1,9 +1,9 @@
-import * as log from "../lib/log"
+import * as log from "../../lib/log"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
-import * as types from "./types"
+import * as types from "../types"
 
-// { events }: { events: boolean },
+// TODO: newRouteFromRouteMeta()
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
@@ -39,6 +39,8 @@ export async function renderRouteMetaToString(tmpl: string, meta: types.RouteMet
 		.replace("%page%", body) // %page% -> <Page>
 	return out
 }
+
+// TODO: newRouterFromPages?()
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.

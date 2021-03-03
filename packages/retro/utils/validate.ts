@@ -10,11 +10,11 @@ export function validateStaticModuleExports(module_: unknown): boolean {
 	if (!validateObject(module_)) return false
 
 	const known = module_ as { [key: string]: unknown }
-	if (known.serverProps !== undefined && typeof known.serverProps !== "function") {
+	if (!(known.serverProps === undefined || typeof known.serverProps === "function")) {
 		return false
-	} else if (known.Head !== undefined && typeof known.Head !== "function") {
+	} else if (!(known.Head === undefined || typeof known.Head === "function")) {
 		return false
-	} else if (typeof known.default !== "function") {
+	} else if (!(typeof known.default === "function")) {
 		return false
 	}
 	return true
@@ -24,11 +24,11 @@ export function validateDynamicModuleExports(module_: unknown): boolean {
 	if (!validateObject(module_)) return false
 
 	const known = module_ as { [key: string]: unknown }
-	if (known.serverPaths !== undefined && typeof known.serverPaths !== "function") {
+	if (!(known.serverPaths === undefined || typeof known.serverPaths === "function")) {
 		return false
-	} else if (known.Head !== undefined && typeof known.Head !== "function") {
+	} else if (!(known.Head === undefined || typeof known.Head === "function")) {
 		return false
-	} else if (typeof known.default !== "function") {
+	} else if (!(typeof known.default === "function")) {
 		return false
 	}
 	return true

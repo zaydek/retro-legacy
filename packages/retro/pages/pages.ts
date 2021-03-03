@@ -1,8 +1,8 @@
-import * as errors from "./errors"
-import * as log from "../lib/log"
+import * as errors from "../errors"
+import * as log from "../../lib/log"
 import * as path from "path"
-import * as types from "./types"
-import * as utils from "./utils"
+import * as types from "../types"
+import * as utils from "../utils"
 
 const dynamicPathRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
@@ -76,7 +76,7 @@ const supported: { [key: string]: boolean } = {
 	".tsx": true,
 }
 
-export default async function parsePageInfosFromDirectories(dirs: types.Directories): Promise<types.PageInfo[]> {
+export async function newFromDirectories(dirs: types.Directories): Promise<types.PageInfo[]> {
 	const srcs = await utils.readdirAll(dirs.srcPagesDirectory)
 
 	// TODO: Add support for <Layout> components.

@@ -19,7 +19,11 @@ var __toModule = (module2) => {
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", {value: module2, enumerable: true})), module2);
 };
 
-// packages/lib/term.ts
+// packages/retro/commands/dev.ts
+async function dev(runtime) {
+}
+
+// packages/lib/terminal.ts
 var options = [
   {name: "normal", code: "[0m"},
   {name: "bold", code: "[1m"},
@@ -44,19 +48,19 @@ var options = [
 ];
 function build(...codes) {
   const set = new Set(codes);
-  function format2(...args) {
+  function format3(...args) {
     const coded = [...set].join("");
     return coded + args.join(" ").replaceAll("[0m", "[0m" + coded) + "[0m";
   }
   for (const {name, code} of options) {
-    Object.defineProperty(format2, name, {
+    Object.defineProperty(format3, name, {
       enumerable: true,
       get() {
         return build(...[...codes, code]);
       }
     });
   }
-  return format2;
+  return format3;
 }
 var normal = build("[0m");
 var bold = build("[1m");
@@ -125,10 +129,10 @@ ${dim(`// ${path8}`)}
   </body>
 </html>`;
 }
-function pagesUseNonURICharacters(pages) {
+function pagesUseNonURICharacters(pages2) {
   return `These pages use non-URI characters:
 
-${pages.map((page) => "- " + page).join("\n")}
+${pages2.map((page) => "- " + page).join("\n")}
 
 URI characters are described by RFC 3986:
 
@@ -147,14 +151,14 @@ ${underline.cyan("https://tools.ietf.org/html/rfc3986")}`;
 function badStaticPageExports(src) {
   return `${src}: Bad static page exports.
 
-Page exports should look something like this:
+Static page exports should look something like this:
 
 ${dim(`// ${src}`)}
-export function serverProps() {
+export function serverProps() { ${dim(`// Optional`)}
   return { ${dim("...")} }
 }
 
-export function Head({ path, ...serverProps }) {
+export function Head({ path, ...serverProps }) { ${dim(`// Optional`)}
   return <title>Hello, world!</title>
 }
 
@@ -176,7 +180,7 @@ export function serverPaths() {
   ]
 }
 
-export function Head({ path, ...serverProps }) {
+export function Head({ path, ...serverProps }) { ${dim(`// Optional`)}
   return <title>Hello, world!</title>
 }
 
@@ -208,7 +212,7 @@ export function serverPaths() {
   ]
 }`;
 }
-function duplicatePathFound(r1, r2) {
+function duplicatePath(r1, r2) {
   function caller(r) {
     return r.type === "static" ? "serverProps" : "serverPaths";
   }
@@ -218,36 +222,11 @@ function serveWithMissingExportDirectory() {
   return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
 }
 
-// packages/lib/log.ts
-function format(...args) {
-  if (args.length === 1 && args[0] instanceof Error) {
-    return format(args[0].message);
-  }
-  return args.join(" ").split("\n").map((each, x) => {
-    if (x === 0)
-      return each;
-    if (each === "")
-      return each;
-    return " " + each.replace("	", "  ");
-  }).join("\n");
-}
-function warning(...args) {
-  const message = format(...args);
-  console.warn(` ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}`);
-  console.warn();
-}
-function error(...args) {
-  const message = format(...args);
-  const traceEnabled = process.env["STACK_TRACE"] === "true";
-  if (!traceEnabled) {
-    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
-    console.error();
-  } else {
-    console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}`);
-    console.error();
-  }
-  process.exit(0);
-}
+// packages/retro/commands/serve.ts
+var esbuild = __toModule(require("esbuild"));
+
+// packages/retro/events.ts
+var p2 = __toModule(require("path"));
 
 // packages/retro/utils/detab.ts
 function detab(str, keep = 0) {
@@ -278,37 +257,6 @@ function setEnvDevelopment() {
 function setEnvProduction() {
   process.env["__DEV__"] = "false";
   process.env["NODE_ENV"] = "production";
-}
-
-// packages/retro/utils/esbuild.ts
-function format_esbuild(msg, color) {
-  const meta = msg.location;
-  const namespace = `${meta.file}:${meta.line}:${meta.column}`;
-  const error2 = `esbuild: ${msg.text}`;
-  let code = "";
-  code += `${meta.lineText.slice(0, meta.column)}`;
-  code += `${color(meta.lineText.slice(meta.column, meta.column + meta.length))}`;
-  code += `${meta.lineText.slice(meta.column + meta.length)}`;
-  return `${namespace}: ${error2}
-
-	${meta.line} ${dim("|")} ${code}
-	${" ".repeat(String(meta.line).length)}   ${" ".repeat(meta.column)}${color("~".repeat(meta.length))}`;
-}
-
-// packages/retro/utils/format.ts
-function newFormatter(logger = (...args) => console.log(...args)) {
-  let once = false;
-  return {
-    format(...args) {
-      if (once)
-        return;
-      logger(...args);
-      once = true;
-    },
-    done(...args) {
-      logger(...args);
-    }
-  };
 }
 
 // packages/retro/utils/fs.ts
@@ -437,11 +385,11 @@ function validateStaticModuleExports(module_) {
   if (!validateObject(module_))
     return false;
   const known = module_;
-  if (known.serverProps !== void 0 && typeof known.serverProps !== "function") {
+  if (!(known.serverProps === void 0 || typeof known.serverProps === "function")) {
     return false;
-  } else if (known.Head !== void 0 && typeof known.Head !== "function") {
+  } else if (!(known.Head === void 0 || typeof known.Head === "function")) {
     return false;
-  } else if (typeof known.default !== "function") {
+  } else if (!(typeof known.default === "function")) {
     return false;
   }
   return true;
@@ -450,11 +398,11 @@ function validateDynamicModuleExports(module_) {
   if (!validateObject(module_))
     return false;
   const known = module_;
-  if (known.serverPaths !== void 0 && typeof known.serverPaths !== "function") {
+  if (!(known.serverPaths === void 0 || typeof known.serverPaths === "function")) {
     return false;
-  } else if (known.Head !== void 0 && typeof known.Head !== "function") {
+  } else if (!(known.Head === void 0 || typeof known.Head === "function")) {
     return false;
-  } else if (typeof known.default !== "function") {
+  } else if (!(typeof known.default === "function")) {
     return false;
   }
   return true;
@@ -478,6 +426,379 @@ function validateServerPathsReturn(return_) {
 // packages/retro/utils/watch.ts
 var fs2 = __toModule(require("fs/promises"));
 var p = __toModule(require("path"));
+
+// packages/retro/events.ts
+var TERM_WIDTH = 40;
+function formatMS(ms) {
+  switch (true) {
+    case ms < 250:
+      return `${ms}ms`;
+    default:
+      return `${(ms / 1e3).toFixed(2)}s`;
+  }
+}
+function export_(runtime, meta, start) {
+  const dur = formatMS(Date.now() - start);
+  const l1 = runtime.directories.srcPagesDirectory.length;
+  const l2 = runtime.directories.exportDirectory.length;
+  let color = white;
+  if (meta.routeInfo.type === "dynamic") {
+    color = cyan;
+  }
+  let dimColor = dim.white;
+  if (meta.routeInfo.type === "dynamic") {
+    dimColor = dim.cyan;
+  }
+  const src = meta.routeInfo.src.slice(l1);
+  const src_ext = p2.extname(src);
+  const src_name = src.slice(1, -src_ext.length);
+  const dst2 = meta.routeInfo.dst.slice(l2);
+  const dst_ext = p2.extname(dst2);
+  const dst_name = dst2.slice(1, -dst_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
+  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
+}
+function serve(args) {
+  const dur = formatMS(args.timeInMS);
+  let color = normal;
+  if (args.status < 200 || args.status >= 300) {
+    color = red;
+  }
+  let dimColor = dim;
+  if (args.status < 200 || args.status >= 300) {
+    dimColor = dim.red;
+  }
+  let logger = (...args2) => console.log(...args2);
+  if (args.status < 200 || args.status >= 300) {
+    logger = (...args2) => console.error(...args2);
+  }
+  const path8 = args.path;
+  const path_ext = p2.extname(path8);
+  const path_name = path8.slice(1, -path_ext.length);
+  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
+  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
+}
+
+// packages/retro/commands/serve.ts
+var fs3 = __toModule(require("fs/promises"));
+var http = __toModule(require("http"));
+
+// packages/lib/log.ts
+var EOF = "\n";
+function format(...args) {
+  if (args.length === 1 && args[0] instanceof Error) {
+    const error2 = args[0];
+    return format(error2.message);
+  }
+  const str = args.join(" ");
+  return str.split("\n").map((substr, x) => {
+    if (x === 0 || substr === "")
+      return substr;
+    return " " + substr.replace("	", "  ");
+  }).join("\n");
+}
+function warning(...args) {
+  const message = format(...args);
+  console.warn(` ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}${EOF}`);
+}
+function error(...args) {
+  const message = format(...args);
+  console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}${EOF}`);
+  process.exit(1);
+}
+
+// packages/retro/commands/serve.ts
+async function serve3(runtime) {
+  try {
+    await fs3.stat(runtime.directories.exportDirectory);
+  } catch {
+    error(serveWithMissingExportDirectory);
+  }
+  let once = false;
+  const result = await esbuild.serve({
+    servedir: runtime.directories.exportDirectory,
+    onRequest: (args) => {
+      if (!once) {
+        console.log();
+        once = true;
+      }
+      serve(args);
+    }
+  }, {});
+  const serverProxy = http.createServer((req, res) => {
+    const opts = {
+      hostname: result.host,
+      port: result.port,
+      path: ssgify(req.url),
+      method: req.method,
+      headers: req.headers
+    };
+    const requestProxy = http.request(opts, (responseProxy) => {
+      if (responseProxy.statusCode === 404) {
+        res.writeHead(404, {"Content-Type": "text/plain"});
+        res.end("404 - Not Found");
+        return;
+      }
+      res.writeHead(responseProxy.statusCode, responseProxy.headers);
+      responseProxy.pipe(res, {end: true});
+    });
+    req.pipe(requestProxy, {end: true});
+  });
+  serverProxy.listen(runtime.command.port);
+}
+
+// packages/retro/commands/export.ts
+var esbuild3 = __toModule(require("esbuild"));
+var fs4 = __toModule(require("fs"));
+
+// packages/retro/esbuild-helpers.ts
+var defines = () => ({
+  __DEV__: process.env.__DEV__,
+  "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+});
+var transpileJSXAndTSConfiguration = (src, dst2) => ({
+  bundle: true,
+  define: defines(),
+  entryPoints: [src],
+  external: ["react", "react-dom"],
+  format: "cjs",
+  inject: ["packages/retro/react-shim.js"],
+  loader: {".js": "jsx"},
+  logLevel: "silent",
+  minify: false,
+  outfile: dst2
+});
+var bundleAppConfiguration = (src, dst2) => ({
+  bundle: true,
+  define: defines(),
+  entryPoints: [src],
+  external: [],
+  format: "iife",
+  inject: ["packages/retro/react-shim.js"],
+  loader: {".js": "jsx"},
+  logLevel: "silent",
+  minify: true,
+  outfile: dst2
+});
+function format2(msg, color) {
+  const meta = msg.location;
+  const namespace = `${meta.file}:${meta.line}:${meta.column}`;
+  const error2 = `esbuild: ${msg.text}`;
+  let code = "";
+  code += `${meta.lineText.slice(0, meta.column)}`;
+  code += `${color(meta.lineText.slice(meta.column, meta.column + meta.length))}`;
+  code += `${meta.lineText.slice(meta.column + meta.length)}`;
+  return `${namespace}: ${error2}
+
+	${meta.line} ${dim("|")} ${code}
+	${" ".repeat(String(meta.line).length)}   ${" ".repeat(meta.column)}${color("~".repeat(meta.length))}`;
+}
+
+// packages/retro/commands/export.ts
+var path5 = __toModule(require("path"));
+
+// packages/retro/router/router-text.ts
+var React = __toModule(require("react"));
+var ReactDOMServer = __toModule(require("react-dom/server"));
+async function renderRouteMetaToString(tmpl, meta) {
+  let head = "<!-- <Head { path, ...serverProps }> -->";
+  try {
+    if (typeof meta.module.Head === "function") {
+      const str = ReactDOMServer.renderToStaticMarkup(React.createElement(meta.module.Head, meta.descriptProps));
+      head = str.replace(/></g, ">\n		<").replace(/\/>/g, " />");
+    }
+  } catch (err) {
+    error(`${meta.routeInfo.src}.<Head>: ${err.message}`);
+  }
+  let body = "";
+  body += `<noscript>You need to enable JavaScript to run this app.</noscript>`;
+  body += `
+		<div id="root"></div>`;
+  body += `
+		<script src="/app.js"></script>`;
+  try {
+    if (typeof meta.module.default === "function") {
+      const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps));
+      body = body.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`);
+    }
+  } catch (err) {
+    error(`${meta.routeInfo.src}.<Page>: ${err.message}`);
+  }
+  const out = tmpl.replace("%head%", head).replace("%page%", body);
+  return out;
+}
+async function renderRouterToString(router3) {
+  const map = new Map();
+  for (const meta of Object.values(router3)) {
+    map.set(meta.routeInfo.src, meta.routeInfo.component);
+  }
+  const routes = Array.from(map);
+  return `import React from "react"
+import ReactDOM from "react-dom"
+import { Route, Router } from "../packages/router"
+
+// Components
+${routes.map(([src, component2]) => `import ${component2} from "../${src}"`).join("\n")}
+
+export default function App() {
+	return (
+		<Router>
+${Object.entries(router3).map(([path8, meta]) => `
+			<Route path="${path8}">
+				<${meta.routeInfo.component} {...${JSON.stringify(meta.descriptProps)}} />
+			</Route>`).join("\n") + "\n"}
+		</Router>
+	)
+}
+
+${JSON.parse(process.env.STRICT_MODE ?? "true") === "true" ? `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
+	document.getElementById("root"),
+)` : `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
+	<App />,
+	document.getElementById("root"),
+)`}
+`;
+}
+
+// packages/retro/router/router.ts
+var esbuild2 = __toModule(require("esbuild"));
+var path4 = __toModule(require("path"));
+var service;
+async function resolveModule(runtime, info) {
+  const src = info.src;
+  const dst2 = path4.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"));
+  try {
+    const result = await service.build(transpileJSXAndTSConfiguration(src, dst2));
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(format2(warning2, yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    if (!("errors" in err) || !("warnings" in err))
+      throw err;
+    error(format2(err.errors[0], bold.red));
+  }
+  let module_;
+  try {
+    module_ = require(path4.join("..", "..", dst2));
+  } catch {
+  }
+  return module_;
+}
+async function resolveStaticRoute(runtime, info) {
+  const module_ = await resolveModule(runtime, info);
+  if (!validateStaticModuleExports(module_)) {
+    error(badStaticPageExports(info.src));
+  }
+  let props = {};
+  if (typeof module_.serverProps === "function") {
+    try {
+      await module_.serverProps();
+      if (!validateServerPropsReturn(props)) {
+        error(badServerPropsResolver(info.src));
+      }
+    } catch (err) {
+      error(`${info.src}.serverProps: ${err.message}`);
+    }
+  }
+  const routeInfo = info;
+  const descriptProps = {path: info.path, ...props};
+  return {module: module_, routeInfo, descriptProps};
+}
+async function resolveDynamicRoutes(runtime, info) {
+  const metas = [];
+  const module_ = await resolveModule(runtime, info);
+  if (!validateDynamicModuleExports(module_)) {
+    error(badDynamicPageExports(info.src));
+  }
+  let paths = [];
+  try {
+    paths = await module_.serverPaths();
+    if (!validateServerPathsReturn(paths)) {
+      error(badServerPathsResolver(info.src));
+    }
+  } catch (err) {
+    error(`${info.src}.serverPaths: ${err.message}`);
+  }
+  for (const meta of paths) {
+    const path_2 = path4.join(path4.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path);
+    const dst2 = path4.join(runtime.directories.exportDirectory, path_2 + ".html");
+    metas.push({
+      module: module_,
+      routeInfo: {
+        ...info,
+        dst: dst2,
+        path: path_2
+      },
+      descriptProps: {
+        path: path_2,
+        ...meta.props
+      }
+    });
+  }
+  return metas;
+}
+async function newFromRuntime(runtime) {
+  const router3 = {};
+  service = await esbuild2.startService();
+  for (const pageInfo of runtime.pageInfos) {
+    if (pageInfo.type === "static") {
+      const meta = await resolveStaticRoute(runtime, pageInfo);
+      if (router3[meta.routeInfo.path] !== void 0) {
+        error(duplicatePath(meta.routeInfo, router3[meta.routeInfo.path].routeInfo));
+      }
+      router3[meta.routeInfo.path] = meta;
+    } else {
+      const metas = await resolveDynamicRoutes(runtime, pageInfo);
+      for (const meta of metas) {
+        if (router3[meta.routeInfo.path] !== void 0) {
+          error(duplicatePath(meta.routeInfo, router3[meta.routeInfo.path].routeInfo));
+        }
+        router3[meta.routeInfo.path] = meta;
+      }
+    }
+  }
+  return router3;
+}
+
+// packages/retro/commands/export.ts
+async function export_2(runtime) {
+  let once = false;
+  for (const meta of Object.values(runtime.router)) {
+    const start = Date.now();
+    const str = await renderRouteMetaToString(runtime.document, meta);
+    await fs4.promises.mkdir(path5.dirname(meta.routeInfo.dst), {recursive: true});
+    await fs4.promises.writeFile(meta.routeInfo.dst, str);
+    if (!once) {
+      console.log();
+      once = true;
+    }
+    export_(runtime, meta, start);
+  }
+  console.log();
+  const src = path5.join(runtime.directories.cacheDirectory, "app.js");
+  const dst2 = path5.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
+  const contents = await renderRouterToString(runtime.router);
+  await fs4.promises.writeFile(src, contents);
+  try {
+    const result = await esbuild3.build(bundleAppConfiguration(src, dst2));
+    if (result.warnings.length > 0) {
+      for (const warning2 of result.warnings) {
+        warning(format2(warning2, yellow));
+      }
+      process.exit(1);
+    }
+  } catch (err) {
+    if (!("errors" in err) || !("warnings" in err))
+      throw err;
+    error(format2(err.errors[0], bold.red));
+  }
+}
 
 // packages/retro/cli.ts
 function newCLI(...args) {
@@ -603,11 +924,10 @@ function newCLI(...args) {
 }
 
 // packages/retro/runtime.ts
-var fs4 = __toModule(require("fs"));
-var path6 = __toModule(require("path"));
+var fs5 = __toModule(require("fs"));
 
-// packages/retro/pages.ts
-var path4 = __toModule(require("path"));
+// packages/retro/pages/pages.ts
+var path6 = __toModule(require("path"));
 var dynamicPathRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
 function path_(dirs, pathInfo) {
   const out = pathInfo.src.slice(dirs.srcPagesDirectory.length, -pathInfo.ext.length);
@@ -617,12 +937,12 @@ function path_(dirs, pathInfo) {
   return out;
 }
 function dst(dirs, pathInfo) {
-  const out = path4.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length));
+  const out = path6.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length));
   return out.slice(0, -pathInfo.ext.length) + ".html";
 }
 function component(dirs, pathInfo, {dynamic}) {
   let out = "";
-  const parts = path_(dirs, pathInfo).split(path4.sep);
+  const parts = path_(dirs, pathInfo).split(path6.sep);
   for (let part of parts) {
     part = part.replace(/[^a-zA-Z_0-9]+/g, "");
     if (part.length === 0)
@@ -656,7 +976,7 @@ var supported = {
   ".ts": true,
   ".tsx": true
 };
-async function parsePageInfosFromDirectories(dirs) {
+async function newFromDirectories(dirs) {
   const srcs = await readdirAll(dirs.srcPagesDirectory);
   const pathInfos = srcs.map((src) => parsePathInfo(src)).filter((pathInfo) => {
     if (/^[_$]|[_$]$/.test(pathInfo.name)) {
@@ -673,277 +993,20 @@ async function parsePageInfosFromDirectories(dirs) {
   if (badSrcs.length > 0) {
     error(pagesUseNonURICharacters(badSrcs));
   }
-  const pages = [];
+  const pages2 = [];
   for (const pathInfo of pathInfos) {
     const syntax = path_(dirs, pathInfo);
     if (dynamicPathRegex.test(syntax)) {
-      pages.push(newDynamicPageInfo(dirs, pathInfo));
+      pages2.push(newDynamicPageInfo(dirs, pathInfo));
       continue;
     }
-    pages.push(newPageInfo(dirs, pathInfo));
+    pages2.push(newPageInfo(dirs, pathInfo));
   }
-  return pages;
-}
-
-// packages/retro/router.ts
-var esbuild = __toModule(require("esbuild"));
-
-// packages/retro/events.ts
-var p2 = __toModule(require("path"));
-var TERM_WIDTH = 40;
-var formatter = newFormatter();
-function formatMS(ms) {
-  switch (true) {
-    case ms < 250:
-      return `${ms}ms`;
-    default:
-      return `${(ms / 1e3).toFixed(2)}s`;
-  }
-}
-function export_(runtime, meta, start) {
-  const dur = formatMS(Date.now() - start);
-  const l1 = runtime.directories.srcPagesDirectory.length;
-  const l2 = runtime.directories.exportDirectory.length;
-  let color = white;
-  if (meta.routeInfo.type === "dynamic") {
-    color = cyan;
-  }
-  let dimColor = dim.white;
-  if (meta.routeInfo.type === "dynamic") {
-    dimColor = dim.cyan;
-  }
-  const src = meta.routeInfo.src.slice(l1);
-  const src_ext = p2.extname(src);
-  const src_name = src.slice(1, -src_ext.length);
-  const dst2 = meta.routeInfo.dst.slice(l2);
-  const dst_ext = p2.extname(dst2);
-  const dst_name = dst2.slice(1, -dst_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext} `.length));
-  formatter.format();
-  console.log(` ${dim(timestamp())}  ${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep2)} ${dimColor("/")}${color(dst_name)}${start === 0 ? "" : ` ${dimColor(`(${dur})`)}`}`);
-}
-function serve(args) {
-  const dur = formatMS(args.timeInMS);
-  let color = normal;
-  if (args.status < 200 || args.status >= 300) {
-    color = red;
-  }
-  let dimColor = dim;
-  if (args.status < 200 || args.status >= 300) {
-    dimColor = dim.red;
-  }
-  let logger = (...args2) => console.log(...args2);
-  if (args.status < 200 || args.status >= 300) {
-    logger = (...args2) => console.error(...args2);
-  }
-  const path8 = args.path;
-  const path_ext = p2.extname(path8);
-  const path_name = path8.slice(1, -path_ext.length);
-  const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
-  formatter.format();
-  logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
-}
-
-// packages/retro/router.ts
-var fs3 = __toModule(require("fs"));
-var path5 = __toModule(require("path"));
-
-// packages/retro/router-text.ts
-var React = __toModule(require("react"));
-var ReactDOMServer = __toModule(require("react-dom/server"));
-async function renderRouteMetaToString(tmpl, meta) {
-  let head = "<!-- <Head { path, ...serverProps }> -->";
-  try {
-    if (typeof meta.module.Head === "function") {
-      const str = ReactDOMServer.renderToStaticMarkup(React.createElement(meta.module.Head, meta.descriptProps));
-      head = str.replace(/></g, ">\n		<").replace(/\/>/g, " />");
-    }
-  } catch (err) {
-    error(`${meta.routeInfo.src}.<Head>: ${err.message}`);
-  }
-  let body = "";
-  body += `<noscript>You need to enable JavaScript to run this app.</noscript>`;
-  body += `
-		<div id="root"></div>`;
-  body += `
-		<script src="/app.js"></script>`;
-  try {
-    if (typeof meta.module.default === "function") {
-      const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps));
-      body = body.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`);
-    }
-  } catch (err) {
-    error(`${meta.routeInfo.src}.<Page>: ${err.message}`);
-  }
-  const out = tmpl.replace("%head%", head).replace("%page%", body);
-  return out;
-}
-async function renderRouterToString(router) {
-  const map = new Map();
-  for (const meta of Object.values(router)) {
-    map.set(meta.routeInfo.src, meta.routeInfo.component);
-  }
-  const routes = Array.from(map);
-  return `import React from "react"
-import ReactDOM from "react-dom"
-import { Route, Router } from "../packages/router"
-
-// Components
-${routes.map(([src, component2]) => `import ${component2} from "../${src}"`).join("\n")}
-
-export default function App() {
-	return (
-		<Router>
-${Object.entries(router).map(([path8, meta]) => `
-			<Route path="${path8}">
-				<${meta.routeInfo.component} {...${JSON.stringify(meta.descriptProps)}} />
-			</Route>`).join("\n") + "\n"}
-		</Router>
-	)
-}
-
-${JSON.parse(process.env.STRICT_MODE ?? "true") === "true" ? `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
-	<React.StrictMode>
-		<App />
-	</React.StrictMode>,
-	document.getElementById("root"),
-)` : `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
-	<App />,
-	document.getElementById("root"),
-)`}
-`;
-}
-
-// packages/retro/router.ts
-var service;
-async function resolve(runtime, info) {
-  const src = info.src;
-  const dst2 = path5.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"));
-  try {
-    const result = await service.build({
-      bundle: true,
-      define: {
-        __DEV__: process.env.__DEV__,
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-      },
-      entryPoints: [src],
-      external: ["react", "react-dom"],
-      format: "cjs",
-      inject: ["packages/retro/react-shim.js"],
-      loader: {
-        ".js": "jsx"
-      },
-      logLevel: "silent",
-      outfile: dst2
-    });
-    if (result.warnings.length > 0) {
-      for (const warning2 of result.warnings) {
-        warning(format_esbuild(warning2, yellow));
-      }
-      process.exit(1);
-    }
-  } catch (err) {
-    if (!("errors" in err) || !("warnings" in err))
-      throw err;
-    error(format_esbuild(err.errors[0], bold.red));
-  }
-  let module_;
-  try {
-    module_ = require(path5.join("..", "..", dst2));
-  } catch {
-  }
-  return module_;
-}
-async function resolveStaticRoute(runtime, info) {
-  const module_ = await resolve(runtime, info);
-  if (!validateStaticModuleExports(module_)) {
-    error(badStaticPageExports(info.src));
-  }
-  let props = {};
-  if (typeof module_.serverProps === "function") {
-    try {
-      await module_.serverProps();
-      if (!validateServerPropsReturn(props)) {
-        error(badServerPropsResolver(info.src));
-      }
-    } catch (err) {
-      error(`${info.src}.serverProps: ${err.message}`);
-    }
-  }
-  const routeInfo = info;
-  const descriptProps = {path: info.path, ...props};
-  return {module: module_, routeInfo, descriptProps};
-}
-async function resolveDynamicRoutes(runtime, info) {
-  const metas = [];
-  const module_ = await resolve(runtime, info);
-  if (!validateDynamicModuleExports(module_)) {
-    error(badDynamicPageExports(info.src));
-  }
-  let paths = [];
-  try {
-    paths = await module_.serverPaths();
-    if (!validateServerPathsReturn(paths)) {
-      error(badServerPathsResolver(info.src));
-    }
-  } catch (err) {
-    error(`${info.src}.serverPaths: ${err.message}`);
-  }
-  for (const meta of paths) {
-    const path_2 = path5.join(path5.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path);
-    const dst2 = path5.join(runtime.directories.exportDirectory, path_2 + ".html");
-    metas.push({
-      module: module_,
-      routeInfo: {
-        ...info,
-        dst: dst2,
-        path: path_2
-      },
-      descriptProps: {
-        path: path_2,
-        ...meta.props
-      }
-    });
-  }
-  return metas;
-}
-async function resolveRouter(runtime) {
-  const router = {};
-  service = await esbuild.startService();
-  setTimeout(service.stop, 0);
-  const cache = [];
-  for (const pageInfo of runtime.pageInfos) {
-    if (pageInfo.type === "static") {
-      const meta = await resolveStaticRoute(runtime, pageInfo);
-      if (router[meta.routeInfo.path] !== void 0) {
-        error(duplicatePathFound(meta.routeInfo, router[meta.routeInfo.path].routeInfo));
-      }
-      cache.push(meta);
-    } else {
-      const metas = await resolveDynamicRoutes(runtime, pageInfo);
-      for (const one of metas) {
-        if (router[one.routeInfo.path] !== void 0) {
-          error(duplicatePathFound(one.routeInfo, router[one.routeInfo.path].routeInfo));
-        }
-      }
-      cache.push(...metas);
-    }
-  }
-  for (const meta of cache) {
-    const start = Date.now();
-    if (runtime.command.type === "export") {
-      const str = await renderRouteMetaToString(runtime.document, meta);
-      await fs3.promises.mkdir(path5.dirname(meta.routeInfo.dst), {recursive: true});
-      await fs3.promises.writeFile(meta.routeInfo.dst, str);
-    }
-    router[meta.routeInfo.path] = meta;
-    export_(runtime, meta, start);
-  }
-  console.log();
-  return router;
+  return pages2;
 }
 
 // packages/retro/runtime.ts
+var path7 = __toModule(require("path"));
 async function newRuntimeFromCommand(command) {
   const runtime = {
     command,
@@ -965,16 +1028,16 @@ async function newRuntimeFromCommand(command) {
       ];
       for (const dir of dirs) {
         try {
-          await fs4.promises.stat(dir);
+          await fs5.promises.stat(dir);
         } catch (err) {
-          fs4.promises.mkdir(dir, {recursive: true});
+          fs5.promises.mkdir(dir, {recursive: true});
         }
       }
-      const src = path6.join(runtime.directories.publicDirectory, "index.html");
+      const src = path7.join(runtime.directories.publicDirectory, "index.html");
       try {
-        fs4.promises.stat(src);
+        fs5.promises.stat(src);
       } catch (err) {
-        await fs4.promises.writeFile(src, detab(`
+        await fs5.promises.writeFile(src, detab(`
 						<!DOCTYPE html>
 						<html lang="en">
 							<head>
@@ -988,7 +1051,7 @@ async function newRuntimeFromCommand(command) {
 						</html>
 					`));
       }
-      const buf = await fs4.promises.readFile(src);
+      const buf = await fs5.promises.readFile(src);
       const str = buf.toString();
       if (!str.includes("%head")) {
         error(missingDocumentHeadTag(src));
@@ -998,23 +1061,23 @@ async function newRuntimeFromCommand(command) {
     },
     async purge() {
       const dirs = runtime.directories;
-      await fs4.promises.rmdir(dirs.cacheDirectory, {recursive: true});
-      await fs4.promises.rmdir(dirs.exportDirectory, {recursive: true});
-      const excludes = [path6.join(dirs.srcPagesDirectory, "index.html")];
-      await fs4.promises.mkdir(path6.join(dirs.exportDirectory, dirs.publicDirectory), {recursive: true});
-      await copyAll(dirs.publicDirectory, path6.join(dirs.exportDirectory, dirs.publicDirectory), excludes);
+      await fs5.promises.rmdir(dirs.cacheDirectory, {recursive: true});
+      await fs5.promises.rmdir(dirs.exportDirectory, {recursive: true});
+      const excludes = [path7.join(dirs.srcPagesDirectory, "index.html")];
+      await fs5.promises.mkdir(path7.join(dirs.exportDirectory, dirs.publicDirectory), {recursive: true});
+      await copyAll(dirs.publicDirectory, path7.join(dirs.exportDirectory, dirs.publicDirectory), excludes);
     },
     async resolveDocument() {
-      const src = path6.join(this.directories.publicDirectory, "index.html");
-      const buf = await fs4.promises.readFile(src);
+      const src = path7.join(this.directories.publicDirectory, "index.html");
+      const buf = await fs5.promises.readFile(src);
       const str = buf.toString();
       this.document = str;
     },
     async resolvePages() {
-      this.pageInfos = await parsePageInfosFromDirectories(this.directories);
+      this.pageInfos = await newFromDirectories(this.directories);
     },
     async resolveRouter() {
-      this.router = await resolveRouter(this);
+      this.router = await newFromRuntime(this);
     }
   };
   async function start() {
@@ -1029,82 +1092,6 @@ async function newRuntimeFromCommand(command) {
   }
   await start();
   return runtime;
-}
-
-// packages/retro/run-dev.ts
-async function runDev(runtime) {
-}
-
-// packages/retro/run-export.ts
-var esbuild2 = __toModule(require("esbuild"));
-var fs5 = __toModule(require("fs"));
-var path7 = __toModule(require("path"));
-async function runExport(runtime) {
-  const contents = await renderRouterToString(runtime.router);
-  const src = path7.join(runtime.directories.cacheDirectory, "app.js");
-  const dst2 = path7.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
-  await fs5.promises.writeFile(src, contents);
-  try {
-    const result = await esbuild2.build({
-      bundle: true,
-      define: {
-        __DEV__: process.env.__DEV__,
-        "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-      },
-      entryPoints: [src],
-      inject: ["packages/retro/react-shim.js"],
-      loader: {".js": "jsx"},
-      logLevel: "silent",
-      minify: true,
-      outfile: dst2
-    });
-    if (result.warnings.length > 0) {
-      for (const warning2 of result.warnings) {
-        warning(format_esbuild(warning2, yellow));
-      }
-      process.exit(1);
-    }
-  } catch (err) {
-    if (!("errors" in err) || !("warnings" in err))
-      throw err;
-    error(format_esbuild(err.errors[0], bold.red));
-  }
-}
-
-// packages/retro/run-serve.ts
-var esbuild3 = __toModule(require("esbuild"));
-var fs6 = __toModule(require("fs/promises"));
-var http = __toModule(require("http"));
-async function runServe(runtime) {
-  try {
-    await fs6.stat(runtime.directories.exportDirectory);
-  } catch {
-    error(serveWithMissingExportDirectory);
-  }
-  const result = await esbuild3.serve({
-    servedir: runtime.directories.exportDirectory,
-    onRequest: (args) => serve(args)
-  }, {});
-  const serverProxy = http.createServer((req, res) => {
-    const opts = {
-      hostname: result.host,
-      port: result.port,
-      path: ssgify(req.url),
-      method: req.method,
-      headers: req.headers
-    };
-    const requestProxy = http.request(opts, (responseProxy) => {
-      if (responseProxy.statusCode === 404) {
-        res.writeHead(404, {"Content-Type": "text/plain"});
-        res.end("404 - Not Found");
-        return;
-      }
-      res.writeHead(responseProxy.statusCode, responseProxy.headers);
-      responseProxy.pipe(res, {end: true});
-    });
-    req.pipe(requestProxy, {end: true});
-  });
-  serverProxy.listen(runtime.command.port);
 }
 
 // packages/retro/main.ts
@@ -1193,18 +1180,17 @@ async function main() {
   const runtime = await newRuntimeFromCommand(command);
   switch (runtime.command.type) {
     case "dev":
-      await runDev(runtime);
+      await dev(runtime);
       break;
     case "export":
-      await runExport(runtime);
+      await export_2(runtime);
       break;
     case "serve":
-      await runServe(runtime);
+      await serve3(runtime);
       break;
   }
 }
 process.on("uncaughtException", (err) => {
-  process.env["STACK_TRACE"] = "true";
   err.message = `UncaughtException: ${err.message}`;
   error(err);
 });

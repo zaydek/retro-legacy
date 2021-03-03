@@ -1,30 +1,40 @@
-import * as errors from "./errors"
+import * as errors from "../errors"
 import * as esbuild from "esbuild"
-import * as events from "./events"
+import * as events from "../events"
 import * as fs from "fs/promises"
 import * as http from "http"
-import * as log from "../lib/log"
-import * as types from "./types"
-import * as utils from "./utils"
+import * as log from "../../lib/log"
+import * as types from "../types"
+import * as utils from "../utils"
 
-// This implementation is roughly based on:
-//
-// - https://esbuild.github.io/api/#customizing-server-behavior
-// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
-//
-export default async function runServe(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
+export async function serve(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
 	try {
 		await fs.stat(runtime.directories.exportDirectory)
 	} catch {
 		log.error(errors.serveWithMissingExportDirectory)
 	}
 
-	// prettier-ignore
-	const result = await esbuild.serve({
-		servedir: runtime.directories.exportDirectory,
-		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args),
-	}, {})
+	// Add a serve request handler:
+	let once = false
+	const result = await esbuild.serve(
+		{
+			servedir: runtime.directories.exportDirectory,
+			onRequest: (args: esbuild.ServeOnRequestArgs) => {
+				if (!once) {
+					console.log()
+					once = true
+				}
+				events.serve(args)
+			},
+		},
+		{},
+	)
 
+	// This implementation is roughly based on:
+	//
+	// - https://esbuild.github.io/api/#customizing-server-behavior
+	// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
+	//
 	const serverProxy = http.createServer((req: http.IncomingMessage, res: http.ServerResponse): void => {
 		const opts = {
 			hostname: result.host,

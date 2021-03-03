@@ -1,19 +1,21 @@
-import * as term from "../lib/term"
+import * as terminal from "./terminal"
+
+const EOF = "\n"
 
 // format converts tabs to spaces and adds two spaces to the start.
 function format(...args: unknown[]): string {
+	// For errors, extract error.message:
 	if (args.length === 1 && args[0] instanceof Error) {
-		return format(args[0].message)
+		const error = args[0]
+		return format(error.message)
 	}
 
-	return args
-		.join(" ")
+	const str = args.join(" ")
+	return str
 		.split("\n")
-		.map((each, x) => {
-			// if (x === 0) return term.bold(each)
-			if (x === 0) return each
-			if (each === "") return each
-			return "\x20" + each.replace("\t", "  ")
+		.map((substr, x) => {
+			if (x === 0 || substr === "") return substr
+			return "\x20" + substr.replace("\t", "\x20\x20")
 		})
 		.join("\n")
 }
@@ -21,27 +23,18 @@ function format(...args: unknown[]): string {
 // "> ok: ..."
 export function ok(...args: unknown[]): void {
 	const message = format(...args)
-	console.log(`\x20${term.bold(">")} ${term.bold(message)}`)
-	console.log()
+	console.log(`\x20${terminal.bold(">")} ${terminal.bold(message)}${EOF}`)
 }
 
 // "> warning: ..."
 export function warning(...args: unknown[]): void {
 	const message = format(...args)
-	console.warn(`\x20${term.bold(">")} ${term.bold.yellow("warning:")} ${term.bold(message)}`)
-	console.warn()
+	console.warn(`\x20${terminal.bold(">")} ${terminal.bold.yellow("warning:")} ${terminal.bold(message)}${EOF}`)
 }
 
 // "> error: ..."
 export function error(...args: unknown[]): void {
 	const message = format(...args)
-	const traceEnabled = process.env["STACK_TRACE"] === "true"
-	if (!traceEnabled) {
-		console.error(`\x20${term.bold(">")} ${term.bold.red("error:")} ${term.bold(message)}`)
-		console.error()
-	} else {
-		console.error(`\x20${term.bold(">")} ${term.bold.red("error:")} ${term.bold(message)}`)
-		console.error()
-	}
-	process.exit(0)
+	console.error(`\x20${terminal.bold(">")} ${terminal.bold.red("error:")} ${terminal.bold(message)}${EOF}`)
+	process.exit(1)
 }

@@ -1,14 +1,12 @@
+import * as commands from "./commands"
 import * as errors from "./errors"
 import * as log from "../lib/log"
-import * as term from "../lib/term"
+import * as terminal from "../lib/terminal"
 import * as types from "./types"
 import * as utils from "./utils"
 
 import newCLI from "./cli"
 import newRuntimeFromCommand from "./runtime"
-import runDev from "./run-dev"
-import runExport from "./run-export"
-import runServe from "./run-serve"
 
 // space converts tabs to one space; "\x20".
 function space(str: string): string {
@@ -22,13 +20,13 @@ function space(str: string): string {
 }
 
 const usage = space(`
-	${term.bold("Usage:")}
+	${terminal.bold("Usage:")}
 
 		retro dev          Start the dev server
 		retro export       Export the production-ready build (SSG)
 		retro serve        Serve the production-ready build
 
-	${term.bold("retro dev")}
+	${terminal.bold("retro dev")}
 
 		Start the dev server
 
@@ -37,23 +35,23 @@ const usage = space(`
 			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
 			--port=...       Port number (default 8000)
 
-	${term.bold("retro export")}
+	${terminal.bold("retro export")}
 
 		Export the production-ready build (SSG)
 
 			--cached=...     Use cached resources (default false)
 			--sourcemap=...  Add source maps (default true)
 
-	${term.bold("retro serve")}
+	${terminal.bold("retro serve")}
 
 		Serve the production-ready build
 
 			--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
 			--port=...       Port number (default 8000)
 
-	${term.bold("Repository")}
+	${terminal.bold("Repository")}
 
-		${term.bold.underline.cyan("https://github.com/zaydek/retro")}
+		${terminal.bold.underline.cyan("https://github.com/zaydek/retro")}
 `)
 
 async function main(): Promise<void> {
@@ -104,19 +102,19 @@ async function main(): Promise<void> {
 	const runtime = await newRuntimeFromCommand(command!)
 	switch (runtime.command.type) {
 		case "dev":
-			await runDev(runtime as types.Runtime<types.DevCommand>)
+			await commands.dev(runtime as types.Runtime<types.DevCommand>)
 			break
 		case "export":
-			await runExport(runtime as types.Runtime<types.ExportCommand>)
+			await commands.export(runtime as types.Runtime<types.ExportCommand>)
 			break
 		case "serve":
-			await runServe(runtime as types.Runtime<types.ServeCommand>)
+			await commands.serve(runtime as types.Runtime<types.ServeCommand>)
 			break
 	}
 }
 
 process.on("uncaughtException", (err: Error): void => {
-	process.env["STACK_TRACE"] = "true"
+	// process.env["STACK_TRACE"] = "true"
 	err.message = `UncaughtException: ${err.message}`
 	log.error(err)
 })

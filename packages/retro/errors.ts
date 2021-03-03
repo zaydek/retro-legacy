@@ -1,4 +1,4 @@
-import * as term from "../lib/term"
+import * as terminal from "../lib/terminal"
 import * as types from "./types"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -6,7 +6,7 @@ import * as types from "./types"
 ////////////////////////////////////////////////////////////////////////////////
 
 export function badCLIRunCommand(run: string): string {
-	return `Bad run command ${term.magenta(`'${run}'`)}.
+	return `Bad run command ${terminal.magenta(`'${run}'`)}.
 
 Supported commands:
 
@@ -14,7 +14,7 @@ retro dev     Start the dev server
 retro export  Export the production-ready build (SSG)
 retro serve   Serve the production-ready build
 
-${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`
+${terminal.yellow("hint:")} Use ${terminal.magenta("'retro usage'")} for usage.`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,37 +22,37 @@ ${term.yellow("hint:")} Use ${term.magenta("'retro usage'")} for usage.`
 ////////////////////////////////////////////////////////////////////////////////
 
 export function missingDocumentHeadTag(path: string): string {
-	return `${path}: Add ${term.magenta("'%head%'")} to ${term.magenta("'<head>'")}.
+	return `${path}: Add ${terminal.magenta("'%head%'")} to ${terminal.magenta("'<head>'")}.
 
 For example:
 
-${term.dim(`// ${path}`)}
+${terminal.dim(`// ${path}`)}
 <!DOCTYPE html>
   <head lang="en">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    ${term.magenta("%head%")}
-    ${term.dim("...")}
+    ${terminal.magenta("%head%")}
+    ${terminal.dim("...")}
   </head>
   <body>
-    ${term.dim("...")}
+    ${terminal.dim("...")}
   </body>
 </html>`
 }
 
 export function missingDocumentPageTag(path: string): string {
-	return `${path}: Add ${term.magenta("'%page%'")} to ${term.magenta("'<body>'")}.
+	return `${path}: Add ${terminal.magenta("'%page%'")} to ${terminal.magenta("'<body>'")}.
 
 For example:
 
-${term.dim(`// ${path}`)}
+${terminal.dim(`// ${path}`)}
 <!DOCTYPE html>
   <head lang="en">
-    ${term.dim("...")}
+    ${terminal.dim("...")}
   </head>
   <body>
-    ${term.magenta("%page%")}
-    ${term.dim("...")}
+    ${terminal.magenta("%page%")}
+    ${terminal.dim("...")}
   </body>
 </html>`
 }
@@ -78,7 +78,7 @@ URI characters are described by RFC 3986:
   sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
   ${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="
 
-${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
+${terminal.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,14 +88,14 @@ ${term.underline.cyan("https://tools.ietf.org/html/rfc3986")}`
 export function badStaticPageExports(src: string): string {
 	return `${src}: Bad static page exports.
 
-Page exports should look something like this:
+Static page exports should look something like this:
 
-${term.dim(`// ${src}`)}
-export function serverProps() {
-  return { ${term.dim("...")} }
+${terminal.dim(`// ${src}`)}
+export function serverProps() { ${terminal.dim(`// Optional`)}
+  return { ${terminal.dim("...")} }
 }
 
-export function Head({ path, ...serverProps }) {
+export function Head({ path, ...serverProps }) { ${terminal.dim(`// Optional`)}
   return <title>Hello, world!</title>
 }
 
@@ -109,16 +109,16 @@ export function badDynamicPageExports(src: string): string {
 
 Dynamic page exports should look something like this:
 
-${term.dim(`// ${src}`)}
+${terminal.dim(`// ${src}`)}
 export function serverPaths() {
   return [
-    { path: "/foo", props: ${term.dim("...")} },
-    { path: "/foo/bar", props: ${term.dim("...")} },
-    { path: "/foo/bar/baz", props: ${term.dim("...")} },
+    { path: "/foo", props: ${terminal.dim("...")} },
+    { path: "/foo/bar", props: ${terminal.dim("...")} },
+    { path: "/foo/bar/baz", props: ${terminal.dim("...")} },
   ]
 }
 
-export function Head({ path, ...serverProps }) {
+export function Head({ path, ...serverProps }) { ${terminal.dim(`// Optional`)}
   return <title>Hello, world!</title>
 }
 
@@ -128,27 +128,27 @@ export default function Page({ path, ...serverProps }) {
 }
 
 export function badServerPropsResolver(src: string): string {
-	return `${src}.serverProps: Bad ${term.magenta("'serverProps'")} resolver.
+	return `${src}.serverProps: Bad ${terminal.magenta("'serverProps'")} resolver.
 
-${term.magenta("'serverProps'")} resolvers should look something like this:
+${terminal.magenta("'serverProps'")} resolvers should look something like this:
 
-${term.dim(`// ${src}`)}
+${terminal.dim(`// ${src}`)}
 export function serverProps() {
-  return { ${term.dim("...")} }
+  return { ${terminal.dim("...")} }
 }`
 }
 
 export function badServerPathsResolver(src: string): string {
-	return `${src}.serverPaths: Bad ${term.magenta("'serverPaths'")} resolver.
+	return `${src}.serverPaths: Bad ${terminal.magenta("'serverPaths'")} resolver.
 
-${term.magenta("'serverPaths'")} resolvers should look something like this:
+${terminal.magenta("'serverPaths'")} resolvers should look something like this:
 
-${term.dim(`// ${src}`)}
+${terminal.dim(`// ${src}`)}
 export function serverPaths() {
   return [
-    { path: "/foo", props: ${term.dim("...")} },
-    { path: "/foo/bar", props: ${term.dim("...")} },
-    { path: "/foo/bar/baz", props: ${term.dim("...")} },
+    { path: "/foo", props: ${terminal.dim("...")} },
+    { path: "/foo/bar", props: ${terminal.dim("...")} },
+    { path: "/foo/bar/baz", props: ${terminal.dim("...")} },
   ]
 }`
 }
@@ -157,11 +157,11 @@ export function serverPaths() {
 // Server API (miscellaneous)
 ////////////////////////////////////////////////////////////////////////////////
 
-export function duplicatePathFound(r1: types.RouteInfo, r2: types.RouteInfo): string {
+export function duplicatePath(r1: types.RouteInfo, r2: types.RouteInfo): string {
 	function caller(r: types.RouteInfo): string {
 		return r.type === "static" ? "serverProps" : "serverPaths"
 	}
-	return `${r1.src}.${caller(r1)}: Path ${term.magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`
+	return `${r1.src}.${caller(r1)}: Path ${terminal.magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,7 +169,7 @@ export function duplicatePathFound(r1: types.RouteInfo, r2: types.RouteInfo): st
 ////////////////////////////////////////////////////////////////////////////////
 
 export function serveWithMissingExportDirectory(): string {
-	return `It looks like you’re trying to run ${term.magenta("'retro serve'")} before ${term.magenta(
+	return `It looks like you’re trying to run ${terminal.magenta("'retro serve'")} before ${terminal.magenta(
 		"'retro export'",
-	)}. Try ${term.magenta("'retro export && retro serve'")}.`
+	)}. Try ${terminal.magenta("'retro export && retro serve'")}.`
 }

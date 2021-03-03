@@ -1,12 +1,11 @@
 import * as errors from "./errors"
 import * as fs from "fs"
 import * as log from "../lib/log"
+import * as pages from "./pages"
 import * as path from "path"
+import * as router from "./router"
 import * as types from "./types"
 import * as utils from "./utils"
-
-import parsePageInfosFromDirectories from "./pages"
-import resolveRouter from "./router"
 
 export default async function newRuntimeFromCommand(command: types.Command): Promise<types.Runtime<typeof command>> {
 	const runtime: types.Runtime<typeof command> = {
@@ -74,13 +73,13 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 		// purge purges __cache__ and __export__.
 		async purge(): Promise<void> {
 			const dirs = runtime.directories
-
 			await fs.promises.rmdir(dirs.cacheDirectory, { recursive: true })
 			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
 
+			// await this.runServerGuards()
 			const excludes = [path.join(dirs.srcPagesDirectory, "index.html")]
 
-			// TODO: Do we actually need this line of code?
+			// TODO: Do we need this?
 			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
 			await utils.copyAll(dirs.publicDirectory, path.join(dirs.exportDirectory, dirs.publicDirectory), excludes)
 		},
@@ -95,12 +94,12 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 
 		// resolvePages resolves and or refreshes this.pages.
 		async resolvePages(): Promise<void> {
-			this.pageInfos = await parsePageInfosFromDirectories(this.directories)
+			this.pageInfos = await pages.newFromDirectories(this.directories)
 		},
 
 		// resolveRouter resolves and or refreshes this.router.
 		async resolveRouter(): Promise<void> {
-			this.router = await resolveRouter(this)
+			this.router = await router.newFromRuntime(this)
 		},
 	}
 

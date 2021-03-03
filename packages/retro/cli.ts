@@ -1,5 +1,5 @@
 import * as log from "../lib/log"
-import * as term from "../lib/term"
+import * as terminal from "../lib/terminal"
 import * as types from "./types"
 
 interface CLI {
@@ -51,10 +51,12 @@ export default function newCLI(...args: string[]): CLI {
 				}
 			}
 			if (badCommand !== "") {
-				log.error(`Bad command ${term.magenta(`'${badCommand}'`)}. Use ${term.magenta("'retro help'")} for help.`)
+				log.error(
+					`Bad command ${terminal.magenta(`'${badCommand}'`)}. Use ${terminal.magenta("'retro help'")} for help.`,
+				)
 			}
 			if (command.port < 1e3 || command.port >= 1e4) {
-				log.error(`${term.magenta("'--port'")} must be between 1000-9999.`)
+				log.error(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
 			}
 			return command
 		},
@@ -91,7 +93,9 @@ export default function newCLI(...args: string[]): CLI {
 				}
 			}
 			if (badCommand !== "") {
-				log.error(`Bad command ${term.magenta(`'${badCommand}'`)}. Use ${term.magenta("'retro help'")} for help.`)
+				log.error(
+					`Bad command ${terminal.magenta(`'${badCommand}'`)}. Use ${terminal.magenta("'retro help'")} for help.`,
+				)
 			}
 			return command
 		},
@@ -126,10 +130,12 @@ export default function newCLI(...args: string[]): CLI {
 				}
 			}
 			if (badCommand !== "") {
-				log.error(`Bad command ${term.magenta(`'${badCommand}'`)}. Use ${term.magenta("'retro help'")} for help.`)
+				log.error(
+					`Bad command ${terminal.magenta(`'${badCommand}'`)}. Use ${terminal.magenta("'retro help'")} for help.`,
+				)
 			}
 			if (command.port < 1e3 || command.port >= 1e4) {
-				log.error(`${term.magenta("'--port'")} must be between 1000-9999.`)
+				log.error(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
 			}
 			return command
 		},

@@ -1,12 +1,12 @@
 import * as esbuild from "esbuild"
 import * as p from "path"
-import * as term from "../lib/term"
+import * as terminal from "../lib/terminal"
 import * as types from "./types"
 import * as utils from "./utils"
 
 const TERM_WIDTH = 40
 
-const formatter = utils.newFormatter()
+// const formatter = utils.newFormatter()
 
 function formatMS(ms: number): string {
 	switch (true) {
@@ -25,14 +25,14 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 	const l1 = runtime.directories.srcPagesDirectory.length
 	const l2 = runtime.directories.exportDirectory.length
 
-	let color = term.white
+	let color = terminal.white
 	if (meta.routeInfo.type === "dynamic") {
-		color = term.cyan
+		color = terminal.cyan
 	}
 
-	let dimColor = term.dim.white
+	let dimColor = terminal.dim.white
 	if (meta.routeInfo.type === "dynamic") {
-		dimColor = term.dim.cyan
+		dimColor = terminal.dim.cyan
 	}
 
 	const src = meta.routeInfo.src.slice(l1)
@@ -45,9 +45,9 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
-	formatter.format()
+	// formatter.format()
 	console.log(
-		`\x20${term.dim(utils.timestamp())}\x20\x20` +
+		`\x20${terminal.dim(utils.timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
 				start === 0 ? "" : ` ${dimColor(`(${dur})`)}`
 			}`,
@@ -57,14 +57,14 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 export function serve(args: esbuild.ServeOnRequestArgs): void {
 	const dur = formatMS(args.timeInMS)
 
-	let color = term.normal
+	let color = terminal.normal
 	if (args.status < 200 || args.status >= 300) {
-		color = term.red
+		color = terminal.red
 	}
 
-	let dimColor = term.dim
+	let dimColor = terminal.dim
 	if (args.status < 200 || args.status >= 300) {
-		dimColor = term.dim.red
+		dimColor = terminal.dim.red
 	}
 
 	let logger = (...args: unknown[]): void => console.log(...args)
@@ -78,9 +78,9 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
 
-	formatter.format()
+	// formatter.format()
 	logger(
-		`\x20${term.dim(utils.timestamp())}\x20\x20` +
+		`\x20${terminal.dim(utils.timestamp())}\x20\x20` +
 			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
 				`(${dur})`,
 			)}`,
