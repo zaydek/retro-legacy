@@ -1,6 +1,6 @@
 import * as esbuild from "esbuild"
 import * as p from "path"
-import * as terminal from "../lib/terminal"
+import * as terminal from "../shared/terminal"
 import * as types from "./types"
 import * as utils from "./utils"
 

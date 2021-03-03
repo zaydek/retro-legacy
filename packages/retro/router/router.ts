@@ -1,9 +1,9 @@
 import * as errors from "../errors"
 import * as esbuild from "esbuild"
-import * as helpers from "../esbuild-helpers"
-import * as log from "../../lib/log"
+import * as esbuildHelpers from "../esbuild-helpers"
+import * as log from "../../shared/log"
 import * as path from "path"
-import * as terminal from "../../lib/terminal"
+import * as terminal from "../../shared/terminal"
 import * as types from "../types"
 import * as utils from "../utils"
 
@@ -17,16 +17,16 @@ async function resolveModule<ModuleKind extends types.PageModule>(
 	const dst = path.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"))
 
 	try {
-		const result = await service.build(helpers.transpileJSXAndTSConfiguration(src, dst))
+		const result = await service.build(esbuildHelpers.transpileJSXAndTSConfiguration(src, dst))
 		if (result.warnings.length > 0) {
 			for (const warning of result.warnings) {
-				log.warning(helpers.format(warning, terminal.yellow))
+				log.warning(esbuildHelpers.format(warning, terminal.yellow))
 			}
 			process.exit(1)
 		}
-	} catch (err) {
-		if (!("errors" in err) || !("warnings" in err)) throw err
-		log.error(helpers.format((err as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
+	} catch (error) {
+		if (!("errors" in error) || !("warnings" in error)) throw error
+		log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
 	}
 
 	// See https://github.com/evanw/esbuild/issues/661.
@@ -51,8 +51,8 @@ async function resolveStaticRoute(runtime: types.Runtime, info: types.StaticPage
 			if (!utils.validateServerPropsReturn(props)) {
 				log.error(errors.badServerPropsResolver(info.src))
 			}
-		} catch (err) {
-			log.error(`${info.src}.serverProps: ${err.message}`)
+		} catch (error) {
+			log.error(`${info.src}.serverProps: ${error.message}`)
 		}
 	}
 
@@ -76,8 +76,8 @@ async function resolveDynamicRoutes(runtime: types.Runtime, info: types.DynamicP
 		if (!utils.validateServerPathsReturn(paths)) {
 			log.error(errors.badServerPathsResolver(info.src))
 		}
-	} catch (err) {
-		log.error(`${info.src}.serverPaths: ${err.message}`)
+	} catch (error) {
+		log.error(`${info.src}.serverPaths: ${error.message}`)
 	}
 
 	for (const meta of paths) {

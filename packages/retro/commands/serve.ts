@@ -3,7 +3,7 @@ import * as esbuild from "esbuild"
 import * as events from "../events"
 import * as fs from "fs/promises"
 import * as http from "http"
-import * as log from "../../lib/log"
+import * as log from "../../shared/log"
 import * as types from "../types"
 import * as utils from "../utils"
 
@@ -35,7 +35,7 @@ export async function serve(runtime: types.Runtime<types.ServeCommand>): Promise
 	// - https://esbuild.github.io/api/#customizing-server-behavior
 	// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 	//
-	const serverProxy = http.createServer((req: http.IncomingMessage, res: http.ServerResponse): void => {
+	const server_proxy = http.createServer((req, res) => {
 		const opts = {
 			hostname: result.host,
 			port: result.port,
@@ -43,19 +43,17 @@ export async function serve(runtime: types.Runtime<types.ServeCommand>): Promise
 			method: req.method,
 			headers: req.headers,
 		}
-		const requestProxy = http.request(opts, (responseProxy: http.IncomingMessage): void => {
-			// Handle 404:
-			if (responseProxy.statusCode === 404) {
+		const req_proxy = http.request(opts, res_proxy => {
+			if (res_proxy.statusCode === 404) {
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				return
 			}
-			// Handle 200:
-			res.writeHead(responseProxy.statusCode!, responseProxy.headers)
-			responseProxy.pipe(res, { end: true })
+			res.writeHead(res_proxy.statusCode!, res_proxy.headers)
+			res_proxy.pipe(res, { end: true })
 		})
-		req.pipe(requestProxy, { end: true })
+		req.pipe(req_proxy, { end: true })
 	})
 
-	serverProxy.listen(runtime.command.port)
+	server_proxy.listen(runtime.command.port)
 }

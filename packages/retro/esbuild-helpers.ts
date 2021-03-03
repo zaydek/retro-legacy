@@ -1,5 +1,5 @@
 import * as esbuild from "esbuild"
-import * as terminal from "../lib/terminal"
+import * as terminal from "../shared/terminal"
 
 const defines = (): { [key: string]: string } => ({
 	__DEV__: process.env.__DEV__!,

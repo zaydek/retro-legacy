@@ -20,10 +20,9 @@ var __toModule = (module2) => {
 };
 
 // packages/retro/commands/dev.ts
-async function dev(runtime) {
-}
+var esbuild2 = __toModule(require("esbuild"));
 
-// packages/lib/terminal.ts
+// packages/shared/terminal.ts
 var options = [
   {name: "normal", code: "[0m"},
   {name: "bold", code: "[1m"},
@@ -83,145 +82,48 @@ var bgMagenta = build("[45m");
 var bgCyan = build("[46m");
 var bgWhite = build("[47m");
 
-// packages/retro/errors.ts
-function badCLIRunCommand(run) {
-  return `Bad run command ${magenta(`'${run}'`)}.
+// packages/retro/esbuild-helpers.ts
+var defines = () => ({
+  __DEV__: process.env.__DEV__,
+  "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+});
+var transpileJSXAndTSConfiguration = (src, dst2) => ({
+  bundle: true,
+  define: defines(),
+  entryPoints: [src],
+  external: ["react", "react-dom"],
+  format: "cjs",
+  inject: ["packages/retro/react-shim.js"],
+  loader: {".js": "jsx"},
+  logLevel: "silent",
+  minify: false,
+  outfile: dst2
+});
+var bundleAppConfiguration = (src, dst2) => ({
+  bundle: true,
+  define: defines(),
+  entryPoints: [src],
+  external: [],
+  format: "iife",
+  inject: ["packages/retro/react-shim.js"],
+  loader: {".js": "jsx"},
+  logLevel: "silent",
+  minify: true,
+  outfile: dst2
+});
+function format(msg, color) {
+  const meta = msg.location;
+  const namespace = `${meta.file}:${meta.line}:${meta.column}`;
+  const error2 = `esbuild: ${msg.text}`;
+  let code = "";
+  code += `${meta.lineText.slice(0, meta.column)}`;
+  code += `${color(meta.lineText.slice(meta.column, meta.column + meta.length))}`;
+  code += `${meta.lineText.slice(meta.column + meta.length)}`;
+  return `${namespace}: ${error2}
 
-Supported commands:
-
-retro dev     Start the dev server
-retro export  Export the production-ready build (SSG)
-retro serve   Serve the production-ready build
-
-${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`;
+	${meta.line} ${dim("|")} ${code}
+	${" ".repeat(String(meta.line).length)}   ${" ".repeat(meta.column)}${color("~".repeat(meta.length))}`;
 }
-function missingDocumentHeadTag(path8) {
-  return `${path8}: Add ${magenta("'%head%'")} to ${magenta("'<head>'")}.
-
-For example:
-
-${dim(`// ${path8}`)}
-<!DOCTYPE html>
-  <head lang="en">
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    ${magenta("%head%")}
-    ${dim("...")}
-  </head>
-  <body>
-    ${dim("...")}
-  </body>
-</html>`;
-}
-function missingDocumentPageTag(path8) {
-  return `${path8}: Add ${magenta("'%page%'")} to ${magenta("'<body>'")}.
-
-For example:
-
-${dim(`// ${path8}`)}
-<!DOCTYPE html>
-  <head lang="en">
-    ${dim("...")}
-  </head>
-  <body>
-    ${magenta("%page%")}
-    ${dim("...")}
-  </body>
-</html>`;
-}
-function pagesUseNonURICharacters(pages2) {
-  return `These pages use non-URI characters:
-
-${pages2.map((page) => "- " + page).join("\n")}
-
-URI characters are described by RFC 3986:
-
-2.2. Unreserved Characters
-
-  ALPHA / DIGIT / "-" / "." / "_" / "~"
-
-2.3. Reserved Characters
-
-  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-  ${" ".repeat(11)}/ "*" / "+" / "," / ";" / "="`;
-}
-function badStaticPageExports(src) {
-  return `${src}: Bad static page exports.
-
-Static page exports should look something like this:
-
-${dim(`// ${src}`)}
-export function serverProps() { ${dim(`// Optional`)}
-  return { ${dim("...")} }
-}
-
-export function Head({ path, ...serverProps }) { ${dim(`// Optional`)}
-  return <title>Hello, world!</title>
-}
-
-export default function Page({ path, ...serverProps }) {
-  return <h1>Hello, world!</h1>
-}`;
-}
-function badDynamicPageExports(src) {
-  return `${src}: Bad dynamic page exports.
-
-Dynamic page exports should look something like this:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-  return [
-    { path: "/foo", props: ${dim("...")} },
-    { path: "/foo/bar", props: ${dim("...")} },
-    { path: "/foo/bar/baz", props: ${dim("...")} },
-  ]
-}
-
-export function Head({ path, ...serverProps }) { ${dim(`// Optional`)}
-  return <title>Hello, world!</title>
-}
-
-export default function Page({ path, ...serverProps }) {
-  return <h1>Hello, world!</h1>
-}`;
-}
-function badServerPropsResolver(src) {
-  return `${src}.serverProps: Bad ${magenta("'serverProps'")} resolver.
-
-${magenta("'serverProps'")} resolvers should look something like this:
-
-${dim(`// ${src}`)}
-export function serverProps() {
-  return { ${dim("...")} }
-}`;
-}
-function badServerPathsResolver(src) {
-  return `${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
-
-${magenta("'serverPaths'")} resolvers should look something like this:
-
-${dim(`// ${src}`)}
-export function serverPaths() {
-  return [
-    { path: "/foo", props: ${dim("...")} },
-    { path: "/foo/bar", props: ${dim("...")} },
-    { path: "/foo/bar/baz", props: ${dim("...")} },
-  ]
-}`;
-}
-function duplicatePath(r1, r2) {
-  function caller(r) {
-    return r.type === "static" ? "serverProps" : "serverPaths";
-  }
-  return `${r1.src}.${caller(r1)}: Path ${magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`;
-}
-function serveWithMissingExportDirectory() {
-  return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
-}
-
-// packages/retro/commands/serve.ts
-var esbuild = __toModule(require("esbuild"));
 
 // packages/retro/events.ts
 var p2 = __toModule(require("path"));
@@ -470,23 +372,23 @@ function serve(args) {
   if (args.status < 200 || args.status >= 300) {
     logger = (...args2) => console.error(...args2);
   }
-  const path8 = args.path;
-  const path_ext = p2.extname(path8);
-  const path_name = path8.slice(1, -path_ext.length);
+  const path9 = args.path;
+  const path_ext = p2.extname(path9);
+  const path_name = path9.slice(1, -path_ext.length);
   const sep2 = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext} `.length));
   logger(` ${dim(timestamp())}  ${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep2)} ${color(args.status)} ${dimColor(`(${dur})`)}`);
 }
 
-// packages/retro/commands/serve.ts
-var fs3 = __toModule(require("fs/promises"));
+// packages/retro/commands/dev.ts
+var fs3 = __toModule(require("fs"));
 var http = __toModule(require("http"));
 
-// packages/lib/log.ts
+// packages/shared/log.ts
 var EOF = "\n";
-function format(...args) {
+function format2(...args) {
   if (args.length === 1 && args[0] instanceof Error) {
     const error2 = args[0];
-    return format(error2.message);
+    return format2(error2.message);
   }
   const str = args.join(" ");
   return str.split("\n").map((substr, x) => {
@@ -496,117 +398,30 @@ function format(...args) {
   }).join("\n");
 }
 function warning(...args) {
-  const message = format(...args);
+  const message = format2(...args);
   console.warn(` ${bold(">")} ${bold.yellow("warning:")} ${bold(message)}${EOF}`);
 }
 function error(...args) {
-  const message = format(...args);
+  const message = format2(...args);
   console.error(` ${bold(">")} ${bold.red("error:")} ${bold(message)}${EOF}`);
   process.exit(1);
 }
 
-// packages/retro/commands/serve.ts
-async function serve3(runtime) {
-  try {
-    await fs3.stat(runtime.directories.exportDirectory);
-  } catch {
-    error(serveWithMissingExportDirectory);
-  }
-  let once = false;
-  const result = await esbuild.serve({
-    servedir: runtime.directories.exportDirectory,
-    onRequest: (args) => {
-      if (!once) {
-        console.log();
-        once = true;
-      }
-      serve(args);
-    }
-  }, {});
-  const serverProxy = http.createServer((req, res) => {
-    const opts = {
-      hostname: result.host,
-      port: result.port,
-      path: ssgify(req.url),
-      method: req.method,
-      headers: req.headers
-    };
-    const requestProxy = http.request(opts, (responseProxy) => {
-      if (responseProxy.statusCode === 404) {
-        res.writeHead(404, {"Content-Type": "text/plain"});
-        res.end("404 - Not Found");
-        return;
-      }
-      res.writeHead(responseProxy.statusCode, responseProxy.headers);
-      responseProxy.pipe(res, {end: true});
-    });
-    req.pipe(requestProxy, {end: true});
-  });
-  serverProxy.listen(runtime.command.port);
-}
-
-// packages/retro/commands/export.ts
-var esbuild3 = __toModule(require("esbuild"));
-var fs4 = __toModule(require("fs"));
-
-// packages/retro/esbuild-helpers.ts
-var defines = () => ({
-  __DEV__: process.env.__DEV__,
-  "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
-});
-var transpileJSXAndTSConfiguration = (src, dst2) => ({
-  bundle: true,
-  define: defines(),
-  entryPoints: [src],
-  external: ["react", "react-dom"],
-  format: "cjs",
-  inject: ["packages/retro/react-shim.js"],
-  loader: {".js": "jsx"},
-  logLevel: "silent",
-  minify: false,
-  outfile: dst2
-});
-var bundleAppConfiguration = (src, dst2) => ({
-  bundle: true,
-  define: defines(),
-  entryPoints: [src],
-  external: [],
-  format: "iife",
-  inject: ["packages/retro/react-shim.js"],
-  loader: {".js": "jsx"},
-  logLevel: "silent",
-  minify: true,
-  outfile: dst2
-});
-function format2(msg, color) {
-  const meta = msg.location;
-  const namespace = `${meta.file}:${meta.line}:${meta.column}`;
-  const error2 = `esbuild: ${msg.text}`;
-  let code = "";
-  code += `${meta.lineText.slice(0, meta.column)}`;
-  code += `${color(meta.lineText.slice(meta.column, meta.column + meta.length))}`;
-  code += `${meta.lineText.slice(meta.column + meta.length)}`;
-  return `${namespace}: ${error2}
-
-	${meta.line} ${dim("|")} ${code}
-	${" ".repeat(String(meta.line).length)}   ${" ".repeat(meta.column)}${color("~".repeat(meta.length))}`;
-}
-
-// packages/retro/commands/export.ts
+// packages/retro/commands/dev.ts
 var path5 = __toModule(require("path"));
 
 // packages/retro/router/router-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-async function renderRouteMetaToString(tmpl, meta) {
+async function renderRouteMetaToString(document, meta, {devMode}) {
   let head = "<!-- <Head { path, ...serverProps }> -->";
   try {
     if (typeof meta.module.Head === "function") {
       const str = ReactDOMServer.renderToStaticMarkup(React.createElement(meta.module.Head, meta.descriptProps));
       head = str.replace(/></g, ">\n		<").replace(/\/>/g, " />");
     }
-  } catch (err) {
-    error(`${meta.routeInfo.src}.<Head>: ${err.message}`);
+  } catch (error2) {
+    error(`${meta.routeInfo.src}.<Head>: ${error2.message}`);
   }
   let body = "";
   body += `<noscript>You need to enable JavaScript to run this app.</noscript>`;
@@ -614,55 +429,199 @@ async function renderRouteMetaToString(tmpl, meta) {
 		<div id="root"></div>`;
   body += `
 		<script src="/app.js"></script>`;
+  body += `
+		<script>`;
+  body += !devMode ? "" : `
+			const es = new EventSource("/~dev")`;
+  body += !devMode ? "" : `
+			es.addEventListener("reload", e => window.location.reload())`;
+  body += !devMode ? "" : `
+			es.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`;
+  body += !devMode ? "" : `
+		</script>`;
   try {
     if (typeof meta.module.default === "function") {
       const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps));
       body = body.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`);
     }
-  } catch (err) {
-    error(`${meta.routeInfo.src}.<Page>: ${err.message}`);
+  } catch (error2) {
+    error(`${meta.routeInfo.src}.<Page>: ${error2.message}`);
   }
-  const out = tmpl.replace("%head%", head).replace("%page%", body);
-  return out;
+  const repl = document.replace("%head%", head).replace("%page%", body);
+  return repl;
 }
-async function renderRouterToString(router3) {
+async function renderRouterToString(router4) {
   const map = new Map();
-  for (const meta of Object.values(router3)) {
+  for (const meta of Object.values(router4)) {
     map.set(meta.routeInfo.src, meta.routeInfo.component);
   }
-  const routes = Array.from(map);
+  const distinct = Array.from(map);
   return `import React from "react"
 import ReactDOM from "react-dom"
 import { Route, Router } from "../packages/router"
 
 // Components
-${routes.map(([src, component2]) => `import ${component2} from "../${src}"`).join("\n")}
+${distinct.map(([src, component2]) => `import ${component2} from "../${src}"`).join("\n")}
 
 export default function App() {
 	return (
 		<Router>
-${Object.entries(router3).map(([path8, meta]) => `
-			<Route path="${path8}">
+${Object.entries(router4).map(([path9, meta]) => `
+			<Route path="${path9}">
 				<${meta.routeInfo.component} {...${JSON.stringify(meta.descriptProps)}} />
 			</Route>`).join("\n") + "\n"}
 		</Router>
 	)
 }
 
-${JSON.parse(process.env.STRICT_MODE ?? "true") === "true" ? `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
+ReactDOM.hydrate(
 	<React.StrictMode>
 		<App />
 	</React.StrictMode>,
 	document.getElementById("root"),
-)` : `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
-	<App />,
-	document.getElementById("root"),
-)`}
+)
 `;
 }
 
+// packages/retro/errors.ts
+function badCLIRunCommand(run) {
+  return `Bad run command ${magenta(`'${run}'`)}.
+
+Supported commands:
+
+retro dev     Start the dev server
+retro export  Export the production-ready build (SSG)
+retro serve   Serve the production-ready build
+
+${yellow("hint:")} Use ${magenta("'retro usage'")} for usage.`;
+}
+function missingDocumentHeadTag(path9) {
+  return `${path9}: Add ${magenta("'%head%'")} to ${magenta("'<head>'")}.
+
+For example:
+
+${dim(`// ${path9}`)}
+<!DOCTYPE html>
+  <head lang="en">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    ${magenta("%head%")}
+    ${dim("...")}
+  </head>
+  <body>
+    ${dim("...")}
+  </body>
+</html>`;
+}
+function missingDocumentPageTag(path9) {
+  return `${path9}: Add ${magenta("'%page%'")} to ${magenta("'<body>'")}.
+
+For example:
+
+${dim(`// ${path9}`)}
+<!DOCTYPE html>
+  <head lang="en">
+    ${dim("...")}
+  </head>
+  <body>
+    ${magenta("%page%")}
+    ${dim("...")}
+  </body>
+</html>`;
+}
+function pagesUseNonURICharacters(pages2) {
+  return `These pages use non-URI characters:
+
+${pages2.map((page) => "- " + page).join("\n")}
+
+URI characters are described by RFC 3986:
+
+2.2. Unreserved Characters
+
+  ALPHA / DIGIT / "-" / "." / "_" / "~"
+
+2.3. Reserved Characters
+
+  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+  ${" ".repeat(11)}/ "*" / "+" / "," / ";" / "="`;
+}
+function badStaticPageExports(src) {
+  return `${src}: Bad static page exports.
+
+Static page exports should look something like this:
+
+${dim(`// ${src}`)}
+export function serverProps() { ${dim(`// Optional`)}
+  return { ${dim("...")} }
+}
+
+export function Head({ path, ...serverProps }) { ${dim(`// Optional`)}
+  return <title>Hello, world!</title>
+}
+
+export default function Page({ path, ...serverProps }) {
+  return <h1>Hello, world!</h1>
+}`;
+}
+function badDynamicPageExports(src) {
+  return `${src}: Bad dynamic page exports.
+
+Dynamic page exports should look something like this:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+  return [
+    { path: "/foo", props: ${dim("...")} },
+    { path: "/foo/bar", props: ${dim("...")} },
+    { path: "/foo/bar/baz", props: ${dim("...")} },
+  ]
+}
+
+export function Head({ path, ...serverProps }) { ${dim(`// Optional`)}
+  return <title>Hello, world!</title>
+}
+
+export default function Page({ path, ...serverProps }) {
+  return <h1>Hello, world!</h1>
+}`;
+}
+function badServerPropsResolver(src) {
+  return `${src}.serverProps: Bad ${magenta("'serverProps'")} resolver.
+
+${magenta("'serverProps'")} resolvers should look something like this:
+
+${dim(`// ${src}`)}
+export function serverProps() {
+  return { ${dim("...")} }
+}`;
+}
+function badServerPathsResolver(src) {
+  return `${src}.serverPaths: Bad ${magenta("'serverPaths'")} resolver.
+
+${magenta("'serverPaths'")} resolvers should look something like this:
+
+${dim(`// ${src}`)}
+export function serverPaths() {
+  return [
+    { path: "/foo", props: ${dim("...")} },
+    { path: "/foo/bar", props: ${dim("...")} },
+    { path: "/foo/bar/baz", props: ${dim("...")} },
+  ]
+}`;
+}
+function duplicatePath(r1, r2) {
+  function caller(r) {
+    return r.type === "static" ? "serverProps" : "serverPaths";
+  }
+  return `${r1.src}.${caller(r1)}: Path ${magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`;
+}
+function serveWithMissingExportDirectory() {
+  return `It looks like you\u2019re trying to run ${magenta("'retro serve'")} before ${magenta("'retro export'")}. Try ${magenta("'retro export && retro serve'")}.`;
+}
+
 // packages/retro/router/router.ts
-var esbuild2 = __toModule(require("esbuild"));
+var esbuild = __toModule(require("esbuild"));
 var path4 = __toModule(require("path"));
 var service;
 async function resolveModule(runtime, info) {
@@ -672,14 +631,14 @@ async function resolveModule(runtime, info) {
     const result = await service.build(transpileJSXAndTSConfiguration(src, dst2));
     if (result.warnings.length > 0) {
       for (const warning2 of result.warnings) {
-        warning(format2(warning2, yellow));
+        warning(format(warning2, yellow));
       }
       process.exit(1);
     }
-  } catch (err) {
-    if (!("errors" in err) || !("warnings" in err))
-      throw err;
-    error(format2(err.errors[0], bold.red));
+  } catch (error2) {
+    if (!("errors" in error2) || !("warnings" in error2))
+      throw error2;
+    error(format(error2.errors[0], bold.red));
   }
   let module_;
   try {
@@ -700,8 +659,8 @@ async function resolveStaticRoute(runtime, info) {
       if (!validateServerPropsReturn(props)) {
         error(badServerPropsResolver(info.src));
       }
-    } catch (err) {
-      error(`${info.src}.serverProps: ${err.message}`);
+    } catch (error2) {
+      error(`${info.src}.serverProps: ${error2.message}`);
     }
   }
   const routeInfo = info;
@@ -720,8 +679,8 @@ async function resolveDynamicRoutes(runtime, info) {
     if (!validateServerPathsReturn(paths)) {
       error(badServerPathsResolver(info.src));
     }
-  } catch (err) {
-    error(`${info.src}.serverPaths: ${err.message}`);
+  } catch (error2) {
+    error(`${info.src}.serverPaths: ${error2.message}`);
   }
   for (const meta of paths) {
     const path_2 = path4.join(path4.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path);
@@ -742,36 +701,153 @@ async function resolveDynamicRoutes(runtime, info) {
   return metas;
 }
 async function newFromRuntime(runtime) {
-  const router3 = {};
-  service = await esbuild2.startService();
+  const router4 = {};
+  service = await esbuild.startService();
   for (const pageInfo of runtime.pageInfos) {
     if (pageInfo.type === "static") {
       const meta = await resolveStaticRoute(runtime, pageInfo);
-      if (router3[meta.routeInfo.path] !== void 0) {
-        error(duplicatePath(meta.routeInfo, router3[meta.routeInfo.path].routeInfo));
+      if (router4[meta.routeInfo.path] !== void 0) {
+        error(duplicatePath(meta.routeInfo, router4[meta.routeInfo.path].routeInfo));
       }
-      router3[meta.routeInfo.path] = meta;
+      router4[meta.routeInfo.path] = meta;
     } else {
       const metas = await resolveDynamicRoutes(runtime, pageInfo);
       for (const meta of metas) {
-        if (router3[meta.routeInfo.path] !== void 0) {
-          error(duplicatePath(meta.routeInfo, router3[meta.routeInfo.path].routeInfo));
+        if (router4[meta.routeInfo.path] !== void 0) {
+          error(duplicatePath(meta.routeInfo, router4[meta.routeInfo.path].routeInfo));
         }
-        router3[meta.routeInfo.path] = meta;
+        router4[meta.routeInfo.path] = meta;
       }
     }
   }
-  return router3;
+  return router4;
+}
+
+// packages/retro/commands/dev.ts
+function handleEsbuildWarnings(result) {
+  if (result.warnings.length === 0) {
+    return;
+  }
+  for (const warning2 of result.warnings) {
+    warning(format(warning2, yellow));
+  }
+  process.exit(1);
+}
+function handleEsbuildError(error2) {
+  if (error2 === void 0 || error2 === null) {
+    return;
+  }
+  if (!("errors" in error2) || !("warnings" in error2))
+    throw error2;
+  error(format(error2.errors[0], bold.red));
+}
+async function dev(runtime) {
+  const src = path5.join(runtime.directories.cacheDirectory, "app.js");
+  const contents = await renderRouterToString(runtime.router);
+  await fs3.promises.writeFile(src, contents);
+  const dst2 = path5.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
+  let buildResult;
+  try {
+    buildResult = await esbuild2.build({
+      ...bundleAppConfiguration(src, dst2),
+      incremental: true,
+      watch: {
+        onRebuild(error2, result) {
+          if (error2 !== null)
+            handleEsbuildError(error2);
+          if (result !== null)
+            handleEsbuildWarnings(result);
+        }
+      }
+    });
+  } catch (error2) {
+    handleEsbuildError(error2);
+  }
+  let serveResult;
+  try {
+    serveResult = await esbuild2.serve({
+      servedir: runtime.directories.exportDirectory,
+      onRequest: (args) => serve(args)
+    }, {});
+  } catch (error2) {
+    handleEsbuildError(error2);
+  }
+  const server_proxy = http.createServer((req, res) => {
+    const opts = {
+      hostname: serveResult.host,
+      port: serveResult.port,
+      path: ssgify(req.url),
+      method: req.method,
+      headers: req.headers
+    };
+    const req_proxy = http.request(opts, (res_proxy) => {
+      if (res_proxy.statusCode === 404) {
+        res.writeHead(404, {"Content-Type": "text/plain"});
+        res.end("404 - Not Found");
+        return;
+      }
+      res.writeHead(res_proxy.statusCode, res_proxy.headers);
+      res_proxy.pipe(res, {end: true});
+    });
+    req.pipe(req_proxy, {end: true});
+  });
+  server_proxy.listen(runtime.command.port);
+}
+
+// packages/retro/commands/serve.ts
+var esbuild3 = __toModule(require("esbuild"));
+var fs4 = __toModule(require("fs/promises"));
+var http2 = __toModule(require("http"));
+async function serve4(runtime) {
+  try {
+    await fs4.stat(runtime.directories.exportDirectory);
+  } catch {
+    error(serveWithMissingExportDirectory);
+  }
+  let once = false;
+  const result = await esbuild3.serve({
+    servedir: runtime.directories.exportDirectory,
+    onRequest: (args) => {
+      if (!once) {
+        console.log();
+        once = true;
+      }
+      serve(args);
+    }
+  }, {});
+  const server_proxy = http2.createServer((req, res) => {
+    const opts = {
+      hostname: result.host,
+      port: result.port,
+      path: ssgify(req.url),
+      method: req.method,
+      headers: req.headers
+    };
+    const req_proxy = http2.request(opts, (res_proxy) => {
+      if (res_proxy.statusCode === 404) {
+        res.writeHead(404, {"Content-Type": "text/plain"});
+        res.end("404 - Not Found");
+        return;
+      }
+      res.writeHead(res_proxy.statusCode, res_proxy.headers);
+      res_proxy.pipe(res, {end: true});
+    });
+    req.pipe(req_proxy, {end: true});
+  });
+  server_proxy.listen(runtime.command.port);
 }
 
 // packages/retro/commands/export.ts
-async function exportHTML(runtime) {
+var esbuild4 = __toModule(require("esbuild"));
+var fs5 = __toModule(require("fs"));
+var path6 = __toModule(require("path"));
+async function exportPages(runtime) {
   let once = false;
   for (const meta of Object.values(runtime.router)) {
     const start = Date.now();
-    const str = await renderRouteMetaToString(runtime.document, meta);
-    await fs4.promises.mkdir(path5.dirname(meta.routeInfo.dst), {recursive: true});
-    await fs4.promises.writeFile(meta.routeInfo.dst, str);
+    const str = await renderRouteMetaToString(runtime.document, meta, {devMode: false});
+    await fs5.promises.mkdir(path6.dirname(meta.routeInfo.dst), {recursive: true});
+    await fs5.promises.writeFile(meta.routeInfo.dst, str);
     if (!once) {
       console.log();
       once = true;
@@ -780,28 +856,28 @@ async function exportHTML(runtime) {
   }
   console.log();
 }
-async function exportJS(runtime) {
-  const src = path5.join(runtime.directories.cacheDirectory, "app.js");
-  const dst2 = path5.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
+async function exportApp(runtime) {
+  const src = path6.join(runtime.directories.cacheDirectory, "app.js");
+  const dst2 = path6.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
   const contents = await renderRouterToString(runtime.router);
-  await fs4.promises.writeFile(src, contents);
+  await fs5.promises.writeFile(src, contents);
   try {
-    const result = await esbuild3.build(bundleAppConfiguration(src, dst2));
+    const result = await esbuild4.build(bundleAppConfiguration(src, dst2));
     if (result.warnings.length > 0) {
       for (const warning2 of result.warnings) {
-        warning(format2(warning2, yellow));
+        warning(format(warning2, yellow));
       }
       process.exit(1);
     }
-  } catch (err) {
-    if (!("errors" in err) || !("warnings" in err))
-      throw err;
-    error(format2(err.errors[0], bold.red));
+  } catch (error2) {
+    if (!("errors" in error2) || !("warnings" in error2))
+      throw error2;
+    error(format(error2.errors[0], bold.red));
   }
 }
 async function export_2(runtime) {
-  await exportHTML(runtime);
-  await exportJS(runtime);
+  await exportPages(runtime);
+  await exportApp(runtime);
 }
 
 // packages/retro/cli.ts
@@ -928,10 +1004,10 @@ function newCLI(...args) {
 }
 
 // packages/retro/runtime.ts
-var fs5 = __toModule(require("fs"));
+var fs6 = __toModule(require("fs"));
 
 // packages/retro/pages/pages.ts
-var path6 = __toModule(require("path"));
+var path7 = __toModule(require("path"));
 var dynamicPathRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/;
 function path_(dirs, pathInfo) {
   const out = pathInfo.src.slice(dirs.srcPagesDirectory.length, -pathInfo.ext.length);
@@ -941,12 +1017,12 @@ function path_(dirs, pathInfo) {
   return out;
 }
 function dst(dirs, pathInfo) {
-  const out = path6.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length));
+  const out = path7.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length));
   return out.slice(0, -pathInfo.ext.length) + ".html";
 }
 function component(dirs, pathInfo, {dynamic}) {
   let out = "";
-  const parts = path_(dirs, pathInfo).split(path6.sep);
+  const parts = path_(dirs, pathInfo).split(path7.sep);
   for (let part of parts) {
     part = part.replace(/[^a-zA-Z_0-9]+/g, "");
     if (part.length === 0)
@@ -1010,7 +1086,7 @@ async function newFromDirectories(dirs) {
 }
 
 // packages/retro/runtime.ts
-var path7 = __toModule(require("path"));
+var path8 = __toModule(require("path"));
 async function newRuntimeFromCommand(command) {
   const runtime = {
     command,
@@ -1032,16 +1108,16 @@ async function newRuntimeFromCommand(command) {
       ];
       for (const dir of dirs) {
         try {
-          await fs5.promises.stat(dir);
-        } catch (err) {
-          fs5.promises.mkdir(dir, {recursive: true});
+          await fs6.promises.stat(dir);
+        } catch (error2) {
+          fs6.promises.mkdir(dir, {recursive: true});
         }
       }
-      const src = path7.join(runtime.directories.publicDirectory, "index.html");
+      const src = path8.join(runtime.directories.publicDirectory, "index.html");
       try {
-        fs5.promises.stat(src);
-      } catch (err) {
-        await fs5.promises.writeFile(src, detab(`
+        fs6.promises.stat(src);
+      } catch (error2) {
+        await fs6.promises.writeFile(src, detab(`
 						<!DOCTYPE html>
 						<html lang="en">
 							<head>
@@ -1055,7 +1131,7 @@ async function newRuntimeFromCommand(command) {
 						</html>
 					`));
       }
-      const buf = await fs5.promises.readFile(src);
+      const buf = await fs6.promises.readFile(src);
       const str = buf.toString();
       if (!str.includes("%head")) {
         error(missingDocumentHeadTag(src));
@@ -1065,15 +1141,15 @@ async function newRuntimeFromCommand(command) {
     },
     async purge() {
       const dirs = runtime.directories;
-      await fs5.promises.rmdir(dirs.cacheDirectory, {recursive: true});
-      await fs5.promises.rmdir(dirs.exportDirectory, {recursive: true});
-      const excludes = [path7.join(dirs.srcPagesDirectory, "index.html")];
-      await fs5.promises.mkdir(path7.join(dirs.exportDirectory, dirs.publicDirectory), {recursive: true});
-      await copyAll(dirs.publicDirectory, path7.join(dirs.exportDirectory, dirs.publicDirectory), excludes);
+      await fs6.promises.rmdir(dirs.cacheDirectory, {recursive: true});
+      await fs6.promises.rmdir(dirs.exportDirectory, {recursive: true});
+      const excludes = [path8.join(dirs.srcPagesDirectory, "index.html")];
+      await fs6.promises.mkdir(path8.join(dirs.exportDirectory, dirs.publicDirectory), {recursive: true});
+      await copyAll(dirs.publicDirectory, path8.join(dirs.exportDirectory, dirs.publicDirectory), excludes);
     },
     async resolveDocument() {
-      const src = path7.join(this.directories.publicDirectory, "index.html");
-      const buf = await fs5.promises.readFile(src);
+      const src = path8.join(this.directories.publicDirectory, "index.html");
+      const buf = await fs6.promises.readFile(src);
       const str = buf.toString();
       this.document = str;
     },
@@ -1190,7 +1266,7 @@ async function main() {
       await export_2(runtime);
       break;
     case "serve":
-      await serve3(runtime);
+      await serve4(runtime);
       break;
   }
 }

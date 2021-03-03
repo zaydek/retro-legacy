@@ -1,7 +1,7 @@
 import * as commands from "./commands"
 import * as errors from "./errors"
-import * as log from "../lib/log"
-import * as terminal from "../lib/terminal"
+import * as log from "../shared/log"
+import * as terminal from "../shared/terminal"
 import * as types from "./types"
 import * as utils from "./utils"
 

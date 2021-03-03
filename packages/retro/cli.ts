@@ -1,5 +1,5 @@
-import * as log from "../lib/log"
-import * as terminal from "../lib/terminal"
+import * as log from "../shared/log"
+import * as terminal from "../shared/terminal"
 import * as types from "./types"
 
 interface CLI {
@@ -8,7 +8,7 @@ interface CLI {
 	parseServeCommand(): types.ServeCommand
 }
 
-// newCLI creates a new CLI that parses commands.
+// newCLI creates a new command-line interface that parses commands.
 export default function newCLI(...args: string[]): CLI {
 	return {
 		// parseDevCommand parses the dev command; 'retro dev ...'.

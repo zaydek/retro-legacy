@@ -1,4 +1,4 @@
-import * as terminal from "../lib/terminal"
+import * as terminal from "../shared/terminal"
 import * as types from "./types"
 
 ////////////////////////////////////////////////////////////////////////////////

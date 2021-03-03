@@ -1,6 +1,6 @@
 import * as errors from "./errors"
 import * as fs from "fs"
-import * as log from "../lib/log"
+import * as log from "../shared/log"
 import * as pages from "./pages"
 import * as path from "path"
 import * as router from "./router"
@@ -32,7 +32,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			for (const dir of dirs) {
 				try {
 					await fs.promises.stat(dir)
-				} catch (err) {
+				} catch (error) {
 					fs.promises.mkdir(dir, { recursive: true })
 				}
 			}
@@ -41,7 +41,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 
 			try {
 				fs.promises.stat(src)
-			} catch (err) {
+			} catch (error) {
 				await fs.promises.writeFile(
 					src,
 					utils.detab(`
