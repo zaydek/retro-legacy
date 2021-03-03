@@ -9,12 +9,12 @@ import * as utils from "../utils"
 
 let service: esbuild.Service
 
-async function resolveModule<ModuleKind extends types.PageModule>(
+export async function resolveModule<ModuleKind extends types.PageModule>(
 	runtime: types.Runtime,
-	info: types.PageInfo | types.RouteInfo,
+	src: string,
 ): Promise<ModuleKind> {
-	const src = info.src
-	const dst = path.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"))
+	src = src
+	const dst = path.join(runtime.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"))
 
 	try {
 		const result = await service.build(esbuildHelpers.transpileJSXAndTSConfiguration(src, dst))
@@ -29,19 +29,21 @@ async function resolveModule<ModuleKind extends types.PageModule>(
 		log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
 	}
 
-	// See https://github.com/evanw/esbuild/issues/661.
 	let module_: ModuleKind
 	try {
+		// TODO: Change to path.relative?
 		module_ = require(path.join("..", "..", dst))
-	} catch {}
+	} catch (error) {
+		log.error(error)
+	}
 
 	return module_!
 }
 
-async function resolveStaticRoute(runtime: types.Runtime, info: types.StaticPageInfo): Promise<types.RouteMeta> {
-	const module_ = await resolveModule<types.StaticPageModule>(runtime, info)
+async function resolveStaticRoute(runtime: types.Runtime, pageInfo: types.StaticPageInfo): Promise<types.RouteMeta> {
+	const module_ = await resolveModule<types.StaticPageModule>(runtime, pageInfo.src)
 	if (!utils.validateStaticModuleExports(module_)) {
-		log.error(errors.badStaticPageExports(info.src))
+		log.error(errors.badStaticPageExports(pageInfo.src))
 	}
 
 	let props = {}
@@ -49,44 +51,49 @@ async function resolveStaticRoute(runtime: types.Runtime, info: types.StaticPage
 		try {
 			await module_.serverProps!()
 			if (!utils.validateServerPropsReturn(props)) {
-				log.error(errors.badServerPropsResolver(info.src))
+				log.error(errors.badServerPropsResolver(pageInfo.src))
 			}
 		} catch (error) {
-			log.error(`${info.src}.serverProps: ${error.message}`)
+			log.error(`${pageInfo.src}.serverProps: ${error.message}`)
 		}
 	}
 
-	const routeInfo = info
-	const descriptProps = { path: info.path, ...props }
+	const routeInfo = pageInfo
+	const descriptProps = { path: pageInfo.path, ...props }
 
-	return { module: module_, routeInfo, descriptProps }
+	const meta = { module: module_, pageInfo, routeInfo, descriptProps }
+	return meta
 }
 
-async function resolveDynamicRoutes(runtime: types.Runtime, info: types.DynamicPageInfo): Promise<types.RouteMeta[]> {
+async function resolveDynamicRoutes(
+	runtime: types.Runtime,
+	pageInfo: types.DynamicPageInfo,
+): Promise<types.RouteMeta[]> {
 	const metas: types.RouteMeta[] = []
 
-	const module_ = await resolveModule<types.DynamicPageModule>(runtime, info)
+	const module_ = await resolveModule<types.DynamicPageModule>(runtime, pageInfo.src)
 	if (!utils.validateDynamicModuleExports(module_)) {
-		log.error(errors.badDynamicPageExports(info.src))
+		log.error(errors.badDynamicPageExports(pageInfo.src))
 	}
 
 	let paths: { path: string; props: types.Props }[] = []
 	try {
 		paths = await module_.serverPaths!()
 		if (!utils.validateServerPathsReturn(paths)) {
-			log.error(errors.badServerPathsResolver(info.src))
+			log.error(errors.badServerPathsResolver(pageInfo.src))
 		}
 	} catch (error) {
-		log.error(`${info.src}.serverPaths: ${error.message}`)
+		log.error(`${pageInfo.src}.serverPaths: ${error.message}`)
 	}
 
 	for (const meta of paths) {
-		const path_ = path.join(path.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path)
+		const path_ = path.join(path.dirname(pageInfo.src).slice(runtime.directories.srcPagesDirectory.length), meta.path)
 		const dst = path.join(runtime.directories.exportDirectory, path_ + ".html")
 		metas.push({
 			module: module_,
+			pageInfo,
 			routeInfo: {
-				...info,
+				...pageInfo,
 				dst,
 				path: path_,
 			},

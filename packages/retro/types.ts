@@ -48,6 +48,8 @@ export interface StaticPageInfo {
 export interface DynamicPageInfo {
 	type: "dynamic"
 	src: string       // e.g. "src/pages/[index].js"
+	// dst  // Defer to RouteInfo
+	// path // Defer to RouteInfo
 	component: string // e.g. "DynamicPageIndex"
 }
 
@@ -91,6 +93,7 @@ export type PageModule = StaticPageModule | DynamicPageModule
 
 export interface RouteMeta {
 	module: PageModule
+	pageInfo: PageInfo
 	routeInfo: RouteInfo
 	descriptProps: DescriptProps
 }

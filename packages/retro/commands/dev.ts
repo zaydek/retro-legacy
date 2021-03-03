@@ -133,25 +133,77 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 		}
 
 		let url = req.url!
-		if (url.endsWith("index.html")) {
-			url = url.slice(0, -"index.html".length)
-		} else if (url.endsWith(".html")) {
-			url = url.slice(0, -".html".length)
+		if (url.endsWith(".html")) {
+			url = url.slice(0, -".html".length) // "/index.html" -> "/index"
+		}
+		if (url.endsWith("/index")) {
+			url = url.slice(0, -"index".length) // "/index" -> "/"
 		}
 
+		// let url = req.url!
+		// switch (true) {
+		// 	case url.endsWith("/index.html"):
+		// 		url = url.slice(0, -"index.html".length)
+		// 		break
+		// 	case url.endsWith("/index"):
+		// 		url = url.slice(0, -"index".length)
+		// 		break
+		// 	case url.endsWith(".html"):
+		// 		url = url.slice(0, -".html".length)
+		// 		break
+		// }
+
 		if (!url.startsWith("/" + runtime.directories.publicDirectory) && path.extname(url) === "") {
-			const meta = runtime.router[url]
+			let meta = runtime.router[url]
 			if (meta === undefined) {
 				try {
+					console.log("a")
 					const buffer = await fs.promises.readFile(path.join(runtime.directories.exportDirectory, "404.html"))
 					res.writeHead(200, { "Content-Type": "text/html" })
 					res.end(buffer.toString())
 				} catch (error) {
+					console.log("b")
 					res.writeHead(404, { "Content-Type": "text/plain" })
 					res.end("404 - Not Found")
 				}
 				return
 			}
+
+			const src = meta.routeInfo.src
+			const dst = path.join(runtime.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"))
+
+			try {
+				const result = await esbuild.build(esbuildHelpers.transpileJSXAndTSConfiguration(src, dst))
+				if (result.warnings.length > 0) {
+					for (const warning of result.warnings) {
+						log.warning(esbuildHelpers.format(warning, terminal.yellow))
+					}
+					process.exit(1)
+				}
+			} catch (error) {
+				if (!("errors" in error) || !("warnings" in error)) throw error
+				log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
+			}
+
+			// try {
+			const module_ = await require(path.join("..", "..", dst))
+			delete require.cache[require.resolve(path.join("..", "..", dst))]
+			meta.module = module_
+			// } catch (error) {
+			// 	log.error(error)
+			// }
+
+			// try {
+			// 	console.log()
+			// } catch (error) {
+			// 	log.error(error)
+			// }
+
+			// // // Refresh module:
+			// const module_ = await router.resolveModule(runtime, meta.routeInfo.src)
+			// console.log(require(path.join("..", "..", "__cache__/src/pages/component.esbuild.js")))
+			// // console.log(module_)
+			// meta.module = module_
 
 			const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: true })
 			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })

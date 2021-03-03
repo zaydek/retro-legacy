@@ -624,9 +624,9 @@ function serveWithMissingExportDirectory() {
 var esbuild = __toModule(require("esbuild"));
 var path4 = __toModule(require("path"));
 var service;
-async function resolveModule(runtime, info) {
-  const src = info.src;
-  const dst2 = path4.join(runtime.directories.cacheDirectory, info.src.replace(/\.*$/, ".esbuild.js"));
+async function resolveModule(runtime, src) {
+  src = src;
+  const dst2 = path4.join(runtime.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"));
   try {
     const result = await service.build(transpileJSXAndTSConfiguration(src, dst2));
     if (result.warnings.length > 0) {
@@ -643,52 +643,55 @@ async function resolveModule(runtime, info) {
   let module_;
   try {
     module_ = require(path4.join("..", "..", dst2));
-  } catch {
+  } catch (error2) {
+    error(error2);
   }
   return module_;
 }
-async function resolveStaticRoute(runtime, info) {
-  const module_ = await resolveModule(runtime, info);
+async function resolveStaticRoute(runtime, pageInfo) {
+  const module_ = await resolveModule(runtime, pageInfo.src);
   if (!validateStaticModuleExports(module_)) {
-    error(badStaticPageExports(info.src));
+    error(badStaticPageExports(pageInfo.src));
   }
   let props = {};
   if (typeof module_.serverProps === "function") {
     try {
       await module_.serverProps();
       if (!validateServerPropsReturn(props)) {
-        error(badServerPropsResolver(info.src));
+        error(badServerPropsResolver(pageInfo.src));
       }
     } catch (error2) {
-      error(`${info.src}.serverProps: ${error2.message}`);
+      error(`${pageInfo.src}.serverProps: ${error2.message}`);
     }
   }
-  const routeInfo = info;
-  const descriptProps = {path: info.path, ...props};
-  return {module: module_, routeInfo, descriptProps};
+  const routeInfo = pageInfo;
+  const descriptProps = {path: pageInfo.path, ...props};
+  const meta = {module: module_, pageInfo, routeInfo, descriptProps};
+  return meta;
 }
-async function resolveDynamicRoutes(runtime, info) {
+async function resolveDynamicRoutes(runtime, pageInfo) {
   const metas = [];
-  const module_ = await resolveModule(runtime, info);
+  const module_ = await resolveModule(runtime, pageInfo.src);
   if (!validateDynamicModuleExports(module_)) {
-    error(badDynamicPageExports(info.src));
+    error(badDynamicPageExports(pageInfo.src));
   }
   let paths = [];
   try {
     paths = await module_.serverPaths();
     if (!validateServerPathsReturn(paths)) {
-      error(badServerPathsResolver(info.src));
+      error(badServerPathsResolver(pageInfo.src));
     }
   } catch (error2) {
-    error(`${info.src}.serverPaths: ${error2.message}`);
+    error(`${pageInfo.src}.serverPaths: ${error2.message}`);
   }
   for (const meta of paths) {
-    const path_2 = path4.join(path4.dirname(info.src).slice(runtime.directories.srcPagesDirectory.length), meta.path);
+    const path_2 = path4.join(path4.dirname(pageInfo.src).slice(runtime.directories.srcPagesDirectory.length), meta.path);
     const dst2 = path4.join(runtime.directories.exportDirectory, path_2 + ".html");
     metas.push({
       module: module_,
+      pageInfo,
       routeInfo: {
-        ...info,
+        ...pageInfo,
         dst: dst2,
         path: path_2
       },
@@ -796,27 +799,47 @@ async function dev(runtime) {
       return;
     }
     let url = req.url;
-    if (url.endsWith("index.html")) {
-      url = url.slice(0, -"index.html".length);
-    } else if (url.endsWith(".html")) {
+    if (url.endsWith(".html")) {
       url = url.slice(0, -".html".length);
     }
+    if (url.endsWith("/index")) {
+      url = url.slice(0, -"index".length);
+    }
     if (!url.startsWith("/" + runtime.directories.publicDirectory) && path5.extname(url) === "") {
-      const meta = runtime.router[url];
+      let meta = runtime.router[url];
       if (meta === void 0) {
         try {
+          console.log("a");
           const buffer = await fs3.promises.readFile(path5.join(runtime.directories.exportDirectory, "404.html"));
           res.writeHead(200, {"Content-Type": "text/html"});
           res.end(buffer.toString());
         } catch (error2) {
+          console.log("b");
           res.writeHead(404, {"Content-Type": "text/plain"});
           res.end("404 - Not Found");
         }
         return;
       }
+      const src2 = meta.routeInfo.src;
+      const dst3 = path5.join(runtime.directories.cacheDirectory, src2.replace(/\..*$/, ".esbuild.js"));
+      try {
+        const result = await esbuild2.build(transpileJSXAndTSConfiguration(src2, dst3));
+        if (result.warnings.length > 0) {
+          for (const warning2 of result.warnings) {
+            warning(format(warning2, yellow));
+          }
+          process.exit(1);
+        }
+      } catch (error2) {
+        if (!("errors" in error2) || !("warnings" in error2))
+          throw error2;
+        error(format(error2.errors[0], bold.red));
+      }
+      const module_ = await require(path5.join("..", "..", dst3));
+      delete require.cache[require.resolve(path5.join("..", "..", dst3))];
+      meta.module = module_;
       const contents2 = renderRouteMetaToString(runtime.template, meta, {dev: true});
       await fs3.promises.mkdir(path5.dirname(meta.routeInfo.dst), {recursive: true});
-      console.log(meta.routeInfo.dst, contents2);
       await fs3.promises.writeFile(meta.routeInfo.dst, contents2);
     }
     const req_proxy = http.request(opts, async (res_proxy) => {
