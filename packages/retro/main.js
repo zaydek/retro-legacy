@@ -413,7 +413,7 @@ var path5 = __toModule(require("path"));
 // packages/retro/router/router-text.ts
 var React = __toModule(require("react"));
 var ReactDOMServer = __toModule(require("react-dom/server"));
-async function renderRouteMetaToString(document, meta, {devMode}) {
+function renderRouteMetaToString(template, meta, {dev: dev2}) {
   let head = "<!-- <Head { path, ...serverProps }> -->";
   try {
     if (typeof meta.module.Head === "function") {
@@ -430,14 +430,14 @@ async function renderRouteMetaToString(document, meta, {devMode}) {
   body += `
 		<script src="/app.js"></script>`;
   body += `
-		<script>`;
-  body += !devMode ? "" : `
-			const es = new EventSource("/~dev")`;
-  body += !devMode ? "" : `
-			es.addEventListener("reload", e => window.location.reload())`;
-  body += !devMode ? "" : `
-			es.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`;
-  body += !devMode ? "" : `
+		<script type="module">`;
+  body += !dev2 ? "" : `
+			const events = new EventSource("/~dev")`;
+  body += !dev2 ? "" : `
+			events.addEventListener("reload", e => window.location.reload())`;
+  body += !dev2 ? "" : `
+			events.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`;
+  body += !dev2 ? "" : `
 		</script>`;
   try {
     if (typeof meta.module.default === "function") {
@@ -447,10 +447,10 @@ async function renderRouteMetaToString(document, meta, {devMode}) {
   } catch (error2) {
     error(`${meta.routeInfo.src}.<Page>: ${error2.message}`);
   }
-  const repl = document.replace("%head%", head).replace("%page%", body);
-  return repl;
+  const contents = template.replace("%head%", head).replace("%page%", body);
+  return contents;
 }
-async function renderRouterToString(router4) {
+function renderRouterToString(router4) {
   const map = new Map();
   for (const meta of Object.values(router4)) {
     map.set(meta.routeInfo.src, meta.routeInfo.component);
@@ -743,7 +743,7 @@ function handleEsbuildError(error2) {
 }
 async function dev(runtime) {
   const src = path5.join(runtime.directories.cacheDirectory, "app.js");
-  const contents = await renderRouterToString(runtime.router);
+  const contents = renderRouterToString(runtime.router);
   await fs3.promises.writeFile(src, contents);
   const dst2 = path5.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
   let buildResult;
@@ -765,14 +765,21 @@ async function dev(runtime) {
   }
   let serveResult;
   try {
+    let once = false;
     serveResult = await esbuild2.serve({
       servedir: runtime.directories.exportDirectory,
-      onRequest: (args) => serve(args)
+      onRequest: (args) => {
+        if (!once) {
+          console.log();
+          once = true;
+        }
+        serve(args);
+      }
     }, {});
   } catch (error2) {
     handleEsbuildError(error2);
   }
-  const server_proxy = http.createServer((req, res) => {
+  const server_proxy = http.createServer(async (req, res) => {
     const opts = {
       hostname: serveResult.host,
       port: serveResult.port,
@@ -780,7 +787,39 @@ async function dev(runtime) {
       method: req.method,
       headers: req.headers
     };
-    const req_proxy = http.request(opts, (res_proxy) => {
+    if (req.url === "/~dev") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive"
+      });
+      return;
+    }
+    let url = req.url;
+    if (url.endsWith("index.html")) {
+      url = url.slice(0, -"index.html".length);
+    } else if (url.endsWith(".html")) {
+      url = url.slice(0, -".html".length);
+    }
+    if (!url.startsWith("/" + runtime.directories.publicDirectory) && path5.extname(url) === "") {
+      const meta = runtime.router[url];
+      if (meta === void 0) {
+        try {
+          const buffer = await fs3.promises.readFile(path5.join(runtime.directories.exportDirectory, "404.html"));
+          res.writeHead(200, {"Content-Type": "text/html"});
+          res.end(buffer.toString());
+        } catch (error2) {
+          res.writeHead(404, {"Content-Type": "text/plain"});
+          res.end("404 - Not Found");
+        }
+        return;
+      }
+      const contents2 = renderRouteMetaToString(runtime.template, meta, {dev: true});
+      await fs3.promises.mkdir(path5.dirname(meta.routeInfo.dst), {recursive: true});
+      console.log(meta.routeInfo.dst, contents2);
+      await fs3.promises.writeFile(meta.routeInfo.dst, contents2);
+    }
+    const req_proxy = http.request(opts, async (res_proxy) => {
       if (res_proxy.statusCode === 404) {
         res.writeHead(404, {"Content-Type": "text/plain"});
         res.end("404 - Not Found");
@@ -791,6 +830,14 @@ async function dev(runtime) {
     });
     req.pipe(req_proxy, {end: true});
   });
+  setTimeout(async () => {
+    const meta404 = runtime.router["/404"];
+    if (meta404 !== void 0) {
+      const contents404 = renderRouteMetaToString(runtime.template, meta404, {dev: true});
+      await fs3.promises.mkdir(path5.dirname(meta404.routeInfo.dst), {recursive: true});
+      await fs3.promises.writeFile(meta404.routeInfo.dst, contents404);
+    }
+  }, 0);
   server_proxy.listen(runtime.command.port);
 }
 
@@ -845,9 +892,9 @@ async function exportPages(runtime) {
   let once = false;
   for (const meta of Object.values(runtime.router)) {
     const start = Date.now();
-    const str = await renderRouteMetaToString(runtime.document, meta, {devMode: false});
+    const contents = renderRouteMetaToString(runtime.template, meta, {dev: false});
     await fs5.promises.mkdir(path6.dirname(meta.routeInfo.dst), {recursive: true});
-    await fs5.promises.writeFile(meta.routeInfo.dst, str);
+    await fs5.promises.writeFile(meta.routeInfo.dst, contents);
     if (!once) {
       console.log();
       once = true;
@@ -859,7 +906,7 @@ async function exportPages(runtime) {
 async function exportApp(runtime) {
   const src = path6.join(runtime.directories.cacheDirectory, "app.js");
   const dst2 = path6.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length));
-  const contents = await renderRouterToString(runtime.router);
+  const contents = renderRouterToString(runtime.router);
   await fs5.promises.writeFile(src, contents);
   try {
     const result = await esbuild4.build(bundleAppConfiguration(src, dst2));
@@ -1096,7 +1143,7 @@ async function newRuntimeFromCommand(command) {
       cacheDirectory: "__cache__",
       exportDirectory: "__export__"
     },
-    document: "",
+    template: "",
     pageInfos: [],
     router: {},
     async runServerGuards() {
@@ -1131,8 +1178,8 @@ async function newRuntimeFromCommand(command) {
 						</html>
 					`));
       }
-      const buf = await fs6.promises.readFile(src);
-      const str = buf.toString();
+      const buffer = await fs6.promises.readFile(src);
+      const str = buffer.toString();
       if (!str.includes("%head")) {
         error(missingDocumentHeadTag(src));
       } else if (!str.includes("%page")) {
@@ -1143,15 +1190,15 @@ async function newRuntimeFromCommand(command) {
       const dirs = runtime.directories;
       await fs6.promises.rmdir(dirs.cacheDirectory, {recursive: true});
       await fs6.promises.rmdir(dirs.exportDirectory, {recursive: true});
-      const excludes = [path8.join(dirs.srcPagesDirectory, "index.html")];
+      const excludes = [path8.join(dirs.publicDirectory, "index.html")];
       await fs6.promises.mkdir(path8.join(dirs.exportDirectory, dirs.publicDirectory), {recursive: true});
       await copyAll(dirs.publicDirectory, path8.join(dirs.exportDirectory, dirs.publicDirectory), excludes);
     },
     async resolveDocument() {
       const src = path8.join(this.directories.publicDirectory, "index.html");
-      const buf = await fs6.promises.readFile(src);
-      const str = buf.toString();
-      this.document = str;
+      const buffer = await fs6.promises.readFile(src);
+      const str = buffer.toString();
+      this.template = str;
     },
     async resolvePages() {
       this.pageInfos = await newFromDirectories(this.directories);

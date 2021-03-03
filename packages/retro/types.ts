@@ -102,7 +102,7 @@ export interface Router {
 export interface Runtime<CommandKind extends Command = Command> {
 	command: CommandKind
 	directories: Directories
-	document: string
+	template: string
 	pageInfos: PageInfo[]
 	router: Router
 	runServerGuards(): Promise<void>

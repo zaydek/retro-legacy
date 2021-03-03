@@ -12,9 +12,9 @@ async function exportPages(runtime: types.Runtime): Promise<void> {
 	let once = false
 	for (const meta of Object.values(runtime.router)) {
 		const start = Date.now()
-		const str = await router.renderRouteMetaToString(runtime.document, meta, { devMode: false })
+		const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: false })
 		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-		await fs.promises.writeFile(meta.routeInfo.dst, str)
+		await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		if (!once) {
 			console.log()
 			once = true
@@ -29,7 +29,7 @@ async function exportApp(runtime: types.Runtime): Promise<void> {
 	const dst = path.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length))
 
 	// __cache__/app.js
-	const contents = await router.renderRouterToString(runtime.router)
+	const contents = router.renderRouterToString(runtime.router)
 	await fs.promises.writeFile(src, contents)
 
 	// __export__/app.js

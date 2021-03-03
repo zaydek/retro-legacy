@@ -7,11 +7,7 @@ import * as types from "../types"
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
-export async function renderRouteMetaToString(
-	document: string,
-	meta: types.RouteMeta,
-	{ devMode }: { devMode: boolean },
-): Promise<string> {
+export function renderRouteMetaToString(template: string, meta: types.RouteMeta, { dev }: { dev: boolean }): string {
 	let head = "<!-- <Head { path, ...serverProps }> -->"
 	try {
 		if (typeof meta.module.Head === "function") {
@@ -22,17 +18,16 @@ export async function renderRouteMetaToString(
 		log.error(`${meta.routeInfo.src}.<Head>: ${error.message}`)
 	}
 
-	// TODO: Upgrade <script src="/app.js"> to <script src="/app.[hash].js">?
-	// TODO: Add support for SSE here?
+	// TODO: Upgrade to <script src="/app.[hash].js">?
 	let body = ""
 	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	body += `\n\t\t<div id="root"></div>`
 	body += `\n\t\t<script src="/app.js"></script>`
-	body += `\n\t\t<script>`
-	body += !devMode ? "" : `\n\t\t\tconst es = new EventSource("/~dev")`
-	body += !devMode ? "" : `\n\t\t\tes.addEventListener("reload", e => window.location.reload())`
-	body += !devMode ? "" : `\n\t\t\tes.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
-	body += !devMode ? "" : `\n\t\t</script>`
+	body += `\n\t\t<script type="module">`
+	body += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
+	body += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
+	body += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
+	body += !dev ? "" : `\n\t\t</script>`
 
 	try {
 		if (typeof meta.module.default === "function") {
@@ -43,15 +38,15 @@ export async function renderRouteMetaToString(
 		log.error(`${meta.routeInfo.src}.<Page>: ${error.message}`)
 	}
 
-	const repl = document.replace("%head%", head).replace("%page%", body)
-	return repl
+	const contents = template.replace("%head%", head).replace("%page%", body)
+	return contents
 }
 
 // TODO: newRouterFromPages?()
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
-export async function renderRouterToString(router: types.Router): Promise<string> {
+export function renderRouterToString(router: types.Router): string {
 	const map = new Map<string, string>()
 	for (const meta of Object.values(router)) {
 		map.set(meta.routeInfo.src, meta.routeInfo.component)

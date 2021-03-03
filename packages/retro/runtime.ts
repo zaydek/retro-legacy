@@ -16,7 +16,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			cacheDirectory: "__cache__",
 			exportDirectory: "__export__",
 		},
-		document: "",
+		template: "",
 		pageInfos: [],
 		router: {},
 
@@ -60,8 +60,8 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 				)
 			}
 
-			const buf = await fs.promises.readFile(src)
-			const str = buf.toString()
+			const buffer = await fs.promises.readFile(src)
+			const str = buffer.toString()
 
 			if (!str.includes("%head")) {
 				log.error(errors.missingDocumentHeadTag(src))
@@ -77,7 +77,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
 
 			// await this.runServerGuards()
-			const excludes = [path.join(dirs.srcPagesDirectory, "index.html")]
+			const excludes = [path.join(dirs.publicDirectory, "index.html")]
 
 			// TODO: Do we need this?
 			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
@@ -87,9 +87,9 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
 			const src = path.join(this.directories.publicDirectory, "index.html")
-			const buf = await fs.promises.readFile(src)
-			const str = buf.toString()
-			this.document = str
+			const buffer = await fs.promises.readFile(src)
+			const str = buffer.toString()
+			this.template = str
 		},
 
 		// resolvePages resolves and or refreshes this.pages.
