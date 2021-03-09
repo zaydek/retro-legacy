@@ -91,21 +91,20 @@ export function parseExportCommand(...args: string[]): T.ExportCommand {
 export function parseServeCommand(...args: string[]): T.ServeCommand {
 	const cmd: T.ServeCommand = {
 		type: "serve",
-		mode: "ssg",
 		port: 8000,
 	}
 	let badCmd = ""
 	for (const arg of args) {
-		if (arg.startsWith("--mode")) {
-			if (arg === "--mode=spa") {
-				cmd.mode = "spa"
-			} else if (arg === "--mode=ssg") {
-				cmd.mode = "ssg"
-			} else {
-				badCmd = "--mode"
-				break
-			}
-		} else if (arg.startsWith("--port")) {
+		// if (arg.startsWith("--mode")) {
+		// 	if (arg === "--mode=spa") {
+		// 		cmd.mode = "spa"
+		// 	} else if (arg === "--mode=ssg") {
+		// 		cmd.mode = "ssg"
+		// 	} else {
+		// 		badCmd = "--mode"
+		// 		break
+		// 	}
+		if (arg.startsWith("--port")) {
 			if (/^--port=\d+$/.test(arg)) {
 				cmd.port = JSON.parse(arg.slice("--port=".length))
 			} else {

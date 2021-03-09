@@ -1,9 +1,9 @@
 import * as errors from "../errors"
 import * as esbuild from "esbuild"
-import * as events from "../events"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../../shared/log"
+import * as logEvents from "../logEvents"
 import * as T from "../types"
 import * as utils from "../utils"
 
@@ -14,21 +14,19 @@ export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
 		log.error(errors.serveWithoutExportDirectory())
 	}
 
-	// Add a serve request handler:
 	let once = false
-	const result = await esbuild.serve(
-		{
-			servedir: r.directories.exportDirectory,
-			onRequest: (args: esbuild.ServeOnRequestArgs) => {
-				if (!once) {
-					console.log()
-					once = true
-				}
-				events.serve(args)
-			},
+
+	// prettier-ignore
+	const result = await esbuild.serve({
+		servedir: r.directories.exportDirectory,
+		onRequest: (args: esbuild.ServeOnRequestArgs) => {
+			if (!once) {
+				console.log()
+				once = true
+			}
+			logEvents.serve(args)
 		},
-		{},
-	)
+	}, {})
 
 	// This implementation is roughly based on:
 	//

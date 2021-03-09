@@ -1,16 +1,17 @@
 import * as esbuild from "esbuild"
 import * as esbuildHelpers from "../esbuild-helpers"
-import * as events from "../events"
-import * as fsp from "fs/promises"
+import * as fs from "fs"
 import * as http from "http"
 import * as log from "../../shared/log"
+import * as logEvents from "../logEvents"
 import * as path from "path"
 import * as router from "../router"
-import * as terminal from "../../shared/terminal"
 import * as types from "../types"
 import * as utils from "../utils"
 
 import { EPOCH } from "../main"
+
+// import * as terminal from "../../shared/terminal"
 
 // function handleEsbuildWarnings(result: esbuild.BuildResult): void {
 // 	if (result.warnings.length === 0) {
@@ -42,7 +43,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 	// Build __cache__/app.js:
 	const src = path.join(runtime.directories.cacheDirectory, "app.js")
 	const contents = router.renderRouterToString(runtime.router)
-	await fsp.writeFile(src, contents)
+	await fs.promises.writeFile(src, contents)
 
 	// Build __export__/app.js:
 	const dst = path.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length))
@@ -76,7 +77,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 						console.log()
 						once = true
 					}
-					events.serve(args)
+					logEvents.serve(args)
 				},
 			},
 			{},
@@ -140,7 +141,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 			if (meta === undefined) {
 				try {
 					console.log("a")
-					const buffer = await fsp.readFile(path.join(runtime.directories.exportDirectory, "404.html"))
+					const buffer = await fs.promises.readFile(path.join(runtime.directories.exportDirectory, "404.html"))
 					res.writeHead(200, { "Content-Type": "text/html" })
 					res.end(buffer.toString())
 				} catch (error) {
@@ -178,8 +179,8 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 			}
 
 			const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: true })
-			await fsp.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-			await fsp.writeFile(meta.routeInfo.dst, contents)
+			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
+			await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		}
 
 		const req_proxy = http.request(opts, async res_proxy => {

@@ -1,25 +1,26 @@
 import * as esbuild from "esbuild"
 import * as esbuildHelpers from "../esbuild-helpers"
-import * as events from "../events"
-import * as fsp from "fs/promises"
-import * as log from "../../shared/log"
+import * as fs from "fs"
+import * as logEvents from "../logEvents"
 import * as path from "path"
 import * as router from "../router"
 import * as T from "../types"
-import * as terminal from "../../shared/terminal"
+
+// import * as log from "../../shared/log"
+// import * as terminal from "../../shared/terminal"
 
 async function exportPages(runtime: T.Runtime): Promise<void> {
 	let once = false
 	for (const meta of Object.values(runtime.router)) {
 		const start = Date.now()
 		const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: false })
-		await fsp.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-		await fsp.writeFile(meta.routeInfo.dst, contents)
+		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
+		await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		if (!once) {
 			console.log()
 			once = true
 		}
-		events.export_(runtime, meta, start)
+		logEvents.export_(runtime, meta, start)
 	}
 	console.log()
 }
@@ -30,7 +31,7 @@ async function exportApp(runtime: T.Runtime): Promise<void> {
 
 	// __cache__/app.js
 	const contents = router.renderRouterToString(runtime.router)
-	await fsp.writeFile(src, contents)
+	await fs.promises.writeFile(src, contents)
 
 	// __export__/app.js
 	try {

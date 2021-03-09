@@ -31,7 +31,6 @@ ${terminal.bold("retro dev")}
 
 		--cached=...     Use cached resources (default false)
 		--sourcemap=...  Add source maps (default true)
-		--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
 		--port=...       Port number (default 8000)
 
 ${terminal.bold("retro export")}
@@ -45,7 +44,6 @@ ${terminal.bold("retro serve")}
 
 	Serve the production-ready build
 
-		--mode=...       Serve mode 'spa' or 'ssg' (default 'ssg') (experimental)
 		--port=...       Port number (default 8000)
 
 ${terminal.bold("Examples")}

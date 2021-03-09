@@ -28,8 +28,8 @@ test("export command", () => {
 
 test("serve command", () => {
 	expect(cli.parseServeCommand()).toEqual({ type: "serve", mode: "ssg", port: 8000 })
-	expect(cli.parseServeCommand("--mode=spa")).toEqual({ type: "serve", mode: "spa", port: 8000 })
-	expect(cli.parseServeCommand("--mode=ssg")).toEqual({ type: "serve", mode: "ssg", port: 8000 })
+	// expect(cli.parseServeCommand("--mode=spa")).toEqual({ type: "serve", mode: "spa", port: 8000 })
+	// expect(cli.parseServeCommand("--mode=ssg")).toEqual({ type: "serve", mode: "ssg", port: 8000 })
 	expect(cli.parseServeCommand("--port=8000")).toEqual({ type: "serve", mode: "ssg", port: 8000 })
 	expect(cli.parseServeCommand("--port=3000")).toEqual({ type: "serve", mode: "ssg", port: 3000 })
 })

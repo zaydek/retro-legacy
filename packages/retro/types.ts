@@ -16,7 +16,6 @@ export interface ExportCommand {
 
 export interface ServeCommand {
 	type: "serve"
-	mode: "spa" | "ssg"
 	port: number
 }
 
