@@ -1,4 +1,4 @@
-import { parsePathInfo } from "./pathInfo"
+import { parsePathInfo } from "../pathInfo"
 
 test("absolute paths", () => {
 	expect(parsePathInfo("/")).toEqual({ src: "/", basename: "", name: "", ext: "" })

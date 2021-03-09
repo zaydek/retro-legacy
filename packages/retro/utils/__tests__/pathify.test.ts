@@ -1,4 +1,4 @@
-import { spaify, ssgify } from "./pathify"
+import { spaify, ssgify } from "../pathify"
 
 test("spaify", () => {
 	expect(spaify("/")).toBe("/")

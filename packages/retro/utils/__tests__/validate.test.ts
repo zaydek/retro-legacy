@@ -3,7 +3,7 @@ import {
 	validateServerPathsReturn,
 	validateServerPropsReturn,
 	validateStaticModuleExports,
-} from "./validate"
+} from "../validate"
 
 test("static module exports", () => {
 	expect(validateStaticModuleExports({})).toBe(false)
