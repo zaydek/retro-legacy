@@ -1,10 +1,10 @@
 import * as log from "../../shared/log"
-import * as t from "../types"
+import * as T from "../types"
 import * as terminal from "../../shared/terminal"
 
 // parseDevCommand parses the dev command.
-export function parseDevCommand(...args: string[]): t.DevCommand {
-	const cmd: t.DevCommand = {
+export function parseDevCommand(...args: string[]): T.DevCommand {
+	const cmd: T.DevCommand = {
 		type: "dev",
 		cached: false,
 		sourcemap: true,
@@ -51,8 +51,8 @@ export function parseDevCommand(...args: string[]): t.DevCommand {
 }
 
 // parseExportCommand parses the export command.
-export function parseExportCommand(...args: string[]): t.ExportCommand {
-	const cmd: t.ExportCommand = {
+export function parseExportCommand(...args: string[]): T.ExportCommand {
+	const cmd: T.ExportCommand = {
 		type: "export",
 		cached: false,
 		sourcemap: true,
@@ -88,8 +88,8 @@ export function parseExportCommand(...args: string[]): t.ExportCommand {
 }
 
 // parseServeCommand parses the serve command.
-export function parseServeCommand(...args: string[]): t.ServeCommand {
-	const cmd: t.ServeCommand = {
+export function parseServeCommand(...args: string[]): T.ServeCommand {
+	const cmd: T.ServeCommand = {
 		type: "serve",
 		mode: "ssg",
 		port: 8000,
