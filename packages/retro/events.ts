@@ -1,7 +1,7 @@
 import * as esbuild from "esbuild"
 import * as path from "path"
+import * as T from "./types"
 import * as terminal from "../shared/terminal"
-import * as types from "./types"
 import * as utils from "./utils"
 
 const TERM_WIDTH = 40
@@ -17,7 +17,7 @@ function formatMS(ms: number): string {
 	}
 }
 
-export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: number): void {
+export function export_(runtime: T.Runtime, meta: T.RouteMeta, start: number): void {
 	const dur = formatMS(Date.now() - start)
 
 	const l1 = runtime.directories.srcPagesDirectory.length
@@ -43,8 +43,10 @@ export function export_(runtime: types.Runtime, meta: types.RouteMeta, start: nu
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
+	// TODO: Clean this up. This is way too hard to read.
+	const timestamp = terminal.dim(utils.prettyCurrentDate())
 	console.log(
-		`\x20${terminal.dim(utils.timestamp())}\x20\x20` +
+		`\x20${timestamp}\x20\x20` +
 			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
 				start === 0 ? "" : ` ${dimColor(`(${dur})`)}`
 			}`,
@@ -75,8 +77,10 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
 
+	// TODO: Clean this up. This is way too hard to read.
+	const timestamp = terminal.dim(utils.prettyCurrentDate())
 	logger(
-		`\x20${terminal.dim(utils.timestamp())}\x20\x20` +
+		`\x20${timestamp}\x20\x20` +
 			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
 				`(${dur})`,
 			)}`,
