@@ -19,26 +19,26 @@ export function renderRouteMetaToString(template: string, meta: types.RouteMeta,
 	}
 
 	// TODO: Upgrade to <script src="/app.[hash].js">?
-	let body = ""
-	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
-	body += `\n\t\t<div id="root"></div>`
-	body += `\n\t\t<script src="/app.js"></script>`
-	body += !dev ? "" : `\n\t\t<script type="module">`
-	body += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
-	body += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
-	body += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
-	body += !dev ? "" : `\n\t\t</script>`
+	let app = ""
+	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
+	app += `\n\t\t<div id="root"></div>`
+	app += `\n\t\t<script src="/app.js"></script>`
+	app += !dev ? "" : `\n\t\t<script type="module">`
+	app += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
+	app += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
+	app += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
+	app += !dev ? "" : `\n\t\t</script>`
 
 	try {
 		if (typeof meta.module.default === "function") {
 			const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps))
-			body = body.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
+			app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
 		}
 	} catch (error) {
 		log.error(`${meta.routeInfo.src}.<Page>: ${error.message}`)
 	}
 
-	const contents = template.replace("%head%", head).replace("%page%", body)
+	const contents = template.replace("%head%", head).replace("%app%", app)
 	return contents
 }
 

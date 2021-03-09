@@ -34,11 +34,11 @@ function export_(r: T.Runtime, meta: T.RouteMeta, start: number): void {
 	const src_ext = path.extname(src)
 	const src_basename = src.slice(1, -src_ext.length)
 
+	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + src + " ").length))
+
 	const dst = meta.routeInfo.dst.slice(r.directories.exportDirectory.length)
 	const dst_ext = path.extname(dst)
 	const dst_basename = dst.slice(1, -dst_ext.length)
-
-	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + src + " ").length))
 
 	let logstr = ""
 	logstr += " " + terminal.dim(utils.getCurrentPrettyDate()) + "  "
@@ -63,22 +63,21 @@ function serve(args: esbuild.ServeOnRequestArgs): void {
 
 	let logger = (...args: unknown[]): void => console.log(...args)
 	if (args.status < 200 || args.status >= 300) {
-		logger = (...args) => console.error(...args) // eslint-disable-line
+		logger = (...args) => console.error(...args)
 	}
 
-	// TODO: Change to PathInfo implementation?
 	const path_ = args.path
 	const path_ext = path.extname(path_)
 	const path_basename = path_.slice(1, -path_ext.length)
 
-	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_basename}${path_ext}\x20`.length))
+	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + path_ + " ").length))
 
-	// TODO: Clean this up. This is way too hard to read.
-	const datestr = terminal.dim(utils.getCurrentPrettyDate())
-	logger(
-		`\x20${datestr}\x20\x20` +
-			`${dim("/")}${color(path_basename)}${dim(path_ext)} ${dim(sep)} ${color(args.status)} ${dim(`(${dur})`)}`,
-	)
+	let logstr = ""
+	logstr += " " + terminal.dim(utils.getCurrentPrettyDate()) + "  "
+	logstr += dim("/") + color(path_basename) + dim(path_ext)
+	logstr += " " + dim(sep) + " "
+	logstr += color(args.status) + " " + dim(`(${dur})`)
+	logger(logstr)
 }
 
 export { export_ as export, serve }
