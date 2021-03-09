@@ -12,48 +12,25 @@ import * as utils from "../utils"
 
 import { EPOCH } from "../main"
 
-function handleEsbuildWarnings(result: esbuild.BuildResult): void {
-	if (result.warnings.length === 0) {
-		// No-op
-		return
-	}
-	for (const warning of result.warnings) {
-		log.warning(esbuildHelpers.format(warning, terminal.yellow))
-	}
-	process.exit(1)
-}
-
-// TODO: Integrate handleEsbuildWarnings.
-function handleEsbuildError(error: Error): void {
-	if (error === undefined || error === null) {
-		// No-op
-		return
-	}
-	if (!("errors" in error) || !("warnings" in error)) throw error
-	log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
-}
-
-// async function exportPages(runtime: types.Runtime): Promise<void> {
-// 	let once = false
-// 	for (const meta of Object.values(runtime.router)) {
-// 		const start = Date.now()
-// 		const str = await router.renderRouteMetaToString(runtime.document, meta, { devMode: false })
-// 		await fsp.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-// 		await fsp.writeFile(meta.routeInfo.dst, str)
-// 		if (!once) {
-// 			console.log()
-// 			once = true
-// 		}
-// 		events.export_(runtime, meta, start)
+// function handleEsbuildWarnings(result: esbuild.BuildResult): void {
+// 	if (result.warnings.length === 0) {
+// 		// No-op
+// 		return
 // 	}
-// 	console.log()
+// 	for (const warning of result.warnings) {
+// 		log.warning(esbuildHelpers.format(warning, terminal.yellow))
+// 	}
+// 	process.exit(1)
 // }
-
-// // TODO: Check this.
-// function random(lower: number, upper: number, excludes: number[] = []): number {
-// 	const num = lower + Math.floor(Math.random() * (upper - lower))
-// 	if (excludes.includes(num)) return random(lower, upper, excludes)
-// 	return num
+//
+// // TODO: Integrate handleEsbuildWarnings.
+// function handleEsbuildError(error: Error): void {
+// 	if (error === undefined || error === null) {
+// 		// No-op
+// 		return
+// 	}
+// 	if (!("errors" in error) || !("warnings" in error)) throw error
+// 	log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
 // }
 
 // Step 1: Build app.js with watch mode enabled
@@ -70,20 +47,21 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 	// Build __export__/app.js:
 	const dst = path.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length))
 
-	let buildResult: esbuild.BuildResult
+	// let buildResult: esbuild.BuildResult
 	try {
-		buildResult = await esbuild.build({
-			...esbuildHelpers.bundleAppConfiguration(src, dst),
+		await esbuild.build({
+			...esbuildHelpers.bundleConfiguration(src, dst),
 			incremental: true,
 			watch: {
-				onRebuild(error, result): void {
-					if (error !== null) handleEsbuildError(error)
-					if (result !== null) handleEsbuildWarnings(result)
-				},
+				// onRebuild(error, result) {
+				// 	if (error !== null) handleEsbuildError(error)
+				// 	if (result !== null) handleEsbuildWarnings(result)
+				// },
 			},
 		})
 	} catch (error) {
-		handleEsbuildError(error)
+		if (!("errors" in error) || !("warnings" in error)) throw error
+		process.exit(1)
 	}
 
 	let serveResult: esbuild.ServeResult
@@ -104,7 +82,9 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 			{},
 		)
 	} catch (error) {
-		handleEsbuildError(error)
+		// handleEsbuildError(error)
+		if (!("errors" in error) || !("warnings" in error)) throw error
+		process.exit(1)
 	}
 
 	// console.log(serveResult!.port)
@@ -175,16 +155,16 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 			const dst = path.join(runtime.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"))
 
 			try {
-				const result = await esbuild.build(esbuildHelpers.transpileJSXAndTSConfiguration(src, dst))
-				if (result.warnings.length > 0) {
-					for (const warning of result.warnings) {
-						log.warning(esbuildHelpers.format(warning, terminal.yellow))
-					}
-					process.exit(1)
-				}
+				await esbuild.build(esbuildHelpers.transpileOnlyConfiguration(src, dst))
+				// if (result.warnings.length > 0) {
+				// 	for (const warning of result.warnings) {
+				// 		log.warning(esbuildHelpers.format(warning, terminal.yellow))
+				// 	}
+				// 	process.exit(1)
+				// }
 			} catch (error) {
 				if (!("errors" in error) || !("warnings" in error)) throw error
-				log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
+				// 	process.exit(1)
 			}
 
 			let module_: types.PageModule

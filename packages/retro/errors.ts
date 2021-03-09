@@ -19,9 +19,9 @@ export function badCommand(run: string): string {
 
 		Supported commands:
 
-		dev     Start the dev server
-		export  Export the production-ready build (SSG)
-		serve   Serve the production-ready build
+		- dev     Start the dev server
+		- export  Export the production-ready build (SSG)
+		- serve   Serve the production-ready build
 	`)
 }
 

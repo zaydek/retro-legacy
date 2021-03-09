@@ -4,26 +4,19 @@ import * as esbuildHelpers from "../esbuild-helpers"
 import * as log from "../../shared/log"
 import * as path from "path"
 import * as T from "../types"
-import * as terminal from "../../shared/terminal"
 import * as utils from "../utils"
 
-let service: esbuild.Service
+// import * as terminal from "../../shared/terminal"
 
 export async function resolveModule<M extends T.PageModule>(r: T.Runtime, src: string): Promise<M> {
 	src = src
 	const dst = path.join(r.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"))
 
 	try {
-		const result = await service.build(esbuildHelpers.transpileJSXAndTSConfiguration(src, dst))
-		if (result.warnings.length > 0) {
-			for (const warning of result.warnings) {
-				log.warning(esbuildHelpers.format(warning, terminal.yellow))
-			}
-			process.exit(1)
-		}
+		await esbuild.build(esbuildHelpers.transpileOnlyConfiguration(src, dst))
 	} catch (error) {
 		if (!("errors" in error) || !("warnings" in error)) throw error
-		log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
+		process.exit(1)
 	}
 
 	let module_: M
@@ -111,7 +104,6 @@ async function resolveDynamicRoutes(r: T.Runtime, pageInfo: T.DynamicPageInfo): 
 export async function newFromRuntime(runtime: T.Runtime): Promise<T.Router> {
 	const router: T.Router = {}
 
-	service = await esbuild.startService()
 	for (const pageInfo of runtime.pageInfos) {
 		if (pageInfo.type === "static") {
 			const meta = await resolveStaticRoute(runtime, pageInfo)
