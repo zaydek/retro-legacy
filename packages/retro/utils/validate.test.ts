@@ -1,6 +1,6 @@
 import * as validate from "./validate"
 
-test("static module", () => {
+test("static module exports", () => {
 	expect(validate.staticModuleExports({})).toBe(false)
 	expect(validate.staticModuleExports({ default: undefined })).toBe(false)
 	expect(validate.staticModuleExports({ default: () => {} })).toBe(true)
@@ -10,16 +10,10 @@ test("static module", () => {
 	expect(validate.staticModuleExports({ serverProps: () => {}, Head: () => {}, default: () => {} })).toBe(true)
 
 	// API mismatch
-	expect(
-		validate.staticModuleExports({
-			serverPaths: undefined,
-			Head: undefined,
-			default: undefined,
-		}),
-	).toBe(false)
+	expect(validate.staticModuleExports({ serverPaths: undefined, Head: undefined, default: undefined })).toBe(false)
 })
 
-test("dynamic module", () => {
+test("dynamic module exports", () => {
 	expect(validate.dynamicModuleExports({})).toBe(false)
 	expect(validate.dynamicModuleExports({ default: undefined })).toBe(false)
 	expect(validate.dynamicModuleExports({ default: () => {} })).toBe(true)
@@ -29,11 +23,21 @@ test("dynamic module", () => {
 	expect(validate.dynamicModuleExports({ serverPaths: () => {}, Head: () => {}, default: () => {} })).toBe(true)
 
 	// API mismatch
-	expect(
-		validate.dynamicModuleExports({
-			serverProps: undefined,
-			Head: undefined,
-			default: undefined,
-		}),
-	).toBe(false)
+	expect(validate.dynamicModuleExports({ serverProps: undefined, Head: undefined, default: undefined })).toBe(false)
+})
+
+////////////////////////////////////////////////////////////////////////////////
+
+test("serverProps return", () => {
+	expect(validate.serverPropsReturn(undefined)).toBe(false)
+	expect(validate.serverPropsReturn({})).toBe(true)
+	expect(validate.serverPropsReturn({ foo: "bar" })).toBe(true)
+})
+
+test("serverPaths return", () => {
+	expect(validate.serverPathsReturn(undefined)).toBe(false)
+	expect(validate.serverPathsReturn([])).toBe(false)
+	expect(validate.serverPathsReturn([{ path: "/foo/bar" }])).toBe(false)
+	expect(validate.serverPathsReturn([{ path: "/foo/bar", props: undefined }])).toBe(false)
+	expect(validate.serverPathsReturn([{ path: "/foo/bar", props: { foo: "bar" } }])).toBe(true)
 })
