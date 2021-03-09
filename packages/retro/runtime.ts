@@ -66,7 +66,7 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 			if (!str.includes("%head")) {
 				log.error(errors.missingDocumentHeadTag(src))
 			} else if (!str.includes("%app")) {
-				log.error(errors.missingDocumentPageTag(src))
+				log.error(errors.missingDocumentAppTag(src))
 			}
 		},
 

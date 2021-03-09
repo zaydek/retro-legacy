@@ -3,10 +3,7 @@ import * as terminal from "../shared/terminal"
 import * as utils from "./utils"
 
 function accent(str: string): string {
-	// prettier-ignore
-	return str
-		.replace(/('[^']+')/g, terminal.magenta("$1"))
-		.replace(/(Note:) /g, terminal.yellow("$1") + " ")
+	return str.replace(/('[^']+')/g, terminal.magenta("$1"))
 }
 
 function format(str: string): string {
@@ -16,76 +13,84 @@ function format(str: string): string {
 ////////////////////////////////////////////////////////////////////////////////
 // CLI
 
-export function badCLIRunCommand(run: string): string {
-	return `Bad run command ${terminal.magenta(`'${run}'`)}.
+export function badCommand(run: string): string {
+	return format(`
+		Bad command '${run}'.
 
-Supported commands:
+		Supported commands:
 
-retro dev     Start the dev server
-retro export  Export the production-ready build (SSG)
-retro serve   Serve the production-ready build
-
-${terminal.yellow("hint:")} Use ${terminal.magenta("'retro usage'")} for usage.`
+		dev     Start the dev server
+		export  Export the production-ready build (SSG)
+		serve   Serve the production-ready build
+	`)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Document (index.html)
 
-export function missingDocumentHeadTag(path: string): string {
-	return `${path}: Add ${terminal.magenta("'%head%'")} to ${terminal.magenta("'<head>'")}.
+export function missingDocumentHeadTag(src: string): string {
+	return format(`
+		${src}: Add '%head%' somewhere to '<head>'.
 
-For example:
+		For example:
 
-${terminal.dim(`// ${path}`)}
-<!DOCTYPE html>
-	<head lang="en">
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		${terminal.magenta("%head%")}
-		${terminal.dim("...")}
-	</head>
-	<body>
-		${terminal.dim("...")}
-	</body>
-</html>`
+		${terminal.dim(`// ${src}`)}
+		<!DOCTYPE html>
+			<head lang="en">
+				<meta charset="utf-8" />
+				<meta name="viewport" content="width=device-width, initial-scale=1" />
+				${terminal.magenta("%head%")}
+				${terminal.dim("...")}
+			</head>
+			<body>
+				${terminal.dim("...")}
+			</body>
+		</html>
+	`)
 }
 
-export function missingDocumentPageTag(path: string): string {
-	return `${path}: Add ${terminal.magenta("'%app%'")} to ${terminal.magenta("'<body>'")}.
+export function missingDocumentAppTag(src: string): string {
+	return format(`
+		${src}: Add '%app%' somewhere to '<body>'.
 
-For example:
+		For example:
 
-${terminal.dim(`// ${path}`)}
-<!DOCTYPE html>
-	<head lang="en">
-		${terminal.dim("...")}
-	</head>
-	<body>
-		${terminal.magenta("%app%")}
-		${terminal.dim("...")}
-	</body>
-</html>`
+		${terminal.dim(`// ${src}`)}
+		<!DOCTYPE html>
+			<head lang="en">
+				${terminal.dim("...")}
+			</head>
+			<body>
+				${terminal.magenta("%app%")}
+				${terminal.dim("...")}
+			</body>
+		</html>
+	`)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pages
 
 export function pagesUseNonURICharacters(pages: string[]): string {
-	return `These pages use non-URI characters:
+	return format(`
+		One or more pages use non URI-safe characters:
 
-${pages.map(page => "- " + page).join("\n")}
+		${pages.map(page => "- " + page).join("\n")}
 
-URI characters are described by RFC 3986:
+		URI characters described by RFC 3986:
 
-2.2. Unreserved Characters
+		2.2. Unreserved Characters
 
-	ALPHA / DIGIT / "-" / "." / "_" / "~"
+			ALPHA / DIGIT / "-" / "." / "_" / "~"
 
-2.3. Reserved Characters
+		2.3. Reserved Characters
 
-	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-	${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="`
+			gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+			sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+			${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="
+
+		${terminal.underline("https://tools.ietf.org/html/rfc3986")}
+	`)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
