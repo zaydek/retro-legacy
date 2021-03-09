@@ -4,11 +4,11 @@ import * as log from "../shared/log"
 import * as pages from "./pages"
 import * as path from "path"
 import * as router from "./router"
-import * as types from "./types"
+import * as t from "./types"
 import * as utils from "./utils"
 
-export default async function newRuntimeFromCommand(command: types.Command): Promise<types.Runtime<typeof command>> {
-	const runtime: types.Runtime<typeof command> = {
+export default async function newRuntimeFromCommand(command: t.Command): Promise<t.Runtime<typeof command>> {
+	const runtime: t.Runtime<typeof command> = {
 		command,
 		directories: {
 			publicDirectory: "www",

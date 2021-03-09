@@ -3,6 +3,8 @@ import * as terminal from "./terminal"
 const EOF = "\n"
 
 // format converts tabs to spaces and adds two spaces to the start.
+//
+// TODO: Implement accent here.
 function format(...args: unknown[]): string {
 	// For errors, extract error.message:
 	if (args.length === 1 && args[0] instanceof Error) {
@@ -15,7 +17,7 @@ function format(...args: unknown[]): string {
 		.split("\n")
 		.map((substr, x) => {
 			if (x === 0 || substr === "") return substr
-			return "\x20" + substr.replace("\t", "\x20\x20")
+			return "\x20" + substr.replace(/\t/g, "\x20\x20") // Tabs -> spaces
 		})
 		.join("\n")
 }
