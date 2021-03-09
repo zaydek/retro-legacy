@@ -1,6 +1,6 @@
 import { detab } from "./detab"
 
-test("", () => {
+test("integration", () => {
 	expect(detab("")).toBe("")
 	expect(detab("Hello, world!")).toBe("Hello, world!")
 

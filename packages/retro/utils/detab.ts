@@ -1,5 +1,7 @@
 const EOF = "\n"
 
+// detab removes the leading tabs from a string. An EOF is delimited for
+// multiline strings.
 export function detab(str: string, keep = 0): string {
 	let xs: number[] = []
 	const lines = str.trimEnd().split("\n")
