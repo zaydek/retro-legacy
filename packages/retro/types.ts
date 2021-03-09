@@ -29,7 +29,7 @@ export type Command = DevCommand | ExportCommand | ServeCommand
 
 // prettier-ignore
 export interface Directories {
-	publicDirectory: string   // e.g. "public"
+	publicDirectory: string   // e.g. "www"
 	srcPagesDirectory: string // e.g. "src/pages"
 	cacheDirectory: string    // e.g. "__cache__"
 	exportDirectory: string   // e.g. "__export__"

@@ -11,7 +11,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 	const runtime: types.Runtime<typeof command> = {
 		command,
 		directories: {
-			publicDirectory: "public",
+			publicDirectory: "www",
 			srcPagesDirectory: "src/pages",
 			cacheDirectory: "__cache__",
 			exportDirectory: "__export__",

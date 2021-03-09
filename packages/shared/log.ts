@@ -20,19 +20,19 @@ function format(...args: unknown[]): string {
 		.join("\n")
 }
 
-// "> ok: ..."
+// ok logs an error message that appears as "> ok: ...".
 export function ok(...args: unknown[]): void {
 	const message = format(...args)
 	console.log(`\x20${terminal.bold(">")} ${terminal.bold(message)}${EOF}`)
 }
 
-// "> warning: ..."
+// warning logs an error message that appears as "> warning: ...".
 export function warning(...args: unknown[]): void {
 	const message = format(...args)
 	console.warn(`\x20${terminal.bold(">")} ${terminal.bold.yellow("warning:")} ${terminal.bold(message)}${EOF}`)
 }
 
-// "> error: ..."
+// error logs an error message that appears as "> error: ...".
 export function error(...args: unknown[]): void {
 	const message = format(...args)
 	console.error(`\x20${terminal.bold(">")} ${terminal.bold.red("error:")} ${terminal.bold(message)}${EOF}`)

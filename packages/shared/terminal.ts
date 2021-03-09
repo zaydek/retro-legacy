@@ -1,37 +1,37 @@
-// BuilderFunction describes the builder pattern where a function or a method
-// (recursively) can be called.
+// BuilderFunction describes the builder pattern where methods can be
+// recursively chained.
 //
 // For example:
 //
-// - function(...)
-// - function.method(...)
-// - function.method.method(...)
+// - build(...).method(...)
+// - build(...).method.method(...)
+// - build(...).method.method.methods(...)
 //
-export interface Builder {
+export interface BuilderChain {
 	(...args: unknown[]): string
-	normal: Builder
-	bold: Builder
-	dim: Builder
-	underline: Builder
-	black: Builder
-	red: Builder
-	green: Builder
-	yellow: Builder
-	blue: Builder
-	magenta: Builder
-	cyan: Builder
-	white: Builder
-	bgBlack: Builder
-	bgRed: Builder
-	bgGreen: Builder
-	bgYellow: Builder
-	bgBlue: Builder
-	bgMagenta: Builder
-	bgCyan: Builder
-	bgWhite: Builder
+	normal: BuilderChain
+	bold: BuilderChain
+	dim: BuilderChain
+	underline: BuilderChain
+	black: BuilderChain
+	red: BuilderChain
+	green: BuilderChain
+	yellow: BuilderChain
+	blue: BuilderChain
+	magenta: BuilderChain
+	cyan: BuilderChain
+	white: BuilderChain
+	bgBlack: BuilderChain
+	bgRed: BuilderChain
+	bgGreen: BuilderChain
+	bgYellow: BuilderChain
+	bgBlue: BuilderChain
+	bgMagenta: BuilderChain
+	bgCyan: BuilderChain
+	bgWhite: BuilderChain
 }
 
-const options = [
+const opts = [
 	{ name: "normal", code: "\x1b[0m" },
 	{ name: "bold", code: "\x1b[1m" },
 	{ name: "dim", code: "\x1b[2m" },
@@ -54,87 +54,26 @@ const options = [
 	{ name: "bgWhite", code: "\x1b[47m" },
 ]
 
-// function clean(str: string): string {
-// 	let out = ""
-//
-// 	let x = 0
-// 	while (x < str.length) {
-// 		let codes: string[] = []
-// 		let x2 = x
-//
-// 		// On "\x1b":
-// 		while (str[x2] === "\x1b") {
-// 			x2++
-//
-// 			// Step over "[":
-// 			if (x2 >= str.length || str[x2] !== "[") {
-// 				break
-// 			}
-// 			x2++
-// 			// Step over /\d+/:
-// 			const start = x2
-// 			while (x2 < str.length) {
-// 				if (str[x2]! < "0" || str[x2]! > "9") {
-// 					break
-// 				}
-// 				x2++
-// 			}
-// 			// Guard /\d+/:
-// 			const end = x2
-// 			if (start === end) {
-// 				break
-// 			}
-// 			// Step over "m":
-// 			if (x2 >= str.length || str[x2] !== "m") {
-// 				break
-// 			}
-// 			x2++
-// 			codes.push(str.slice(start, end))
-// 		}
-//
-// 		// On one or more code matches:
-// 		if (codes.length > 0) {
-// 			out += `\x1b[${codes.join(";")}m`
-// 			x = x2
-// 			continue
-// 		}
-//
-// 		// Shortcut:
-// 		if (x2 > x) {
-// 			out += str.slice(x, x2)
-// 			x = x2
-// 			continue
-// 		}
-// 		out += str[x]
-// 		x++
-// 	}
-// 	return out
-// }
-
-function build(...codes: string[]): Builder {
-	const set = new Set(codes)
-
+function build(...codes: string[]): BuilderChain {
 	function format(...args: unknown[]): string {
-		const coded = [...set].join("")
-		// return clean(coded + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + coded) + "\x1b[0m")
-		return coded + args.join(" ").replaceAll("\x1b[0m", "\x1b[0m" + coded) + "\x1b[0m"
-	}
+		if (args.length === 0) return ""
+		const code = codes.join("")
 
-	for (const { name, code } of options) {
+		// NOTE: Use '.replace' not '.replaceAll'; users have reported:
+		// 'TypeError: args.join(...).replaceAll is not a function'.
+		return code + args.join(" ").replace(/\x1b\[0m/g, "\x1b[0m" + code) + "\x1b[0m"
+	}
+	for (const { name, code } of opts) {
 		Object.defineProperty(format, name, {
 			enumerable: true,
 			get() {
-				return build(...[...codes, code])
+				return build(...new Set([...codes, code]))
 			},
 		})
 	}
-
-	// NOTE: Use 'as builder' because there’s no initializer syntax for functions
-	// with methods.
-	return format as Builder
+	return format as BuilderChain
 }
 
-export const noop = (...args: unknown[]): string => args.join(" ")
 export const normal = build("\x1b[0m")
 export const bold = build("\x1b[1m")
 export const dim = build("\x1b[2m")

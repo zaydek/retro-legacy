@@ -1,15 +1,15 @@
-import * as fs from "fs/promises"
+import * as fs from "fs"
 import * as p from "path"
 
-export function sleep(ms: number): Promise<void> {
-	return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-export async function* watcher(root: string, { interval }: { interval: number }): AsyncGenerator<string> {
+// watcher implements a simple filesystem watcher. The first run builds a cache
+// that maps paths to mtimeMs. Consecutive runs returns on filesystem events.
+export async function watcher(root: string): Promise<() => Promise<string>> {
 	const mtimeMsMap: { [key: string]: number } = {}
 
-	async function read(entry: string, { deep }: { deep: boolean }): Promise<string> {
-		const stat = await fs.stat(entry)
+	// recurse recurses on an entry path. Parameter deep describes whether to
+	// eagerly return on mtimeMs mismatches.
+	async function recurse(entry: string, { deep }: { deep: boolean }): Promise<string> {
+		const stat = await fs.promises.stat(entry)
 		const mtimeMs = mtimeMsMap[entry]
 		if (mtimeMs === undefined || stat.mtimeMs !== mtimeMs) {
 			mtimeMsMap[entry] = stat.mtimeMs
@@ -18,9 +18,9 @@ export async function* watcher(root: string, { interval }: { interval: number })
 			}
 		}
 		if (stat.isDirectory()) {
-			for (const each of await fs.readdir(entry)) {
+			for (const each of await fs.promises.readdir(entry)) {
 				const src = p.join(entry, each)
-				const result = await read(src, { deep })
+				const result = await recurse(src, { deep })
 				if (result !== "") {
 					if (!deep) {
 						return result
@@ -31,14 +31,6 @@ export async function* watcher(root: string, { interval }: { interval: number })
 		return ""
 	}
 
-	await read(root, { deep: true })
-
-	// Generate source changes:
-	while (true) {
-		await sleep(interval)
-		const src = await read(root, { deep: false })
-		if (src !== "") {
-			yield src
-		}
-	}
+	await recurse(root, { deep: true })
+	return async () => await recurse(root, { deep: false })
 }
