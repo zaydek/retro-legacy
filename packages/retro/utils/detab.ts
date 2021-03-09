@@ -1,21 +1,22 @@
-export function detab(str: string, keep = 0): string {
-	let offsets: number[] = []
+const EOF = "\n"
 
-	const arr = str.trimEnd().split("\n")
-	for (const each of arr) {
-		if (each.length === 0) continue
-		let offset = 0
-		while (offset < each.length) {
-			if (each[offset] !== "\t") {
-				// No-op
+export function detab(str: string, keep = 0): string {
+	let xs: number[] = []
+	const lines = str.trimEnd().split("\n")
+	for (const line of lines) {
+		if (line.length === 0) continue
+		let x = 0
+		while (x < line.length) {
+			if (line[x] !== "\t") {
 				break
 			}
-			offset++
+			x++
 		}
-		offsets.push(offset)
+		xs.push(x)
 	}
+	const x = Math.min(...xs)
 
-	offsets = offsets.filter(each => each !== 0)
-	const offset = Math.min(...offsets)
-	return arr.map(each => "\t".repeat(keep) + each.slice(offset)).join("\n") + "\n" // EOF
+	// prettier-ignore
+	return lines.map(line => "\t".repeat(keep) + line.slice(x)).join("\n") +
+		(lines.length === 1 ? "" : EOF)
 }
