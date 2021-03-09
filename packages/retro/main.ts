@@ -8,6 +8,8 @@ import * as utils from "./utils"
 import newCLI from "./cli"
 import newRuntimeFromCommand from "./runtime"
 
+export const EPOCH = Date.now()
+
 function format(str: string): string {
 	return str
 		.split("\n")

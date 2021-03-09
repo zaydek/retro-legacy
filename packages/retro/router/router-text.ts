@@ -23,7 +23,7 @@ export function renderRouteMetaToString(template: string, meta: types.RouteMeta,
 	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	body += `\n\t\t<div id="root"></div>`
 	body += `\n\t\t<script src="/app.js"></script>`
-	body += `\n\t\t<script type="module">`
+	body += !dev ? "" : `\n\t\t<script type="module">`
 	body += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
 	body += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
 	body += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`

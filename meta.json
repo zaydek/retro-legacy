@@ -1,0 +1,21 @@
+{
+  "inputs": {
+    "hello.ts": {
+      "bytes": 87,
+      "imports": []
+    }
+  },
+  "outputs": {
+    "out.js": {
+      "imports": [],
+      "exports": [],
+      "entryPoint": "hello.ts",
+      "inputs": {
+        "hello.ts": {
+          "bytesInOutput": 73
+        }
+      },
+      "bytes": 476
+    }
+  }
+}

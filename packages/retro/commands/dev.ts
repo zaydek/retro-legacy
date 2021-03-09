@@ -1,7 +1,7 @@
 import * as esbuild from "esbuild"
 import * as esbuildHelpers from "../esbuild-helpers"
 import * as events from "../events"
-import * as fs from "fs"
+import * as fsp from "fs/promises"
 import * as http from "http"
 import * as log from "../../shared/log"
 import * as path from "path"
@@ -9,6 +9,8 @@ import * as router from "../router"
 import * as terminal from "../../shared/terminal"
 import * as types from "../types"
 import * as utils from "../utils"
+
+import { EPOCH } from "../main"
 
 function handleEsbuildWarnings(result: esbuild.BuildResult): void {
 	if (result.warnings.length === 0) {
@@ -36,8 +38,8 @@ function handleEsbuildError(error: Error): void {
 // 	for (const meta of Object.values(runtime.router)) {
 // 		const start = Date.now()
 // 		const str = await router.renderRouteMetaToString(runtime.document, meta, { devMode: false })
-// 		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-// 		await fs.promises.writeFile(meta.routeInfo.dst, str)
+// 		await fsp.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
+// 		await fsp.writeFile(meta.routeInfo.dst, str)
 // 		if (!once) {
 // 			console.log()
 // 			once = true
@@ -63,7 +65,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 	// Build __cache__/app.js:
 	const src = path.join(runtime.directories.cacheDirectory, "app.js")
 	const contents = router.renderRouterToString(runtime.router)
-	await fs.promises.writeFile(src, contents)
+	await fsp.writeFile(src, contents)
 
 	// Build __export__/app.js:
 	const dst = path.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length))
@@ -158,7 +160,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 			if (meta === undefined) {
 				try {
 					console.log("a")
-					const buffer = await fs.promises.readFile(path.join(runtime.directories.exportDirectory, "404.html"))
+					const buffer = await fsp.readFile(path.join(runtime.directories.exportDirectory, "404.html"))
 					res.writeHead(200, { "Content-Type": "text/html" })
 					res.end(buffer.toString())
 				} catch (error) {
@@ -185,29 +187,19 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 				log.error(esbuildHelpers.format((error as esbuild.BuildFailure).errors[0]!, terminal.bold.red))
 			}
 
-			// try {
-			const module_ = await require(path.join("..", "..", dst))
-			delete require.cache[require.resolve(path.join("..", "..", dst))]
-			meta.module = module_
-			// } catch (error) {
-			// 	log.error(error)
-			// }
-
-			// try {
-			// 	console.log()
-			// } catch (error) {
-			// 	log.error(error)
-			// }
-
-			// // // Refresh module:
-			// const module_ = await router.resolveModule(runtime, meta.routeInfo.src)
-			// console.log(require(path.join("..", "..", "__cache__/src/pages/component.esbuild.js")))
-			// // console.log(module_)
-			// meta.module = module_
+			let module_: types.PageModule
+			try {
+				const path_ = path.join(process.cwd(), dst)
+				module_ = await require(path_)
+				delete require.cache[require.resolve(path_)] // Purge the dependency cache
+				meta.module = module_
+			} catch (error) {
+				log.error(error)
+			}
 
 			const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: true })
-			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-			await fs.promises.writeFile(meta.routeInfo.dst, contents)
+			await fsp.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
+			await fsp.writeFile(meta.routeInfo.dst, contents)
 		}
 
 		const req_proxy = http.request(opts, async res_proxy => {
@@ -224,15 +216,17 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 		req.pipe(req_proxy, { end: true })
 	})
 
-	// Pre-generate __export__/404.html:
-	setTimeout(async () => {
-		const meta404 = runtime.router["/404"]
-		if (meta404 !== undefined) {
-			const contents404 = router.renderRouteMetaToString(runtime.template, meta404, { dev: true })
-			await fs.promises.mkdir(path.dirname(meta404.routeInfo.dst), { recursive: true })
-			await fs.promises.writeFile(meta404.routeInfo.dst, contents404)
-		}
-	}, 0)
+	// // Pre-generate __export__/404.html:
+	// setTimeout(async () => {
+	// 	const meta404 = runtime.router["/404"]
+	// 	if (meta404 !== undefined) {
+	// 		const contents404 = router.renderRouteMetaToString(runtime.template, meta404, { dev: true })
+	// 		await fsp.mkdir(path.dirname(meta404.routeInfo.dst), { recursive: true })
+	// 		await fsp.writeFile(meta404.routeInfo.dst, contents404)
+	// 	}
+	// }, 0)
 
 	server_proxy.listen(runtime.command.port)
+
+	console.log(Date.now() - EPOCH)
 }

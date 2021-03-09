@@ -1,7 +1,7 @@
 import * as esbuild from "esbuild"
 import * as esbuildHelpers from "../esbuild-helpers"
 import * as events from "../events"
-import * as fs from "fs"
+import * as fsp from "fs/promises"
 import * as log from "../../shared/log"
 import * as path from "path"
 import * as router from "../router"
@@ -13,8 +13,8 @@ async function exportPages(runtime: types.Runtime): Promise<void> {
 	for (const meta of Object.values(runtime.router)) {
 		const start = Date.now()
 		const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: false })
-		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-		await fs.promises.writeFile(meta.routeInfo.dst, contents)
+		await fsp.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
+		await fsp.writeFile(meta.routeInfo.dst, contents)
 		if (!once) {
 			console.log()
 			once = true
@@ -30,7 +30,7 @@ async function exportApp(runtime: types.Runtime): Promise<void> {
 
 	// __cache__/app.js
 	const contents = router.renderRouterToString(runtime.router)
-	await fs.promises.writeFile(src, contents)
+	await fsp.writeFile(src, contents)
 
 	// __export__/app.js
 	try {

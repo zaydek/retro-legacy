@@ -32,7 +32,7 @@ export async function resolveModule<ModuleKind extends types.PageModule>(
 	let module_: ModuleKind
 	try {
 		// TODO: Change to path.relative?
-		module_ = require(path.join("..", "..", dst))
+		module_ = require(path.join(process.cwd(), dst))
 	} catch (error) {
 		log.error(error)
 	}
@@ -83,6 +83,10 @@ async function resolveDynamicRoutes(
 			log.error(errors.badServerPathsResolver(pageInfo.src))
 		}
 	} catch (error) {
+		// TODO: FIXME
+		if (!utils.validateServerPathsReturn(paths)) {
+			log.error(errors.badServerPathsResolver(pageInfo.src))
+		}
 		log.error(`${pageInfo.src}.serverPaths: ${error.message}`)
 	}
 

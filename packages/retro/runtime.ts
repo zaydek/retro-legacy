@@ -1,5 +1,5 @@
 import * as errors from "./errors"
-import * as fs from "fs"
+import * as fsp from "fs/promises"
 import * as log from "../shared/log"
 import * as pages from "./pages"
 import * as path from "path"
@@ -31,18 +31,18 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 
 			for (const dir of dirs) {
 				try {
-					await fs.promises.stat(dir)
+					await fsp.stat(dir)
 				} catch (error) {
-					fs.promises.mkdir(dir, { recursive: true })
+					fsp.mkdir(dir, { recursive: true })
 				}
 			}
 
 			const src = path.join(runtime.directories.publicDirectory, "index.html")
 
 			try {
-				fs.promises.stat(src)
+				fsp.stat(src)
 			} catch (error) {
-				await fs.promises.writeFile(
+				await fsp.writeFile(
 					src,
 					utils.detab(`
 						<!DOCTYPE html>
@@ -60,7 +60,7 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 				)
 			}
 
-			const buffer = await fs.promises.readFile(src)
+			const buffer = await fsp.readFile(src)
 			const str = buffer.toString()
 
 			if (!str.includes("%head")) {
@@ -73,21 +73,21 @@ export default async function newRuntimeFromCommand(command: types.Command): Pro
 		// purge purges __cache__ and __export__.
 		async purge(): Promise<void> {
 			const dirs = runtime.directories
-			await fs.promises.rmdir(dirs.cacheDirectory, { recursive: true })
-			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
+			await fsp.rmdir(dirs.cacheDirectory, { recursive: true })
+			await fsp.rmdir(dirs.exportDirectory, { recursive: true })
 
 			// await this.runServerGuards()
 			const excludes = [path.join(dirs.publicDirectory, "index.html")]
 
 			// TODO: Do we need this?
-			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
+			await fsp.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
 			await utils.copyAll(dirs.publicDirectory, path.join(dirs.exportDirectory, dirs.publicDirectory), excludes)
 		},
 
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
 			const src = path.join(this.directories.publicDirectory, "index.html")
-			const buffer = await fs.promises.readFile(src)
+			const buffer = await fsp.readFile(src)
 			const str = buffer.toString()
 			this.template = str
 		},

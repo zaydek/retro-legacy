@@ -8,7 +8,7 @@ export default function Page() {
 	return (
 		<div>
 			<Nav />
-			<h1>My website</h1>
+			<h1>My yo yo yo website</h1>
 		</div>
 	)
 }
