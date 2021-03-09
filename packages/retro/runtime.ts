@@ -1,14 +1,14 @@
 import * as errors from "./errors"
-import * as fsp from "fs/promises"
+import * as fs from "fs"
 import * as log from "../shared/log"
 import * as pages from "./pages"
 import * as path from "path"
 import * as router from "./router"
-import * as t from "./types"
+import * as T from "./types"
 import * as utils from "./utils"
 
-export default async function newRuntimeFromCommand(command: t.Command): Promise<t.Runtime<typeof command>> {
-	const runtime: t.Runtime<typeof command> = {
+export default async function newRuntimeFromCommand(command: T.Command): Promise<T.Runtime<typeof command>> {
+	const runtime: T.Runtime<typeof command> = {
 		command,
 		directories: {
 			publicDirectory: "www",
@@ -31,18 +31,18 @@ export default async function newRuntimeFromCommand(command: t.Command): Promise
 
 			for (const dir of dirs) {
 				try {
-					await fsp.stat(dir)
+					await fs.promises.stat(dir)
 				} catch (error) {
-					fsp.mkdir(dir, { recursive: true })
+					fs.promises.mkdir(dir, { recursive: true })
 				}
 			}
 
 			const src = path.join(runtime.directories.publicDirectory, "index.html")
 
 			try {
-				fsp.stat(src)
+				fs.promises.stat(src)
 			} catch (error) {
-				await fsp.writeFile(
+				await fs.promises.writeFile(
 					src,
 					utils.detab(`
 						<!DOCTYPE html>
@@ -53,19 +53,19 @@ export default async function newRuntimeFromCommand(command: t.Command): Promise
 								%head%
 							</head>
 							<body>
-								%page%
+								%app%
 							</body>
 						</html>
 					`),
 				)
 			}
 
-			const buffer = await fsp.readFile(src)
+			const buffer = await fs.promises.readFile(src)
 			const str = buffer.toString()
 
 			if (!str.includes("%head")) {
 				log.error(errors.missingDocumentHeadTag(src))
-			} else if (!str.includes("%page")) {
+			} else if (!str.includes("%app")) {
 				log.error(errors.missingDocumentPageTag(src))
 			}
 		},
@@ -73,21 +73,21 @@ export default async function newRuntimeFromCommand(command: t.Command): Promise
 		// purge purges __cache__ and __export__.
 		async purge(): Promise<void> {
 			const dirs = runtime.directories
-			await fsp.rmdir(dirs.cacheDirectory, { recursive: true })
-			await fsp.rmdir(dirs.exportDirectory, { recursive: true })
+			await fs.promises.rmdir(dirs.cacheDirectory, { recursive: true })
+			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
 
 			// await this.runServerGuards()
 			const excludes = [path.join(dirs.publicDirectory, "index.html")]
 
 			// TODO: Do we need this?
-			await fsp.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
+			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
 			await utils.copyAll(dirs.publicDirectory, path.join(dirs.exportDirectory, dirs.publicDirectory), excludes)
 		},
 
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
 			const src = path.join(this.directories.publicDirectory, "index.html")
-			const buffer = await fsp.readFile(src)
+			const buffer = await fs.promises.readFile(src)
 			const str = buffer.toString()
 			this.template = str
 		},

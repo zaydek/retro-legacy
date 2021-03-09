@@ -1,5 +1,5 @@
-// prettyDate formats a date as "03:04:05.000 AM".
-export function prettyDate(date: Date): string {
+// getPrettyDate formats a date as "03:04:05.000 AM".
+export function getPrettyDate(date: Date): string {
 	const hh = String(date.getHours() % 12 ?? 12).padStart(2, "0")
 	const mm = String(date.getMinutes()).padStart(2, "0")
 	const ss = String(date.getSeconds()).padStart(2, "0")
@@ -8,7 +8,7 @@ export function prettyDate(date: Date): string {
 	return `${hh}:${mm}:${ss}.${ms} ${am}`
 }
 
-// prettyCurrentDate formats the current date as "03:04:05.000 AM".
-export function prettyCurrentDate(): string {
-	return prettyDate(new Date())
+// getCurrentPrettyDate formats the current date as "03:04:05.000 AM".
+export function getCurrentPrettyDate(): string {
+	return getPrettyDate(new Date())
 }

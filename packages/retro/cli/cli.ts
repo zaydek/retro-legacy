@@ -94,7 +94,7 @@ export function parseServeCommand(...args: string[]): T.ServeCommand {
 		mode: "ssg",
 		port: 8000,
 	}
-	let badCommand = ""
+	let badCmd = ""
 	for (const arg of args) {
 		if (arg.startsWith("--mode")) {
 			if (arg === "--mode=spa") {
@@ -102,22 +102,22 @@ export function parseServeCommand(...args: string[]): T.ServeCommand {
 			} else if (arg === "--mode=ssg") {
 				cmd.mode = "ssg"
 			} else {
-				badCommand = "--mode"
+				badCmd = "--mode"
 				break
 			}
 		} else if (arg.startsWith("--port")) {
 			if (/^--port=\d+$/.test(arg)) {
 				cmd.port = JSON.parse(arg.slice("--port=".length))
 			} else {
-				badCommand = "--port"
+				badCmd = "--port"
 				break
 			}
 		} else {
-			badCommand = arg
+			badCmd = arg
 		}
 	}
-	if (badCommand !== "") {
-		log.error(`Bad command ${terminal.magenta(`'${badCommand}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
+	if (badCmd !== "") {
+		log.error(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
 	}
 	if (cmd.port < 1e3 || cmd.port >= 1e4) {
 		log.error(`${terminal.magenta("'--port'")} must be between 1000-9999.`)

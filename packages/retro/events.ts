@@ -44,9 +44,9 @@ export function export_(runtime: T.Runtime, meta: T.RouteMeta, start: number): v
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
 
 	// TODO: Clean this up. This is way too hard to read.
-	const timestamp = terminal.dim(utils.prettyCurrentDate())
+	const datestr = terminal.dim(utils.getCurrentPrettyDate())
 	console.log(
-		`\x20${timestamp}\x20\x20` +
+		`\x20${datestr}\x20\x20` +
 			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
 				start === 0 ? "" : ` ${dimColor(`(${dur})`)}`
 			}`,
@@ -78,9 +78,9 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
 
 	// TODO: Clean this up. This is way too hard to read.
-	const timestamp = terminal.dim(utils.prettyCurrentDate())
+	const datestr = terminal.dim(utils.getCurrentPrettyDate())
 	logger(
-		`\x20${timestamp}\x20\x20` +
+		`\x20${datestr}\x20\x20` +
 			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
 				`(${dur})`,
 			)}`,

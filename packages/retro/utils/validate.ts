@@ -1,9 +1,9 @@
-// validateObject asserts value strictly matches an object.
+// validateObject asserts a value strictly matches an object.
 function validateObject(value: unknown): boolean {
 	return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
-// validateObject asserts value strictly matches an array.
+// validateObject asserts a value strictly matches an array.
 function validateArray(value: unknown): boolean {
 	return typeof value === "object" && value !== null && Array.isArray(value)
 }
@@ -14,7 +14,7 @@ interface UnknownObject {
 	[key: string]: unknown
 }
 
-export function staticModuleExports(exports: unknown): boolean {
+export function validateStaticModuleExports(exports: unknown): boolean {
 	if (!validateObject(exports)) return false
 	const known = exports as UnknownObject
 	switch (true) {
@@ -26,7 +26,7 @@ export function staticModuleExports(exports: unknown): boolean {
 	return true
 }
 
-export function dynamicModuleExports(exports: unknown): boolean {
+export function validateDynamicModuleExports(exports: unknown): boolean {
 	if (!validateObject(exports)) return false
 	const known = exports as UnknownObject
 	switch (true) {
@@ -40,11 +40,11 @@ export function dynamicModuleExports(exports: unknown): boolean {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-export function serverPropsReturn(ret: unknown): boolean {
+export function validateServerPropsReturn(ret: unknown): boolean {
 	return validateObject(ret)
 }
 
-export function serverPathsReturn(ret: unknown): boolean {
+export function validateServerPathsReturn(ret: unknown): boolean {
 	if (!validateArray(ret) || (ret as unknown[]).length === 0) return false
 	const known = ret as unknown[]
 	const ok = known.every(meta => {

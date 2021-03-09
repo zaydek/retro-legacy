@@ -1,9 +1,20 @@
+import * as T from "./types"
 import * as terminal from "../shared/terminal"
-import * as types from "./types"
+import * as utils from "./utils"
+
+function accent(str: string): string {
+	// prettier-ignore
+	return str
+		.replace(/('[^']+')/g, terminal.magenta("$1"))
+		.replace(/(Note:) /g, terminal.yellow("$1") + " ")
+}
+
+function format(str: string): string {
+	return accent(utils.detab(str).trim())
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // CLI
-////////////////////////////////////////////////////////////////////////////////
 
 export function badCLIRunCommand(run: string): string {
 	return `Bad run command ${terminal.magenta(`'${run}'`)}.
@@ -19,7 +30,6 @@ ${terminal.yellow("hint:")} Use ${terminal.magenta("'retro usage'")} for usage.`
 
 ////////////////////////////////////////////////////////////////////////////////
 // Document (index.html)
-////////////////////////////////////////////////////////////////////////////////
 
 export function missingDocumentHeadTag(path: string): string {
 	return `${path}: Add ${terminal.magenta("'%head%'")} to ${terminal.magenta("'<head>'")}.
@@ -28,38 +38,37 @@ For example:
 
 ${terminal.dim(`// ${path}`)}
 <!DOCTYPE html>
-  <head lang="en">
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    ${terminal.magenta("%head%")}
-    ${terminal.dim("...")}
-  </head>
-  <body>
-    ${terminal.dim("...")}
-  </body>
+	<head lang="en">
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		${terminal.magenta("%head%")}
+		${terminal.dim("...")}
+	</head>
+	<body>
+		${terminal.dim("...")}
+	</body>
 </html>`
 }
 
 export function missingDocumentPageTag(path: string): string {
-	return `${path}: Add ${terminal.magenta("'%page%'")} to ${terminal.magenta("'<body>'")}.
+	return `${path}: Add ${terminal.magenta("'%app%'")} to ${terminal.magenta("'<body>'")}.
 
 For example:
 
 ${terminal.dim(`// ${path}`)}
 <!DOCTYPE html>
-  <head lang="en">
-    ${terminal.dim("...")}
-  </head>
-  <body>
-    ${terminal.magenta("%page%")}
-    ${terminal.dim("...")}
-  </body>
+	<head lang="en">
+		${terminal.dim("...")}
+	</head>
+	<body>
+		${terminal.magenta("%app%")}
+		${terminal.dim("...")}
+	</body>
 </html>`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pages
-////////////////////////////////////////////////////////////////////////////////
 
 export function pagesUseNonURICharacters(pages: string[]): string {
 	return `These pages use non-URI characters:
@@ -70,104 +79,130 @@ URI characters are described by RFC 3986:
 
 2.2. Unreserved Characters
 
-  ALPHA / DIGIT / "-" / "." / "_" / "~"
+	ALPHA / DIGIT / "-" / "." / "_" / "~"
 
 2.3. Reserved Characters
 
-  gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
-  sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
-  ${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="`
+	gen-delims = ":" / "/" / "?" / "#" / "[" / "]" /
+	sub-delims = "@" / "!" / "$" / "&" / "'" / "(" / ")"
+	${"\x20".repeat(11)}/ "*" / "+" / "," / ";" / "="`
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server API
-////////////////////////////////////////////////////////////////////////////////
 
 export function badStaticPageExports(src: string): string {
-	return `${src}: Bad static page exports.
+	return format(`
+		${src}: Bad static page exports.
 
-Static page exports should look something like this:
+		Static page exports should look something like this:
 
-${terminal.dim(`// ${src}`)}
-export function serverProps() { ${terminal.dim(`// Optional`)}
-  return { ${terminal.dim("...")} }
-}
+		${terminal.dim(`// ${src}`)}
+		export function serverProps() {
+			return { ${terminal.dim("...")} }
+		}
 
-export function Head({ path, ...serverProps }) { ${terminal.dim(`// Optional`)}
-  return <title>Hello, world!</title>
-}
+		export function Head({ path, ...props }) {
+			return <title>Hello, world!</title>
+		}
 
-export default function Page({ path, ...serverProps }) {
-  return <h1>Hello, world!</h1>
-}`
+		export default function Route({ path, ...props }) {
+			return <h1>Hello, world!</h1>
+		}
+	`)
 }
 
 export function badDynamicPageExports(src: string): string {
-	return `${src}: Bad dynamic page exports.
+	return format(`
+		${src}: Bad dynamic page exports.
 
-Dynamic page exports should look something like this:
+		Dynamic page exports should look something like this:
 
-${terminal.dim(`// ${src}`)}
-export function serverPaths() {
-  return [
-    { path: "/foo", props: ${terminal.dim("...")} },
-    { path: "/foo/bar", props: ${terminal.dim("...")} },
-    { path: "/foo/bar/baz", props: ${terminal.dim("...")} },
-  ]
+		${terminal.dim(`// ${src}`)}
+		export function serverPaths() {
+			return [
+				{ path: "/foo", props: ${terminal.dim("...")} },
+				{ path: "/foo/bar", props: ${terminal.dim("...")} },
+				{ path: "/foo/bar/baz", props: ${terminal.dim("...")} },
+			]
+		}
+
+		export function Head({ path, ...props }) {
+			return <title>Hello, world!</title>
+		}
+
+		export default function Route({ path, ...props }) {
+			return <h1>Hello, world!</h1>
+		}
+	`)
 }
 
-export function Head({ path, ...serverProps }) { ${terminal.dim(`// Optional`)}
-  return <title>Hello, world!</title>
+export function badServerPropsReturn(src: string): string {
+	return format(`
+		${src}.serverProps: Bad 'serverProps' return.
+
+		A 'serverProps' resolver should look something like this:
+
+		${terminal.dim(`// ${src}`)}
+		export function serverProps() {
+			return { ${terminal.dim("...")} }
+		}
+
+		${terminal.dim(`// ${src} (asynchronous)`)}
+		export async function serverProps() {
+			await ${terminal.dim(`...`)}
+			return { ${terminal.dim("...")} }
+		}
+	`)
 }
 
-export default function Page({ path, ...serverProps }) {
-  return <h1>Hello, world!</h1>
-}`
-}
+export function badServerPathsReturn(src: string): string {
+	return format(`
+		${src}.serverPaths: Bad 'serverPaths' return.
 
-export function badServerPropsResolver(src: string): string {
-	return `${src}.serverProps: Bad ${terminal.magenta("'serverProps'")} resolver.
+		A 'serverPaths' resolver should look something like this:
 
-${terminal.magenta("'serverProps'")} resolvers should look something like this:
+		${terminal.dim(`// ${src}`)}
+		export function serverPaths() {
+			return [
+				{ path: "/foo", props: ${terminal.dim("...")} },
+				{ path: "/foo/bar", props: ${terminal.dim("...")} },
+				{ path: "/foo/bar/baz", props: ${terminal.dim("...")} },
+			]
+		}
 
-${terminal.dim(`// ${src}`)}
-export function serverProps() {
-  return { ${terminal.dim("...")} }
-}`
-}
-
-export function badServerPathsResolver(src: string): string {
-	return `${src}.serverPaths: Bad ${terminal.magenta("'serverPaths'")} resolver.
-
-${terminal.magenta("'serverPaths'")} resolvers should look something like this:
-
-${terminal.dim(`// ${src}`)}
-export function serverPaths() {
-  return [
-    { path: "/foo", props: ${terminal.dim("...")} },
-    { path: "/foo/bar", props: ${terminal.dim("...")} },
-    { path: "/foo/bar/baz", props: ${terminal.dim("...")} },
-  ]
-}`
+		${terminal.dim(`// ${src} (asynchronous)`)}
+		export async function serverPaths() {
+			await ${terminal.dim(`...`)}
+			return [
+				{ path: "/foo", props: ${terminal.dim("...")} },
+				{ path: "/foo/bar", props: ${terminal.dim("...")} },
+				{ path: "/foo/bar/baz", props: ${terminal.dim("...")} },
+			]
+		}
+	`)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Server API (miscellaneous)
-////////////////////////////////////////////////////////////////////////////////
+// Server API (etc.)
 
-export function duplicatePath(r1: types.RouteInfo, r2: types.RouteInfo): string {
-	function caller(r: types.RouteInfo): string {
-		return r.type === "static" ? "serverProps" : "serverPaths"
+export function repeatPath(r1: T.RouteInfo, r2: T.RouteInfo): string {
+	function namespace(routeInfo: T.RouteInfo): string {
+		const fn = "static" ? "serverProps" : "serverPaths"
+		return `${routeInfo.src}.${fn}`
 	}
-	return `${r1.src}.${caller(r1)}: Path ${terminal.magenta(`'${r1.path}'`)} used by ${r2.src}.${caller(r2)}.`
+	let out = ""
+	out += `${namespace(r1)}: Repeat path '${r1.path}'; see ${namespace(r2)}.`
+	out += r1.src === r2.src ? "" : "\n"
+	out += r1.src === r2.src ? "" : `\n- ${namespace(r1)} defines '${r1.path}'`
+	out += r1.src === r2.src ? "" : `\n- ${namespace(r1)} defines '${r1.path}'`
+	return format(out)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Serve command
-////////////////////////////////////////////////////////////////////////////////
 
-export function serveWithMissingExportDirectory(): string {
-	return `It looks like you’re trying to run ${terminal.magenta("'retro serve'")} before ${terminal.magenta(
-		"'retro export'",
-	)}. Try ${terminal.magenta("'retro export && retro serve'")}.`
+// prettier-ignore
+export function serveWithoutExportDirectory(): string {
+	return format("App unexported; try 'retro export && retro serve'.")
 }

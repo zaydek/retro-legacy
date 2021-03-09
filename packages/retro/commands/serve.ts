@@ -1,24 +1,24 @@
 import * as errors from "../errors"
 import * as esbuild from "esbuild"
 import * as events from "../events"
-import * as fs from "fs/promises"
+import * as fs from "fs"
 import * as http from "http"
 import * as log from "../../shared/log"
-import * as types from "../types"
+import * as T from "../types"
 import * as utils from "../utils"
 
-export async function serve(runtime: types.Runtime<types.ServeCommand>): Promise<void> {
+export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
 	try {
-		await fs.stat(runtime.directories.exportDirectory)
+		await fs.promises.stat(r.directories.exportDirectory)
 	} catch {
-		log.error(errors.serveWithMissingExportDirectory)
+		log.error(errors.serveWithoutExportDirectory())
 	}
 
 	// Add a serve request handler:
 	let once = false
 	const result = await esbuild.serve(
 		{
-			servedir: runtime.directories.exportDirectory,
+			servedir: r.directories.exportDirectory,
 			onRequest: (args: esbuild.ServeOnRequestArgs) => {
 				if (!once) {
 					console.log()
@@ -55,5 +55,5 @@ export async function serve(runtime: types.Runtime<types.ServeCommand>): Promise
 		req.pipe(req_proxy, { end: true })
 	})
 
-	server_proxy.listen(runtime.command.port)
+	server_proxy.listen(r.command.port)
 }

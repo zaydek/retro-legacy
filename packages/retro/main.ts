@@ -1,9 +1,9 @@
-import * as cli from "./cli"
+import * as cli from "./cli/cli"
 import * as commands from "./commands"
 import * as errors from "./errors"
 import * as log from "../shared/log"
+import * as T from "./types"
 import * as terminal from "../shared/terminal"
-import * as types from "./types"
 import * as utils from "./utils"
 
 import newRuntimeFromCommand from "./runtime"
@@ -73,7 +73,7 @@ async function main(): Promise<void> {
 		cmdArg = args[0]!
 	}
 
-	let cmd: types.Command
+	let cmd: T.Command
 	switch (cmdArg) {
 		case "version":
 		case "--version":
@@ -108,13 +108,13 @@ async function main(): Promise<void> {
 	const rt = await newRuntimeFromCommand(cmd!)
 	switch (rt.command.type) {
 		case "dev":
-			await commands.dev(rt as types.Runtime<types.DevCommand>)
+			await commands.dev(rt as T.Runtime<T.DevCommand>)
 			break
 		case "export":
-			await commands.export(rt as types.Runtime<types.ExportCommand>)
+			await commands.export(rt as T.Runtime<T.ExportCommand>)
 			break
 		case "serve":
-			await commands.serve(rt as types.Runtime<types.ServeCommand>)
+			await commands.serve(rt as T.Runtime<T.ServeCommand>)
 			break
 	}
 }

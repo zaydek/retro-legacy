@@ -1,6 +1,6 @@
-// testURISafeImpl tests whether a character matches URI reserved or unreserved
-// characters based on RFC 3986.
-function testURISafeImpl(char: string): boolean {
+// testURISafeCharacter tests whether a character matches a reserved or
+// unreserved URI character based on RFC 3986.
+function testURISafeCharacter(char: string): boolean {
 	// prettier-ignore
 	if (
 		(char >= "a" && char <= "z") || // ALPHA LOWER
@@ -41,7 +41,7 @@ function testURISafeImpl(char: string): boolean {
 
 export function testURISafe(str: string): boolean {
 	for (const char of str) {
-		if (!testURISafeImpl(char)) {
+		if (!testURISafeCharacter(char)) {
 			return false
 		}
 	}

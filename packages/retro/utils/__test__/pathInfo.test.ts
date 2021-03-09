@@ -1,13 +1,13 @@
 import { parsePathInfo } from "./pathInfo"
 
-test("absolute", () => {
+test("absolute paths", () => {
 	expect(parsePathInfo("/")).toEqual({ src: "/", basename: "", name: "", ext: "" })
 	expect(parsePathInfo("/foo")).toEqual({ src: "/foo", basename: "foo", name: "", ext: "" })
 	expect(parsePathInfo("/foo/bar")).toEqual({ src: "/foo/bar", basename: "bar", name: "", ext: "" })
 	expect(parsePathInfo("/foo/bar.baz")).toEqual({ src: "/foo/bar.baz", basename: "bar.baz", name: "bar", ext: ".baz" })
 })
 
-test("relative", () => {
+test("relative paths", () => {
 	expect(parsePathInfo("")).toEqual({ src: "", basename: "", name: "", ext: "" })
 	expect(parsePathInfo("foo")).toEqual({ src: "foo", basename: "foo", name: "", ext: "" })
 	expect(parsePathInfo("foo/bar")).toEqual({ src: "foo/bar", basename: "bar", name: "", ext: "" })
