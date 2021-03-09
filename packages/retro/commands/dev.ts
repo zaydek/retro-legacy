@@ -136,7 +136,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 		// 		break
 		// }
 
-		if (!url.startsWith("/" + runtime.directories.publicDirectory) && path.extname(url) === "") {
+		if (!url.startsWith("/" + runtime.directories.wwwDirectory) && path.extname(url) === "") {
 			let meta = runtime.router[url]
 			if (meta === undefined) {
 				try {

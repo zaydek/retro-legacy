@@ -9,28 +9,28 @@ import * as T from "../types"
 // import * as log from "../../shared/log"
 // import * as terminal from "../../shared/terminal"
 
-async function exportPages(runtime: T.Runtime): Promise<void> {
+async function exportPages(r: T.Runtime): Promise<void> {
 	let once = false
-	for (const meta of Object.values(runtime.router)) {
+	for (const meta of Object.values(r.router)) {
 		const start = Date.now()
-		const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: false })
+		const contents = router.renderRouteMetaToString(r.template, meta, { dev: false })
 		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
 		await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		if (!once) {
 			console.log()
 			once = true
 		}
-		logEvents.export_(runtime, meta, start)
+		logEvents.export(r, meta, start)
 	}
 	console.log()
 }
 
-async function exportApp(runtime: T.Runtime): Promise<void> {
-	const src = path.join(runtime.directories.cacheDirectory, "app.js")
-	const dst = path.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length))
+async function exportApp(r: T.Runtime): Promise<void> {
+	const src = path.join(r.directories.cacheDirectory, "app.js")
+	const dst = path.join(r.directories.exportDirectory, src.slice(r.directories.srcPagesDirectory.length))
 
 	// __cache__/app.js
-	const contents = router.renderRouterToString(runtime.router)
+	const contents = router.renderRouterToString(r.router)
 	await fs.promises.writeFile(src, contents)
 
 	// __export__/app.js

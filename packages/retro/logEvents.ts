@@ -17,43 +17,38 @@ function formatMS(ms: number): string {
 	}
 }
 
-export function export_(runtime: T.Runtime, meta: T.RouteMeta, start: number): void {
+function export_(r: T.Runtime, meta: T.RouteMeta, start: number): void {
 	const dur = formatMS(Date.now() - start)
-
-	const l1 = runtime.directories.srcPagesDirectory.length
-	const l2 = runtime.directories.exportDirectory.length
 
 	let color = terminal.white
 	if (meta.routeInfo.type === "dynamic") {
 		color = terminal.cyan
 	}
 
-	let dimColor = terminal.dim.white
+	let dim = terminal.dim.white
 	if (meta.routeInfo.type === "dynamic") {
-		dimColor = terminal.dim.cyan
+		dim = terminal.dim.cyan
 	}
 
-	const src = meta.routeInfo.src.slice(l1)
+	const src = meta.routeInfo.src.slice(r.directories.srcPagesDirectory.length)
 	const src_ext = path.extname(src)
-	const src_name = src.slice(1, -src_ext.length)
+	const src_basename = src.slice(1, -src_ext.length)
 
-	const dst = meta.routeInfo.dst.slice(l2)
+	const dst = meta.routeInfo.dst.slice(r.directories.exportDirectory.length)
 	const dst_ext = path.extname(dst)
-	const dst_name = dst.slice(1, -dst_ext.length)
+	const dst_basename = dst.slice(1, -dst_ext.length)
 
-	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${src_name}${src_ext}\x20`.length))
+	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + src + " ").length))
 
-	// TODO: Clean this up. This is way too hard to read.
-	const datestr = terminal.dim(utils.getCurrentPrettyDate())
-	console.log(
-		`\x20${datestr}\x20\x20` +
-			`${dimColor("/")}${color(src_name)}${dimColor(src_ext)} ${dimColor(sep)} ${dimColor("/")}${color(dst_name)}${
-				start === 0 ? "" : ` ${dimColor(`(${dur})`)}`
-			}`,
-	)
+	let logstr = ""
+	logstr += " " + terminal.dim(utils.getCurrentPrettyDate()) + "  "
+	logstr += dim("/") + color(src_basename) + dim(src_ext)
+	logstr += " " + dim(sep) + " "
+	logstr += dim("/") + color(dst_basename) + " " + dim(`(${dur})`)
+	console.log(logstr)
 }
 
-export function serve(args: esbuild.ServeOnRequestArgs): void {
+function serve(args: esbuild.ServeOnRequestArgs): void {
 	const dur = formatMS(args.timeInMS)
 
 	let color = terminal.normal
@@ -61,9 +56,9 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 		color = terminal.red
 	}
 
-	let dimColor = terminal.dim
+	let dim = terminal.dim
 	if (args.status < 200 || args.status >= 300) {
-		dimColor = terminal.dim.red
+		dim = terminal.dim.red
 	}
 
 	let logger = (...args: unknown[]): void => console.log(...args)
@@ -71,18 +66,19 @@ export function serve(args: esbuild.ServeOnRequestArgs): void {
 		logger = (...args) => console.error(...args) // eslint-disable-line
 	}
 
+	// TODO: Change to PathInfo implementation?
 	const path_ = args.path
 	const path_ext = path.extname(path_)
-	const path_name = path_.slice(1, -path_ext.length)
+	const path_basename = path_.slice(1, -path_ext.length)
 
-	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_name}${path_ext}\x20`.length))
+	const sep = "-".repeat(Math.max(0, TERM_WIDTH - `/${path_basename}${path_ext}\x20`.length))
 
 	// TODO: Clean this up. This is way too hard to read.
 	const datestr = terminal.dim(utils.getCurrentPrettyDate())
 	logger(
 		`\x20${datestr}\x20\x20` +
-			`${dimColor("/")}${color(path_name)}${dimColor(path_ext)} ${dimColor(sep)} ${color(args.status)} ${dimColor(
-				`(${dur})`,
-			)}`,
+			`${dim("/")}${color(path_basename)}${dim(path_ext)} ${dim(sep)} ${color(args.status)} ${dim(`(${dur})`)}`,
 	)
 }
+
+export { export_ as export, serve }

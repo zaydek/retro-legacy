@@ -11,7 +11,7 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 	const runtime: T.Runtime<typeof command> = {
 		command,
 		directories: {
-			publicDirectory: "www",
+			wwwDirectory: "www",
 			srcPagesDirectory: "src/pages",
 			cacheDirectory: "__cache__",
 			exportDirectory: "__export__",
@@ -23,7 +23,7 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 		// runServerGuards runs server guards.
 		async runServerGuards(): Promise<void> {
 			const dirs = [
-				runtime.directories.publicDirectory,
+				runtime.directories.wwwDirectory,
 				runtime.directories.srcPagesDirectory,
 				runtime.directories.cacheDirectory,
 				runtime.directories.exportDirectory,
@@ -37,7 +37,7 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 				}
 			}
 
-			const src = path.join(runtime.directories.publicDirectory, "index.html")
+			const src = path.join(runtime.directories.wwwDirectory, "index.html")
 
 			try {
 				fs.promises.stat(src)
@@ -77,16 +77,16 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
 
 			// await this.runServerGuards()
-			const excludes = [path.join(dirs.publicDirectory, "index.html")]
+			const excludes = [path.join(dirs.wwwDirectory, "index.html")]
 
 			// TODO: Do we need this?
-			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.publicDirectory), { recursive: true })
-			await utils.copyAll(dirs.publicDirectory, path.join(dirs.exportDirectory, dirs.publicDirectory), excludes)
+			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.wwwDirectory), { recursive: true })
+			await utils.copyAll(dirs.wwwDirectory, path.join(dirs.exportDirectory, dirs.wwwDirectory), excludes)
 		},
 
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
-			const src = path.join(this.directories.publicDirectory, "index.html")
+			const src = path.join(this.directories.wwwDirectory, "index.html")
 			const buffer = await fs.promises.readFile(src)
 			const str = buffer.toString()
 			this.template = str
