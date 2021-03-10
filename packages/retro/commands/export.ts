@@ -13,7 +13,7 @@ async function exportPages(r: T.Runtime): Promise<void> {
 	let once = false
 	for (const meta of Object.values(r.router)) {
 		const start = Date.now()
-		const contents = router.renderRouteMetaToString(r.template, meta, { dev: false })
+		const contents = router.routeMetaToString(r.template, meta, { devMode: false })
 		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
 		await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		if (!once) {
@@ -30,7 +30,7 @@ async function exportApp(r: T.Runtime): Promise<void> {
 	const dst = path.join(r.directories.exportDirectory, src.slice(r.directories.srcPagesDirectory.length))
 
 	// __cache__/app.js
-	const contents = router.renderRouterToString(r.router)
+	const contents = router.routerToString(r.router)
 	await fs.promises.writeFile(src, contents)
 
 	// __export__/app.js
@@ -49,7 +49,9 @@ async function exportApp(r: T.Runtime): Promise<void> {
 	}
 }
 
-export async function export_(runtime: T.Runtime<T.ExportCommand>): Promise<void> {
+async function export_(runtime: T.Runtime<T.ExportCommand>): Promise<void> {
 	await exportPages(runtime)
 	await exportApp(runtime)
 }
+
+export { export_ as export }

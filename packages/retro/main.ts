@@ -118,7 +118,7 @@ async function main(): Promise<void> {
 }
 
 process.on("uncaughtException", err => {
-	process.env["STACK_TRACE"] = "true" // TODO
+	process.env["STACK_TRACE"] = "true" // Force STACK_TRACE on
 	err.message = `UncaughtException: ${err.message}`
 	log.error(err)
 })

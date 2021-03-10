@@ -6,7 +6,7 @@ import * as log from "../../shared/log"
 import * as logEvents from "../logEvents"
 import * as path from "path"
 import * as router from "../router"
-import * as types from "../types"
+import * as T from "../types"
 import * as utils from "../utils"
 
 import { EPOCH } from "../main"
@@ -37,12 +37,12 @@ import { EPOCH } from "../main"
 // Step 1: Build app.js with watch mode enabled
 // Step 2: On watch, rebuild app.js
 // Step 3: On HTTP requests, render and cache the current page to string and ~~rebuild app.js~~
-export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<void> {
+export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 	// await exportPages(runtime)
 
 	// Build __cache__/app.js:
 	const src = path.join(runtime.directories.cacheDirectory, "app.js")
-	const contents = router.renderRouterToString(runtime.router)
+	const contents = router.routerToString(runtime.router)
 	await fs.promises.writeFile(src, contents)
 
 	// Build __export__/app.js:
@@ -168,7 +168,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 				// 	process.exit(1)
 			}
 
-			let module_: types.PageModule
+			let module_: T.PageModule
 			try {
 				const path_ = path.join(process.cwd(), dst)
 				module_ = await require(path_)
@@ -178,7 +178,7 @@ export async function dev(runtime: types.Runtime<types.DevCommand>): Promise<voi
 				log.error(error)
 			}
 
-			const contents = router.renderRouteMetaToString(runtime.template, meta, { dev: true })
+			const contents = router.routeMetaToString(runtime.template, meta, { devMode: true })
 			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
 			await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		}

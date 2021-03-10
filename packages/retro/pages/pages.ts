@@ -101,6 +101,7 @@ export async function newFromDirectories(dirs: T.Directories): Promise<T.PageInf
 	const pageInfos: T.PageInfo[] = []
 	for (const pathInfo of pathInfos) {
 		const syntax = path_(dirs, pathInfo)
+		// URI-safe regex:
 		if (/(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/.test(syntax)) {
 			pageInfos.push(newDynamicPageInfo(dirs, pathInfo))
 			continue

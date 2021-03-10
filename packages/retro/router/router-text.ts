@@ -1,13 +1,11 @@
 import * as log from "../../shared/log"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
-import * as types from "../types"
-
-// TODO: newRouteFromRouteMeta()
+import * as T from "../types"
 
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
-export function renderRouteMetaToString(template: string, meta: types.RouteMeta, { dev }: { dev: boolean }): string {
+export function routeMetaToString(tmpl: string, meta: T.RouteMeta, { devMode }: { devMode: boolean }): string {
 	let head = "<!-- <Head { path, ...serverProps }> -->"
 	try {
 		if (typeof meta.module.Head === "function") {
@@ -23,11 +21,11 @@ export function renderRouteMetaToString(template: string, meta: types.RouteMeta,
 	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	app += `\n\t\t<div id="root"></div>`
 	app += `\n\t\t<script src="/app.js"></script>`
-	app += !dev ? "" : `\n\t\t<script type="module">`
-	app += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
-	app += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
-	app += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
-	app += !dev ? "" : `\n\t\t</script>`
+	app += !devMode ? "" : `\n\t\t<script type="module">`
+	app += !devMode ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
+	app += !devMode ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
+	app += !devMode ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
+	app += !devMode ? "" : `\n\t\t</script>`
 
 	try {
 		if (typeof meta.module.default === "function") {
@@ -38,15 +36,13 @@ export function renderRouteMetaToString(template: string, meta: types.RouteMeta,
 		log.error(`${meta.routeInfo.src}.<Page>: ${error.message}`)
 	}
 
-	const contents = template.replace("%head%", head).replace("%app%", app)
+	const contents = tmpl.replace("%head%", head).replace("%app%", app)
 	return contents
 }
 
-// TODO: newRouterFromPages?()
-
 // TODO: Add support for <Layout> components.
 // TODO: Write tests.
-export function renderRouterToString(router: types.Router): string {
+export function routerToString(router: T.Router): string {
 	const map = new Map<string, string>()
 	for (const meta of Object.values(router)) {
 		map.set(meta.routeInfo.src, meta.routeInfo.component)
@@ -86,18 +82,3 @@ ReactDOM.hydrate(
 )
 ` // EOF
 }
-
-// ${
-// 	JSON.parse(process.env.STRICT_MODE ?? "true") === "true"
-// 		? `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
-// 	<React.StrictMode>
-// 		<App />
-// 	</React.StrictMode>,
-// 	document.getElementById("root"),
-// )`
-// 		: `ReactDOM.${JSON.parse(process.env.RENDER ?? "false") === "true" ? "render" : "hydrate"}(
-// 	<App />,
-// 	document.getElementById("root"),
-// )`
-// }
-// ` // EOF

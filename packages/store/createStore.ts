@@ -1,5 +1,5 @@
 import * as React from "react"
-import * as types from "./types"
+import * as T from "./types"
 import * as utils from "./utils"
 
 import STORE_KEY from "./key"
@@ -17,7 +17,7 @@ const errBadFuncsCreatorFromCaller = (caller: string): string =>
 	`${caller}: Bad createFuncs. ` +
 	"Use 'const createFuncs = state => ({ increment() { return state + 1 } })' and then 'const [state, funcs] = useStoreFuncs(store, createFuncs)'."
 
-export const createStore: types.createStore = (initialState, initializer) => {
+export const createStore: T.createStore = (initialState, initializer) => {
 	const subscriptions = new Set<React.Dispatch<typeof initialState>>()
 
 	let state: typeof initialState
@@ -31,9 +31,9 @@ export const createStore: types.createStore = (initialState, initializer) => {
 
 function useStoreImpl<T>(
 	caller: string,
-	store: types.Store<T>,
-	createFuncs?: types.FuncsCreator,
-): [T, React.Dispatch<T> | types.Funcs<T>] {
+	store: T.Store<T>,
+	createFuncs?: T.FuncsCreator,
+): [T, React.Dispatch<T> | T.Funcs<T>] {
 	React.useCallback(() => {
 		if (!utils.testStore(store)) {
 			throw new Error(errBadStoreFromCaller(caller))
@@ -80,7 +80,7 @@ function useStoreImpl<T>(
 		// TODO: If we use useReducer we don’t need to use funcKeys.reduce on every
 		// render but then React errors: Warning: Cannot update a component (`xxx`)
 		// while rendering a different component (`xxx`).
-		funcs = funcKeys.reduce<types.Funcs<T>>((accum, type) => {
+		funcs = funcKeys.reduce<T.Funcs<T>>((accum, type) => {
 			accum[type] = (...args): T => {
 				const nextState = createFuncs(frozenState)[type]!(...args)
 				setStateStore(nextState)
@@ -98,18 +98,18 @@ function useStoreImpl<T>(
 	return [frozenState, funcs]
 }
 
-export const useStore: types.useStore = <T>(store: types.Store<T>) => {
-	return useStoreImpl("useStore", store) as [T, React.Dispatch<T>] // Use as to coerce type
+export const useStore: T.useStore = <T>(store: T.Store<T>) => {
+	return useStoreImpl("useStore", store) as [T, React.Dispatch<T>] // Coerce type
 }
 
-export const useStoreState: types.useStoreState = store => {
+export const useStoreState: T.useStoreState = store => {
 	return useStoreImpl("useStoreState", store)[0]
 }
 
-export const useStoreSetState: types.useStoreSetState = <T>(store: types.Store<T>) => {
-	return useStoreImpl("useStoreSetState", store)[1] as React.Dispatch<T> // Use as to coerce type
+export const useStoreSetState: T.useStoreSetState = <T>(store: T.Store<T>) => {
+	return useStoreImpl("useStoreSetState", store)[1] as React.Dispatch<T> // Coerce type
 }
 
-export const useStoreFuncs: types.useStoreFuncs = <T>(store: types.Store<T>, createFuncs: types.FuncsCreator) => {
-	return useStoreImpl("useStoreFuncs", store, createFuncs) as [T, types.Funcs<T>]
+export const useStoreFuncs: T.useStoreFuncs = <T>(store: T.Store<T>, createFuncs: T.FuncsCreator) => {
+	return useStoreImpl("useStoreFuncs", store, createFuncs) as [T, T.Funcs<T>]
 }
