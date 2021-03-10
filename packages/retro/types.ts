@@ -1,6 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// CLI
-
 export interface DevCommand {
 	type: "dev"
 	cached: boolean
@@ -19,38 +16,19 @@ export interface ServeCommand {
 	port: number
 }
 
-export type Command = DevCommand | ExportCommand | ServeCommand
+export type AnyCommand = DevCommand | ExportCommand | ServeCommand
 
 ////////////////////////////////////////////////////////////////////////////////
-// Runtime
 
 // prettier-ignore
 export interface Directories {
-	wwwDirectory: string   // e.g. "www"
-	srcPagesDirectory: string // e.g. "src/pages"
-	cacheDirectory: string    // e.g. "__cache__"
-	exportDirectory: string   // e.g. "__export__"
+	wwwDir: string      // e.g. "www"
+	srcPagesDir: string // e.g. "src/pages"
+	cacheDir: string    // e.g. "__cache__"
+	exportDir: string   // e.g. "__export__"
 }
 
-// prettier-ignore
-export interface StaticPageInfo {
-	type: "static"
-	src: string       // e.g. "src/pages/index.js"
-	dst: string       // e.g. "dst/index.html"
-	path: string      // e.g. "/"
-	component: string // e.g. "PageIndex"
-}
-
-// prettier-ignore
-export interface DynamicPageInfo {
-	type: "dynamic"
-	src: string       // e.g. "src/pages/[index].js"
-	// dst  // Defer to RouteInfo
-	// path // Defer to RouteInfo
-	component: string // e.g. "DynamicPageIndex"
-}
-
-export type PageInfo = StaticPageInfo | DynamicPageInfo
+////////////////////////////////////////////////////////////////////////////////
 
 export interface Props {
 	[key: string]: unknown
@@ -59,7 +37,14 @@ export interface Props {
 export type DescriptProps = Props & { path: string }
 
 // prettier-ignore
-export interface RouteInfo {
+export interface FSPageInfo {
+	type: "static" | "dynamic"
+	src: string       // e.g. "src/pages/index.js"
+	component: string // e.g. "PageIndex"
+}
+
+// prettier-ignore
+export interface ServerRouteInfo {
 	type: "static" | "dynamic"
 	src: string       // e.g. "src/pages/index.js"
 	dst: string       // e.g. "dst/index.html"
@@ -79,19 +64,12 @@ export interface DynamicPageModule {
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 }
 
-export type PageModule = StaticPageModule | DynamicPageModule
-
-// export interface RouteMeta {
-// 	routeInfo: RouteInfo
-// 	descriptProps: DescriptProps
-// }
-//
-// export type LoadedRouteMeta = RouteMeta & { module: PageModule }
+export type AnyPageModule = StaticPageModule | DynamicPageModule
 
 export interface RouteMeta {
-	module: PageModule
-	pageInfo: PageInfo
-	routeInfo: RouteInfo
+	module: AnyPageModule
+	pageInfo: FSPageInfo
+	routeInfo: ServerRouteInfo
 	descriptProps: DescriptProps
 }
 
@@ -99,13 +77,13 @@ export interface Router {
 	[key: string]: RouteMeta
 }
 
-export interface Runtime<CommandKind extends Command = Command> {
-	command: CommandKind
-	directories: Directories
-	template: string
-	pageInfos: PageInfo[]
+export interface Runtime<Cmd extends AnyCommand = AnyCommand> {
+	cmd: Cmd
+	dirs: Directories
+	tmpl: string
+	pages: FSPageInfo[]
 	router: Router
-	runServerGuards(): Promise<void>
+	serverGuards(): Promise<void>
 	purge(): Promise<void>
 	resolveDocument(): Promise<void>
 	resolvePages(): Promise<void>

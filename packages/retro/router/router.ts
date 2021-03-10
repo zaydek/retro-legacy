@@ -8,9 +8,9 @@ import * as utils from "../utils"
 
 // import * as terminal from "../../shared/terminal"
 
-export async function resolveModule<M extends T.PageModule>(r: T.Runtime, src: string): Promise<M> {
+export async function resolveModule<M extends T.AnyPageModule>(r: T.Runtime, src: string): Promise<M> {
 	src = src
-	const dst = path.join(r.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"))
+	const dst = path.join(r.dirs.cacheDir, src.replace(/\..*$/, ".esbuild.js"))
 
 	try {
 		await esbuild.build(esbuildHelpers.transpileOnlyConfiguration(src, dst))
@@ -78,11 +78,11 @@ async function resolveDynamicRoutes(r: T.Runtime, pageInfo: T.DynamicPageInfo): 
 	}
 
 	for (const meta of paths) {
-		const path_ = path.join(path.dirname(pageInfo.src).slice(r.directories.srcPagesDirectory.length), meta.path)
-		const dst = path.join(r.directories.exportDirectory, path_ + ".html")
+		const path_ = path.join(path.dirname(pageInfo.src).slice(r.dirs.srcPagesDir.length), meta.path)
+		const dst = path.join(r.dirs.exportDir, path_ + ".html")
 		metas.push({
 			module: module_,
-			pageInfo,
+			pageInfo: pageInfo,
 			routeInfo: {
 				...pageInfo,
 				dst,
@@ -104,7 +104,7 @@ async function resolveDynamicRoutes(r: T.Runtime, pageInfo: T.DynamicPageInfo): 
 export async function newFromRuntime(runtime: T.Runtime): Promise<T.Router> {
 	const router: T.Router = {}
 
-	for (const pageInfo of runtime.pageInfos) {
+	for (const pageInfo of runtime.pages) {
 		if (pageInfo.type === "static") {
 			const meta = await resolveStaticRoute(runtime, pageInfo)
 			if (router[meta.routeInfo.path] !== undefined) {

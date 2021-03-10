@@ -71,7 +71,7 @@ async function main(): Promise<void> {
 		cmdArg = args[0]!
 	}
 
-	let cmd: T.Command
+	let cmd: T.AnyCommand
 	switch (cmdArg) {
 		case "version":
 		case "--version":
@@ -104,7 +104,7 @@ async function main(): Promise<void> {
 	}
 
 	const rt = await newRuntimeFromCommand(cmd!)
-	switch (rt.command.type) {
+	switch (rt.cmd.type) {
 		case "dev":
 			await commands.dev(rt as T.Runtime<T.DevCommand>)
 			break

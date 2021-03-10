@@ -9,7 +9,7 @@ import * as utils from "../utils"
 
 export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
 	try {
-		await fs.promises.stat(r.directories.exportDirectory)
+		await fs.promises.stat(r.dirs.exportDir)
 	} catch {
 		log.error(errors.serveWithoutExportDirectory())
 	}
@@ -18,7 +18,7 @@ export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
 
 	// prettier-ignore
 	const result = await esbuild.serve({
-		servedir: r.directories.exportDirectory,
+		servedir: r.dirs.exportDir,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => {
 			if (!once) {
 				console.log()
@@ -53,5 +53,5 @@ export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
 		req.pipe(req_proxy, { end: true })
 	})
 
-	server_proxy.listen(r.command.port)
+	server_proxy.listen(r.cmd.port)
 }

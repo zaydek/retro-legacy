@@ -7,27 +7,22 @@ import * as router from "./router"
 import * as T from "./types"
 import * as utils from "./utils"
 
-export default async function newRuntimeFromCommand(command: T.Command): Promise<T.Runtime<typeof command>> {
+export default async function newRuntimeFromCommand(command: T.AnyCommand): Promise<T.Runtime<typeof command>> {
 	const runtime: T.Runtime<typeof command> = {
-		command,
-		directories: {
-			wwwDirectory: "www",
-			srcPagesDirectory: "src/pages",
-			cacheDirectory: "__cache__",
-			exportDirectory: "__export__",
+		cmd: command,
+		dirs: {
+			wwwDir: "www",
+			srcPagesDir: "src/pages",
+			cacheDir: "__cache__",
+			exportDir: "__export__",
 		},
-		template: "",
-		pageInfos: [],
+		tmpl: "",
+		pages: [],
 		router: {},
 
 		// runServerGuards runs server guards.
-		async runServerGuards(): Promise<void> {
-			const dirs = [
-				runtime.directories.wwwDirectory,
-				runtime.directories.srcPagesDirectory,
-				runtime.directories.cacheDirectory,
-				runtime.directories.exportDirectory,
-			]
+		async serverGuards(): Promise<void> {
+			const dirs = [runtime.dirs.wwwDir, runtime.dirs.srcPagesDir, runtime.dirs.cacheDir, runtime.dirs.exportDir]
 
 			for (const dir of dirs) {
 				try {
@@ -37,7 +32,7 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 				}
 			}
 
-			const src = path.join(runtime.directories.wwwDirectory, "index.html")
+			const src = path.join(runtime.dirs.wwwDir, "index.html")
 
 			try {
 				fs.promises.stat(src)
@@ -72,29 +67,29 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 
 		// purge purges __cache__ and __export__.
 		async purge(): Promise<void> {
-			const dirs = runtime.directories
-			await fs.promises.rmdir(dirs.cacheDirectory, { recursive: true })
-			await fs.promises.rmdir(dirs.exportDirectory, { recursive: true })
+			const dirs = runtime.dirs
+			await fs.promises.rmdir(dirs.cacheDir, { recursive: true })
+			await fs.promises.rmdir(dirs.exportDir, { recursive: true })
 
 			// await this.runServerGuards()
-			const excludes = [path.join(dirs.wwwDirectory, "index.html")]
+			const excludes = [path.join(dirs.wwwDir, "index.html")]
 
 			// TODO: Do we need this?
-			await fs.promises.mkdir(path.join(dirs.exportDirectory, dirs.wwwDirectory), { recursive: true })
-			await utils.copyAll(dirs.wwwDirectory, path.join(dirs.exportDirectory, dirs.wwwDirectory), excludes)
+			await fs.promises.mkdir(path.join(dirs.exportDir, dirs.wwwDir), { recursive: true })
+			await utils.copyAll(dirs.wwwDir, path.join(dirs.exportDir, dirs.wwwDir), excludes)
 		},
 
 		// resolveDocument resolves and or refreshes this.document.
 		async resolveDocument(): Promise<void> {
-			const src = path.join(this.directories.wwwDirectory, "index.html")
+			const src = path.join(this.dirs.wwwDir, "index.html")
 			const buffer = await fs.promises.readFile(src)
 			const str = buffer.toString()
-			this.template = str
+			this.tmpl = str
 		},
 
 		// resolvePages resolves and or refreshes this.pages.
 		async resolvePages(): Promise<void> {
-			this.pageInfos = await pages.newFromDirectories(this.directories)
+			this.pages = await pages.newPages(this.dirs)
 		},
 
 		// resolveRouter resolves and or refreshes this.router.
@@ -104,11 +99,11 @@ export default async function newRuntimeFromCommand(command: T.Command): Promise
 	}
 
 	async function start(): Promise<void> {
-		if (runtime.command.type === "serve") {
+		if (runtime.cmd.type === "serve") {
 			// No-op
 			return
 		}
-		await runtime.runServerGuards()
+		await runtime.serverGuards()
 		await runtime.purge() // TODO
 		await runtime.resolveDocument()
 		await runtime.resolvePages()

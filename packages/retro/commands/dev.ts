@@ -41,12 +41,12 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 	// await exportPages(runtime)
 
 	// Build __cache__/app.js:
-	const src = path.join(runtime.directories.cacheDirectory, "app.js")
+	const src = path.join(runtime.dirs.cacheDir, "app.js")
 	const contents = router.routerToString(runtime.router)
 	await fs.promises.writeFile(src, contents)
 
 	// Build __export__/app.js:
-	const dst = path.join(runtime.directories.exportDirectory, src.slice(runtime.directories.srcPagesDirectory.length))
+	const dst = path.join(runtime.dirs.exportDir, src.slice(runtime.dirs.srcPagesDir.length))
 
 	// let buildResult: esbuild.BuildResult
 	try {
@@ -71,7 +71,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 		serveResult = await esbuild.serve(
 			{
 				// port: random(1_000, 10_000, [runtime.command.port]),
-				servedir: runtime.directories.exportDirectory,
+				servedir: runtime.dirs.exportDir,
 				onRequest: (args: esbuild.ServeOnRequestArgs) => {
 					if (!once) {
 						console.log()
@@ -136,12 +136,12 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 		// 		break
 		// }
 
-		if (!url.startsWith("/" + runtime.directories.wwwDirectory) && path.extname(url) === "") {
+		if (!url.startsWith("/" + runtime.dirs.wwwDir) && path.extname(url) === "") {
 			let meta = runtime.router[url]
 			if (meta === undefined) {
 				try {
 					console.log("a")
-					const buffer = await fs.promises.readFile(path.join(runtime.directories.exportDirectory, "404.html"))
+					const buffer = await fs.promises.readFile(path.join(runtime.dirs.exportDir, "404.html"))
 					res.writeHead(200, { "Content-Type": "text/html" })
 					res.end(buffer.toString())
 				} catch (error) {
@@ -153,7 +153,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 			}
 
 			const src = meta.routeInfo.src
-			const dst = path.join(runtime.directories.cacheDirectory, src.replace(/\..*$/, ".esbuild.js"))
+			const dst = path.join(runtime.dirs.cacheDir, src.replace(/\..*$/, ".esbuild.js"))
 
 			try {
 				await esbuild.build(esbuildHelpers.transpileOnlyConfiguration(src, dst))
@@ -168,7 +168,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 				// 	process.exit(1)
 			}
 
-			let module_: T.PageModule
+			let module_: T.AnyPageModule
 			try {
 				const path_ = path.join(process.cwd(), dst)
 				module_ = await require(path_)
@@ -178,7 +178,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 				log.error(error)
 			}
 
-			const contents = router.routeMetaToString(runtime.template, meta, { devMode: true })
+			const contents = router.routeMetaToString(runtime.tmpl, meta, { devMode: true })
 			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
 			await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		}
@@ -207,7 +207,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 	// 	}
 	// }, 0)
 
-	server_proxy.listen(runtime.command.port)
+	server_proxy.listen(runtime.cmd.port)
 
 	console.log(Date.now() - EPOCH)
 }

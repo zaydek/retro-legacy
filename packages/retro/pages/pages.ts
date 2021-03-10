@@ -4,93 +4,50 @@ import * as path from "path"
 import * as T from "../types"
 import * as utils from "../utils"
 
-// "src/pages/index.js" -> "/"
-// "src/pages/page.js" -> "/page"
-// "src/pages/nested/page.js" -> "/nested/page"
-//
-// TODO: Write tests.
-function path_(dirs: T.Directories, pathInfo: utils.PathInfo): string {
-	const out = pathInfo.src.slice(dirs.srcPagesDirectory.length, -pathInfo.ext.length)
+import { parse, ParsedPath } from "./parse"
+
+export function dst_syntax(dirs: T.Directories, parsed: ParsedPath): string {
+	const out = path.join(dirs.exportDir, parsed.src.slice(dirs.srcPagesDir.length))
+	return out.slice(0, -parsed.ext.length) + ".html"
+}
+
+export function path_syntax(dirs: T.Directories, parsed: ParsedPath): string {
+	const out = parsed.src.slice(dirs.srcPagesDir.length, -parsed.ext.length)
 	if (out.endsWith("/index")) {
-		return out.slice(0, -"index".length)
+		return out.slice(0, -"index".length) // Keep "/"
 	}
 	return out
 }
 
-// src/pages/index.js -> __export__/index.html
-// src/pages/page.js -> __export__/page.html
-// src/pages/nested/page.js -> __export__/nested/page.html
-//
-// TODO: Write tests.
-function dst(dirs: T.Directories, pathInfo: utils.PathInfo): string {
-	const out = path.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length))
-	return out.slice(0, -pathInfo.ext.length) + ".html"
-}
-
-// src/pages/index.js -> StaticIndex
-// src/pages/page.js -> StaticPage
-// src/pages/nested/page.js -> StaticNestedPage
-//
-// TODO: Write tests.
-function component(dirs: T.Directories, pathInfo: utils.PathInfo, { dynamic }: { dynamic: boolean }): string {
-	let out = ""
-	const parts = path_(dirs, pathInfo).split(path.sep)
-	for (let part of parts) {
-		// if (part.startsWith("[") && part.endsWith("]")) {
-		// 	part = part.slice(1, -1) // Remove "[" and "]" syntax
-		// }
-		part = part.replace(/[^a-zA-Z_0-9]+/g, "")
-		if (part.length === 0) continue
-		out += part[0]!.toUpperCase() + part.slice(1)
+export function component_syntax(dirs: T.Directories, parsed: ParsedPath, { dynamic }: { dynamic: boolean }): string {
+	let out = !dynamic ? "Static" : "Dynamic"
+	const parts = path_syntax(dirs, parsed).split(path.sep)
+	for (const part of parts) {
+		const safe = part.replace(/[^a-zA-Z_0-9]+/g, "") // Remove unsafe characters
+		if (safe.length === 0) continue
+		out += safe[0]!.toUpperCase() + safe.slice(1)
 	}
-	out = (!dynamic ? "Static" : "Dynamic") + (out ?? "Index")
+	out += parsed.name !== "index" ? "" : "Index"
 	return out
 }
 
-function newPageInfo(dirs: T.Directories, pathInfo: utils.PathInfo): T.StaticPageInfo {
-	const out: T.StaticPageInfo = {
-		type: "static",
-		src: pathInfo.src,
-		dst: dst(dirs, pathInfo),
-		path: path_(dirs, pathInfo),
-		component: component(dirs, pathInfo, { dynamic: false }),
-	}
-	return out
-}
-
-function newDynamicPageInfo(dirs: T.Directories, pathInfo: utils.PathInfo): T.DynamicPageInfo {
-	const out: T.DynamicPageInfo = {
-		type: "dynamic",
-		src: pathInfo.src,
-		component: component(dirs, pathInfo, { dynamic: true }),
-	}
-	return out
-}
-
-const supported: { [key: string]: boolean } = {
-	".js": true,
-	".jsx": true,
-	".ts": true,
-	".tsx": true,
-}
-
-export async function newFromDirectories(dirs: T.Directories): Promise<T.PageInfo[]> {
-	const srcs = await utils.readdirAll(dirs.srcPagesDirectory)
+export async function newPages(dirs: T.Directories): Promise<T.FSPageInfo[]> {
+	const srcs = await utils.readdirAll(dirs.srcPagesDir)
 
 	// TODO: Add support for <Layout> components.
-	const pathInfos = srcs
-		.map(src => utils.parsePathInfo(src))
-		.filter(pathInfo => {
-			if (/^[_$]|[_$]$/.test(pathInfo.name)) {
+	const paths = srcs
+		.map(src => parse(src))
+		.filter(parsed => {
+			if (/^[_$]|[_$]$/.test(parsed.name)) {
 				return false
 			}
-			return supported[pathInfo.ext] !== undefined
+			return /\.jsx?tsx?$/.test(parsed.ext)
 		})
 
 	const badSrcs: string[] = []
-	for (const pathInfo of pathInfos) {
-		if (!utils.testURISafe(pathInfo.src)) {
-			badSrcs.push(pathInfo.src)
+	for (const parsed of paths) {
+		if (!utils.testURISafe(parsed.src)) {
+			badSrcs.push(parsed.src)
 		}
 	}
 
@@ -98,15 +55,22 @@ export async function newFromDirectories(dirs: T.Directories): Promise<T.PageInf
 		log.error(errors.pagesUseNonURICharacters(badSrcs))
 	}
 
-	const pageInfos: T.PageInfo[] = []
-	for (const pathInfo of pathInfos) {
-		const syntax = path_(dirs, pathInfo)
-		// URI-safe regex:
+	const pages: T.FSPageInfo[] = []
+	for (const parsed of paths) {
+		const syntax = path_syntax(dirs, parsed)
 		if (/(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/.test(syntax)) {
-			pageInfos.push(newDynamicPageInfo(dirs, pathInfo))
-			continue
+			pages.push({
+				type: "dynamic",
+				src: parsed.src,
+				component: component_syntax(dirs, parsed, { dynamic: true }),
+			})
+		} else {
+			pages.push({
+				type: "static",
+				src: parsed.src,
+				component: component_syntax(dirs, parsed, { dynamic: false }),
+			})
 		}
-		pageInfos.push(newPageInfo(dirs, pathInfo))
 	}
-	return pageInfos
+	return pages
 }

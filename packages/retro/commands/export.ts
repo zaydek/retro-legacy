@@ -13,7 +13,7 @@ async function exportPages(r: T.Runtime): Promise<void> {
 	let once = false
 	for (const meta of Object.values(r.router)) {
 		const start = Date.now()
-		const contents = router.routeMetaToString(r.template, meta, { devMode: false })
+		const contents = router.routeMetaToString(r.tmpl, meta, { devMode: false })
 		await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
 		await fs.promises.writeFile(meta.routeInfo.dst, contents)
 		if (!once) {
@@ -26,8 +26,8 @@ async function exportPages(r: T.Runtime): Promise<void> {
 }
 
 async function exportApp(r: T.Runtime): Promise<void> {
-	const src = path.join(r.directories.cacheDirectory, "app.js")
-	const dst = path.join(r.directories.exportDirectory, src.slice(r.directories.srcPagesDirectory.length))
+	const src = path.join(r.dirs.cacheDir, "app.js")
+	const dst = path.join(r.dirs.exportDir, src.slice(r.dirs.srcPagesDir.length))
 
 	// __cache__/app.js
 	const contents = router.routerToString(r.router)
