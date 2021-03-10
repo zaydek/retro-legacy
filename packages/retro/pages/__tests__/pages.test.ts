@@ -1,6 +1,9 @@
+import * as child_process from "child_process"
+import * as fs from "fs"
+import * as path from "path"
 import * as T from "../../types"
 
-import { component_syntax, dst_syntax, path_syntax } from "../pages"
+import { component_syntax, dst_syntax, newPagesFromDirectories, path_syntax } from "../pages"
 import { parse } from "../parse"
 
 const dirs: T.Directories = {
@@ -50,4 +53,75 @@ test("component_syntax: dynamic=true", () => {
 	expect(component_syntax(dirs, parse("src/pages/foo/bar/index.js"), opt)).toBe("DynamicFooBarIndex")
 	expect(component_syntax(dirs, parse("src/pages/foo/bar/baz.js"), opt)).toBe("DynamicFooBarBaz")
 	expect(component_syntax(dirs, parse("src/pages/foo/bar/baz/index.js"), opt)).toBe("DynamicFooBarBazIndex")
+})
+
+test("newPagesFromDirectories", async () => {
+	const __relative_dirname = path.relative(process.cwd(), __dirname)
+
+	const dirs2: T.Directories = {
+		wwwDir: path.join(__relative_dirname, "www"),
+		srcPagesDir: path.join(__relative_dirname, "src/pages"),
+		cacheDir: path.join(__relative_dirname, "__cache__"),
+		exportDir: path.join(__relative_dirname, "__export__"),
+	}
+
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir), { recursive: true })
+
+	// Static
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir, "foo"), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir, "foo", "bar"), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir, "foo", "bar", "baz"), { recursive: true })
+
+	// Dynamic
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir, "[foo]"), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir, "[foo]", "[bar]"), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs2.srcPagesDir, "[foo]", "[bar]", "[baz]"), { recursive: true })
+
+	// Static
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "index.js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "foo.js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "foo/index.js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "foo/bar.js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "foo/bar/index.js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "foo/bar/baz.js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "foo/bar/baz/index.js"), "")
+
+	// Dynamic
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[index].js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[foo].js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[foo]/[index].js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[foo]/[bar].js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[foo]/[bar]/[index].js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[foo]/[bar]/[baz].js"), "")
+	await fs.promises.writeFile(path.join(dirs2.srcPagesDir, "[foo]/[bar]/[baz]/[index].js"), "")
+
+	let pages = await newPagesFromDirectories(dirs2)
+	pages = pages.map(page => ({
+		...page,
+		src: path.relative(__relative_dirname, page.src), // Remove packages/retro/...
+	}))
+
+	expect(pages).toEqual([
+		// Static
+		{ type: "static", src: "src/pages/index.js", component: "StaticIndex" },
+		{ type: "static", src: "src/pages/foo.js", component: "StaticFoo" },
+		{ type: "static", src: "src/pages/foo/index.js", component: "StaticFooIndex" },
+		{ type: "static", src: "src/pages/foo/bar.js", component: "StaticFooBar" },
+		{ type: "static", src: "src/pages/foo/bar/index.js", component: "StaticFooBarIndex" },
+		{ type: "static", src: "src/pages/foo/bar/baz.js", component: "StaticFooBarBaz" },
+		{ type: "static", src: "src/pages/foo/bar/baz/index.js", component: "StaticFooBarBazIndex" },
+
+		// Dynamic
+		{ type: "dynamic", src: "src/pages/[index].js", component: "DynamicIndex" },
+		{ type: "dynamic", src: "src/pages/[foo].js", component: "DynamicFoo" },
+		{ type: "dynamic", src: "src/pages/[foo]/[index].js", component: "DynamicFooIndex" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar].js", component: "DynamicFooBar" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[index].js", component: "DynamicFooBarIndex" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[baz].js", component: "DynamicFooBarBaz" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[baz]/[index].js", component: "DynamicFooBarBazIndex" },
+	])
+
+	// // NOTE: fs.promises.unlink throws EPERM error.
+	// await fs.promises.unlink(path.dirname(dirs2.srcPagesDir))
+	child_process.execSync(`rm -rf ${path.dirname(dirs2.srcPagesDir)}`)
 })

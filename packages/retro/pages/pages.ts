@@ -31,7 +31,7 @@ export function component_syntax(dirs: T.Directories, parsed: ParsedPath, { dyna
 	return out
 }
 
-export async function newPages(dirs: T.Directories): Promise<T.FSPageInfo[]> {
+export async function newPagesFromDirectories(dirs: T.Directories): Promise<T.FSPageInfo[]> {
 	const srcs = await utils.readdirAll(dirs.srcPagesDir)
 
 	// TODO: Add support for <Layout> components.
@@ -41,7 +41,7 @@ export async function newPages(dirs: T.Directories): Promise<T.FSPageInfo[]> {
 			if (/^[_$]|[_$]$/.test(parsed.name)) {
 				return false
 			}
-			return /\.jsx?tsx?$/.test(parsed.ext)
+			return /\.jsx?|tsx?$/.test(parsed.ext)
 		})
 
 	const badSrcs: string[] = []

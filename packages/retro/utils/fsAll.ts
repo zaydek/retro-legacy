@@ -11,11 +11,11 @@ export async function readdirAll(entry: string, excludes: string[] = []): Promis
 			if (excludes.includes(li)) continue
 			const stats = await fs.promises.stat(li)
 			if (stats.isDirectory()) {
-				ctx.push(li)
+				ctx.unshift(li)
 				await recurse(li)
 				continue
 			}
-			ctx.push(li)
+			ctx.unshift(li)
 		}
 	}
 	await recurse(entry)
@@ -30,9 +30,9 @@ export async function copyAll(src_dir: string, dst_dir: string, excludes: string
 	for (const item of ctx) {
 		const stats = await fs.promises.stat(item)
 		if (!stats.isDirectory()) {
-			srcs.push(item)
+			srcs.unshift(item)
 		} else {
-			dirs.push(item)
+			dirs.unshift(item)
 		}
 	}
 	for (const dir of dirs) {

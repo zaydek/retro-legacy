@@ -41,8 +41,8 @@ test("copyAll", async () => {
 		"bar/bar/baz/c",
 	])
 
-	// // // NOTE: fs.promises.unlink produces EPERM error.
-	// // await fs.promises.unlink(path.join(__dirname, "foo"))
+	// // NOTE: fs.promises.unlink throws EPERM error.
+	// await fs.promises.unlink(path.join(__dirname, "foo"))
 	child_process.execSync(`rm -rf ${path.join(__dirname, "foo")}`)
 	child_process.execSync(`rm -rf ${path.join(__dirname, "bar")}`)
 })
@@ -69,7 +69,7 @@ test("readdirAll", async () => {
 		"foo/bar/baz/c",
 	])
 
-	// // NOTE: fs.promises.unlink produces EPERM error.
+	// // NOTE: fs.promises.unlink throws EPERM error.
 	// await fs.promises.unlink(path.join(__dirname, "foo"))
 	child_process.execSync(`rm -rf ${path.join(__dirname, "foo")}`)
 })

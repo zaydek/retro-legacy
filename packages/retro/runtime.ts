@@ -23,7 +23,6 @@ export default async function newRuntimeFromCommand(command: T.AnyCommand): Prom
 		// runServerGuards runs server guards.
 		async serverGuards(): Promise<void> {
 			const dirs = [runtime.dirs.wwwDir, runtime.dirs.srcPagesDir, runtime.dirs.cacheDir, runtime.dirs.exportDir]
-
 			for (const dir of dirs) {
 				try {
 					await fs.promises.stat(dir)
@@ -89,7 +88,7 @@ export default async function newRuntimeFromCommand(command: T.AnyCommand): Prom
 
 		// resolvePages resolves and or refreshes this.pages.
 		async resolvePages(): Promise<void> {
-			this.pages = await pages.newPages(this.dirs)
+			this.pages = await pages.newPagesFromDirectories(this.dirs)
 		},
 
 		// resolveRouter resolves and or refreshes this.router.
