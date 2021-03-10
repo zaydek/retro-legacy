@@ -17,6 +17,7 @@ function formatMS(ms: number): string {
 	}
 }
 
+// TODO: Add support for bytes.
 function export_(runtime: T.Runtime, meta: T.ServerRouteMeta, start: number): void {
 	const dur = formatMS(Date.now() - start)
 
@@ -32,23 +33,39 @@ function export_(runtime: T.Runtime, meta: T.ServerRouteMeta, start: number): vo
 
 	const src = meta.route.src.slice(runtime.dirs.srcPagesDir.length)
 	const src_ext = path.extname(src)
-	const src_basename = src.slice(1, -src_ext.length)
+	const src_name = src.slice(1, -src_ext.length)
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + src + " ").length))
 
 	const dst = meta.route.dst.slice(runtime.dirs.exportDir.length)
-	const dst_ext = path.extname(dst)
-	const dst_basename = dst.slice(1, -dst_ext.length)
+	const dst_extname = path.extname(dst)
+	const dst_name = dst.slice("/".length, -dst_extname.length)
 
 	let logstr = ""
 	logstr += " " + terminal.dim(utils.current_datestr()) + "  "
-	logstr += dim("/") + color(src_basename) + dim(src_ext)
+	logstr += dim("/") + color(src_name) + dim(src_ext)
 	logstr += " " + dim(sep) + " "
-	logstr += dim("/") + color(dst_basename) + " " + dim(`(${dur})`)
+	logstr += dim("/") + color(dst_name) + " " + dim(`(${dur})`)
 	console.log(logstr)
 }
 
-function serve(args: esbuild.ServeOnRequestArgs): void {
+// Based on esbuild.ServeOnRequestArgs.
+//
+// TODO: Add support for bytes.
+interface ServeArgs {
+	path: string
+	status: number
+	timeInMS: number
+}
+
+type Logger = (...args: unknown[]) => void
+
+function serve(args: ServeArgs): void {
+	let logger: Logger = (...args) => console.log(...args)
+	if (args.status < 200 || args.status >= 300) {
+		logger = (...args) => console.error(...args)
+	}
+
 	const dur = formatMS(args.timeInMS)
 
 	let color = terminal.normal
@@ -61,22 +78,21 @@ function serve(args: esbuild.ServeOnRequestArgs): void {
 		dim = terminal.dim.red
 	}
 
-	let logger = (...args: unknown[]): void => console.log(...args)
-	if (args.status < 200 || args.status >= 300) {
-		logger = (...args) => console.error(...args)
+	const path_ = args.path
+	const path_extname = path.extname(path_)
+	let path_name = path_.slice("/".length)
+	if (path_extname.length > 0) {
+		path_name = path_.slice("/".length, -path_extname.length /* Must be greater than 0 */)
 	}
 
-	const path_ = args.path
-	const path_ext = path.extname(path_)
-	const path_basename = path_.slice(1, -path_ext.length)
-
-	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + path_ + " ").length))
+	const sep = "-".repeat(Math.max(0, TERM_WIDTH - (path_ + " ").length))
 
 	let logstr = ""
 	logstr += " " + terminal.dim(utils.current_datestr()) + "  "
-	logstr += dim("/") + color(path_basename) + dim(path_ext)
+	logstr += dim("/") + color(path_name) + dim(path_extname)
 	logstr += " " + dim(sep) + " "
 	logstr += color(args.status) + " " + dim(`(${dur})`)
+
 	logger(logstr)
 }
 

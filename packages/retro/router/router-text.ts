@@ -21,15 +21,16 @@ export function routeMetaToString(tmpl: string, meta: T.ServerRouteMeta, { dev }
 	app += `\n\t\t<div id="root"></div>`
 	app += `\n\t\t<script src="/app.js"></script>`
 	app += !dev ? "" : `\n\t\t<script type="module">`
-	app += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
-	app += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
-	app += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
+	app += !dev ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
+	app += !dev ? "" : `\n\t\t\tdev.addEventListener("reload", e => window.location.reload())`
+	app += !dev ? "" : `\n\t\t\tdev.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
 	app += !dev ? "" : `\n\t\t</script>`
 
 	try {
 		const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps))
 		app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
 	} catch (error) {
+		// TODO: Do not log.fatal when dev=true?
 		log.fatal(`${meta.route.src}.<Page>: ${error.message}`)
 	}
 

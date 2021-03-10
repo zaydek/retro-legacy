@@ -1,7 +1,7 @@
 import * as T from "../types"
 
 import { purgeDirs, serverGuards } from "./helpers"
-import { resolvePages, resolveRouter, resolveTemplate } from "./resolvers"
+import { resolveFSPages, resolveServerRouter, resolveTemplate } from "./resolvers"
 
 export async function newRuntimeFromCommand(cmd: T.AnyCommand): Promise<T.Runtime<typeof cmd>> {
 	const runtime: T.Runtime<typeof cmd> = {
@@ -18,20 +18,20 @@ export async function newRuntimeFromCommand(cmd: T.AnyCommand): Promise<T.Runtim
 		router: {},
 
 		// Methods
-		async serverGuards(): Promise<void> {
-			await serverGuards.apply(this)
-		},
-		async purgeDirs(): Promise<void> {
+		async purgeDirs() {
 			await purgeDirs.apply(this)
 		},
-		async resolveTemplate(): Promise<void> {
+		async serverGuards() {
+			await serverGuards.apply(this)
+		},
+		async resolveTemplate() {
 			await resolveTemplate.apply(this)
 		},
-		async resolveFSPages(): Promise<void> {
-			await resolvePages.apply(this)
+		async resolveFSPages() {
+			await resolveFSPages.apply(this)
 		},
-		async resolveServerRouter(): Promise<void> {
-			await resolveRouter.apply(this)
+		async resolveServerRouter() {
+			await resolveServerRouter.apply(this)
 		},
 	}
 

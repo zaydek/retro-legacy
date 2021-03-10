@@ -18,7 +18,7 @@ export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 	let once = false
 
 	// prettier-ignore
-	const result = await esbuild.serve({
+	const serveResult = await esbuild.serve({
 		servedir: runtime.dirs.exportDir,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => {
 			if (!once) {
@@ -34,25 +34,25 @@ export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 	// - https://esbuild.github.io/api/#customizing-server-behavior
 	// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 	//
-	const server_proxy = http.createServer((req, res) => {
+	const proxyServer = http.createServer((req, res) => {
 		const opts = {
-			hostname: result.host,
-			port: result.port,
+			hostname: serveResult.host,
+			port: serveResult.port,
 			path: utils.ssgify(req.url!),
 			method: req.method,
 			headers: req.headers,
 		}
-		const req_proxy = http.request(opts, res_proxy => {
-			if (res_proxy.statusCode === 404) {
+		const proxyRequest = http.request(opts, proxyResponse => {
+			if (proxyResponse.statusCode === 404) {
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				return
 			}
-			res.writeHead(res_proxy.statusCode!, res_proxy.headers)
-			res_proxy.pipe(res, { end: true })
+			res.writeHead(proxyResponse.statusCode!, proxyResponse.headers)
+			proxyResponse.pipe(res, { end: true })
 		})
-		req.pipe(req_proxy, { end: true })
+		req.pipe(proxyRequest, { end: true })
 	})
 
-	server_proxy.listen(runtime.cmd.port)
+	proxyServer.listen(runtime.cmd.port)
 }

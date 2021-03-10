@@ -7,7 +7,7 @@ import * as path from "path"
 import * as T from "../types"
 import * as utils from "../utils"
 
-export async function resolveModule<Module extends T.AnyPageModule>(runtime: T.Runtime, src: string): Promise<Module> {
+export async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, src: string): Promise<Module> {
 	const dst = path.join(runtime.dirs.cacheDir, src.replace(/\..*$/, ".esbuild.js"))
 
 	try {
@@ -29,7 +29,7 @@ export async function resolveModule<Module extends T.AnyPageModule>(runtime: T.R
 }
 
 async function resolveStaticRouteMeta(runtime: T.Runtime, page: T.FSPageInfo): Promise<T.ServerRouteMeta> {
-	const mod = await resolveModule<T.StaticPageModule>(runtime, page.src)
+	const mod = await resolveModule<T.StaticModule>(runtime, page.src)
 	if (!utils.validateStaticModuleExports(mod)) {
 		log.fatal(errors.badStaticPageExports(page.src))
 	}
@@ -68,7 +68,7 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, page: T.FSPageInfo): P
 async function resolveDynamicRouteMetas(runtime: T.Runtime, page: T.FSPageInfo): Promise<T.ServerRouteMeta[]> {
 	const metas: T.ServerRouteMeta[] = []
 
-	const mod = await resolveModule<T.DynamicPageModule>(runtime, page.src)
+	const mod = await resolveModule<T.DynamicModule>(runtime, page.src)
 	if (!utils.validateDynamicModuleExports(mod)) {
 		log.fatal(errors.badDynamicPageExports(page.src))
 	}

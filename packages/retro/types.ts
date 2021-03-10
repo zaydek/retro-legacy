@@ -1,13 +1,12 @@
 export interface DevCommand {
 	type: "dev"
-	cached: boolean
+	fast_refresh: boolean
 	sourcemap: boolean
 	port: number
 }
 
 export interface ExportCommand {
 	type: "export"
-	cached: boolean
 	sourcemap: boolean
 }
 
@@ -45,19 +44,19 @@ export interface Props {
 
 export type DescriptProps = Props & { path: string }
 
-export interface StaticPageModule {
+export interface StaticModule {
 	serverProps?(): Promise<Props>
 	Head?: (props: DescriptProps) => JSX.Element
 	default: (props: DescriptProps) => JSX.Element
 }
 
-export interface DynamicPageModule {
+export interface DynamicModule {
 	serverPaths(): Promise<{ path: string; props: Props }[]>
 	Head?: (props: DescriptProps) => JSX.Element
 	default: (props: DescriptProps) => JSX.Element
 }
 
-export type AnyPageModule = StaticPageModule | DynamicPageModule
+export type AnyModule = StaticModule | DynamicModule
 
 // prettier-ignore
 export interface ServerRouteInfo {
@@ -69,7 +68,7 @@ export interface ServerRouteInfo {
 }
 
 export interface ServerRouteMeta {
-	module: AnyPageModule
+	module: AnyModule
 	route: ServerRouteInfo
 	descriptProps: DescriptProps
 }
@@ -86,8 +85,8 @@ export interface Runtime<Cmd extends AnyCommand = AnyCommand> {
 	tmpl: string
 	pages: FSPageInfo[]
 	router: ServerRouter
-	serverGuards(): Promise<void>
 	purgeDirs(): Promise<void>
+	serverGuards(): Promise<void>
 	resolveTemplate(): Promise<void>
 	resolveFSPages(): Promise<void>
 	resolveServerRouter(): Promise<void>

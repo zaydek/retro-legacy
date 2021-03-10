@@ -8,9 +8,7 @@ import * as T from "../types"
 
 // TODO: Add support for an event hook?
 async function export_(runtime: T.Runtime<T.ExportCommand>): Promise<void> {
-	/*
-	 * Export pages
-	 */
+	// Export pages:
 	let once = false
 	for (const meta of Object.values(runtime.router)) {
 		const start = Date.now()
@@ -25,18 +23,14 @@ async function export_(runtime: T.Runtime<T.ExportCommand>): Promise<void> {
 	}
 	console.log()
 
-	/*
-	 * Export app
-	 */
-	const src = path.join(runtime.dirs.cacheDir, "app.js")
-	const dst = path.join(runtime.dirs.exportDir, src.slice(runtime.dirs.srcPagesDir.length))
-
 	// __cache__/app.js
+	const src = path.join(runtime.dirs.cacheDir, "app.js")
 	const contents = router.routerToString(runtime.router)
 	await fs.promises.writeFile(src, contents)
 
 	// __export__/app.js
 	try {
+		const dst = path.join(runtime.dirs.exportDir, src.slice(runtime.dirs.srcPagesDir.length))
 		await esbuild.build(esbuildHelpers.bundleConfiguration(src, dst))
 	} catch (error) {
 		if (!("errors" in error) || !("warnings" in error)) throw error
