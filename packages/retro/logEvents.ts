@@ -41,7 +41,7 @@ function export_(r: T.Runtime, meta: T.RouteMeta, start: number): void {
 	const dst_basename = dst.slice(1, -dst_ext.length)
 
 	let logstr = ""
-	logstr += " " + terminal.dim(utils.getCurrentPrettyDate()) + "  "
+	logstr += " " + terminal.dim(utils.current_datestr()) + "  "
 	logstr += dim("/") + color(src_basename) + dim(src_ext)
 	logstr += " " + dim(sep) + " "
 	logstr += dim("/") + color(dst_basename) + " " + dim(`(${dur})`)
@@ -73,7 +73,7 @@ function serve(args: esbuild.ServeOnRequestArgs): void {
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + path_ + " ").length))
 
 	let logstr = ""
-	logstr += " " + terminal.dim(utils.getCurrentPrettyDate()) + "  "
+	logstr += " " + terminal.dim(utils.current_datestr()) + "  "
 	logstr += dim("/") + color(path_basename) + dim(path_ext)
 	logstr += " " + dim(sep) + " "
 	logstr += color(args.status) + " " + dim(`(${dur})`)
