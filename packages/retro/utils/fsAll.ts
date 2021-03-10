@@ -30,9 +30,9 @@ export async function copyAll(src_dir: string, dst_dir: string, excludes: string
 	for (const item of ctx) {
 		const stats = await fs.promises.stat(item)
 		if (!stats.isDirectory()) {
-			srcs.unshift(item)
+			srcs.push(item)
 		} else {
-			dirs.unshift(item)
+			dirs.push(item)
 		}
 	}
 	for (const dir of dirs) {

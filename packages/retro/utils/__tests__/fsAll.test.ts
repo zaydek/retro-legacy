@@ -16,14 +16,16 @@ test("copyAll", async () => {
 
 	await copyAll(path.join(__dirname, "foo"), path.join(__dirname, "bar"), [path.join(__dirname, "foo/bar/baz/exclude")])
 
-	let fooSrcs = await readdirAll(path.join(__dirname, "foo"))
-	fooSrcs = fooSrcs.map(src => path.relative(__dirname, src))
+	let foo = await readdirAll(path.join(__dirname, "foo"))
+	foo = foo.map(src => path.relative(__dirname, src))
+	foo.sort()
 
-	let barSrcs = await readdirAll(path.join(__dirname, "bar"))
-	barSrcs = barSrcs.map(src => path.relative(__dirname, src))
+	let bar = await readdirAll(path.join(__dirname, "bar"))
+	bar = bar.map(src => path.relative(__dirname, src))
+	bar.sort()
 
 	// prettier-ignore
-	expect(fooSrcs).toEqual([
+	expect(foo).toEqual([
 		"foo/a",
 		"foo/bar",
 		"foo/bar/b",
@@ -33,7 +35,7 @@ test("copyAll", async () => {
 	])
 
 	// prettier-ignore
-	expect(barSrcs).toEqual([
+	expect(bar).toEqual([
 		"bar/a",
 		"bar/bar",
 		"bar/bar/b",
@@ -59,6 +61,7 @@ test("readdirAll", async () => {
 
 	let srcs = await readdirAll(path.join(__dirname, "foo"), [path.join(__dirname, "foo/bar/baz/exclude")])
 	srcs = srcs.map(src => path.relative(__dirname, src))
+	srcs.sort()
 
 	// prettier-ignore
 	expect(srcs).toEqual([
