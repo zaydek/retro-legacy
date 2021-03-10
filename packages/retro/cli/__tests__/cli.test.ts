@@ -1,6 +1,6 @@
 import { parseDevCommand, parseExportCommand, parseServeCommand } from "../cli"
 
-test("dev command", () => {
+test("parseDevCommand", () => {
 	expect(parseDevCommand()).toEqual({ type: "dev", cached: false, sourcemap: true, port: 8000 })
 	expect(parseDevCommand("--cached=true")).toEqual({ type: "dev", cached: true, sourcemap: true, port: 8000 })
 	expect(parseDevCommand("--cached=false")).toEqual({ type: "dev", cached: false, sourcemap: true, port: 8000 })
@@ -14,7 +14,7 @@ test("dev command", () => {
 	expect(parseDevCommand("--sourcemap")).toEqual({ type: "dev", cached: false, sourcemap: true, port: 8000 })
 })
 
-test("export command", () => {
+test("parseExportCommand", () => {
 	expect(parseExportCommand()).toEqual({ type: "export", cached: false, sourcemap: true })
 	expect(parseExportCommand("--cached=true")).toEqual({ type: "export", cached: true, sourcemap: true })
 	expect(parseExportCommand("--cached=false")).toEqual({ type: "export", cached: false, sourcemap: true })
@@ -26,7 +26,7 @@ test("export command", () => {
 	expect(parseExportCommand("--sourcemap")).toEqual({ type: "export", cached: false, sourcemap: true })
 })
 
-test("serve command", () => {
+test("parseServeCommand", () => {
 	expect(parseServeCommand()).toEqual({ type: "serve", /* mode: "ssg", */ port: 8000 })
 	// expect(parseServeCommand("--mode=spa")).toEqual({ type: "serve", mode: "spa", port: 8000 })
 	// expect(parseServeCommand("--mode=ssg")).toEqual({ type: "serve", mode: "ssg", port: 8000 })

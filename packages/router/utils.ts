@@ -1,4 +1,4 @@
-// getBrowserPath gets the current path (safe for SSR).
+// getBrowserPath gets the current path (SSR safe).
 export function getBrowserPath(): string {
 	let path = "/"
 	if (typeof window !== "undefined") {

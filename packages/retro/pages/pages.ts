@@ -1,17 +1,15 @@
 import * as errors from "../errors"
 import * as log from "../../shared/log"
 import * as path from "path"
-import * as types from "../types"
+import * as T from "../types"
 import * as utils from "../utils"
-
-const dynamicPathRegex = /(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/
 
 // "src/pages/index.js" -> "/"
 // "src/pages/page.js" -> "/page"
 // "src/pages/nested/page.js" -> "/nested/page"
 //
 // TODO: Write tests.
-function path_(dirs: types.Directories, pathInfo: utils.PathInfo): string {
+function path_(dirs: T.Directories, pathInfo: utils.PathInfo): string {
 	const out = pathInfo.src.slice(dirs.srcPagesDirectory.length, -pathInfo.ext.length)
 	if (out.endsWith("/index")) {
 		return out.slice(0, -"index".length)
@@ -24,7 +22,7 @@ function path_(dirs: types.Directories, pathInfo: utils.PathInfo): string {
 // src/pages/nested/page.js -> __export__/nested/page.html
 //
 // TODO: Write tests.
-function dst(dirs: types.Directories, pathInfo: utils.PathInfo): string {
+function dst(dirs: T.Directories, pathInfo: utils.PathInfo): string {
 	const out = path.join(dirs.exportDirectory, pathInfo.src.slice(dirs.srcPagesDirectory.length))
 	return out.slice(0, -pathInfo.ext.length) + ".html"
 }
@@ -34,7 +32,7 @@ function dst(dirs: types.Directories, pathInfo: utils.PathInfo): string {
 // src/pages/nested/page.js -> StaticNestedPage
 //
 // TODO: Write tests.
-function component(dirs: types.Directories, pathInfo: utils.PathInfo, { dynamic }: { dynamic: boolean }): string {
+function component(dirs: T.Directories, pathInfo: utils.PathInfo, { dynamic }: { dynamic: boolean }): string {
 	let out = ""
 	const parts = path_(dirs, pathInfo).split(path.sep)
 	for (let part of parts) {
@@ -49,8 +47,8 @@ function component(dirs: types.Directories, pathInfo: utils.PathInfo, { dynamic 
 	return out
 }
 
-function newPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.StaticPageInfo {
-	const out: types.StaticPageInfo = {
+function newPageInfo(dirs: T.Directories, pathInfo: utils.PathInfo): T.StaticPageInfo {
+	const out: T.StaticPageInfo = {
 		type: "static",
 		src: pathInfo.src,
 		dst: dst(dirs, pathInfo),
@@ -60,8 +58,8 @@ function newPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.S
 	return out
 }
 
-function newDynamicPageInfo(dirs: types.Directories, pathInfo: utils.PathInfo): types.DynamicPageInfo {
-	const out: types.DynamicPageInfo = {
+function newDynamicPageInfo(dirs: T.Directories, pathInfo: utils.PathInfo): T.DynamicPageInfo {
+	const out: T.DynamicPageInfo = {
 		type: "dynamic",
 		src: pathInfo.src,
 		component: component(dirs, pathInfo, { dynamic: true }),
@@ -76,7 +74,7 @@ const supported: { [key: string]: boolean } = {
 	".tsx": true,
 }
 
-export async function newFromDirectories(dirs: types.Directories): Promise<types.PageInfo[]> {
+export async function newFromDirectories(dirs: T.Directories): Promise<T.PageInfo[]> {
 	const srcs = await utils.readdirAll(dirs.srcPagesDirectory)
 
 	// TODO: Add support for <Layout> components.
@@ -100,14 +98,14 @@ export async function newFromDirectories(dirs: types.Directories): Promise<types
 		log.error(errors.pagesUseNonURICharacters(badSrcs))
 	}
 
-	const pages: types.PageInfo[] = []
+	const pageInfos: T.PageInfo[] = []
 	for (const pathInfo of pathInfos) {
 		const syntax = path_(dirs, pathInfo)
-		if (dynamicPathRegex.test(syntax)) {
-			pages.push(newDynamicPageInfo(dirs, pathInfo))
+		if (/(\/)(\[)([a-zA-Z0-9\-\.\_\~\:\/\?\#\[\]\@\!\$\&\'\(\)\*\+\,\;\=]+)(\])/.test(syntax)) {
+			pageInfos.push(newDynamicPageInfo(dirs, pathInfo))
 			continue
 		}
-		pages.push(newPageInfo(dirs, pathInfo))
+		pageInfos.push(newPageInfo(dirs, pathInfo))
 	}
-	return pages
+	return pageInfos
 }

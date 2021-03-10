@@ -1,26 +1,28 @@
 import * as fs from "fs"
 import * as path from "path"
 
+// readdirAll recursively reads a directory.
 export async function readdirAll(entry: string, excludes: string[] = []): Promise<string[]> {
 	const ctx: string[] = []
-	async function recurse(entry: string): Promise<void> {
-		const ls = await fs.promises.readdir(entry)
-		const items = ls.map(item => path.join(entry, item)) // Add entry
-		for (const item of items) {
-			if (excludes.includes(item)) continue
-			const stats = await fs.promises.stat(item)
+	async function recurse(current: string): Promise<void> {
+		let ls = await fs.promises.readdir(current)
+		ls = ls.map(item => path.join(current, item)) // Add entry
+		for (const li of ls) {
+			if (excludes.includes(li)) continue
+			const stats = await fs.promises.stat(li)
 			if (stats.isDirectory()) {
-				ctx.push(item)
-				await recurse(item)
+				ctx.push(li)
+				await recurse(li)
 				continue
 			}
-			ctx.push(item)
+			ctx.push(li)
 		}
 	}
 	await recurse(entry)
 	return ctx
 }
 
+// copyAll recursively copies files and directories.
 export async function copyAll(src_dir: string, dst_dir: string, excludes: string[] = []): Promise<void> {
 	const dirs: string[] = []
 	const srcs: string[] = []

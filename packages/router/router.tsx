@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as store from "../store"
-import * as types from "./types"
+import * as T from "./types"
 import * as utils from "./utils"
 
 type RouteEventType = "PUSH" | "REPLACE"
@@ -8,7 +8,7 @@ type RouteEventType = "PUSH" | "REPLACE"
 interface RouterState {
 	type: RouteEventType
 	path: string
-	scrollTo?: types.ScrollTo
+	scrollTo?: T.ScrollTo
 }
 
 // routerStore describes the router as a store. The router can change the
@@ -23,7 +23,7 @@ const routerStore = store.createStore<RouterState>({
 	scrollTo: [0, 0],
 })
 
-export const Link: types.Link = ({ path, scrollTo, children, ...props }) => {
+export const Link: T.Link = ({ path, scrollTo, children, ...props }) => {
 	const setRouter = store.useStoreSetState(routerStore)
 
 	function handleClick(e: React.MouseEvent): void {
@@ -41,11 +41,11 @@ export const Link: types.Link = ({ path, scrollTo, children, ...props }) => {
 	)
 }
 
-export const Route: types.Route = ({ children }) => {
+export const Route: T.Route = ({ children }) => {
 	return <>{children}</>
 }
 
-export const Router: types.Router = ({ children }) => {
+export const Router: T.Router = ({ children }) => {
 	const [router, setRouter] = store.useStore(routerStore)
 
 	React.useEffect(() => {
@@ -89,7 +89,7 @@ export const Router: types.Router = ({ children }) => {
 
 	// cachedRoutes caches routes so rerenders are O(1).
 	const cachedRoutes = React.useMemo(() => {
-		type RouteMap = { [key: string]: React.ReactElement<types.Route> }
+		type RouteMap = { [key: string]: React.ReactElement<T.Route> }
 
 		// routeMap maps paths to components.
 		const routeMap: RouteMap = {}
