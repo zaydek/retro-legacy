@@ -1,15 +1,15 @@
 // testURISafeCharacter tests whether a character matches a reserved or
 // unreserved URI character based on RFC 3986.
-function testURISafeCharacter(char: string): boolean {
+function testURISafeCharacter(ch: string): boolean {
 	// prettier-ignore
 	if (
-		(char >= "a" && char <= "z") || // ALPHA LOWER
-		(char >= "A" && char <= "Z") || // ALPHA LOWER
-		(char >= "0" && char <= "9")    // DIGIT
+		(ch >= "a" && ch <= "z") || // ALPHA LOWER
+		(ch >= "A" && ch <= "Z") || // ALPHA LOWER
+		(ch >= "0" && ch <= "9")    // DIGIT
 	) {
 		return true
 	}
-	switch (char) {
+	switch (ch) {
 		// https://tools.ietf.org/html/rfc3986#section-2.3
 		case "-":
 		case ".":
@@ -40,8 +40,8 @@ function testURISafeCharacter(char: string): boolean {
 }
 
 export function testURISafe(str: string): boolean {
-	for (const char of str) {
-		if (!testURISafeCharacter(char)) {
+	for (const ch of str) {
+		if (!testURISafeCharacter(ch)) {
 			return false
 		}
 	}

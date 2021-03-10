@@ -2,13 +2,10 @@ import * as cli from "./cli/cli"
 import * as commands from "./commands"
 import * as errors from "./errors"
 import * as log from "../shared/log"
+import * as runtime from "./runtime"
 import * as T from "./types"
 import * as terminal from "../shared/terminal"
 import * as utils from "./utils"
-
-import newRuntimeFromCommand from "./runtime"
-
-export const EPOCH = Date.now()
 
 function accent(str: string): string {
 	return str.replace(/('[^']+')/g, terminal.cyan("$1"))
@@ -19,7 +16,7 @@ function format(usage: string): string {
 	return arr
 		.map(line => {
 			if (line === "") return ""
-			return "\x20" + accent(line.replace(/\t/g, "  ")) // Tabs -> spaces
+			return "\x20" + accent(line.replace(/\t/g, "\x20\x20")) // Tabs -> spaces
 		})
 		.join("\n")
 }
@@ -29,22 +26,20 @@ ${terminal.bold("retro dev")}
 
 	Start the dev server
 
-		--cached=...     Use cached resources (default false)
-		--sourcemap=...  Add source maps (default true)
-		--port=...       Port number (default 8000)
+		--sourcemap=...  Add source maps (default 'true')
+		--port=...       Port number (default '8000')
 
 ${terminal.bold("retro export")}
 
 	Export the production-ready build
 
-		--cached=...     Use cached resources (default false)
-		--sourcemap=...  Add source maps (default true)
+		--sourcemap=...  Add source maps (default 'true')
 
 ${terminal.bold("retro serve")}
 
 	Serve the production-ready build
 
-		--port=...       Port number (default 8000)
+		--port=...       Port number (default '8000')
 
 ${terminal.bold("Examples")}
 
@@ -99,28 +94,24 @@ async function main(): Promise<void> {
 			cmd = cli.parseServeCommand(...args.slice(1))
 			break
 		default:
-			log.error(errors.badCommand(cmdArg))
+			log.fatal(errors.badCommand(cmdArg))
 			break
 	}
 
-	const rt = await newRuntimeFromCommand(cmd!)
-	switch (rt.cmd.type) {
-		case "dev":
-			await commands.dev(rt as T.Runtime<T.DevCommand>)
-			break
-		case "export":
-			await commands.export(rt as T.Runtime<T.ExportCommand>)
-			break
-		case "serve":
-			await commands.serve(rt as T.Runtime<T.ServeCommand>)
-			break
+	const rt = await runtime.newRuntimeFromCommand(cmd!)
+	if (rt.cmd.type === "dev") {
+		await commands.dev(rt as T.Runtime<T.DevCommand>)
+	} else if (rt.cmd.type === "export") {
+		await commands.export(rt as T.Runtime<T.ExportCommand>)
+	} else if (rt.cmd.type === "serve") {
+		await commands.serve(rt as T.Runtime<T.ServeCommand>)
 	}
 }
 
 process.on("uncaughtException", err => {
-	process.env["STACK_TRACE"] = "true" // Force STACK_TRACE on
+	process.env["STACK_TRACE"] = "true" // Force STACK_TRACE=true
 	err.message = `UncaughtException: ${err.message}`
-	log.error(err)
+	log.fatal(err)
 })
 
 main()

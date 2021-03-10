@@ -1,7 +1,6 @@
 import * as T from "../../types"
 
-import { parse } from "../parse"
-import { component_syntax, dst_syntax, path_syntax } from "../pages"
+import { component_syntax, dst_syntax, parse, path_syntax } from "../pages"
 
 const dirs: T.Directories = {
 	wwwDir: "www",

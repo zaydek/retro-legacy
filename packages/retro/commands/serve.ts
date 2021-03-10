@@ -1,30 +1,31 @@
 import * as errors from "../errors"
 import * as esbuild from "esbuild"
+import * as events from "../events"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../../shared/log"
-import * as logEvents from "../logEvents"
 import * as T from "../types"
 import * as utils from "../utils"
 
-export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
+// TODO: Add support for an event hook?
+export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 	try {
-		await fs.promises.stat(r.dirs.exportDir)
+		await fs.promises.stat(runtime.dirs.exportDir)
 	} catch {
-		log.error(errors.serveWithoutExportDirectory())
+		log.fatal(errors.serveWithoutExportDirectory())
 	}
 
 	let once = false
 
 	// prettier-ignore
 	const result = await esbuild.serve({
-		servedir: r.dirs.exportDir,
+		servedir: runtime.dirs.exportDir,
 		onRequest: (args: esbuild.ServeOnRequestArgs) => {
 			if (!once) {
 				console.log()
 				once = true
 			}
-			logEvents.serve(args)
+			events.serve(args)
 		},
 	}, {})
 
@@ -53,5 +54,5 @@ export async function serve(r: T.Runtime<T.ServeCommand>): Promise<void> {
 		req.pipe(req_proxy, { end: true })
 	})
 
-	server_proxy.listen(r.cmd.port)
+	server_proxy.listen(runtime.cmd.port)
 }

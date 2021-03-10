@@ -11,11 +11,11 @@ export async function readdirAll(entry: string, excludes: string[] = []): Promis
 			if (excludes.includes(li)) continue
 			const stats = await fs.promises.stat(li)
 			if (stats.isDirectory()) {
-				ctx.unshift(li)
+				ctx.push(li)
 				await recurse(li)
 				continue
 			}
-			ctx.unshift(li)
+			ctx.push(li)
 		}
 	}
 	await recurse(entry)

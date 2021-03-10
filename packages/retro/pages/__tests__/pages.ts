@@ -1,4 +1,3 @@
-import * as child_process from "child_process"
 import * as fs from "fs"
 import * as path from "path"
 import * as T from "../../types"
@@ -16,27 +15,15 @@ test("newPagesFromDirectories", async () => {
 	}
 
 	await fs.promises.mkdir(path.join(dirs.srcPagesDir), { recursive: true })
-
-	// Static
-	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "foo"), { recursive: true })
-	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "foo", "bar"), { recursive: true })
-	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "foo", "bar", "baz"), { recursive: true })
-
-	// Dynamic
 	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "[foo]"), { recursive: true })
 	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "[foo]", "[bar]"), { recursive: true })
 	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "[foo]", "[bar]", "[baz]"), { recursive: true })
 
-	// Static
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "index.js"), "")
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo.js"), "")
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/index.js"), "")
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar.js"), "")
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/index.js"), "")
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/baz.js"), "")
-	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/baz/index.js"), "")
+	await fs.promises.mkdir(path.join(dirs.srcPagesDir), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "foo"), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "foo", "bar"), { recursive: true })
+	await fs.promises.mkdir(path.join(dirs.srcPagesDir, "foo", "bar", "baz"), { recursive: true })
 
-	// Dynamic
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "[index].js"), "")
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "[foo].js"), "")
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "[foo]/[index].js"), "")
@@ -45,6 +32,14 @@ test("newPagesFromDirectories", async () => {
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "[foo]/[bar]/[baz].js"), "")
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "[foo]/[bar]/[baz]/[index].js"), "")
 
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "index.js"), "")
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo.js"), "")
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/index.js"), "")
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar.js"), "")
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/index.js"), "")
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/baz.js"), "")
+	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/baz/index.js"), "")
+
 	let pages = await newPagesFromDirectories(dirs)
 	pages = pages.map(page => ({
 		...page,
@@ -52,26 +47,22 @@ test("newPagesFromDirectories", async () => {
 	}))
 
 	expect(pages).toEqual([
-		// Static
-		{ type: "static", src: "src/pages/index.js", component: "StaticIndex" },
-		{ type: "static", src: "src/pages/foo.js", component: "StaticFoo" },
-		{ type: "static", src: "src/pages/foo/index.js", component: "StaticFooIndex" },
-		{ type: "static", src: "src/pages/foo/bar.js", component: "StaticFooBar" },
-		{ type: "static", src: "src/pages/foo/bar/index.js", component: "StaticFooBarIndex" },
-		{ type: "static", src: "src/pages/foo/bar/baz.js", component: "StaticFooBarBaz" },
-		{ type: "static", src: "src/pages/foo/bar/baz/index.js", component: "StaticFooBarBazIndex" },
-
-		// Dynamic
-		{ type: "dynamic", src: "src/pages/[index].js", component: "DynamicIndex" },
-		{ type: "dynamic", src: "src/pages/[foo].js", component: "DynamicFoo" },
-		{ type: "dynamic", src: "src/pages/[foo]/[index].js", component: "DynamicFooIndex" },
-		{ type: "dynamic", src: "src/pages/[foo]/[bar].js", component: "DynamicFooBar" },
-		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[index].js", component: "DynamicFooBarIndex" },
-		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[baz].js", component: "DynamicFooBarBaz" },
 		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[baz]/[index].js", component: "DynamicFooBarBazIndex" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[baz].js", component: "DynamicFooBarBaz" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar]/[index].js", component: "DynamicFooBarIndex" },
+		{ type: "dynamic", src: "src/pages/[foo]/[bar].js", component: "DynamicFooBar" },
+		{ type: "dynamic", src: "src/pages/[foo]/[index].js", component: "DynamicFooIndex" },
+		{ type: "dynamic", src: "src/pages/[foo].js", component: "DynamicFoo" },
+		{ type: "dynamic", src: "src/pages/[index].js", component: "DynamicIndex" },
+
+		{ type: "static", src: "src/pages/foo/bar/baz/index.js", component: "StaticFooBarBazIndex" },
+		{ type: "static", src: "src/pages/foo/bar/baz.js", component: "StaticFooBarBaz" },
+		{ type: "static", src: "src/pages/foo/bar/index.js", component: "StaticFooBarIndex" },
+		{ type: "static", src: "src/pages/foo/bar.js", component: "StaticFooBar" },
+		{ type: "static", src: "src/pages/foo/index.js", component: "StaticFooIndex" },
+		{ type: "static", src: "src/pages/foo.js", component: "StaticFoo" },
+		{ type: "static", src: "src/pages/index.js", component: "StaticIndex" },
 	])
 
-	// // NOTE: fs.promises.unlink throws EPERM error.
-	// await fs.promises.unlink(path.dirname(dirs2.srcPagesDir))
-	child_process.execSync(`rm -rf ${path.dirname(dirs.srcPagesDir)}`)
+	await fs.promises.rmdir(path.dirname(dirs.srcPagesDir), { recursive: true })
 })

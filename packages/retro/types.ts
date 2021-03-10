@@ -30,18 +30,34 @@ export interface Directories {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-export interface Props {
-	[key: string]: unknown
-}
-
-export type DescriptProps = Props & { path: string }
-
 // prettier-ignore
 export interface FSPageInfo {
 	type: "static" | "dynamic"
 	src: string       // e.g. "src/pages/index.js"
 	component: string // e.g. "PageIndex"
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+export interface Props {
+	[key: string]: unknown
+}
+
+export type DescriptProps = Props & { path: string }
+
+export interface StaticPageModule {
+	serverProps?(): Promise<Props>
+	Head?: (props: DescriptProps) => JSX.Element
+	default: (props: DescriptProps) => JSX.Element
+}
+
+export interface DynamicPageModule {
+	serverPaths(): Promise<{ path: string; props: Props }[]>
+	Head?: (props: DescriptProps) => JSX.Element
+	default: (props: DescriptProps) => JSX.Element
+}
+
+export type AnyPageModule = StaticPageModule | DynamicPageModule
 
 // prettier-ignore
 export interface ServerRouteInfo {
@@ -52,40 +68,27 @@ export interface ServerRouteInfo {
 	component: string // e.g. "PageIndex"
 }
 
-export interface StaticPageModule {
-	Head?: (props: DescriptProps) => JSX.Element
-	default?: (props: DescriptProps) => JSX.Element
-	serverProps?(): Promise<Props>
-}
-
-export interface DynamicPageModule {
-	Head?: (props: DescriptProps) => JSX.Element
-	default?: (props: DescriptProps) => JSX.Element
-	serverPaths(): Promise<{ path: string; props: Props }[]>
-}
-
-export type AnyPageModule = StaticPageModule | DynamicPageModule
-
-export interface RouteMeta {
+export interface ServerRouteMeta {
 	module: AnyPageModule
-	pageInfo: FSPageInfo
-	routeInfo: ServerRouteInfo
+	route: ServerRouteInfo
 	descriptProps: DescriptProps
 }
 
-export interface Router {
-	[key: string]: RouteMeta
+export interface ServerRouter {
+	[key: string]: ServerRouteMeta
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 export interface Runtime<Cmd extends AnyCommand = AnyCommand> {
 	cmd: Cmd
 	dirs: Directories
 	tmpl: string
 	pages: FSPageInfo[]
-	router: Router
+	router: ServerRouter
 	serverGuards(): Promise<void>
-	purge(): Promise<void>
-	resolveDocument(): Promise<void>
-	resolvePages(): Promise<void>
-	resolveRouter(): Promise<void>
+	purgeDirs(): Promise<void>
+	resolveTemplate(): Promise<void>
+	resolveFSPages(): Promise<void>
+	resolveServerRouter(): Promise<void>
 }

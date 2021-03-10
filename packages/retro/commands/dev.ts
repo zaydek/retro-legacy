@@ -1,15 +1,13 @@
 import * as esbuild from "esbuild"
 import * as esbuildHelpers from "../esbuild-helpers"
+import * as events from "../events"
 import * as fs from "fs"
 import * as http from "http"
 import * as log from "../../shared/log"
-import * as logEvents from "../logEvents"
 import * as path from "path"
 import * as router from "../router"
 import * as T from "../types"
 import * as utils from "../utils"
-
-import { EPOCH } from "../main"
 
 // import * as terminal from "../../shared/terminal"
 
@@ -37,6 +35,8 @@ import { EPOCH } from "../main"
 // Step 1: Build app.js with watch mode enabled
 // Step 2: On watch, rebuild app.js
 // Step 3: On HTTP requests, render and cache the current page to string and ~~rebuild app.js~~
+//
+// TODO: Add support for an event hook?
 export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 	// await exportPages(runtime)
 
@@ -77,7 +77,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 						console.log()
 						once = true
 					}
-					logEvents.serve(args)
+					events.serve(args)
 				},
 			},
 			{},
@@ -152,7 +152,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 				return
 			}
 
-			const src = meta.routeInfo.src
+			const src = meta.route.src
 			const dst = path.join(runtime.dirs.cacheDir, src.replace(/\..*$/, ".esbuild.js"))
 
 			try {
@@ -175,12 +175,12 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 				delete require.cache[require.resolve(path_)] // Purge the dependency cache
 				meta.module = module_
 			} catch (error) {
-				log.error(error)
+				log.fatal(error)
 			}
 
-			const contents = router.routeMetaToString(runtime.tmpl, meta, { devMode: true })
-			await fs.promises.mkdir(path.dirname(meta.routeInfo.dst), { recursive: true })
-			await fs.promises.writeFile(meta.routeInfo.dst, contents)
+			const contents = router.routeMetaToString(runtime.tmpl, meta, { dev: true })
+			await fs.promises.mkdir(path.dirname(meta.route.dst), { recursive: true })
+			await fs.promises.writeFile(meta.route.dst, contents)
 		}
 
 		const req_proxy = http.request(opts, async res_proxy => {
@@ -208,6 +208,4 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 	// }, 0)
 
 	server_proxy.listen(runtime.cmd.port)
-
-	console.log(Date.now() - EPOCH)
 }

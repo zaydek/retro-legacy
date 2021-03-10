@@ -4,8 +4,7 @@ import * as ReactDOMServer from "react-dom/server"
 import * as T from "../types"
 
 // TODO: Add support for <Layout> components.
-// TODO: Write tests.
-export function routeMetaToString(tmpl: string, meta: T.RouteMeta, { devMode }: { devMode: boolean }): string {
+export function routeMetaToString(tmpl: string, meta: T.ServerRouteMeta, { dev }: { dev: boolean }): string {
 	let head = "<!-- <Head { path, ...serverProps }> -->"
 	try {
 		if (typeof meta.module.Head === "function") {
@@ -13,7 +12,7 @@ export function routeMetaToString(tmpl: string, meta: T.RouteMeta, { devMode }: 
 			head = str.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 		}
 	} catch (error) {
-		log.error(`${meta.routeInfo.src}.<Head>: ${error.message}`)
+		log.fatal(`${meta.route.src}.<Head>: ${error.message}`)
 	}
 
 	// TODO: Upgrade to <script src="/app.[hash].js">?
@@ -21,19 +20,17 @@ export function routeMetaToString(tmpl: string, meta: T.RouteMeta, { devMode }: 
 	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	app += `\n\t\t<div id="root"></div>`
 	app += `\n\t\t<script src="/app.js"></script>`
-	app += !devMode ? "" : `\n\t\t<script type="module">`
-	app += !devMode ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
-	app += !devMode ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
-	app += !devMode ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
-	app += !devMode ? "" : `\n\t\t</script>`
+	app += !dev ? "" : `\n\t\t<script type="module">`
+	app += !dev ? "" : `\n\t\t\tconst events = new EventSource("/~dev")`
+	app += !dev ? "" : `\n\t\t\tevents.addEventListener("reload", e => window.location.reload())`
+	app += !dev ? "" : `\n\t\t\tevents.addEventListener("warning", e => console.warn(JSON.parse(e.data)))`
+	app += !dev ? "" : `\n\t\t</script>`
 
 	try {
-		if (typeof meta.module.default === "function") {
-			const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps))
-			app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
-		}
+		const str = ReactDOMServer.renderToString(React.createElement(meta.module.default, meta.descriptProps))
+		app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
 	} catch (error) {
-		log.error(`${meta.routeInfo.src}.<Page>: ${error.message}`)
+		log.fatal(`${meta.route.src}.<Page>: ${error.message}`)
 	}
 
 	const contents = tmpl.replace("%head%", head).replace("%app%", app)
@@ -41,21 +38,20 @@ export function routeMetaToString(tmpl: string, meta: T.RouteMeta, { devMode }: 
 }
 
 // TODO: Add support for <Layout> components.
-// TODO: Write tests.
-export function routerToString(router: T.Router): string {
-	const map = new Map<string, string>()
+export function routerToString(router: T.ServerRouter): string {
+	const map = new Map()
 	for (const meta of Object.values(router)) {
-		map.set(meta.routeInfo.src, meta.routeInfo.component)
+		map.set(meta.route.component, meta.route.src)
 	}
 
-	const distinct = Array.from(map)
+	const imports = Array.from(map)
 
 	return `import React from "react"
 import ReactDOM from "react-dom"
-import { Route, Router } from "../packages/router"
 
-// Components
-${distinct.map(([src, component]) => `import ${component} from "../${src}"`).join("\n")}
+${imports.map(([component, src]) => `import ${component} from "../${src}"`).join("\n")}
+
+import { Route, Router } from "../packages/router"
 
 export default function App() {
 	return (
@@ -65,7 +61,7 @@ ${
 		.map(
 			([path, meta]) => `
 			<Route path="${path}">
-				<${meta.routeInfo.component} {...${JSON.stringify(meta.descriptProps)}} />
+				<${meta.route.component} {...${JSON.stringify(meta.descriptProps)}} />
 			</Route>`,
 		)
 		.join("\n") + "\n"

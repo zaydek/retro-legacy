@@ -2,15 +2,13 @@ import * as errors from "../errors"
 import * as esbuild from "esbuild"
 import * as esbuildHelpers from "../esbuild-helpers"
 import * as log from "../../shared/log"
+import * as pages from "../pages"
 import * as path from "path"
 import * as T from "../types"
 import * as utils from "../utils"
 
-// import * as terminal from "../../shared/terminal"
-
-export async function resolveModule<M extends T.AnyPageModule>(r: T.Runtime, src: string): Promise<M> {
-	src = src
-	const dst = path.join(r.dirs.cacheDir, src.replace(/\..*$/, ".esbuild.js"))
+export async function resolveModule<Module extends T.AnyPageModule>(runtime: T.Runtime, src: string): Promise<Module> {
+	const dst = path.join(runtime.dirs.cacheDir, src.replace(/\..*$/, ".esbuild.js"))
 
 	try {
 		await esbuild.build(esbuildHelpers.transpileOnlyConfiguration(src, dst))
@@ -19,72 +17,82 @@ export async function resolveModule<M extends T.AnyPageModule>(r: T.Runtime, src
 		process.exit(1)
 	}
 
-	let module_: M
+	let mod: Module
 	try {
-		// TODO: Change to path.relative?
-		module_ = require(path.join(process.cwd(), dst))
+		// TODO: Upgrade to path.relative.
+		mod = require(path.join(process.cwd(), dst))
 	} catch (error) {
-		log.error(error)
+		log.fatal(error)
 	}
 
-	return module_!
+	return mod!
 }
 
-async function resolveStaticRoute(r: T.Runtime, pageInfo: T.StaticPageInfo): Promise<T.RouteMeta> {
-	const module_ = await resolveModule<T.StaticPageModule>(r, pageInfo.src)
-	if (!utils.validateStaticModuleExports(module_)) {
-		log.error(errors.badStaticPageExports(pageInfo.src))
+async function resolveStaticRouteMeta(runtime: T.Runtime, page: T.FSPageInfo): Promise<T.ServerRouteMeta> {
+	const mod = await resolveModule<T.StaticPageModule>(runtime, page.src)
+	if (!utils.validateStaticModuleExports(mod)) {
+		log.fatal(errors.badStaticPageExports(page.src))
 	}
 
 	let props = {}
-	if (typeof module_.serverProps === "function") {
+	if (typeof mod.serverProps === "function") {
 		try {
-			props = await module_.serverProps!()
+			props = await mod.serverProps!()
 			if (!utils.validateServerPropsReturn(props)) {
-				log.error(errors.badServerPropsReturn(pageInfo.src))
+				log.fatal(errors.badServerPropsReturn(page.src))
 			}
 		} catch (error) {
-			log.error(`${pageInfo.src}.serverProps: ${error.message}`)
+			log.fatal(`${page.src}.serverProps: ${error.message}`)
 		}
 	}
 
-	const routeInfo = pageInfo
-	const descriptProps = { path: pageInfo.path, ...props }
+	const parsed = pages.parse(page.src)
+	const path_ = pages.path_syntax(runtime.dirs, parsed)
+	const dst = pages.dst_syntax(runtime.dirs, parsed)
 
-	const meta = { module: module_, pageInfo, routeInfo, descriptProps }
+	const meta: T.ServerRouteMeta = {
+		module: mod,
+		route: {
+			...page,
+			dst,
+			path: path_,
+		},
+		descriptProps: {
+			path: path_, // Add path
+			...props,
+		},
+	}
 	return meta
 }
 
-async function resolveDynamicRoutes(r: T.Runtime, pageInfo: T.DynamicPageInfo): Promise<T.RouteMeta[]> {
-	const metas: T.RouteMeta[] = []
+async function resolveDynamicRouteMetas(runtime: T.Runtime, page: T.FSPageInfo): Promise<T.ServerRouteMeta[]> {
+	const metas: T.ServerRouteMeta[] = []
 
-	const module_ = await resolveModule<T.DynamicPageModule>(r, pageInfo.src)
-	if (!utils.validateDynamicModuleExports(module_)) {
-		log.error(errors.badDynamicPageExports(pageInfo.src))
+	const mod = await resolveModule<T.DynamicPageModule>(runtime, page.src)
+	if (!utils.validateDynamicModuleExports(mod)) {
+		log.fatal(errors.badDynamicPageExports(page.src))
 	}
 
 	let paths: { path: string; props: T.Props }[] = []
 	try {
-		paths = await module_.serverPaths!()
+		paths = await mod.serverPaths!()
 		if (!utils.validateServerPathsReturn(paths)) {
-			log.error(errors.badServerPathsReturn(pageInfo.src))
+			log.fatal(errors.badServerPathsReturn(page.src))
 		}
 	} catch (error) {
-		// TODO: FIXME
-		if (!utils.validateServerPathsReturn(paths)) {
-			log.error(errors.badServerPathsReturn(pageInfo.src))
-		}
-		log.error(`${pageInfo.src}.serverPaths: ${error.message}`)
+		log.fatal(`${page.src}.serverPaths: ${error.message}`)
 	}
 
 	for (const meta of paths) {
-		const path_ = path.join(path.dirname(pageInfo.src).slice(r.dirs.srcPagesDir.length), meta.path)
-		const dst = path.join(r.dirs.exportDir, path_ + ".html")
+		// NOTE: Do not use pages.path_syntax or pages.dst_syntax here; path must be
+		// computed from meta.path.
+		const parsed = pages.parse(page.src)
+		const path_ = path.join(parsed.dirname.slice(runtime.dirs.srcPagesDir.length), meta.path)
+		const dst = path.join(runtime.dirs.exportDir, path_ + ".html")
 		metas.push({
-			module: module_,
-			pageInfo: pageInfo,
-			routeInfo: {
-				...pageInfo,
+			module: mod,
+			route: {
+				...page,
 				dst,
 				path: path_,
 			},
@@ -97,27 +105,23 @@ async function resolveDynamicRoutes(r: T.Runtime, pageInfo: T.DynamicPageInfo): 
 	return metas
 }
 
-// newFromRuntime resolves serverProps and serverPaths and generates a server-
-// resolved router.
-//
-// TODO: Add support for hooks or middleware so logging can be externalized?
-export async function newFromRuntime(runtime: T.Runtime): Promise<T.Router> {
-	const router: T.Router = {}
+export async function newRouterFromRuntime(runtime: T.Runtime): Promise<T.ServerRouter> {
+	const router: T.ServerRouter = {}
 
-	for (const pageInfo of runtime.pages) {
-		if (pageInfo.type === "static") {
-			const meta = await resolveStaticRoute(runtime, pageInfo)
-			if (router[meta.routeInfo.path] !== undefined) {
-				log.error(errors.repeatPath(meta.routeInfo, router[meta.routeInfo.path]!.routeInfo))
+	for (const page of runtime.pages) {
+		if (page.type === "static") {
+			const meta = await resolveStaticRouteMeta(runtime, page)
+			if (router[meta.route.path] !== undefined) {
+				log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 			}
-			router[meta.routeInfo.path] = meta
+			router[meta.route.path] = meta
 		} else {
-			const metas = await resolveDynamicRoutes(runtime, pageInfo)
+			const metas = await resolveDynamicRouteMetas(runtime, page)
 			for (const meta of metas) {
-				if (router[meta.routeInfo.path] !== undefined) {
-					log.error(errors.repeatPath(meta.routeInfo, router[meta.routeInfo.path]!.routeInfo))
+				if (router[meta.route.path] !== undefined) {
+					log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 				}
-				router[meta.routeInfo.path] = meta
+				router[meta.route.path] = meta
 			}
 		}
 	}

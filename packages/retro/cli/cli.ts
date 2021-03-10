@@ -2,6 +2,8 @@ import * as log from "../../shared/log"
 import * as T from "../types"
 import * as terminal from "../../shared/terminal"
 
+// TODO: Add accent here?
+
 // parseDevCommand parses the dev command.
 export function parseDevCommand(...args: string[]): T.DevCommand {
 	const cmd: T.DevCommand = {
@@ -42,10 +44,10 @@ export function parseDevCommand(...args: string[]): T.DevCommand {
 		}
 	}
 	if (badCmd !== "") {
-		log.error(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
+		log.fatal(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
 	}
 	if (cmd.port < 1e3 || cmd.port >= 1e4) {
-		log.error(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
+		log.fatal(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
 	}
 	return cmd
 }
@@ -82,7 +84,7 @@ export function parseExportCommand(...args: string[]): T.ExportCommand {
 		}
 	}
 	if (badCmd !== "") {
-		log.error(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
+		log.fatal(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
 	}
 	return cmd
 }
@@ -116,10 +118,10 @@ export function parseServeCommand(...args: string[]): T.ServeCommand {
 		}
 	}
 	if (badCmd !== "") {
-		log.error(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
+		log.fatal(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
 	}
 	if (cmd.port < 1e3 || cmd.port >= 1e4) {
-		log.error(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
+		log.fatal(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
 	}
 	return cmd
 }

@@ -4,15 +4,34 @@ import * as path from "path"
 import * as T from "../types"
 import * as utils from "../utils"
 
-import { parse, ParsedPath } from "./parse"
+// prettier-ignore
+export interface ParsedPath {
+	src: string      // e.g. "path/to/basename.ext"
+	dirname: string  // e.g. "path/to"
+	basename: string // e.g. "basename.ext"
+	name: string     // e.g. "basename"
+	extname: string  // e.g. ".ext"
+}
+
+export function parse(src: string): ParsedPath {
+	const dirname = path.dirname(src)
+	const basename = path.basename(src)
+	const extname = path.extname(src)
+	const name = basename.slice(0, -extname.length)
+	return { src, dirname, basename, name, extname }
+}
 
 export function dst_syntax(dirs: T.Directories, parsed: ParsedPath): string {
-	const out = path.join(dirs.exportDir, parsed.src.slice(dirs.srcPagesDir.length))
-	return out.slice(0, -parsed.ext.length) + ".html"
+	// prettier-ignore
+	const out = path.join(
+		dirs.exportDir,
+		parsed.src.slice(dirs.srcPagesDir.length, -parsed.extname.length) + ".html",
+	)
+	return out
 }
 
 export function path_syntax(dirs: T.Directories, parsed: ParsedPath): string {
-	const out = parsed.src.slice(dirs.srcPagesDir.length, -parsed.ext.length)
+	const out = parsed.src.slice(dirs.srcPagesDir.length, -parsed.extname.length)
 	if (out.endsWith("/index")) {
 		return out.slice(0, -"index".length) // Keep "/"
 	}
@@ -41,7 +60,7 @@ export async function newPagesFromDirectories(dirs: T.Directories): Promise<T.FS
 			if (/^[_$]|[_$]$/.test(parsed.name)) {
 				return false
 			}
-			return /\.jsx?|tsx?$/.test(parsed.ext)
+			return /\.jsx?|tsx?$/.test(parsed.extname)
 		})
 
 	const badSrcs: string[] = []
@@ -52,7 +71,7 @@ export async function newPagesFromDirectories(dirs: T.Directories): Promise<T.FS
 	}
 
 	if (badSrcs.length > 0) {
-		log.error(errors.pagesUseNonURICharacters(badSrcs))
+		log.fatal(errors.pagesUseNonURICharacters(badSrcs))
 	}
 
 	const pages: T.FSPageInfo[] = []

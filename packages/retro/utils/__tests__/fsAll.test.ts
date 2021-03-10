@@ -1,4 +1,3 @@
-import * as child_process from "child_process"
 import * as fs from "fs"
 import * as path from "path"
 
@@ -18,11 +17,9 @@ test("copyAll", async () => {
 
 	let foo = await readdirAll(path.join(__dirname, "foo"))
 	foo = foo.map(src => path.relative(__dirname, src))
-	foo.sort()
 
 	let bar = await readdirAll(path.join(__dirname, "bar"))
 	bar = bar.map(src => path.relative(__dirname, src))
-	bar.sort()
 
 	// prettier-ignore
 	expect(foo).toEqual([
@@ -43,10 +40,8 @@ test("copyAll", async () => {
 		"bar/bar/baz/c",
 	])
 
-	// // NOTE: fs.promises.unlink throws EPERM error.
-	// await fs.promises.unlink(path.join(__dirname, "foo"))
-	child_process.execSync(`rm -rf ${path.join(__dirname, "foo")}`)
-	child_process.execSync(`rm -rf ${path.join(__dirname, "bar")}`)
+	await fs.promises.rmdir(path.join(__dirname, "foo"), { recursive: true })
+	await fs.promises.rmdir(path.join(__dirname, "bar"), { recursive: true })
 })
 
 test("readdirAll", async () => {
@@ -61,7 +56,6 @@ test("readdirAll", async () => {
 
 	let srcs = await readdirAll(path.join(__dirname, "foo"), [path.join(__dirname, "foo/bar/baz/exclude")])
 	srcs = srcs.map(src => path.relative(__dirname, src))
-	srcs.sort()
 
 	// prettier-ignore
 	expect(srcs).toEqual([
@@ -72,7 +66,5 @@ test("readdirAll", async () => {
 		"foo/bar/baz/c",
 	])
 
-	// // NOTE: fs.promises.unlink throws EPERM error.
-	// await fs.promises.unlink(path.join(__dirname, "foo"))
-	child_process.execSync(`rm -rf ${path.join(__dirname, "foo")}`)
+	await fs.promises.rmdir(path.join(__dirname, "foo"), { recursive: true })
 })

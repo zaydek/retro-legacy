@@ -17,26 +17,26 @@ function formatMS(ms: number): string {
 	}
 }
 
-function export_(r: T.Runtime, meta: T.RouteMeta, start: number): void {
+function export_(runtime: T.Runtime, meta: T.ServerRouteMeta, start: number): void {
 	const dur = formatMS(Date.now() - start)
 
 	let color = terminal.white
-	if (meta.routeInfo.type === "dynamic") {
+	if (meta.route.type === "dynamic") {
 		color = terminal.cyan
 	}
 
 	let dim = terminal.dim.white
-	if (meta.routeInfo.type === "dynamic") {
+	if (meta.route.type === "dynamic") {
 		dim = terminal.dim.cyan
 	}
 
-	const src = meta.routeInfo.src.slice(r.dirs.srcPagesDir.length)
+	const src = meta.route.src.slice(runtime.dirs.srcPagesDir.length)
 	const src_ext = path.extname(src)
 	const src_basename = src.slice(1, -src_ext.length)
 
 	const sep = "-".repeat(Math.max(0, TERM_WIDTH - ("/" + src + " ").length))
 
-	const dst = meta.routeInfo.dst.slice(r.dirs.exportDir.length)
+	const dst = meta.route.dst.slice(runtime.dirs.exportDir.length)
 	const dst_ext = path.extname(dst)
 	const dst_basename = dst.slice(1, -dst_ext.length)
 

@@ -34,8 +34,8 @@ export function warning(...args: unknown[]): void {
 	console.warn(`\x20${terminal.bold(">")} ${terminal.bold.yellow("warning:")} ${terminal.bold(message)}${EOF}`)
 }
 
-// error logs an error message that appears as "> error: ...".
-export function error(...args: unknown[]): void {
+// fatal logs an error message that appears as "> error: ...".
+export function fatal(...args: unknown[]): void {
 	const message = format(...args)
 	console.error(`\x20${terminal.bold(">")} ${terminal.bold.red("error:")} ${terminal.bold(message)}${EOF}`)
 	process.exit(1)
