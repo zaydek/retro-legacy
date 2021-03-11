@@ -2,3 +2,8 @@
 
 .DS_Store
 node_modules
+
+wwww
+src
+__cache__
+__export__
