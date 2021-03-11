@@ -1,8 +1,4 @@
-.DS_Store
-node_modules/
+# http://git-scm.com/docs/gitignore
 
-__cache__/
-bin/
-build/
-dist/
-export/
+.DS_Store
+node_modules

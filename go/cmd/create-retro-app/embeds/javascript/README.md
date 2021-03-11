@@ -1,3 +1,0 @@
-# create-retro-app
-
-TODO
