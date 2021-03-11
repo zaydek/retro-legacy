@@ -19,7 +19,7 @@ func copyDir(from_dir, to_dir string, excludes []string) error {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() {
+		if d.IsDir() {
 			return nil
 		}
 		for _, exclude := range excludes {

@@ -180,7 +180,7 @@ func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
 func newRuntime() (Runtime, error) {
 	// var err error
 
-	runtime := Runtime{
+	rt := Runtime{
 		Dirs: DirConfiguration{
 			WwwDir:      "www",
 			SrcPagesDir: "src/pages",
@@ -192,7 +192,7 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Remove __cache__, __export__
-	rmdirs := []string{runtime.Dirs.CacheDir, runtime.Dirs.ExportDir}
+	rmdirs := []string{rt.Dirs.CacheDir, rt.Dirs.ExportDir}
 	for _, rmdir := range rmdirs {
 		if err := os.RemoveAll(rmdir); err != nil {
 			return Runtime{}, err
@@ -200,7 +200,7 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Create www, src/pages, __cache__, __export__
-	mkdirs := []string{runtime.Dirs.WwwDir, runtime.Dirs.SrcPagesDir, runtime.Dirs.CacheDir, runtime.Dirs.ExportDir}
+	mkdirs := []string{rt.Dirs.WwwDir, rt.Dirs.SrcPagesDir, rt.Dirs.CacheDir, rt.Dirs.ExportDir}
 	for _, mkdir := range mkdirs {
 		if err := os.MkdirAll(mkdir, PERM_DIR); err != nil {
 			return Runtime{}, err
@@ -208,13 +208,17 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Copy www to __export__
+	excludes := []string{filepath.Join(rt.Dirs.WwwDir, "index.html")}
+	if err := copyDir(rt.Dirs.WwwDir, rt.Dirs.ExportDir, excludes); err != nil {
+		return Runtime{}, err
+	}
 
 	// runtime.RoutePartials, err = newRoutePartialsFromDirs(runtime.Dirs)
 	// if err != nil {
 	// 	return Runtime{}, err
 	// }
 
-	return runtime, nil
+	return rt, nil
 }
 
 func main() {
