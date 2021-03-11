@@ -1,19 +1,22 @@
 import * as esbuild from "esbuild"
 
-interface UnknownObject {
-	[key: string]: string
-}
-
-const defines = (): UnknownObject => ({
-	__DEV__: process.env.__DEV__!,
-	"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
-})
+// interface UnknownObject {
+// 	[key: string]: string
+// }
+//
+// // TODO: __DEV__ can be implemented as a plugin.
+// const defines = (): UnknownObject => ({
+// 	__DEV__: process.env.__DEV__!,
+// 	"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+// })
 
 // TODO: Ensure that serverProps and serverPaths cannot be aliased because of
 // minification.
 export const transpileOnlyConfiguration = (src: string, dst: string): esbuild.BuildOptions => ({
 	bundle: true,
-	define: defines(),
+	define: {
+		"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+	},
 	entryPoints: [src],
 	external: ["react", "react-dom"], // TODO: Use external strategy as defined in esnode?
 	format: "cjs", // For require
@@ -21,9 +24,6 @@ export const transpileOnlyConfiguration = (src: string, dst: string): esbuild.Bu
 	loader: {
 		".js": "jsx",
 	},
-	// // TODO: We actually want to defer to esbuild error logs. Therefore, this
-	// // should omitted.
-	// logLevel: "silent",
 	minify: false,
 	outfile: dst,
 	// plugins: [...configs.retro.plugins],
@@ -33,7 +33,9 @@ export const transpileOnlyConfiguration = (src: string, dst: string): esbuild.Bu
 // minification.
 export const bundleConfiguration = (src: string, dst: string): esbuild.BuildOptions => ({
 	bundle: true,
-	define: defines(),
+	define: {
+		"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+	},
 	entryPoints: [src],
 	external: [],
 	format: "iife",
@@ -41,9 +43,6 @@ export const bundleConfiguration = (src: string, dst: string): esbuild.BuildOpti
 	loader: {
 		".js": "jsx",
 	},
-	// // TODO: We actually want to defer to esbuild error logs. Therefore, this
-	// // should omitted.
-	// logLevel: "silent",
 	minify: true,
 	outfile: dst,
 	// plugins: [...configs.retro.plugins],

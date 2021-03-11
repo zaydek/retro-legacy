@@ -5,6 +5,7 @@ import * as fs from "fs"
 import * as http from "http"
 import * as log from "../../shared/log"
 import * as T from "../types"
+import * as terminal from "../../shared/terminal"
 import * as utils from "../utils"
 
 // TODO: Add support for an event hook?
@@ -34,7 +35,7 @@ export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 	// - https://esbuild.github.io/api/#customizing-server-behavior
 	// - https://github.com/evanw/esbuild/issues/858#issuecomment-782814216
 	//
-	const proxyServer = http.createServer((req, res) => {
+	const proxySrv = http.createServer((req, res) => {
 		const opts = {
 			hostname: serveResult.host,
 			port: serveResult.port,
@@ -42,17 +43,23 @@ export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 			method: req.method,
 			headers: req.headers,
 		}
-		const proxyRequest = http.request(opts, proxyResponse => {
-			if (proxyResponse.statusCode === 404) {
+		const proxyReq = http.request(opts, proxyRes => {
+			if (proxyRes.statusCode === 404) {
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				return
 			}
-			res.writeHead(proxyResponse.statusCode!, proxyResponse.headers)
-			proxyResponse.pipe(res, { end: true })
+			res.writeHead(proxyRes.statusCode!, proxyRes.headers)
+			proxyRes.pipe(res, { end: true })
 		})
-		req.pipe(proxyRequest, { end: true })
+		req.pipe(proxyReq, { end: true })
 	})
 
-	proxyServer.listen(runtime.cmd.port)
+	proxySrv.listen(runtime.cmd.port)
+
+	console.log(
+		terminal.bold(
+			` ${terminal.green(">")} Ready; open ` + `${terminal.underline(`http://localhost:${runtime.cmd.port}`)}.\n`,
+		),
+	)
 }

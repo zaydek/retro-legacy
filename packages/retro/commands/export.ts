@@ -8,17 +8,12 @@ import * as T from "../types"
 
 // TODO: Add support for an event hook?
 async function export_(runtime: T.Runtime<T.ExportCommand>): Promise<void> {
-	// Export pages:
-	let once = false
+	// Log and export routes:
 	for (const meta of Object.values(runtime.router)) {
 		const start = Date.now()
 		const contents = router.routeMetaToString(runtime.tmpl, meta, { dev: false })
 		await fs.promises.mkdir(path.dirname(meta.route.dst), { recursive: true })
 		await fs.promises.writeFile(meta.route.dst, contents)
-		if (!once) {
-			console.log()
-			once = true
-		}
 		events.export(runtime, meta, start)
 	}
 	console.log()

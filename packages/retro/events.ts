@@ -1,10 +1,11 @@
-import * as esbuild from "esbuild"
 import * as path from "path"
 import * as T from "./types"
 import * as terminal from "../shared/terminal"
 import * as utils from "./utils"
 
 const TERM_WIDTH = 40
+
+let once = false
 
 function formatMS(ms: number): string {
 	switch (true) {
@@ -46,6 +47,11 @@ function export_(runtime: T.Runtime, meta: T.ServerRouteMeta, start: number): vo
 	logstr += dim("/") + color(src_name) + dim(src_ext)
 	logstr += " " + dim(sep) + " "
 	logstr += dim("/") + color(dst_name) + " " + dim(`(${dur})`)
+
+	if (!once) {
+		console.log()
+		once = true
+	}
 	console.log(logstr)
 }
 
@@ -93,6 +99,10 @@ function serve(args: ServeArgs): void {
 	logstr += " " + dim(sep) + " "
 	logstr += color(args.status) + " " + dim(`(${dur})`)
 
+	if (!once) {
+		console.log()
+		once = true
+	}
 	logger(logstr)
 }
 

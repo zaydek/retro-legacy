@@ -28,7 +28,7 @@ ${terminal.bold("retro dev")}
 
 		--fast-refresh=...  Use fast refresh (default 'true')
 		--sourcemap=...     Add sourcemaps (default 'true')
-		--port=...          Port number (default '8000')
+		--port=...          Use port number (default '8000')
 
 ${terminal.bold("retro export")}
 
@@ -40,7 +40,7 @@ ${terminal.bold("retro serve")}
 
 	Serve the production-ready build
 
-		--port=...          Port number (default '8000')
+		--port=...          Use port number (default '8000')
 
 ${terminal.bold("Examples")}
 

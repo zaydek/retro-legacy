@@ -105,9 +105,8 @@ async function resolveDynamicRouteMetas(runtime: T.Runtime, page: T.FSPageInfo):
 	return metas
 }
 
-export async function newRouterFromRuntime(runtime: T.Runtime): Promise<T.ServerRouter> {
+export async function createRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 	const router: T.ServerRouter = {}
-
 	for (const page of runtime.pages) {
 		if (page.type === "static") {
 			const meta = await resolveStaticRouteMeta(runtime, page)

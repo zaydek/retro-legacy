@@ -2,7 +2,7 @@ import * as fs from "fs"
 import * as path from "path"
 import * as T from "../../types"
 
-import { newPagesFromDirectories } from "../pages"
+import { createPages } from "../pages"
 
 test("newPagesFromDirectories", async () => {
 	const __scoped_dirname = path.relative(process.cwd(), __dirname)
@@ -40,7 +40,7 @@ test("newPagesFromDirectories", async () => {
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/baz.js"), "")
 	await fs.promises.writeFile(path.join(dirs.srcPagesDir, "foo/bar/baz/index.js"), "")
 
-	let pages = await newPagesFromDirectories(dirs)
+	let pages = await createPages(dirs)
 	pages = pages.map(page => ({
 		...page,
 		src: path.relative(__scoped_dirname, page.src), // Remove packages/retro/...

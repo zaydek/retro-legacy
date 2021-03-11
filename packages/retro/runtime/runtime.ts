@@ -1,11 +1,14 @@
+import * as errors from "../errors"
+import * as fs from "fs"
+import * as log from "../../shared/log"
+import * as pages from "../pages"
+import * as path from "path"
+import * as router from "../router"
 import * as T from "../types"
-
-import { purgeDirs, serverGuards } from "./helpers"
-import { resolveFSPages, resolveServerRouter, resolveTemplate } from "./resolvers"
+import * as utils from "../utils"
 
 export async function newRuntimeFromCommand(cmd: T.AnyCommand): Promise<T.Runtime<typeof cmd>> {
 	const runtime: T.Runtime<typeof cmd> = {
-		// State
 		cmd,
 		dirs: {
 			wwwDir: "www",
@@ -16,32 +19,60 @@ export async function newRuntimeFromCommand(cmd: T.AnyCommand): Promise<T.Runtim
 		tmpl: "",
 		pages: [],
 		router: {},
-
-		// Methods
-		async purgeDirs() {
-			await purgeDirs.apply(this)
-		},
-		async serverGuards() {
-			await serverGuards.apply(this)
-		},
-		async resolveTemplate() {
-			await resolveTemplate.apply(this)
-		},
-		async resolveFSPages() {
-			await resolveFSPages.apply(this)
-		},
-		async resolveServerRouter() {
-			await resolveServerRouter.apply(this)
-		},
 	}
 
 	if (runtime.cmd.type === "serve") return runtime
 
-	await runtime.purgeDirs() // TODO
-	await runtime.serverGuards()
-	await runtime.resolveTemplate()
-	await runtime.resolveFSPages()
-	await runtime.resolveServerRouter()
+	await fs.promises.rmdir(runtime.dirs.cacheDir, { recursive: true })
+	await fs.promises.rmdir(runtime.dirs.exportDir, { recursive: true })
+
+	await fs.promises.mkdir(runtime.dirs.wwwDir, { recursive: true })
+	await fs.promises.mkdir(runtime.dirs.srcPagesDir, { recursive: true })
+	await fs.promises.mkdir(runtime.dirs.cacheDir, { recursive: true })
+	await fs.promises.mkdir(runtime.dirs.exportDir, { recursive: true })
+
+	const target1 = path.join(runtime.dirs.wwwDir, "index.html")
+
+	try {
+		fs.promises.stat(target1)
+	} catch (error) {
+		await fs.promises.writeFile(
+			target1,
+			utils.detab(`
+				<!DOCTYPE html>
+				<html lang="en">
+					<head>
+						<meta charset="utf-8" />
+						<meta name="viewport" content="width=device-width, initial-scale=1" />
+						%head%
+					</head>
+					<body>
+						%app%
+					</body>
+				</html>
+			`),
+		)
+	}
+
+	// Read "www/index.html":
+	const buffer = await fs.promises.readFile(target1)
+	const contents = buffer.toString()
+
+	if (!contents.includes("%head")) {
+		log.fatal(errors.missingDocumentHeadTag(target1))
+	} else if (!contents.includes("%app")) {
+		log.fatal(errors.missingDocumentAppTag(target1))
+	}
+
+	runtime.tmpl = contents
+
+	// Copy to "__export__/www":
+	const target2 = path.join(runtime.dirs.exportDir, runtime.dirs.wwwDir)
+	await fs.promises.mkdir(target2, { recursive: true })
+	await utils.copyAll(runtime.dirs.wwwDir, target2, [path.join(runtime.dirs.wwwDir, "index.html")])
+
+	runtime.pages = await pages.createPages(runtime.dirs)
+	runtime.router = await router.createRouter(runtime)
 
 	return runtime
 }

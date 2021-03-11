@@ -85,9 +85,4 @@ export interface Runtime<Cmd extends AnyCommand = AnyCommand> {
 	tmpl: string
 	pages: FSPageInfo[]
 	router: ServerRouter
-	purgeDirs(): Promise<void>
-	serverGuards(): Promise<void>
-	resolveTemplate(): Promise<void>
-	resolveFSPages(): Promise<void>
-	resolveServerRouter(): Promise<void>
 }
