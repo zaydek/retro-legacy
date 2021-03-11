@@ -37,6 +37,7 @@ type DirConfiguration struct {
 }
 
 type Runtime struct {
+	Command       cli.
 	Dirs          DirConfiguration
 	RoutePartials []RoutePartial
 	Routes        []Route
