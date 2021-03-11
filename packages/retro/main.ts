@@ -99,19 +99,21 @@ async function main(): Promise<void> {
 			break
 	}
 
-	const rt = await runtime.newRuntimeFromCommand(cmd!)
+	const rt = await runtime.createRuntime(cmd!)
 	if (rt.cmd.type === "dev") {
+		// process.env["MODE"] = "DEV"
 		await commands.dev(rt as T.Runtime<T.DevCommand>)
 	} else if (rt.cmd.type === "export") {
+		// process.env["MODE"] = "EXPORT"
 		await commands.export(rt as T.Runtime<T.ExportCommand>)
 	} else if (rt.cmd.type === "serve") {
+		// process.env["MODE"] = "SERVE"
 		await commands.serve(rt as T.Runtime<T.ServeCommand>)
 	}
 }
 
 process.on("uncaughtException", err => {
-	process.env["STACK_TRACE"] = "true" // Force STACK_TRACE=true
-	err.message = `UncaughtException: ${err.message}`
+	err.message = `UncaughtException: ${err.message}\n\n${err.stack}`
 	log.fatal(err)
 })
 

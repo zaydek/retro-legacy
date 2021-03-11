@@ -14,7 +14,7 @@ function formatMS(ms: number): string {
 			return `${ms}ms`
 		default:
 			// 0.25ms
-			return `${(ms / 1e3).toFixed(2)}s`
+			return `${(ms / 1_000).toFixed(2)}s`
 	}
 }
 

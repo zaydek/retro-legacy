@@ -7,7 +7,7 @@ import * as router from "../router"
 import * as T from "../types"
 import * as utils from "../utils"
 
-export async function newRuntimeFromCommand(cmd: T.AnyCommand): Promise<T.Runtime<typeof cmd>> {
+export async function createRuntime(cmd: T.AnyCommand): Promise<T.Runtime<typeof cmd>> {
 	const runtime: T.Runtime<typeof cmd> = {
 		cmd,
 		dirs: {
@@ -72,7 +72,12 @@ export async function newRuntimeFromCommand(cmd: T.AnyCommand): Promise<T.Runtim
 	await utils.copyAll(runtime.dirs.wwwDir, target2, [path.join(runtime.dirs.wwwDir, "index.html")])
 
 	runtime.pages = await pages.createPages(runtime.dirs)
-	runtime.router = await router.createRouter(runtime)
+	// const [runtime.router, error] = await on(() => router.createRouter(runtime))
 
+	try {
+		runtime.router = await router.createRouter(runtime)
+	} catch {}
+
+	// return [runtime, error]
 	return runtime
 }

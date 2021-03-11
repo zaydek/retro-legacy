@@ -4,11 +4,11 @@ export function Head() {
 	return <title>Welcome to my wonderful website.</title>
 }
 
-export default function Page() {
+exportxdefault function Page() {
 	return (
 		<div>
 			<Nav />
-			<h1>My yo yo yo website</h1>
+			<h1>Oops</h1>
 		</div>
 	)
 }

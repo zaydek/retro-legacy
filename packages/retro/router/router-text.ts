@@ -24,8 +24,8 @@ export function routeMetaToString(tmpl: string, meta: T.ServerRouteMeta, { dev }
 	app += !dev ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
 	app += !dev ? "" : `\n\t\t\t\twindow.location.reload()`
 	app += !dev ? "" : `\n\t\t\t})`
-	app += !dev ? "" : `\n\t\t\tdev.addEventListener("warning", e => {`
-	app += !dev ? "" : `\n\t\t\t\tconsole.warn(JSON.parse(e.data))`
+	app += !dev ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
+	app += !dev ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
 	app += !dev ? "" : `\n\t\t\t})`
 	app += !dev ? "" : `\n\t\t</script>`
 

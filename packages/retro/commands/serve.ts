@@ -16,18 +16,10 @@ export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 		log.fatal(errors.serveWithoutExportDirectory())
 	}
 
-	let once = false
-
 	// prettier-ignore
 	const serveResult = await esbuild.serve({
 		servedir: runtime.dirs.exportDir,
-		onRequest: (args: esbuild.ServeOnRequestArgs) => {
-			if (!once) {
-				console.log()
-				once = true
-			}
-			events.serve(args)
-		},
+		onRequest: (args: esbuild.ServeOnRequestArgs) => events.serve(args)
 	}, {})
 
 	// This implementation is roughly based on:
@@ -56,10 +48,11 @@ export async function serve(runtime: T.Runtime<T.ServeCommand>): Promise<void> {
 	})
 
 	proxySrv.listen(runtime.cmd.port)
+	console.log(terminal.bold(`\x20> Ready; open ` + `${terminal.underline(`http://localhost:${runtime.cmd.port}`)}.`))
 
-	console.log(
-		terminal.bold(
-			` ${terminal.green(">")} Ready; open ` + `${terminal.underline(`http://localhost:${runtime.cmd.port}`)}.\n`,
-		),
-	)
+	// console.log(
+	// 	terminal.bold(
+	// 		` ${terminal.green(">")} Ready; open ` + `${terminal.underline(`http://localhost:${runtime.cmd.port}`)}.`,
+	// 	),
+	// )
 }

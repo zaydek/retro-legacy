@@ -80,6 +80,7 @@ export interface ServerRouter {
 ////////////////////////////////////////////////////////////////////////////////
 
 export interface Runtime<Cmd extends AnyCommand = AnyCommand> {
+	// buildError: Error
 	cmd: Cmd
 	dirs: Directories
 	tmpl: string

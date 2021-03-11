@@ -46,7 +46,7 @@ export function parseDevCommand(...args: string[]): T.DevCommand {
 	if (badCmd !== "") {
 		log.fatal(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
 	}
-	if (cmd.port < 1e3 || cmd.port >= 1e4) {
+	if (cmd.port < 1_000 || cmd.port >= 10_000) {
 		log.fatal(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
 	}
 	return cmd
@@ -110,7 +110,7 @@ export function parseServeCommand(...args: string[]): T.ServeCommand {
 	if (badCmd !== "") {
 		log.fatal(`Bad command ${terminal.magenta(`'${badCmd}'`)}. Use ${terminal.magenta("'retro help'")} for help.`)
 	}
-	if (cmd.port < 1e3 || cmd.port >= 1e4) {
+	if (cmd.port < 1_000 || cmd.port >= 10_000) {
 		log.fatal(`${terminal.magenta("'--port'")} must be between 1000-9999.`)
 	}
 	return cmd

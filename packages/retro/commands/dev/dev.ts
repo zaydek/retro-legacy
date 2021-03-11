@@ -9,7 +9,9 @@ import * as T from "../../types"
 import * as terminal from "../../../shared/terminal"
 import * as utils from "../../utils"
 
-import * as httpRouter from "./router"
+import * as routerImpl from "./router"
+import { chan, go } from "./go"
+import { watcher } from "./watcher"
 
 async function rebuildRouteMeta(runtime: T.Runtime, meta: T.ServerRouteMeta): Promise<string> {
 	const src = meta.route.src
@@ -39,7 +41,7 @@ async function rebuildRouteMeta(runtime: T.Runtime, meta: T.ServerRouteMeta): Pr
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
- * Step 1: Cache and watch app.js
+ * Step 1: Watch app.js
  * Step 2: Prerender 404.html
  * Step 3: Setup backend esbuild servedir
  * Step 4: Setup frontend HTTP server
@@ -47,40 +49,53 @@ async function rebuildRouteMeta(runtime: T.Runtime, meta: T.ServerRouteMeta): Pr
 
 // TODO: Add support for an event hook?
 export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
-	// // Log and export routes:
-	// for (const meta of Object.values(runtime.router)) {
-	// 	const start = Date.now()
-	// 	events.export(runtime, meta, start)
-	// }
-	// console.log()
+	// const srcPages = await watcher(runtime.dirs.srcPagesDir, 100)
+
+	// let stickyBuildFailure: esbuild.BuildFailure
+	// const dev = chan<esbuild.BuildFailure | null>()
+	const buildFailure = chan<esbuild.BuildFailure>()
 
 	/*
-	 * Step 1: Cache and watch app.js
+	 * Step 1: Watch app.js
 	 */
 	const src = path.join(runtime.dirs.cacheDir, "app.js")
 	const contents = router.routerToString(runtime.router)
 	await fs.promises.writeFile(src, contents)
 
+	const dst = path.join(runtime.dirs.exportDir, src.slice(runtime.dirs.srcPagesDir.length))
+
+	let buildResult: esbuild.BuildResult
 	try {
-		const dst = path.join(runtime.dirs.exportDir, src.slice(runtime.dirs.srcPagesDir.length))
-		await esbuild.build({
+		buildResult = await esbuild.build({
 			...esbuildHelpers.bundleConfiguration(src, dst),
 			incremental: true,
 			minify: false,
 			watch: {
-				onRebuild(error) {
-					// TODO: Log event here?
+				async onRebuild(error) {
 					if (error !== null) {
 						if (!("errors" in error) || !("warnings" in error)) throw error
-						process.exit(1)
+						await buildFailure.send(error)
+						// stickyBuildFailure = error
+						// process.exit(1)
+						// if (!("errors" in error) || !("warnings" in error)) throw error
+						// await dev.send(error)
 					}
 				},
 			},
 		})
 	} catch (error) {
 		if (!("errors" in error) || !("warnings" in error)) throw error
-		process.exit(1)
+		await buildFailure.send(error)
+		// stickyBuildFailure = error
 	}
+
+	// go(async () => {
+	// 	while (true) {
+	// 		await srcPages.recv()
+	// 		await buildResult.rebuild!()
+	// 		await dev.send()
+	// 	}
+	// })
 
 	/*
 	 * Step 2: Prerender 404.html
@@ -104,47 +119,44 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 		}, {})
 	} catch (error) {
 		if (!("errors" in error) || !("warnings" in error)) throw error
-		process.exit(1)
+		// process.exit(1) // TODO
 	}
 
 	/*
 	 * Step 4: Setup frontend HTTP server
 	 */
-	httpRouter.handle("/~dev", (_, res) => {
+	routerImpl.handle("/~dev", async (_, res) => {
 		res.writeHead(200, {
 			"Content-Type": "text/event-stream",
 			"Cache-Control": "no-cache",
 			Connection: "keep-alive",
 		})
-		// TODO
-		// res.write("event")
+		while (true) {
+			const error = await buildFailure.recv()
+			res.write(`event: reload\ndata: ${JSON.stringify(error)}\n\n`)
+		}
+
+		// const error = await dev.recv()
+		// console.log(JSON.stringify(error))
+		// res.write(`event: reload\ndata: ${JSON.stringify(error)}\n\n`)
 	})
 
-	httpRouter.handle(/^(\/app\.js|\/www\/.*)$/, (req, res) => {
-		// const start = Date.now()
-		const fs_path = utils.ssgify(req.url!)
-
-		// prettier-ignore
+	routerImpl.handle(/^(\/app\.js|\/www\/.*)$/, (req, res) => {
 		const opts = {
 			hostname: serveResult.host,
-			port:     serveResult.port,
-			path:     fs_path,
-			method:   req.method,
-			headers:  req.headers,
+			port: serveResult.port,
+			path: utils.ssgify(req.url!),
+			method: req.method,
+			headers: req.headers,
 		}
 		const proxyReq = http.request(opts, async proxyRes => {
-			// if (proxyRes.statusCode === 404) {
-			// 	res.end("404 - Not Found")
-			// 	events.serve({ path: fs_path, status: 404, timeInMS: Date.now() - start })
-			// 	return
-			// }
 			res.writeHead(proxyRes.statusCode!, proxyRes.headers)
 			proxyRes.pipe(res, { end: true })
 		})
 		req.pipe(proxyReq, { end: true })
 	})
 
-	httpRouter.handle(/^\/.*$/, async (req, res) => {
+	routerImpl.handle(/^\/.*$/, async (req, res) => {
 		const start = Date.now()
 
 		// Get the current pathname:
@@ -165,7 +177,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 		const meta = runtime.router[pathname]
 		if (meta === undefined) {
 			try {
-				// Render 404.html:
+				// Render /404:
 				const buffer = await fs.promises.readFile(path.join(runtime.dirs.exportDir, "404.html"))
 				const contents = buffer.toString()
 				res.writeHead(200, { "Content-Type": "text/html" })
@@ -173,7 +185,7 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 				events.serve({ path: pathname, status: 200, timeInMS: Date.now() - start })
 				return
 			} catch (error) {
-				// Render synthetic 404.html:
+				// Render synthetic /404:
 				res.writeHead(404, { "Content-Type": "text/plain" })
 				res.end("404 - Not Found")
 				events.serve({ path: pathname, status: 404, timeInMS: Date.now() - start })
@@ -190,11 +202,6 @@ export async function dev(runtime: T.Runtime<T.DevCommand>): Promise<void> {
 		events.serve({ path: pathname, status: 200, timeInMS: Date.now() - start })
 	})
 
-	httpRouter.listen(runtime.cmd.port)
-
-	console.log(
-		terminal.bold(
-			` ${terminal.green(">")} Ready; open ` + `${terminal.underline(`http://localhost:${runtime.cmd.port}`)}.\n`,
-		),
-	)
+	routerImpl.listen(runtime.cmd.port)
+	console.log(terminal.bold(`\x20> Ready; open ` + `${terminal.underline(`http://localhost:${runtime.cmd.port}`)}.`))
 }

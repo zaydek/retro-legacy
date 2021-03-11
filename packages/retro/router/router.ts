@@ -14,7 +14,7 @@ export async function resolveModule<Module extends T.AnyModule>(runtime: T.Runti
 		await esbuild.build(esbuildHelpers.transpileOnlyConfiguration(src, dst))
 	} catch (error) {
 		if (!("errors" in error) || !("warnings" in error)) throw error
-		process.exit(1)
+		// process.exit(1)
 	}
 
 	let mod: Module
