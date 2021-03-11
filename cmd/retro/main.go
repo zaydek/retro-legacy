@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // testASCIIRune tests for ASCII-safe runes.
@@ -229,32 +231,32 @@ func (r Runtime) ExportCmd() {
 	// ...
 }
 
-// func (r Runtime) ServeCmd() {
-// 	if _, err := os.Stat(r.Dirs.ExportDir); os.IsNotExist(err) {
-// 		// "App unexported; try 'retro export && retro serve'."
-// 	}
-//
-// 	go func() {
-// 		time.Sleep(100 * time.Millisecond)
-// 		fmt.Println(fmt.Sprintf("📡 Serving on port %[1]s; http://localhost:%[1]s", r.getPort()))
-// 	}()
-//
-// 	http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
-// 		path := req.URL.Path
-// 		if p.Ext(path) == "" {
-// 			if strings.HasSuffix(path, "/") {
-// 				path += "index.html"
-// 			} else {
-// 				path += ".html"
-// 			}
-// 		}
-// 		http.ServeFile(wr, req, filepath.Join(r.Dirs.ExportDir, path))
-// 	})
-// 	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
-// 		loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
-// 			err.Error())
-// 	}
-// }
+func (r Runtime) ServeCmd() {
+	if _, err := os.Stat(r.Dirs.ExportDir); os.IsNotExist(err) {
+		// "App unexported; try 'retro export && retro serve'."
+	}
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		// fmt.Println(fmt.Sprintf("📡 Serving on port %[1]s; http://localhost:%[1]s", r.getPort()))
+	}()
+
+	// http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
+	// 	pathname := req.URL.Path
+	// 	if p.Ext(pathname) == "" {
+	// 		if strings.HasSuffix(pathname, "/") {
+	// 			pathname += "index.html"
+	// 		} else {
+	// 			pathname += ".html"
+	// 		}
+	// 	}
+	// 	http.ServeFile(wr, req, filepath.Join(r.Dirs.ExportDir, pathname))
+	// })
+	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
+		// loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+		// 	err.Error())
+	}
+}
 
 func main() {
 	runtime, err := newRuntime()

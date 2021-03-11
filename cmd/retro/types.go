@@ -1,5 +1,13 @@
 package main
 
+type CommandKind uint8
+
+const (
+	CommandDev CommandKind = iota
+	CommandExport
+	CommandServe
+)
+
 // RoutePartial describes an unresolved route; before serverProps or serverPaths.
 type RoutePartial struct {
 	Type            string `json:"type"`      // e.g. "static" or "dynamic"
@@ -37,7 +45,7 @@ type DirConfiguration struct {
 }
 
 type Runtime struct {
-	Command       cli.
+	Command       interface{} // References cli package
 	Dirs          DirConfiguration
 	RoutePartials []RoutePartial
 	Routes        []Route

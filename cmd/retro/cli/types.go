@@ -9,7 +9,7 @@ type DevCommand struct {
 
 type ExportCommand struct {
 	Cached    bool `json:"cached"`
-	SourceMap bool `json:"sourcemap"`
+	Sourcemap bool `json:"sourcemap"`
 }
 
 type ServeCommand struct {
