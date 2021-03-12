@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
+	"github.com/zaydek/retro/pkg/format"
+	"github.com/zaydek/retro/pkg/terminal"
 )
 
 // testASCIIRune tests for ASCII-safe runes.
@@ -181,8 +180,6 @@ func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
 }
 
 func newRuntime() (Runtime, error) {
-	var err error
-
 	rt := Runtime{
 		Dirs: DirConfiguration{
 			WwwDir:      "www",
@@ -190,12 +187,14 @@ func newRuntime() (Runtime, error) {
 			CacheDir:    "__cache__",
 			ExportDir:   "__export__",
 		},
-		RoutePartials: nil,
-		// Routes:        nil,
 	}
 
-	// Cmd: cli.ParseCLIArguments(),
-	cli.ParseCLIArguments()
+	// Parse '% retro ...'
+	var err error
+	rt.Cmd, err = cli.ParseCLIArguments()
+	if err != nil {
+		return Runtime{}, err
+	}
 
 	// Remove __cache__, __export__
 	rmdirs := []string{rt.Dirs.CacheDir, rt.Dirs.ExportDir}
@@ -219,6 +218,7 @@ func newRuntime() (Runtime, error) {
 		return Runtime{}, err
 	}
 
+	// Read src/pages
 	rt.RoutePartials, err = newRoutePartialsFromDirs(rt.Dirs)
 	if err != nil {
 		return Runtime{}, err
@@ -235,37 +235,38 @@ func (r Runtime) ExportCmd() {
 	// ...
 }
 
-func (r Runtime) ServeCmd() {
-	if _, err := os.Stat(r.Dirs.ExportDir); os.IsNotExist(err) {
-		// "App unexported; try 'retro export && retro serve'."
-	}
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		// fmt.Println(fmt.Sprintf("📡 Serving on port %[1]s; http://localhost:%[1]s", r.getPort()))
-	}()
-
-	// http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
-	// 	pathname := req.URL.Path
-	// 	if p.Ext(pathname) == "" {
-	// 		if strings.HasSuffix(pathname, "/") {
-	// 			pathname += "index.html"
-	// 		} else {
-	// 			pathname += ".html"
-	// 		}
-	// 	}
-	// 	http.ServeFile(wr, req, filepath.Join(r.Dirs.ExportDir, pathname))
-	// })
-	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
-		// loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
-		// 	err.Error())
-	}
-}
+// func (r Runtime) ServeCmd() {
+// 	if _, err := os.Stat(r.Dirs.ExportDir); os.IsNotExist(err) {
+// 		// "App unexported; try 'retro export && retro serve'."
+// 	}
+//
+// 	go func() {
+// 		time.Sleep(100 * time.Millisecond)
+// 		// fmt.Println(fmt.Sprintf("📡 Serving on port %[1]s; http://localhost:%[1]s", r.getPort()))
+// 	}()
+//
+// 	// http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
+// 	// 	pathname := req.URL.Path
+// 	// 	if p.Ext(pathname) == "" {
+// 	// 		if strings.HasSuffix(pathname, "/") {
+// 	// 			pathname += "index.html"
+// 	// 		} else {
+// 	// 			pathname += ".html"
+// 	// 		}
+// 	// 	}
+// 	// 	http.ServeFile(wr, req, filepath.Join(r.Dirs.ExportDir, pathname))
+// 	// })
+// 	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
+// 		// loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
+// 		// 	err.Error())
+// 	}
+// }
 
 func main() {
 	runtime, err := newRuntime()
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println(terminal.Bold(format.Format(err.Error())))
+		os.Exit(1)
 	}
 	bstr, _ := json.MarshalIndent(runtime, "", "\t")
 	fmt.Println(string(bstr))

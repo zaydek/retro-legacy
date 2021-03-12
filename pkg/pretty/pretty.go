@@ -1,19 +1,19 @@
-package json2
+package pretty
 
 import (
 	"encoding/json"
 	"strings"
 )
 
-// PoorMansFormat JSON-encodes a value as:
+// PoorManJSON JSON encodes a value as:
 //
 // - "null"
 // - "[foo, bar, baz]"
 // - "{ "foo": "a", "bar": "b", "baz": "c" }"
 //
-func PoorMansFormat(v interface{}) string {
-	b, _ := json.MarshalIndent(v, "", " ")
-	str := string(b)
+func PoorManJSON(v interface{}) string {
+	bstr, _ := json.MarshalIndent(v, "", " ")
+	str := string(bstr)
 	switch str[len(str)-1] {
 	case ']':
 		repl := strings.ReplaceAll(str, "\n", "")[2:] // Remove "[\n"

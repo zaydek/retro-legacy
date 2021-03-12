@@ -6,10 +6,10 @@ import (
 	"github.com/zaydek/retro/cmd/retro/cli"
 )
 
-type Cmd uint8
+type CmdKind uint8
 
 const (
-	DevCmd Cmd = iota
+	DevCmd CmdKind = iota
 	ExportCmd
 	ServeCmd
 )
@@ -22,7 +22,7 @@ const (
 // 	loggers.ErrorAndEnd(err)
 // }
 
-func (r Runtime) getCmd() (ret Cmd) {
+func (r Runtime) getCmd() (ret CmdKind) {
 	switch r.Cmd.(type) {
 	case cli.DevCmd:
 		return DevCmd

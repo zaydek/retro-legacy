@@ -1,8 +1,7 @@
-package terminal
+package main
 
 import (
 	"fmt"
-	"io"
 	"strings"
 )
 
@@ -66,9 +65,6 @@ func New(codes ...string) Formatter {
 func (f Formatter) Sprintf(format string, args ...interface{}) string {
 	var str string
 	str = fmt.Sprintf(format, args...)
-	if str == "" {
-		return ""
-	}
 	str = f.code + strings.ReplaceAll(str, ResetCode, ResetCode+f.code) + ResetCode
 	return str
 }
@@ -76,13 +72,10 @@ func (f Formatter) Sprintf(format string, args ...interface{}) string {
 func (f Formatter) Sprint(args ...interface{}) string {
 	var str string
 	str = fmt.Sprint(args...)
-	if str == "" {
-		return ""
-	}
 	str = f.code + strings.ReplaceAll(str, ResetCode, ResetCode+f.code) + ResetCode
 	return str
 }
 
-func Revert(w io.Writer) (n int, err error) {
-	return fmt.Fprint(w, "\x1b[0m")
+func main() {
+	fmt.Println("a", New(BoldCode, RedCode).Sprint("Hello"), "b")
 }

@@ -6,46 +6,56 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/zaydek/retro/pkg/json2"
+	"github.com/zaydek/retro/pkg/pretty"
 )
 
 type ErrorKind int
 
 const (
-	BadCommand ErrorKind = iota
-	BadArgument
+	BadCmdArgument ErrorKind = iota
+	BadArguments
+	BadCommand
 	BadPort
 )
 
 type CmdError struct {
 	Kind ErrorKind
 
-	Arguments   []string
-	BadCommand  string
-	BadArgument string
-	BadPort     string // TODO: Change to int?
-	Err         error
+	BadCmdArgument string
+	BadArguments   []string
+	BadCommand     string
+	BadPort        int
+
+	Err error
 }
 
 func (e CmdError) Error() string {
-
 	switch e.Kind {
+	case BadCmdArgument:
+		return fmt.Sprintf("Unrecognized command argument '%s'.",
+			e.BadCmdArgument)
+	case BadArguments:
+		return fmt.Sprintf("Unrecognized arguments '%s'.",
+			pretty.PoorManJSON(e.BadArguments))
 	case BadCommand:
-		return fmt.Sprintf("Unrecognized flags and or arguments; original arguments '%s'",
-			json2.PoorMansFormat(e.Arguments))
-	case BadArgument:
-		return fmt.Sprintf("")
+		return fmt.Sprintf("Unrecognized command '%s'.",
+			e.BadCommand)
 	case BadPort:
-		return fmt.Sprintf("")
+		return fmt.Sprintf("'--port' must be between '1000' and '10000'; port used '%d'.",
+			e.BadPort)
 	}
-	panic("unknown ErrorKind")
+	panic("Internal error")
 }
 
 func (e CmdError) Unwrap() error {
 	return e.Err
 }
 
-func parseDevArgs(args ...string) DevCmd {
+func validatePort(n int) bool {
+	return n < 1e3 || n >= 1e4
+}
+
+func parseDevArgs(args ...string) (DevCmd, error) {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
@@ -55,18 +65,15 @@ func parseDevArgs(args ...string) DevCmd {
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	flagset.BoolVar(&cmd.Sourcemap, "sourcemap", true, "")
 	if err := flagset.Parse(args); err != nil {
-		// loggers.Error("Unrecognized flags and or arguments. " +
-		// 	"Try retro help for help.")
-		// os.Exit(2)
+		return DevCmd{}, CmdError{Kind: BadArguments, BadArguments: args, Err: err}
 	}
-	if cmd.Port < 1e3 || cmd.Port >= 1e4 {
-		// loggers.Error("--port must be between 1XXX and 9XXX.")
-		// os.Exit(2)
+	if !validatePort(cmd.Port) {
+		return DevCmd{}, CmdError{Kind: BadPort, BadPort: cmd.Port}
 	}
-	return cmd
+	return cmd, nil
 }
 
-func parseExportArgs(args ...string) ExportCmd {
+func parseExportArgs(args ...string) (ExportCmd, error) {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
@@ -74,29 +81,24 @@ func parseExportArgs(args ...string) ExportCmd {
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
 	flagset.BoolVar(&cmd.Sourcemap, "sourcemap", true, "")
 	if err := flagset.Parse(args); err != nil {
-		// loggers.Error("Unrecognized flags and or arguments. " +
-		// 	"Try retro help for help.")
-		// os.Exit(2)
+		return ExportCmd{}, CmdError{Kind: BadArguments, BadArguments: args, Err: err}
 	}
-	return cmd
+	return cmd, nil
 }
 
-func parseServeArgs(args ...string) ServeCmd {
+func parseServeArgs(args ...string) (ServeCmd, error) {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
 	cmd := ServeCmd{}
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	if err := flagset.Parse(args); err != nil {
-		// loggers.Error("Unrecognized flags and or arguments. " +
-		// 	"Try retro help for help.")
-		// os.Exit(2)
+		return ServeCmd{}, CmdError{Kind: BadArguments, BadArguments: args, Err: err}
 	}
-	if cmd.Port < 1e3 || cmd.Port >= 1e4 {
-		// loggers.Error("--port must be between 1XXX and 9XXX.")
-		// os.Exit(2)
+	if !validatePort(cmd.Port) {
+		return ServeCmd{}, CmdError{Kind: BadPort, BadPort: cmd.Port}
 	}
-	return cmd
+	return cmd, nil
 }
 
 func ParseCLIArguments() (interface{}, error) {
@@ -107,29 +109,28 @@ func ParseCLIArguments() (interface{}, error) {
 	}
 
 	var cmd interface{}
-	if arg := os.Args[1]; arg == "version" || arg == "--version" || arg == "--v" {
+	var err error
+
+	if cmdArg := os.Args[1]; cmdArg == "version" || cmdArg == "--version" || cmdArg == "--v" {
 		fmt.Println(os.Getenv("RETRO_VERSION"))
 		os.Exit(0)
-	} else if arg == "usage" || arg == "--usage" || arg == "help" || arg == "--help" {
+	} else if cmdArg == "usage" || cmdArg == "--usage" || cmdArg == "help" || cmdArg == "--help" {
 		fmt.Println(usage)
 		os.Exit(0)
-	} else if arg == "dev" {
+	} else if cmdArg == "dev" {
 		os.Setenv("__DEV__", "true")
 		os.Setenv("NODE_ENV", "development")
-		cmd = parseDevArgs(os.Args[2:]...)
-	} else if arg == "export" {
+		cmd, err = parseDevArgs(os.Args[2:]...)
+	} else if cmdArg == "export" {
 		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseExportArgs(os.Args[2:]...)
-	} else if arg == "serve" {
+		cmd, err = parseExportArgs(os.Args[2:]...)
+	} else if cmdArg == "serve" {
 		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseServeArgs(os.Args[2:]...)
+		cmd, err = parseServeArgs(os.Args[2:]...)
 	} else {
-		// loggers.Error("Unrecognized command. " +
-		// 	"Here are the available commands:\n\n" +
-		// 	cmds)
-		// os.Exit(2)
+		err = CmdError{Kind: BadCmdArgument, BadCmdArgument: cmdArg}
 	}
-	return cmd, nil
+	return cmd, err
 }
