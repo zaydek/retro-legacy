@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/zaydek/retro/cmd/retro/cli"
 )
 
 // testASCIIRune tests for ASCII-safe runes.
@@ -158,7 +160,6 @@ func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
 			badSources = append(badSources, source)
 		} else {
 			// Exempt paths that start or end w/ "_" or "$"
-			// name := getName(source) // TODO
 			name := d.Name()
 			if strings.HasPrefix(name, "_") || strings.HasPrefix(name, "$") {
 				return nil
@@ -180,7 +181,7 @@ func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
 }
 
 func newRuntime() (Runtime, error) {
-	// var err error
+	var err error
 
 	rt := Runtime{
 		Dirs: DirConfiguration{
@@ -190,8 +191,11 @@ func newRuntime() (Runtime, error) {
 			ExportDir:   "__export__",
 		},
 		RoutePartials: nil,
-		Routes:        nil,
+		// Routes:        nil,
 	}
+
+	// Cmd: cli.ParseCLIArguments(),
+	cli.ParseCLIArguments()
 
 	// Remove __cache__, __export__
 	rmdirs := []string{rt.Dirs.CacheDir, rt.Dirs.ExportDir}
@@ -215,10 +219,10 @@ func newRuntime() (Runtime, error) {
 		return Runtime{}, err
 	}
 
-	// runtime.RoutePartials, err = newRoutePartialsFromDirs(runtime.Dirs)
-	// if err != nil {
-	// 	return Runtime{}, err
-	// }
+	rt.RoutePartials, err = newRoutePartialsFromDirs(rt.Dirs)
+	if err != nil {
+		return Runtime{}, err
+	}
 
 	return rt, nil
 }

@@ -1,11 +1,17 @@
 package main
 
 import (
-	"os"
-	p "path"
 	"strconv"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
+)
+
+type Cmd uint8
+
+const (
+	DevCmd Cmd = iota
+	ExportCmd
+	ServeCmd
 )
 
 // func must(err error) {
@@ -16,26 +22,21 @@ import (
 // 	loggers.ErrorAndEnd(err)
 // }
 
-// getAppName gets the cwd basename.
-func getAppName() string {
-	cwd, _ := os.Getwd()
-	return p.Base(cwd)
-}
-
-func (r Runtime) getCmdType() CmdKind {
-	switch r.Command.(type) {
-	case cli.DevCommand:
+func (r Runtime) getCmd() (ret Cmd) {
+	switch r.Cmd.(type) {
+	case cli.DevCmd:
 		return DevCmd
-	case cli.ExportCommand:
+	case cli.ExportCmd:
 		return ExportCmd
-	case cli.ServeCommand:
+	case cli.ServeCmd:
 		return ServeCmd
 	}
-	return 0
+	// Return zero value
+	return
 }
 
-func (r Runtime) getCmdName() string {
-	switch r.getCmdType() {
+func (r Runtime) getCmdName() (ret string) {
+	switch r.getCmd() {
 	case DevCmd:
 		return "dev"
 	case ExportCmd:
@@ -43,29 +44,16 @@ func (r Runtime) getCmdName() string {
 	case ServeCmd:
 		return "serve"
 	}
-	return ""
+	// Return zero value
+	return
 }
 
-// func (r Runtime) getSourceMap() api.SourceMap {
-// 	if cmd := r.getCmdType(); cmd == DevCmd {
-// 		if r.Command.(cli.DevCommand).Sourcemap {
-// 			return api.SourceMapLinked
-// 		}
-// 		return api.SourceMapNone
-// 	} else if cmd == ExportCmd {
-// 		if r.Command.(cli.ExportCommand).Sourcemap {
-// 			return api.SourceMapLinked
-// 		}
-// 		return api.SourceMapNone
-// 	}
-// 	return 0
-// }
-
-func (r Runtime) getPort() string {
-	if cmd := r.getCmdType(); cmd == DevCmd {
-		return strconv.Itoa(r.Command.(cli.DevCommand).Port)
+func (r Runtime) getPort() (ret string) {
+	if cmd := r.getCmd(); cmd == DevCmd {
+		return strconv.Itoa(r.Cmd.(cli.DevCmd).Port)
 	} else if cmd == ServeCmd {
-		return strconv.Itoa(r.Command.(cli.ServeCommand).Port)
+		return strconv.Itoa(r.Cmd.(cli.ServeCmd).Port)
 	}
-	return ""
+	// Return zero value
+	return
 }

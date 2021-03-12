@@ -5,18 +5,56 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/zaydek/retro/pkg/json2"
 )
 
-func parseDevArguments(arguments ...string) DevCommand {
+type ErrorKind int
+
+const (
+	BadCommand ErrorKind = iota
+	BadArgument
+	BadPort
+)
+
+type CmdError struct {
+	Kind ErrorKind
+
+	Arguments   []string
+	BadCommand  string
+	BadArgument string
+	BadPort     string // TODO: Change to int?
+	Err         error
+}
+
+func (e CmdError) Error() string {
+
+	switch e.Kind {
+	case BadCommand:
+		return fmt.Sprintf("Unrecognized flags and or arguments; original arguments '%s'",
+			json2.PoorMansFormat(e.Arguments))
+	case BadArgument:
+		return fmt.Sprintf("")
+	case BadPort:
+		return fmt.Sprintf("")
+	}
+	panic("unknown ErrorKind")
+}
+
+func (e CmdError) Unwrap() error {
+	return e.Err
+}
+
+func parseDevArgs(args ...string) DevCmd {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
-	cmd := DevCommand{}
+	cmd := DevCmd{}
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	flagset.BoolVar(&cmd.FastRefresh, "fast_refresh", true, "")
+	flagset.BoolVar(&cmd.FastRefresh, "fast-refresh", true, "")
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
 	flagset.BoolVar(&cmd.Sourcemap, "sourcemap", true, "")
-	if err := flagset.Parse(arguments); err != nil {
+	if err := flagset.Parse(args); err != nil {
 		// loggers.Error("Unrecognized flags and or arguments. " +
 		// 	"Try retro help for help.")
 		// os.Exit(2)
@@ -28,14 +66,14 @@ func parseDevArguments(arguments ...string) DevCommand {
 	return cmd
 }
 
-func parseExportArguments(arguments ...string) ExportCommand {
+func parseExportArgs(args ...string) ExportCmd {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
-	cmd := ExportCommand{}
+	cmd := ExportCmd{}
 	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	flagset.BoolVar(&cmd.SourceMap, "sourcemap", true, "")
-	if err := flagset.Parse(arguments); err != nil {
+	flagset.BoolVar(&cmd.Sourcemap, "sourcemap", true, "")
+	if err := flagset.Parse(args); err != nil {
 		// loggers.Error("Unrecognized flags and or arguments. " +
 		// 	"Try retro help for help.")
 		// os.Exit(2)
@@ -43,13 +81,13 @@ func parseExportArguments(arguments ...string) ExportCommand {
 	return cmd
 }
 
-func parseServeArguments(arguments ...string) ServeCommand {
+func parseServeArgs(args ...string) ServeCmd {
 	flagset := flag.NewFlagSet("", flag.ContinueOnError)
 	flagset.SetOutput(ioutil.Discard)
 
-	cmd := ServeCommand{}
+	cmd := ServeCmd{}
 	flagset.IntVar(&cmd.Port, "port", 8000, "")
-	if err := flagset.Parse(arguments); err != nil {
+	if err := flagset.Parse(args); err != nil {
 		// loggers.Error("Unrecognized flags and or arguments. " +
 		// 	"Try retro help for help.")
 		// os.Exit(2)
@@ -61,7 +99,7 @@ func parseServeArguments(arguments ...string) ServeCommand {
 	return cmd
 }
 
-func ParseCLIArguments() interface{} {
+func ParseCLIArguments() (interface{}, error) {
 	// Guard '% retro'
 	if len(os.Args) == 1 {
 		fmt.Println(usage)
@@ -78,20 +116,20 @@ func ParseCLIArguments() interface{} {
 	} else if arg == "dev" {
 		os.Setenv("__DEV__", "true")
 		os.Setenv("NODE_ENV", "development")
-		cmd = parseDevArguments(os.Args[2:]...)
+		cmd = parseDevArgs(os.Args[2:]...)
 	} else if arg == "export" {
 		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseExportArguments(os.Args[2:]...)
+		cmd = parseExportArgs(os.Args[2:]...)
 	} else if arg == "serve" {
 		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd = parseServeArguments(os.Args[2:]...)
+		cmd = parseServeArgs(os.Args[2:]...)
 	} else {
 		// loggers.Error("Unrecognized command. " +
 		// 	"Here are the available commands:\n\n" +
 		// 	cmds)
 		// os.Exit(2)
 	}
-	return cmd
+	return cmd, nil
 }
