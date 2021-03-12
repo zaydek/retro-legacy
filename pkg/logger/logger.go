@@ -13,7 +13,7 @@ import (
 var accentRegex = regexp.MustCompile(`('[^']+')`)
 
 func Transform(str string, accent func(...interface{}) string) string {
-	arr := strings.Split(str, "\n")
+	arr := strings.Split(strings.TrimRight(str, "\n"), "\n")
 	for x := range arr {
 		if arr[x] == "" {
 			continue
@@ -50,10 +50,11 @@ func Warning(err error) {
 	fmt.Fprintln(os.Stderr, str)
 }
 
-func Error(err error) {
+func FatalError(err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	var str string
 	str = boldf(" > %s%s\n", red("error:"), Transform(err.Error(), magenta))
 	fmt.Fprintln(os.Stderr, str)
+	os.Exit(1)
 }

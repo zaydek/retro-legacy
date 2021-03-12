@@ -31,16 +31,26 @@ type CmdError struct {
 	Err error
 }
 
+var dim = terminal.Dim.Sprint
+
 func (e CmdError) Error() string {
 	switch e.Kind {
 	case BadCmdArgument:
-		return fmt.Sprintf("Unrecognized command; used '%s'.",
+		return fmt.Sprintf(`Unrecognized command '%s'.
+
+Supported commands:
+
+`+dim("-")+` retro dev     Start the dev server
+`+dim("-")+` retro export  Export the production-ready build
+`+dim("-")+` retro serve   Serve the production-ready build
+
+`,
 			e.BadCmdArgument)
 	case BadArgument:
-		return fmt.Sprintf("Unrecognized argument; used '%s'.",
+		return fmt.Sprintf("Unrecognized argument '%s'.",
 			e.BadArgument)
 	case BadFlag:
-		return fmt.Sprintf("Unrecognized flag; used '%s'.",
+		return fmt.Sprintf("Unrecognized flag '%s'.",
 			e.BadFlag)
 	case BadPort:
 		return fmt.Sprintf("'--port' must be between '1000' and '10000'; used '%d'.",

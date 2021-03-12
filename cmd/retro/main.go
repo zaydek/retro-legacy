@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/logger"
-	"github.com/zaydek/retro/pkg/terminal"
 )
 
 // testASCIIRune tests for ASCII-safe runes.
@@ -122,12 +122,12 @@ func getComponentSyntax(source string, typ string) string {
 	return component
 }
 
-func newRoutePartial(dirs DirConfiguration, source string) RoutePartial {
+func newRoute(dirs DirConfiguration, source string) Route {
 	typ := getSourceType(source)
 
 	// Truncate src/pages
 	source = source[len((dirs.SrcPagesDir + "/")):]
-	partial := RoutePartial{
+	partial := Route{
 		Type:            typ,
 		Source:          source,
 		ComponentSyntax: getComponentSyntax(source, typ),
@@ -142,10 +142,10 @@ var supportExts = map[string]bool{
 	".tsx": true,
 }
 
-func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
-	partials := []RoutePartial{}
+func newRoutes(dirs DirConfiguration) ([]Route, error) {
+	var routes []Route
 
-	badSources := []string{}
+	var badSources []string
 	err := filepath.WalkDir(dirs.SrcPagesDir, func(source string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -165,7 +165,7 @@ func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
 			} else if strings.HasSuffix(name, "_") || strings.HasSuffix(name, "$") {
 				return nil
 			}
-			partials = append(partials, newRoutePartial(dirs, source))
+			routes = append(routes, newRoute(dirs, source))
 		}
 		return nil
 	})
@@ -176,11 +176,11 @@ func newRoutePartialsFromDirs(dirs DirConfiguration) ([]RoutePartial, error) {
 	if len(badSources) > 0 {
 		// TODO
 	}
-	return partials, nil
+	return routes, nil
 }
 
 func newRuntime() (Runtime, error) {
-	rt := Runtime{
+	runtime := Runtime{
 		Dirs: DirConfiguration{
 			WwwDir:      "www",
 			SrcPagesDir: "src/pages",
@@ -191,13 +191,13 @@ func newRuntime() (Runtime, error) {
 
 	// Parse '% retro ...'
 	var err error
-	rt.Cmd, err = cli.ParseCLIArguments()
+	runtime.Cmd, err = cli.ParseCLIArguments()
 	if err != nil {
 		return Runtime{}, err
 	}
 
 	// Remove __cache__, __export__
-	rmdirs := []string{rt.Dirs.CacheDir, rt.Dirs.ExportDir}
+	rmdirs := []string{runtime.Dirs.CacheDir, runtime.Dirs.ExportDir}
 	for _, rmdir := range rmdirs {
 		if err := os.RemoveAll(rmdir); err != nil {
 			return Runtime{}, err
@@ -205,7 +205,7 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Create www, src/pages, __cache__, __export__
-	mkdirs := []string{rt.Dirs.WwwDir, rt.Dirs.SrcPagesDir, rt.Dirs.CacheDir, rt.Dirs.ExportDir}
+	mkdirs := []string{runtime.Dirs.WwwDir, runtime.Dirs.SrcPagesDir, runtime.Dirs.CacheDir, runtime.Dirs.ExportDir}
 	for _, mkdir := range mkdirs {
 		if err := os.MkdirAll(mkdir, PERM_DIR); err != nil {
 			return Runtime{}, err
@@ -213,65 +213,38 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Copy www to __export__
-	excludes := []string{filepath.Join(rt.Dirs.WwwDir, "index.html")}
-	if err := copyDir(rt.Dirs.WwwDir, rt.Dirs.ExportDir, excludes); err != nil {
+	excludes := []string{filepath.Join(runtime.Dirs.WwwDir, "index.html")}
+	if err := copyDir(runtime.Dirs.WwwDir, runtime.Dirs.ExportDir, excludes); err != nil {
 		return Runtime{}, err
 	}
 
 	// Read src/pages
-	rt.RoutePartials, err = newRoutePartialsFromDirs(rt.Dirs)
+	runtime.Routes, err = newRoutes(runtime.Dirs)
 	if err != nil {
 		return Runtime{}, err
 	}
 
-	return rt, nil
+	return runtime, nil
 }
 
 func (r Runtime) DevCmd() {
 	// ...
 }
 
-func (r Runtime) ExportCmd() {
-	// ...
-}
-
-// func (r Runtime) ServeCmd() {
-// 	if _, err := os.Stat(r.Dirs.ExportDir); os.IsNotExist(err) {
-// 		// "App unexported; try 'retro export && retro serve'."
-// 	}
-//
-// 	go func() {
-// 		time.Sleep(100 * time.Millisecond)
-// 		// fmt.Println(fmt.Sprintf("📡 Serving on port %[1]s; http://localhost:%[1]s", r.getPort()))
-// 	}()
-//
-// 	// http.HandleFunc("/", func(wr http.ResponseWriter, req *http.Request) {
-// 	// 	pathname := req.URL.Path
-// 	// 	if p.Ext(pathname) == "" {
-// 	// 		if strings.HasSuffix(pathname, "/") {
-// 	// 			pathname += "index.html"
-// 	// 		} else {
-// 	// 			pathname += ".html"
-// 	// 		}
-// 	// 	}
-// 	// 	http.ServeFile(wr, req, filepath.Join(r.Dirs.ExportDir, pathname))
-// 	// })
-// 	if err := http.ListenAndServe(":"+r.getPort(), nil); err != nil {
-// 		// loggers.ErrorAndEnd("An unexpected error occurred.\n\n" +
-// 		// 	err.Error())
-// 	}
+// func (r Runtime) ExportCmd() {
+// 	// ...
 // }
 
-var (
-	boldf = terminal.Bold.Sprintf
-	red   = terminal.Red.Sprint
-)
+// func (r Runtime) ServeCmd() {
+// 	// ...
+// }
 
 func main() {
 	runtime, err := newRuntime()
-	if err != nil {
-		logger.Error(err)
-		os.Exit(1)
+
+	var cmdErr cli.CmdError
+	if errors.As(err, &cmdErr) {
+		logger.FatalError(err)
 	}
 	bstr, _ := json.MarshalIndent(runtime, "", "\t")
 	fmt.Println(string(bstr))
