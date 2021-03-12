@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
-	"github.com/zaydek/retro/pkg/format"
+	"github.com/zaydek/retro/pkg/logger"
 	"github.com/zaydek/retro/pkg/terminal"
 )
 
@@ -262,10 +262,15 @@ func (r Runtime) ExportCmd() {
 // 	}
 // }
 
+var (
+	boldf = terminal.Bold.Sprintf
+	red   = terminal.Red.Sprint
+)
+
 func main() {
 	runtime, err := newRuntime()
 	if err != nil {
-		fmt.Println(terminal.Bold(format.Format(err.Error())))
+		logger.Error(err)
 		os.Exit(1)
 	}
 	bstr, _ := json.MarshalIndent(runtime, "", "\t")

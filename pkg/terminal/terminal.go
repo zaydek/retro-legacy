@@ -31,6 +31,7 @@ const (
 )
 
 var (
+	None      = New()
 	Normal    = New(NormalCode)
 	Bold      = New(BoldCode)
 	Dim       = New(DimCode)
@@ -59,15 +60,15 @@ type Formatter struct {
 
 func New(codes ...string) Formatter {
 	code := strings.Join(codes, "")
-	f := Formatter{code}
-	return f
+	formatter := Formatter{code}
+	return formatter
 }
 
 func (f Formatter) Sprintf(format string, args ...interface{}) string {
 	var str string
 	str = fmt.Sprintf(format, args...)
-	if str == "" {
-		return ""
+	if f.code == "" {
+		return str
 	}
 	str = f.code + strings.ReplaceAll(str, ResetCode, ResetCode+f.code) + ResetCode
 	return str
@@ -76,8 +77,8 @@ func (f Formatter) Sprintf(format string, args ...interface{}) string {
 func (f Formatter) Sprint(args ...interface{}) string {
 	var str string
 	str = fmt.Sprint(args...)
-	if str == "" {
-		return ""
+	if f.code == "" {
+		return str
 	}
 	str = f.code + strings.ReplaceAll(str, ResetCode, ResetCode+f.code) + ResetCode
 	return str

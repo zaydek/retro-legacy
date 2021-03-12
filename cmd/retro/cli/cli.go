@@ -1,20 +1,22 @@
 package cli
 
 import (
-	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 
-	"github.com/zaydek/retro/pkg/pretty"
+	"github.com/zaydek/retro/pkg/logger"
+	"github.com/zaydek/retro/pkg/terminal"
 )
 
 type ErrorKind int
 
 const (
 	BadCmdArgument ErrorKind = iota
-	BadArguments
-	BadCommand
+	BadArgument
+	BadFlag
 	BadPort
 )
 
@@ -22,8 +24,8 @@ type CmdError struct {
 	Kind ErrorKind
 
 	BadCmdArgument string
-	BadArguments   []string
-	BadCommand     string
+	BadArgument    string
+	BadFlag        string
 	BadPort        int
 
 	Err error
@@ -32,16 +34,16 @@ type CmdError struct {
 func (e CmdError) Error() string {
 	switch e.Kind {
 	case BadCmdArgument:
-		return fmt.Sprintf("Unrecognized command argument '%s'.",
+		return fmt.Sprintf("Unrecognized command; used '%s'.",
 			e.BadCmdArgument)
-	case BadArguments:
-		return fmt.Sprintf("Unrecognized arguments '%s'.",
-			pretty.PoorManJSON(e.BadArguments))
-	case BadCommand:
-		return fmt.Sprintf("Unrecognized command '%s'.",
-			e.BadCommand)
+	case BadArgument:
+		return fmt.Sprintf("Unrecognized argument; used '%s'.",
+			e.BadArgument)
+	case BadFlag:
+		return fmt.Sprintf("Unrecognized flag; used '%s'.",
+			e.BadFlag)
 	case BadPort:
-		return fmt.Sprintf("'--port' must be between '1000' and '10000'; port used '%d'.",
+		return fmt.Sprintf("'--port' must be between '1000' and '10000'; used '%d'.",
 			e.BadPort)
 	}
 	panic("Internal error")
@@ -51,51 +53,109 @@ func (e CmdError) Unwrap() error {
 	return e.Err
 }
 
-func validatePort(n int) bool {
-	return n < 1e3 || n >= 1e4
-}
+var portRegex = regexp.MustCompile(`^--port=(\d+)$`)
 
-func parseDevArgs(args ...string) (DevCmd, error) {
-	flagset := flag.NewFlagSet("", flag.ContinueOnError)
-	flagset.SetOutput(ioutil.Discard)
-
-	cmd := DevCmd{}
-	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	flagset.BoolVar(&cmd.FastRefresh, "fast-refresh", true, "")
-	flagset.IntVar(&cmd.Port, "port", 8000, "")
-	flagset.BoolVar(&cmd.Sourcemap, "sourcemap", true, "")
-	if err := flagset.Parse(args); err != nil {
-		return DevCmd{}, CmdError{Kind: BadArguments, BadArguments: args, Err: err}
+func parseDevCmd(args ...string) (DevCmd, error) {
+	cmd := DevCmd{
+		Cached:      false,
+		FastRefresh: true,
+		Sourcemap:   true,
+		Port:        8000,
 	}
-	if !validatePort(cmd.Port) {
+	for _, arg := range args {
+		// Prepare a bad command error
+		cmdErr := CmdError{Kind: BadFlag, BadFlag: arg}
+		if strings.HasPrefix(arg, "--cached") {
+			if arg == "--cached" {
+				cmd.Cached = true
+			} else if arg == "--cached=true" || arg == "--cached=false" {
+				cmd.Cached = arg == "--cached=true"
+			} else {
+				return DevCmd{}, cmdErr
+			}
+		} else if strings.HasPrefix(arg, "--fast-refresh") {
+			if arg == "--fast-refresh" {
+				cmd.FastRefresh = true
+			} else if arg == "--fast-refresh=true" || arg == "--fast-refresh=false" {
+				cmd.FastRefresh = arg == "--fast-refresh=true"
+			} else {
+				return DevCmd{}, cmdErr
+			}
+		} else if strings.HasPrefix(arg, "--port") {
+			matches := portRegex.FindStringSubmatch(arg)
+			if len(matches) == 2 {
+				cmd.Port, _ = strconv.Atoi(matches[1])
+			} else {
+				return DevCmd{}, cmdErr
+			}
+		} else if strings.HasPrefix(arg, "--sourcemap") {
+			if arg == "--sourcemap" {
+				cmd.Sourcemap = true
+			} else if arg == "--sourcemap=true" || arg == "--sourcemap=false" {
+				cmd.Sourcemap = arg == "--sourcemap=true"
+			} else {
+				return DevCmd{}, cmdErr
+			}
+		} else {
+			return DevCmd{}, CmdError{Kind: BadFlag, BadFlag: arg}
+		}
+	}
+	if cmd.Port < 1_000 || cmd.Port >= 10_000 {
 		return DevCmd{}, CmdError{Kind: BadPort, BadPort: cmd.Port}
 	}
 	return cmd, nil
 }
 
-func parseExportArgs(args ...string) (ExportCmd, error) {
-	flagset := flag.NewFlagSet("", flag.ContinueOnError)
-	flagset.SetOutput(ioutil.Discard)
-
-	cmd := ExportCmd{}
-	flagset.BoolVar(&cmd.Cached, "cached", false, "")
-	flagset.BoolVar(&cmd.Sourcemap, "sourcemap", true, "")
-	if err := flagset.Parse(args); err != nil {
-		return ExportCmd{}, CmdError{Kind: BadArguments, BadArguments: args, Err: err}
+func parseExportCmd(args ...string) (ExportCmd, error) {
+	cmd := ExportCmd{
+		Cached:    false,
+		Sourcemap: true,
+	}
+	for _, arg := range args {
+		// Prepare a bad command error
+		cmdErr := CmdError{Kind: BadFlag, BadFlag: arg}
+		if strings.HasPrefix(arg, "--cached") {
+			if arg == "--cached" {
+				cmd.Cached = true
+			} else if arg == "--cached=true" || arg == "--cached=false" {
+				cmd.Cached = arg == "--cached=true"
+			} else {
+				return ExportCmd{}, cmdErr
+			}
+		} else if strings.HasPrefix(arg, "--sourcemap") {
+			if arg == "--sourcemap" {
+				cmd.Sourcemap = true
+			} else if arg == "--sourcemap=true" || arg == "--sourcemap=false" {
+				cmd.Sourcemap = arg == "--sourcemap=true"
+			} else {
+				return ExportCmd{}, cmdErr
+			}
+		} else {
+			return ExportCmd{}, CmdError{Kind: BadFlag, BadFlag: arg}
+		}
 	}
 	return cmd, nil
 }
 
-func parseServeArgs(args ...string) (ServeCmd, error) {
-	flagset := flag.NewFlagSet("", flag.ContinueOnError)
-	flagset.SetOutput(ioutil.Discard)
-
-	cmd := ServeCmd{}
-	flagset.IntVar(&cmd.Port, "port", 8000, "")
-	if err := flagset.Parse(args); err != nil {
-		return ServeCmd{}, CmdError{Kind: BadArguments, BadArguments: args, Err: err}
+func parseServeCmd(args ...string) (ServeCmd, error) {
+	cmd := ServeCmd{
+		Port: 8000,
 	}
-	if !validatePort(cmd.Port) {
+	for _, arg := range args {
+		// Prepare a bad command error
+		cmdErr := CmdError{Kind: BadFlag, BadFlag: arg}
+		if strings.HasPrefix(arg, "--port") {
+			matches := portRegex.FindStringSubmatch(arg)
+			if len(matches) == 2 {
+				cmd.Port, _ = strconv.Atoi(matches[1])
+			} else {
+				return ServeCmd{}, cmdErr
+			}
+		} else {
+			return ServeCmd{}, CmdError{Kind: BadFlag, BadFlag: arg}
+		}
+	}
+	if cmd.Port < 1_000 || cmd.Port >= 10_000 {
 		return ServeCmd{}, CmdError{Kind: BadPort, BadPort: cmd.Port}
 	}
 	return cmd, nil
@@ -104,12 +164,12 @@ func parseServeArgs(args ...string) (ServeCmd, error) {
 func ParseCLIArguments() (interface{}, error) {
 	// Guard '% retro'
 	if len(os.Args) == 1 {
-		fmt.Println(usage)
+		fmt.Println(logger.Transform(usage, terminal.Cyan.Sprint))
 		os.Exit(0)
 	}
 
 	var cmd interface{}
-	var err error
+	var cmdErr error
 
 	if cmdArg := os.Args[1]; cmdArg == "version" || cmdArg == "--version" || cmdArg == "--v" {
 		fmt.Println(os.Getenv("RETRO_VERSION"))
@@ -120,17 +180,17 @@ func ParseCLIArguments() (interface{}, error) {
 	} else if cmdArg == "dev" {
 		os.Setenv("__DEV__", "true")
 		os.Setenv("NODE_ENV", "development")
-		cmd, err = parseDevArgs(os.Args[2:]...)
+		cmd, cmdErr = parseDevCmd(os.Args[2:]...)
 	} else if cmdArg == "export" {
 		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd, err = parseExportArgs(os.Args[2:]...)
+		cmd, cmdErr = parseExportCmd(os.Args[2:]...)
 	} else if cmdArg == "serve" {
 		os.Setenv("__DEV__", "false")
 		os.Setenv("NODE_ENV", "production")
-		cmd, err = parseServeArgs(os.Args[2:]...)
+		cmd, cmdErr = parseServeCmd(os.Args[2:]...)
 	} else {
-		err = CmdError{Kind: BadCmdArgument, BadCmdArgument: cmdArg}
+		cmdErr = CmdError{Kind: BadCmdArgument, BadCmdArgument: cmdArg}
 	}
-	return cmd, err
+	return cmd, cmdErr
 }
