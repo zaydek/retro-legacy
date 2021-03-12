@@ -87,14 +87,8 @@ func testURI(source string) bool {
 	return true
 }
 
-// func getName(source string) string {
-// 	basename := filepath.Base(source)
-// 	name := basename[:len(basename)-len(filepath.Ext(basename))]
-// 	return name
-// }
-
-// getSourceType gets "static" or "dynamic".
-func getSourceType(source string) string {
+// getType gets "static" or "dynamic".
+func getType(source string) string {
 	parts := strings.Split(source, string(filepath.Separator))
 	for _, part := range parts {
 		name := part[:len(part)-len(filepath.Ext(part))]
@@ -105,15 +99,18 @@ func getSourceType(source string) string {
 	return "static"
 }
 
-func getComponentSyntax(source string, typ string) string {
+func getComponentName(source string, typ string) string {
 	component := strings.ToUpper(typ[0:1]) + typ[1:]
-	for x, r := range source {
+
+	// Truncate ".js", ".jsx", ".ts", ".tsx"
+	trunc := source[:len(source)-len(filepath.Ext(source))]
+	for x, r := range trunc {
 		// Ignore ASCII-unsafe characters
 		if !testASCIIRune(r) {
 			continue
 		}
 		// Uppercase the start or the start of a part character
-		if x == 0 || (x-1 > 0 && source[x-1] == filepath.Separator) {
+		if x == 0 || (x-1 > 0 && trunc[x-1] == filepath.Separator) {
 			component += strings.ToUpper(string(r))
 		} else {
 			component += string(r)
@@ -123,18 +120,19 @@ func getComponentSyntax(source string, typ string) string {
 }
 
 func newRoute(dirs DirConfiguration, source string) Route {
-	typ := getSourceType(source)
+	typ := getType(source)
 
 	// Truncate src/pages
-	source = source[len((dirs.SrcPagesDir + "/")):]
+	trunc := source[len((dirs.SrcPagesDir + "/")):]
 	partial := Route{
-		Type:            typ,
-		Source:          source,
-		ComponentSyntax: getComponentSyntax(source, typ),
+		Type:          typ,
+		Source:        source,
+		ComponentName: getComponentName(trunc, typ),
 	}
 	return partial
 }
 
+// TODO: Add support for ".css", ".scss"?
 var supportExts = map[string]bool{
 	".js":  true,
 	".jsx": true,
@@ -245,6 +243,8 @@ func main() {
 	var cmdErr cli.CmdError
 	if errors.As(err, &cmdErr) {
 		logger.FatalError(err)
+	} else if err != nil {
+		panic(err)
 	}
 	bstr, _ := json.MarshalIndent(runtime, "", "\t")
 	fmt.Println(string(bstr))

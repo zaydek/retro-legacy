@@ -8,9 +8,9 @@ type DirConfiguration struct {
 }
 
 type Route struct {
-	Type            string `json:"type"`      // e.g. "static" or "dynamic"
-	Source          string `json:"source"`    // e.g. src/pages/foo/bar.js
-	ComponentSyntax string `json:"component"` // e.g. <ComponentSyntax />
+	Type          string // e.g. "static" or "dynamic"
+	Source        string // e.g. src/pages/foo/bar.js
+	ComponentName string // e.g. <ComponentName />
 }
 
 // type ResolvedRoute struct {

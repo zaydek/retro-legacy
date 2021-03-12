@@ -1,0 +1,61 @@
+// todo: forgot to read index.html; add before copying www
+
+dest -> target
+
+we only know how to one-shot stdio, we need to learn how to coordinate long-
+lived pipes with discrete messages
+
+once we can read discrete messages, we can learn about binary protocols. that
+being said, we don’t need them and can proceed with json-encoded data
+
+once we have one-way or two-way ipc message passing, we can ask node.js to
+resolve props and page data. this solves for the server api
+
+once we've resolved the server api, we should know
+
+- source
+- target
+- componentName
+- path
+- props
+
+then should have enough data to either invoke dev or export. serve is roughly a
+solved problem because it doesn't rely on internals
+
+invoking export shouldn't be too hard; we forward the server-resolved data back
+to node and build using the code in ts-rewrite. all-in-all this isn't that hard.
+the only trick is that if we want to stream in events for logging purposes, that
+depends on ipc message passing working
+
+dev basically works like this:
+
+watch src/pages and do the following (router operations)
+
+	if we watch src/pages manually the purpose is to refresh the server api. since
+	we want to granularly refresh teh server api, we need to be able to delete old
+	data and or add new data.
+
+	- if a user deletes a route, we exclusively delete a route
+	- if a user adds a route, we exclusively add a route
+	- if a user edits a route, no-op (we don’t understand edits)
+	- if a user renames a route, delete and add a route
+
+	delRoute(...) <-> refers to a page-based route
+	addRoute(...) <-> refers to a page-based route
+
+router operations trigger rewriting app.js, and app.js is incremental / watched,
+therefore this kicks of a ~/dev fast refresh.
+
+by nature, router operations that are no-op should be deduped because presumably
+esbuild is not going to commit extra work.
+
+on request:
+
+- /* (no-ext) and /*.html trigger ssg rebuilds
+- /www/*  -> serve
+- /app.js -> serve
+
+a ssg rebuild means we render a route to string and serve the string (from disk
+or in memory). rendering a route to a string means a) use esbuild to transpile
+jsx and or ts to js so we can require and b) require so we can render to string.
+once we render to string, write to disk (for observability).
