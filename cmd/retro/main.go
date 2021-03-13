@@ -342,7 +342,7 @@ func (r Runtime) Serve() {
 func main() {
 	defer terminal.Revert(os.Stdout)
 
-	// Create runtime
+	// Runtime
 	runtime, err := newRuntime()
 	switch err.(type) {
 	case cli.CmdError:

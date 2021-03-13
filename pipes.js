@@ -15,13 +15,15 @@ function sleep(ms) {
 async function main() {
 	start()
 
-	// await sleep(1_000)
+	console.error("\x1b[1moops\x1b[0m")
+
+	await sleep(10)
 	for (let x = 0; x < 10; x++) {
-		// await sleep(1_000)
+		await sleep(10)
 		message({ foo: "bar" })
 	}
 
-	// await sleep(1_000)
+	await sleep(10)
 	end()
 }
 

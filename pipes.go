@@ -64,7 +64,6 @@ scan:
 			panic(err)
 		}
 
-		// Messages
 		switch res.Kind {
 		case START:
 			fmt.Println("node started")

@@ -13,7 +13,7 @@ type copyInfo struct {
 }
 
 func copyDir(from_dir, to_dir string, excludes []string) error {
-	// Sweep for source and dest
+	// Sweep for sources and targets
 	var infos []copyInfo
 	err := filepath.WalkDir(from_dir, func(source string, d fs.DirEntry, err error) error {
 		if err != nil {
