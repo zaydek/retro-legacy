@@ -226,31 +226,13 @@ func newRuntime() (Runtime, error) {
 		return Runtime{}, err
 	}
 
-	// func readBaseHTML(config DirectoryConfiguration) (string, error) {
-	// 	bstr, err := ioutil.ReadFile(p.Join(config.PublicDir, "index.html"))
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	//
-	// 	base := string(bstr)
-	// 	if !strings.Contains(base, "%head%") {
-	// 		return "", errors.New("No such template tag %head%. " +
-	// 			"This is the entry point for the <Head> component in your page components. " +
-	// 			"Add %head% to <head>.")
-	// 	}
-	//
-	// 	if !strings.Contains(base, "%page%") {
-	// 		return "", errors.New("No such template tag %page%. " +
-	// 			"This is the entry point for the <Page> component in your page components. " +
-	// 			"Add %page% to <body>.")
-	// 	}
-	// 	return base, nil
-	// }
-
 	// Read www/index.html
-	indexHTML := filepath.Join(runtime.Dirs.WwwDir, "index.html")
-	if _, err := os.Stat(indexHTML); os.IsNotExist(err) {
-		ioutil.WriteFile(indexHTML,
+	index_html := filepath.Join(runtime.Dirs.WwwDir, "index.html")
+	if _, err := os.Stat(index_html); os.IsNotExist(err) {
+		if err := os.MkdirAll(filepath.Dir(index_html), PERM_DIR); err != nil {
+			return Runtime{}, err
+		}
+		err := ioutil.WriteFile(index_html,
 			[]byte(`<!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -261,19 +243,22 @@ func newRuntime() (Runtime, error) {
 	<body></body>
 </html>
 `), PERM_FILE)
+		if err != nil {
+			return Runtime{}, err
+		}
 	}
-	bstr, err := ioutil.ReadFile(indexHTML)
+	tmpl, err := ioutil.ReadFile(index_html)
 	if err != nil {
 		return Runtime{}, err
 	}
 
 	// Check %head%
-	if !bytes.Contains(bstr, []byte("%head%")) {
-		return Runtime{}, newTemplateError(indexHTML + `: Add '%head%' somewhere to '<head>'.
+	if !bytes.Contains(tmpl, []byte("%head%")) {
+		return Runtime{}, newTemplateError(index_html + `: Add '%head%' somewhere to '<head>'.
 
 For example:
 
-` + terminal.Dim.Sprint(`// `+indexHTML) + `
+` + terminal.Dim.Sprint(`// `+index_html) + `
 <!DOCTYPE html>
 	<head lang="en">
 		<meta charset="utf-8" />
@@ -289,12 +274,12 @@ For example:
 	}
 
 	// Check %app%
-	if !bytes.Contains(bstr, []byte("%app%")) {
-		return Runtime{}, newTemplateError(indexHTML + `: Add '%app%' somewhere to '<body>'.
+	if !bytes.Contains(tmpl, []byte("%app%")) {
+		return Runtime{}, newTemplateError(index_html + `: Add '%app%' somewhere to '<body>'.
 
 For example:
 
-` + terminal.Dim.Sprint(`// `+indexHTML) + `
+` + terminal.Dim.Sprint(`// `+index_html) + `
 <!DOCTYPE html>
 	<head lang="en">
 		<meta charset="utf-8" />
@@ -308,6 +293,8 @@ For example:
 </html>
 `)
 	}
+
+	runtime.Template = string(tmpl)
 
 	// Remove __cache__, __export__
 	rmdirs := []string{runtime.Dirs.CacheDir, runtime.Dirs.ExportDir}
@@ -326,7 +313,7 @@ For example:
 	}
 
 	// Copy www to __export__
-	excludes := []string{indexHTML}
+	excludes := []string{index_html}
 	if err := copyDir(runtime.Dirs.WwwDir, runtime.Dirs.ExportDir, excludes); err != nil {
 		return Runtime{}, err
 	}

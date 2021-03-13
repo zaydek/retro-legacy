@@ -22,7 +22,8 @@ type Route struct {
 // }
 
 type Runtime struct {
-	Cmd    interface{}
-	Dirs   DirConfiguration
-	Routes []Route
+	Cmd      interface{}
+	Dirs     DirConfiguration
+	Template string
+	Routes   []Route
 }
