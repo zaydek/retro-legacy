@@ -21,7 +21,10 @@ func must(err error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type JSON map[string]interface{}
+type Message struct {
+	Kind string                 `json:"kind"`
+	Data map[string]interface{} `json:"data"`
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -57,9 +60,9 @@ var logger = newLogger()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func runCmd(args ...string) (stdin, stdout, stderr chan JSON, err error) {
-	stdin = make(chan JSON)
-	stdout, stderr = make(chan JSON), make(chan JSON)
+func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err error) {
+	stdin = make(chan Message)
+	stdout, stderr = make(chan Message), make(chan string)
 
 	cmd := exec.Command(args[0], args[1:]...)
 
@@ -69,13 +72,10 @@ func runCmd(args ...string) (stdin, stdout, stderr chan JSON, err error) {
 	}
 
 	go func() {
-		defer func() {
-			stdinPipe.Close()
-			// Do not close(stdin) here
-		}()
+		defer stdinPipe.Close()
 		for msg := range stdin {
 			bstr, _ := json.Marshal(msg)
-			stdinPipe.Write(bstr)
+			stdinPipe.Write(append(bstr, '\n'))
 		}
 	}()
 
@@ -91,9 +91,9 @@ func runCmd(args ...string) (stdin, stdout, stderr chan JSON, err error) {
 		}()
 		scanner := bufio.NewScanner(stdoutPipe)
 		for scanner.Scan() {
-			var data JSON
-			json.Unmarshal(scanner.Bytes(), &data)
-			stdout <- data
+			var msg Message
+			json.Unmarshal(scanner.Bytes(), &msg)
+			stdout <- msg
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
@@ -112,9 +112,8 @@ func runCmd(args ...string) (stdin, stdout, stderr chan JSON, err error) {
 		}()
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
-			var data JSON
-			json.Unmarshal(scanner.Bytes(), &data)
-			stderr <- data
+			str := scanner.Text()
+			stderr <- str
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
@@ -135,9 +134,8 @@ func main() {
 
 	go func() {
 		defer close(stdin)
-		// for x := 0; x < 5; x++ {
-		stdin <- JSON{"hello": "world"}
-		// }
+		stdin <- Message{Kind: "foo"}
+		stdin <- Message{Kind: "bar"}
 	}()
 
 	fmt.Println()
@@ -150,12 +148,11 @@ cmd:
 			}
 			bstr, _ := json.Marshal(msg)
 			logger.Stdout(string(bstr))
-		case msg, ok := <-stderr:
+		case str, ok := <-stderr:
 			if !ok {
 				break cmd
 			}
-			bstr, _ := json.Marshal(msg)
-			logger.Stderr(string(bstr))
+			logger.Stderr(str)
 		}
 	}
 	fmt.Println()
