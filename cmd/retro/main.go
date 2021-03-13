@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -328,21 +329,20 @@ For example:
 }
 
 func (r Runtime) Dev() {
-	// ...
+	fmt.Println("TODO")
 }
 
 func (r Runtime) Export() {
-	// ...
+	fmt.Println("TODO")
 }
 
 func (r Runtime) Serve() {
-	// ...
+	fmt.Println("TODO")
 }
 
 func main() {
 	defer terminal.Revert(os.Stdout)
 
-	// Runtime
 	runtime, err := newRuntime()
 	switch err.(type) {
 	case cli.CmdError:
@@ -353,7 +353,6 @@ func main() {
 		must(err)
 	}
 
-	// Run command
 	switch kind := runtime.getCmdKind(); kind {
 	case Dev:
 		runtime.Dev()
