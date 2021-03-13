@@ -23,12 +23,19 @@ const (
 type CmdError struct {
 	Kind ErrorKind
 
+<<<<<<< Updated upstream
 	BadCmdArgument string
 	BadArgument    string
 	BadFlag        string
 	BadPort        int
 
 	Err error
+=======
+	Arguments  []string
+	BadCommand string
+	BadPort    string // TODO: Change to int?
+	Err        error
+>>>>>>> Stashed changes
 }
 
 var dim = terminal.Dim.Sprint
@@ -47,6 +54,7 @@ Supported commands:
 `,
 			e.BadCmdArgument)
 	case BadArgument:
+<<<<<<< Updated upstream
 		return fmt.Sprintf("Unrecognized argument '%s'.",
 			e.BadArgument)
 	case BadFlag:
@@ -55,6 +63,13 @@ Supported commands:
 	case BadPort:
 		return fmt.Sprintf("'--port' must be between '1000' and '10000'; used '%d'.",
 			e.BadPort)
+=======
+		return fmt.Sprintf("Unrecognized command; original command '%s'",
+			e.BadCommand)
+	case BadPort:
+		// --port must be between 1XXX and 9XXX.
+		return fmt.Sprintf("")
+>>>>>>> Stashed changes
 	}
 	panic("Internal error")
 }
