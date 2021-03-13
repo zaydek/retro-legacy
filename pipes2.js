@@ -28,10 +28,13 @@ async function main() {
 		const msg = JSON.parse(bstr)
 		switch (msg.kind) {
 			case "foo":
-				console.error("a")
+				stderr("a")
 				break
 			case "bar":
-				console.error("b")
+				stderr("b")
+				break
+			case "baz":
+				stderr("c")
 				break
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	"github.com/zaydek/retro/pkg/terminal"
@@ -15,8 +16,7 @@ func must(err error) {
 	if err == nil {
 		return
 	}
-	// panic(err)
-	os.Exit(1)
+	panic(err)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,33 +30,61 @@ type Message struct {
 
 var (
 	dim      = terminal.New(terminal.DimCode).Sprint
-	boldCyan = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
-	boldRed  = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
+	outcolor = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
+	errcolor = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
 )
 
-type Logger struct {
-	Stdout func(...interface{})
-	Stderr func(...interface{})
+type LoggerOptions struct {
+	Datetime bool
+	Date     bool
+	Time     bool
 }
 
-func newLogger() Logger {
-	current := func() string {
-		return time.Now().Format("Jan 02 15:04:05.000 PM")
+type Logger struct {
+	format string
+	mu     sync.Mutex
+}
+
+func (l *Logger) Stdout(args ...interface{}) {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	fmt.Fprintf(os.Stdout, "%s  %s %s\n", dim(time.Now().Format(l.format)), outcolor("stdout"),
+		fmt.Sprint(args...))
+}
+
+func (l *Logger) Stderr(args ...interface{}) {
+	logger.mu.Lock()
+	defer logger.mu.Unlock()
+	fmt.Fprintf(os.Stderr, "%s  %s %s\n", dim(time.Now().Format(l.format)), errcolor("stderr"),
+		fmt.Sprint(args...))
+}
+
+func newLogger(args ...LoggerOptions) *Logger {
+	opt := LoggerOptions{Datetime: true}
+	if len(args) == 1 {
+		opt = args[0]
 	}
-	logger := Logger{
-		Stdout: func(args ...interface{}) {
-			fmt.Fprintf(os.Stdout, " %s  %s ", dim(current()), boldCyan("stdout:"))
-			fmt.Fprintln(os.Stderr, args...)
-		},
-		Stderr: func(args ...interface{}) {
-			fmt.Fprintf(os.Stdout, " %s  %s ", dim(current()), boldRed("stderr:"))
-			fmt.Fprintln(os.Stderr, args...)
-		},
+
+	var format string
+	if opt.Datetime {
+		format += "Jan 02 15:04:05.000 PM"
+	} else {
+		if opt.Date {
+			format += "Jan 02"
+		}
+		if opt.Time {
+			if format != "" {
+				format += " "
+			}
+			format += "15:04:05.000 PM"
+		}
 	}
+
+	logger := &Logger{format: format}
 	return logger
 }
 
-var logger = newLogger()
+var logger = newLogger(LoggerOptions{Time: true})
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -126,6 +154,8 @@ func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err
 	return stdin, stdout, stderr, nil
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 func main() {
 	stdin, stdout, stderr, err := runCmd("node", "pipes2.js")
 	if err != nil {
@@ -135,19 +165,24 @@ func main() {
 	go func() {
 		defer close(stdin)
 		stdin <- Message{Kind: "foo"}
+		time.Sleep(1 * time.Second)
 		stdin <- Message{Kind: "bar"}
+		time.Sleep(1 * time.Second)
+		stdin <- Message{Kind: "baz"}
+		time.Sleep(1 * time.Second)
 	}()
 
-	fmt.Println()
 cmd:
 	for {
 		select {
+		// stdout messages are structured
 		case msg, ok := <-stdout:
 			if !ok {
 				break cmd
 			}
 			bstr, _ := json.Marshal(msg)
 			logger.Stdout(string(bstr))
+		// stderr messages are unstructured
 		case str, ok := <-stderr:
 			if !ok {
 				break cmd
@@ -155,5 +190,4 @@ cmd:
 			logger.Stderr(str)
 		}
 	}
-	fmt.Println()
 }
