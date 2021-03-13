@@ -14,11 +14,11 @@ type Route struct {
 }
 
 // type ResolvedRoute struct {
-// 	Type            string `json:"type"`      // e.g. "static" or "dynamic"
-// 	Source          string `json:"source"`    // e.g. src/pages/foo/bar.js
-// 	Destination     string `json:"dest"`      // e.g. __export__/foo/bar.html
-// 	PathSyntax      string `json:"path"`      // e.g. <Link path={PathSyntax} />
-// 	ComponentSyntax string `json:"component"` // e.g. <ComponentSyntax />
+// 	Type          string // e.g. "static" or "dynamic"
+// 	Source        string // e.g. src/pages/foo/bar.js
+// 	Target        string // e.g. __export__/foo/bar.html
+// 	Pathname      string // e.g. <Link path={Pathname} />
+// 	ComponentName string // e.g. <ComponentSyntax />
 // }
 
 type Runtime struct {
