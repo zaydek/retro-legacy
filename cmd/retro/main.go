@@ -1,17 +1,49 @@
 package main
 
 import (
-	"encoding/json"
+	"bytes"
 	"errors"
-	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/logger"
+	"github.com/zaydek/retro/pkg/terminal"
 )
+
+type templateError struct {
+	err error
+}
+
+func newTemplateError(str string) templateError {
+	return templateError{err: errors.New(str)}
+}
+
+func (t templateError) Error() string {
+	return t.err.Error()
+}
+
+// export function missingDocumentAppTag(src: string): string {
+// 	return format(`
+// 		${src}: Add '%app%' somewhere to '<body>'.
+//
+// 		For example:
+//
+// 		${terminal.dim(`// ${src}`)}
+// 		<!DOCTYPE html>
+// 			<head lang="en">
+// 				${terminal.dim("...")}
+// 			</head>
+// 			<body>
+// 				${terminal.magenta("%app%")}
+// 				${terminal.dim("...")}
+// 			</body>
+// 		</html>
+// 	`)
+// }
 
 // testASCIIRune tests for ASCII-safe runes.
 func testASCIIRune(r rune) bool {
@@ -194,6 +226,89 @@ func newRuntime() (Runtime, error) {
 		return Runtime{}, err
 	}
 
+	// func readBaseHTML(config DirectoryConfiguration) (string, error) {
+	// 	bstr, err := ioutil.ReadFile(p.Join(config.PublicDir, "index.html"))
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	//
+	// 	base := string(bstr)
+	// 	if !strings.Contains(base, "%head%") {
+	// 		return "", errors.New("No such template tag %head%. " +
+	// 			"This is the entry point for the <Head> component in your page components. " +
+	// 			"Add %head% to <head>.")
+	// 	}
+	//
+	// 	if !strings.Contains(base, "%page%") {
+	// 		return "", errors.New("No such template tag %page%. " +
+	// 			"This is the entry point for the <Page> component in your page components. " +
+	// 			"Add %page% to <body>.")
+	// 	}
+	// 	return base, nil
+	// }
+
+	// Read www/index.html
+	indexHTML := filepath.Join(runtime.Dirs.WwwDir, "index.html")
+	if _, err := os.Stat(indexHTML); os.IsNotExist(err) {
+		ioutil.WriteFile(indexHTML,
+			[]byte(`<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body></body>
+</html>
+`), PERM_FILE)
+	}
+	bstr, err := ioutil.ReadFile(indexHTML)
+	if err != nil {
+		return Runtime{}, err
+	}
+
+	// Check %head%
+	if !bytes.Contains(bstr, []byte("%head%")) {
+		return Runtime{}, newTemplateError(indexHTML + `: Add '%head%' somewhere to '<head>'.
+
+For example:
+
+` + terminal.Dim.Sprint(`// `+indexHTML) + `
+<!DOCTYPE html>
+	<head lang="en">
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		` + terminal.Magenta.Sprint("%head%") + `
+		` + terminal.Dim.Sprint("...") + `
+	</head>
+	<body>
+		` + terminal.Dim.Sprint("...") + `
+	</body>
+</html>
+`)
+	}
+
+	// Check %app%
+	if !bytes.Contains(bstr, []byte("%app%")) {
+		return Runtime{}, newTemplateError(indexHTML + `: Add '%app%' somewhere to '<body>'.
+
+For example:
+
+` + terminal.Dim.Sprint(`// `+indexHTML) + `
+<!DOCTYPE html>
+	<head lang="en">
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		` + terminal.Dim.Sprint("...") + `
+	</head>
+	<body>
+		` + terminal.Magenta.Sprint("%app%") + `
+		` + terminal.Dim.Sprint("...") + `
+	</body>
+</html>
+`)
+	}
+
 	// Remove __cache__, __export__
 	rmdirs := []string{runtime.Dirs.CacheDir, runtime.Dirs.ExportDir}
 	for _, rmdir := range rmdirs {
@@ -211,7 +326,7 @@ func newRuntime() (Runtime, error) {
 	}
 
 	// Copy www to __export__
-	excludes := []string{filepath.Join(runtime.Dirs.WwwDir, "index.html")}
+	excludes := []string{indexHTML}
 	if err := copyDir(runtime.Dirs.WwwDir, runtime.Dirs.ExportDir, excludes); err != nil {
 		return Runtime{}, err
 	}
@@ -225,27 +340,42 @@ func newRuntime() (Runtime, error) {
 	return runtime, nil
 }
 
-func (r Runtime) DevCmd() {
+func (r Runtime) Dev() {
 	// ...
 }
 
-// func (r Runtime) ExportCmd() {
-// 	// ...
-// }
+func (r Runtime) Export() {
+	// ...
+}
 
-// func (r Runtime) ServeCmd() {
-// 	// ...
-// }
+func (r Runtime) Serve() {
+	// ...
+}
 
 func main() {
-	runtime, err := newRuntime()
+	defer terminal.Revert(os.Stdout)
 
-	var cmdErr cli.CmdError
-	if errors.As(err, &cmdErr) {
+	// Create runtime
+	runtime, err := newRuntime()
+	switch err.(type) {
+	case cli.CmdError:
 		logger.FatalError(err)
-	} else if err != nil {
-		panic(err)
+	case templateError:
+		logger.FatalError(err)
+	default:
+		must(err)
 	}
-	bstr, _ := json.MarshalIndent(runtime, "", "\t")
-	fmt.Println(string(bstr))
+
+	// Run command
+	switch kind := runtime.getCmdKind(); kind {
+	case Dev:
+		runtime.Dev()
+	case Export:
+		runtime.Export()
+	case Serve:
+		runtime.Serve()
+	}
+
+	// bstr, _ := json.MarshalIndent(runtime, "", "\t")
+	// fmt.Println(string(bstr))
 }

@@ -9,9 +9,9 @@ import (
 type CmdKind uint8
 
 const (
-	DevCmd CmdKind = iota
-	ExportCmd
-	ServeCmd
+	Dev CmdKind = iota
+	Export
+	Serve
 )
 
 // func must(err error) {
@@ -22,38 +22,35 @@ const (
 // 	loggers.ErrorAndEnd(err)
 // }
 
-func (r Runtime) getCmd() (ret CmdKind) {
+func (r Runtime) getCmdKind() (ret CmdKind) {
 	switch r.Cmd.(type) {
 	case cli.DevCmd:
-		return DevCmd
+		return Dev
 	case cli.ExportCmd:
-		return ExportCmd
+		return Export
 	case cli.ServeCmd:
-		return ServeCmd
+		return Serve
 	}
-	// Return zero value
 	return
 }
 
-func (r Runtime) getCmdName() (ret string) {
-	switch r.getCmd() {
-	case DevCmd:
-		return "dev"
-	case ExportCmd:
-		return "export"
-	case ServeCmd:
-		return "serve"
-	}
-	// Return zero value
-	return
-}
+// func (r Runtime) getCmdName() (ret string) {
+// 	switch r.getCmd() {
+// 	case DevCmd:
+// 		return "dev"
+// 	case ExportCmd:
+// 		return "export"
+// 	case ServeCmd:
+// 		return "serve"
+// 	}
+// 	return
+// }
 
 func (r Runtime) getPort() (ret string) {
-	if cmd := r.getCmd(); cmd == DevCmd {
+	if cmd := r.getCmdKind(); cmd == Dev {
 		return strconv.Itoa(r.Cmd.(cli.DevCmd).Port)
-	} else if cmd == ServeCmd {
+	} else if cmd == Serve {
 		return strconv.Itoa(r.Cmd.(cli.ServeCmd).Port)
 	}
-	// Return zero value
 	return
 }

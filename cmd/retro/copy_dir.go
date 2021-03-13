@@ -9,7 +9,7 @@ import (
 
 type copyInfo struct {
 	source string
-	dest   string
+	target string
 }
 
 func copyDir(from_dir, to_dir string, excludes []string) error {
@@ -27,7 +27,10 @@ func copyDir(from_dir, to_dir string, excludes []string) error {
 				return nil
 			}
 		}
-		info := copyInfo{source: source, dest: filepath.Join(to_dir, source)}
+		info := copyInfo{
+			source: source,
+			target: filepath.Join(to_dir, source),
+		}
 		infos = append(infos, info)
 		return nil
 	})
@@ -35,9 +38,9 @@ func copyDir(from_dir, to_dir string, excludes []string) error {
 		return err
 	}
 
-	// Copy source to dest
+	// Copy sources to targets
 	for _, info := range infos {
-		if dir := filepath.Dir(info.dest); dir != "." {
+		if dir := filepath.Dir(info.target); dir != "." {
 			if err := os.MkdirAll(dir, PERM_DIR); err != nil {
 				return err
 			}
@@ -46,15 +49,15 @@ func copyDir(from_dir, to_dir string, excludes []string) error {
 		if err != nil {
 			return err
 		}
-		dest, err := os.Create(info.dest)
+		target, err := os.Create(info.target)
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(dest, source); err != nil {
+		if _, err := io.Copy(target, source); err != nil {
 			return err
 		}
 		source.Close()
-		dest.Close()
+		target.Close()
 	}
 	return nil
 }
