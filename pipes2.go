@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,6 +18,10 @@ func must(err error) {
 	// panic(err)
 	os.Exit(1)
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+type JSON map[string]interface{}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -37,11 +42,11 @@ func newLogger() Logger {
 	}
 	logger := Logger{
 		Stdout: func(args ...interface{}) {
-			fmt.Fprintf(os.Stdout, "%s  %s ", dim(current()), boldCyan("stdout:"))
+			fmt.Fprintf(os.Stdout, " %s  %s ", dim(current()), boldCyan("stdout:"))
 			fmt.Fprintln(os.Stderr, args...)
 		},
 		Stderr: func(args ...interface{}) {
-			fmt.Fprintf(os.Stdout, "%s  %s ", dim(current()), boldRed("stderr:"))
+			fmt.Fprintf(os.Stdout, " %s  %s ", dim(current()), boldRed("stderr:"))
 			fmt.Fprintln(os.Stderr, args...)
 		},
 	}
@@ -52,9 +57,9 @@ var logger = newLogger()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func runCmd(args ...string) (stdin, stdout, stderr chan string, err error) {
-	stdin = make(chan string)
-	stdout, stderr = make(chan string), make(chan string)
+func runCmd(args ...string) (stdin, stdout, stderr chan JSON, err error) {
+	stdin = make(chan JSON)
+	stdout, stderr = make(chan JSON), make(chan JSON)
 
 	cmd := exec.Command(args[0], args[1:]...)
 
@@ -69,7 +74,8 @@ func runCmd(args ...string) (stdin, stdout, stderr chan string, err error) {
 			// Do not close(stdin) here
 		}()
 		for msg := range stdin {
-			stdinPipe.Write([]byte(msg + "\n"))
+			bstr, _ := json.Marshal(msg)
+			stdinPipe.Write(bstr)
 		}
 	}()
 
@@ -85,7 +91,9 @@ func runCmd(args ...string) (stdin, stdout, stderr chan string, err error) {
 		}()
 		scanner := bufio.NewScanner(stdoutPipe)
 		for scanner.Scan() {
-			stdout <- scanner.Text()
+			var data JSON
+			json.Unmarshal(scanner.Bytes(), &data)
+			stdout <- data
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
@@ -104,7 +112,9 @@ func runCmd(args ...string) (stdin, stdout, stderr chan string, err error) {
 		}()
 		scanner := bufio.NewScanner(stderrPipe)
 		for scanner.Scan() {
-			stderr <- scanner.Text()
+			var data JSON
+			json.Unmarshal(scanner.Bytes(), &data)
+			stderr <- data
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
@@ -125,11 +135,12 @@ func main() {
 
 	go func() {
 		defer close(stdin)
-		for x := 0; x < 5; x++ {
-			stdin <- "Hello, world!"
-		}
+		// for x := 0; x < 5; x++ {
+		stdin <- JSON{"hello": "world"}
+		// }
 	}()
 
+	fmt.Println()
 cmd:
 	for {
 		select {
@@ -137,117 +148,15 @@ cmd:
 			if !ok {
 				break cmd
 			}
-			logger.Stdout(msg)
+			bstr, _ := json.Marshal(msg)
+			logger.Stdout(string(bstr))
 		case msg, ok := <-stderr:
 			if !ok {
 				break cmd
 			}
-			logger.Stderr(msg)
+			bstr, _ := json.Marshal(msg)
+			logger.Stderr(string(bstr))
 		}
 	}
+	fmt.Println()
 }
-
-// type RunCommand struct {
-// 	cmd *exec.Cmd
-//
-// 	Stdin  chan string
-// 	Stdout chan string
-// 	Stderr chan string
-// }
-//
-// func (r RunCommand) Wait() error {
-// 	if err := r.cmd.Start(); err != nil {
-// 		return err
-// 	}
-// 	return r.cmd.Wait()
-// }
-//
-// func run(args ...string) (RunCommand, error) {
-// 	stdin := make(chan string)
-// 	stdout, stderr := make(chan string), make(chan string)
-//
-// 	cmd := exec.Command(args[0], args[1:]...)
-// 	stdinPipe, err := cmd.StdinPipe()
-// 	if err != nil {
-// 		return RunCommand{}, err
-// 	}
-// 	stdoutPipe, err := cmd.StdoutPipe()
-// 	if err != nil {
-// 		return RunCommand{}, err
-// 	}
-// 	stderrPipe, err := cmd.StderrPipe()
-// 	if err != nil {
-// 		return RunCommand{}, err
-// 	}
-//
-// 	go func() {
-// 		defer func() { stdinPipe.Close(); close(stdin) }()
-// 		for msg := range stdin {
-// 			fmt.Println("a")
-// 			stdinPipe.Write([]byte(msg))
-// 		}
-// 	}()
-//
-// 	go func() {
-// 		defer func() { stdoutPipe.Close(); close(stdout) }()
-// 		scanner := bufio.NewScanner(stdoutPipe)
-// 		for scanner.Scan() {
-// 			msg := scanner.Text()
-// 			stdout <- msg
-// 		}
-// 		if err := scanner.Err(); err != nil {
-// 			panic(err)
-// 		}
-// 	}()
-//
-// 	go func() {
-// 		defer func() { stderrPipe.Close(); close(stderr) }()
-// 		scanner := bufio.NewScanner(stderrPipe)
-// 		for scanner.Scan() {
-// 			msg := scanner.Text()
-// 			stderr <- msg
-// 		}
-// 		if err := scanner.Err(); err != nil {
-// 			panic(err)
-// 		}
-// 	}()
-//
-// 	run := RunCommand{
-// 		cmd:    cmd,
-// 		Stdin:  stdin,
-// 		Stdout: stdout,
-// 		Stderr: stderr,
-// 	}
-// 	return run, nil
-// }
-//
-// func main() {
-// 	run, err := run("node", "pipes2.js")
-// 	if err != nil {
-// 		panic(err)
-// 	}
-//
-// 	run.Stdin <- "Hello, world!"
-//
-// 	go func() {
-// 		defer fmt.Println()
-// 		for {
-// 			select {
-// 			case msg, ok := <-run.Stdout:
-// 				if !ok {
-// 					return
-// 				}
-// 				logStdout(msg)
-// 			case msg, ok := <-run.Stderr:
-// 				if !ok {
-// 					return
-// 				}
-// 				logStderr(msg)
-// 			}
-// 		}
-// 	}()
-//
-// 	if err := run.Wait(); err != nil {
-// 		panic(err)
-// 	}
-// }

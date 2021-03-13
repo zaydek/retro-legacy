@@ -21,23 +21,25 @@ const readline = (() => {
 
 async function main() {
 	while (true) {
-		const text = await readline()
-		if (text === undefined) {
+		const encoded = await readline()
+		if (encoded === undefined) {
 			break
 		}
-		stdout(text)
+		const data = JSON.parse(encoded)
+
+		stdout(JSON.stringify(data))
 		await sleep(100)
 
-		stdout("foo")
+		stdout(JSON.stringify(data))
 		await sleep(100)
 
-		stderr("foo")
+		stderr(JSON.stringify(data))
 		await sleep(100)
 
-		stdout("foo")
+		stdout(JSON.stringify(data))
 		await sleep(100)
 
-		stdout("foo")
+		stdout(JSON.stringify(data))
 		await sleep(1_000)
 	}
 }
