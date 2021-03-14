@@ -64,7 +64,6 @@ func (l *Logger) Stdout(args ...interface{}) {
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
 
-	// Remove extraneous ws at the end
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
@@ -78,7 +77,6 @@ func (l *Logger) Stderr(args ...interface{}) {
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
 
-	// Remove extraneous ws at the end
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
@@ -126,10 +124,15 @@ type IncomingMessage struct {
 
 type OutgoingMessage JSON
 
-func runCmd(args ...string) (stdin chan IncomingMessage, stdout chan OutgoingMessage, stderr chan string, err error) {
+func runCmd(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan string, error) {
+	var (
+		stdin  = make(chan IncomingMessage)
+		stdout = make(chan OutgoingMessage)
+		stderr = make(chan string)
+	)
+
 	cmd := exec.Command(args[0], args[1:]...)
 
-	stdin = make(chan IncomingMessage)
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -143,7 +146,6 @@ func runCmd(args ...string) (stdin chan IncomingMessage, stdout chan OutgoingMes
 		}
 	}()
 
-	stdout = make(chan OutgoingMessage)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -165,7 +167,6 @@ func runCmd(args ...string) (stdin chan IncomingMessage, stdout chan OutgoingMes
 		}
 	}()
 
-	stderr = make(chan string)
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, nil, err

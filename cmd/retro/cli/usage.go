@@ -10,8 +10,7 @@ var (
 	underline = terminal.Underline.Sprint
 )
 
-var usage = `
-` + bold("retro dev") + `
+var usage = bold("retro dev") + `
 
 	Start the dev server
 
