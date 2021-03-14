@@ -96,13 +96,9 @@ type Message struct {
 
 type OutgoingMessage JSON
 
-func runNode(args ...string) (chan Message, chan string, chan string, error) {
-	var (
-		stdin = make(chan Message)
-
-		stdout = make(chan string)
-		stderr = make(chan string)
-	)
+func runNode(args ...string) (stdin chan Message, stdout, stderr chan string, err error) {
+	stdin = make(chan Message)
+	stdout, stderr = make(chan string), make(chan string)
 
 	cmd := exec.Command("node", args...)
 
@@ -124,6 +120,11 @@ func runNode(args ...string) (chan Message, chan string, chan string, error) {
 		return nil, nil, nil, err
 	}
 
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	go func() {
 		defer func() {
 			stdoutPipe.Close()
@@ -132,12 +133,9 @@ func runNode(args ...string) (chan Message, chan string, chan string, error) {
 
 		scanner := bufio.NewScanner(stdoutPipe)
 
-		// Increase the buffer; https://stackoverflow.com/a/39864391
-		buf := make([]byte, 64*1024*1024)
-		scanner.Buffer(buf, 64*1024*1024)
-
-		// Read start-to-end
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
+		// Increase buffer
+		buf := make([]byte, 1024*1024)
+		scanner.Buffer(buf, len(buf))
 
 		for scanner.Scan() {
 			stdout <- scanner.Text()
@@ -147,28 +145,17 @@ func runNode(args ...string) (chan Message, chan string, chan string, error) {
 		}
 	}()
 
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
 	go func() {
 		defer func() {
 			stderrPipe.Close()
 			close(stderr)
 		}()
 
+		// Scan start-to-end
 		scanner := bufio.NewScanner(stderrPipe)
-
-		// Increase the buffer; https://stackoverflow.com/a/39864391
-		buf := make([]byte, 64*1024*1024)
-		scanner.Buffer(buf, 64*1024*1024)
-
-		// Read start-to-end
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
-
 		for scanner.Scan() {
-			stdout <- scanner.Text()
+			stderr <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)

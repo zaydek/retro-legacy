@@ -32,7 +32,7 @@ var path = __toModule(require("path"));
 
 // scripts/utils.ts
 var node_readline = __toModule(require("readline"));
-var stdout = (...args) => console.log(...args);
+var stdout = (response) => console.log(JSON.stringify(response));
 var stderr = (...args) => console.error(...args);
 var readline = (() => {
   const rl = node_readline.createInterface({input: process.stdin});
@@ -57,8 +57,8 @@ function newPathInfo(source) {
 var transpile = (source, target) => ({
   bundle: true,
   define: {
-    __DEV__: JSON.stringify(process.env.NODE_ENV === "true"),
-    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+    __DEV__: JSON.stringify(process.env["NODE_ENV"] === "true"),
+    "process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"])
   },
   entryPoints: [source],
   external: ["react", "react-dom"],
@@ -171,7 +171,7 @@ async function main() {
       case RESOLVE_ROUTER:
         try {
           const router = await resolveRouter(msg.Data);
-          stdout(router);
+          stdout("hello");
         } catch (error) {
           stderr(error);
         }

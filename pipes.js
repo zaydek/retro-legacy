@@ -31,7 +31,7 @@ async function main() {
 				stdout(msg)
 				break
 			case "bar":
-				stderrx("oops\noops")
+				stderr("oops\noops")
 				// stdout(msg)
 				break
 			case "baz":

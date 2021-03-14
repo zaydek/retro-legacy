@@ -1,11 +1,8 @@
 import * as node_readline from "readline"
 
-export const stdout = (...args: unknown[]): void => console.log(...args)
+// stdout uses JSON.stringify(response) so node cannot add "\n"s
+export const stdout = (response: unknown): void => console.log(JSON.stringify(response))
 export const stderr = (...args: unknown[]): void => console.error(...args)
-
-// export function sleep(ms: number): Promise<void> {
-// 	return new Promise(resolve => setTimeout(resolve, ms))
-// }
 
 // https://stackoverflow.com/a/55161953
 export const readline = ((): (() => Promise<string>) => {

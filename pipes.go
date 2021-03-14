@@ -103,7 +103,7 @@ type IncomingMessage struct {
 
 type OutgoingMessage JSON
 
-func node(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan string, error) {
+func runNode(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan string, error) {
 	var (
 		stdin  = make(chan IncomingMessage)
 		stdout = make(chan OutgoingMessage)
@@ -176,7 +176,7 @@ func node(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan stri
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
-	stdin, stdout, stderr, err := node("pipes2.js")
+	stdin, stdout, stderr, err := runNode("pipes.js")
 	if err != nil {
 		panic(err)
 	}

@@ -32,8 +32,8 @@ function newPathInfo(source: string): PathInfo {
 const transpile = (source: string, target: string): esbuild.BuildOptions => ({
 	bundle: true,
 	define: {
-		__DEV__: JSON.stringify(process.env.NODE_ENV === "true"),
-		"process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV),
+		__DEV__: JSON.stringify(process.env["NODE_ENV"] === "true"),
+		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"]),
 	},
 	entryPoints: [source],
 	external: ["react", "react-dom"], // Dedupe

@@ -340,17 +340,13 @@ func (r Runtime) Dev() {
 	}
 
 	stdin <- Message{Kind: RESOLVE_ROUTER, Data: r}
+
 	select {
 	case str := <-stdout:
-		fmt.Println(len(str))
-		// fmt.Println(str)
-		// logger2.Stdout(str)
+		logger2.Stdout(str)
 	case str := <-stderr:
 		logger2.Stderr(str)
-		os.Exit(1)
 	}
-
-	// stdin <- Message{Kind: DIE}
 }
 
 func (r Runtime) Export() {
