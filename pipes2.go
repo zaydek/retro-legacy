@@ -156,7 +156,7 @@ func runCmd(args ...string) (stdin chan IncomingMessage, stdout chan OutgoingMes
 		}()
 		scanner := bufio.NewScanner(stdoutPipe)
 		for scanner.Scan() {
-			msg := OutgoingMessage{} // Must use {} syntax
+			msg := OutgoingMessage{} // Must use {} syntax here
 			json.Unmarshal(scanner.Bytes(), &msg)
 			stdout <- msg
 		}
@@ -176,10 +176,9 @@ func runCmd(args ...string) (stdin chan IncomingMessage, stdout chan OutgoingMes
 			stderrPipe.Close()
 			close(stderr)
 		}()
+		// Scan start-to-end
 		scanner := bufio.NewScanner(stderrPipe)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-			return len(data), data, nil
-		})
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
 		for scanner.Scan() {
 			stderr <- scanner.Text()
 		}
@@ -202,53 +201,38 @@ func main() {
 		panic(err)
 	}
 
-	// 	fmt.Println("a")
+	defer func() {
+		stdin <- IncomingMessage{Kind: "done"}
+		close(stdin)
+	}()
 
 	stdin <- IncomingMessage{Kind: "foo", Data: JSON{"foo": "bar"}}
 	select {
-	case msg, ok := <-stdout:
-		if !ok {
-			break
-		}
+	case msg := <-stdout:
 		bstr, _ := json.Marshal(msg)
 		logger.Stdout(string(bstr))
-	case str, ok := <-stderr:
-		if !ok {
-			break
-		}
+	case str := <-stderr:
 		logger.Stderr(str)
+		os.Exit(1)
 	}
 
 	stdin <- IncomingMessage{Kind: "bar", Data: JSON{"foo": "bar"}}
 	select {
-	case msg, ok := <-stdout:
-		if !ok {
-			break
-		}
+	case msg := <-stdout:
 		bstr, _ := json.Marshal(msg)
 		logger.Stdout(string(bstr))
-	case str, ok := <-stderr:
-		if !ok {
-			break
-		}
+	case str := <-stderr:
 		logger.Stderr(str)
+		os.Exit(1)
 	}
 
 	stdin <- IncomingMessage{Kind: "baz", Data: JSON{"foo": "bar"}}
 	select {
-	case msg, ok := <-stdout:
-		if !ok {
-			break
-		}
+	case msg := <-stdout:
 		bstr, _ := json.Marshal(msg)
 		logger.Stdout(string(bstr))
-	case str, ok := <-stderr:
-		if !ok {
-			break
-		}
+	case str := <-stderr:
 		logger.Stderr(str)
+		os.Exit(1)
 	}
-
-	stdin <- IncomingMessage{Kind: "done"}
-	close(stdin)
 }
