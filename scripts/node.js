@@ -40,7 +40,6 @@ var readline = (() => {
     for await (const line of rl) {
       yield line;
     }
-    throw new Error("Internal error");
   }
   const generate = generator();
   return async () => (await generate.next()).value;
@@ -102,20 +101,19 @@ async function resolveStaticRouteMeta(runtime, route) {
     try {
       props = await mod.serverProps();
     } catch (error) {
-      throw new Error(`${route.Source}.serverProps: ${error.message}`);
     }
   }
   const pathInfo = newPathInfo(route.Source);
-  const Target = getTargetSyntax(runtime.Dirs, pathInfo);
-  const Pathname = getPathnameSyntax(runtime.Dirs, pathInfo);
+  const target = getTargetSyntax(runtime.Dirs, pathInfo);
+  const pathname = getPathnameSyntax(runtime.Dirs, pathInfo);
   const meta = {
     Route: {
       ...route,
-      Target,
-      Pathname
+      Target: target,
+      Pathname: pathname
     },
     Props: {
-      path: Pathname,
+      path: pathname,
       ...props
     }
   };
@@ -123,7 +121,29 @@ async function resolveStaticRouteMeta(runtime, route) {
 }
 async function resolveDynamicRouteMetas(runtime, route) {
   const mod = await resolveModule(runtime, route);
-  return [];
+  let paths = [];
+  try {
+    paths = await mod.serverPaths();
+  } catch (error) {
+  }
+  const metas = [];
+  for (const meta of paths) {
+    const pathInfo = newPathInfo(route.Source);
+    const pathname = path.join(pathInfo.dirname.slice(runtime.Dirs.SrcPagesDir.length), meta.path);
+    const target = path.join(runtime.Dirs.ExportDir, pathname + ".html");
+    metas.push({
+      Route: {
+        ...route,
+        Target: target,
+        Pathname: pathname
+      },
+      Props: {
+        path: pathname,
+        ...meta.props
+      }
+    });
+  }
+  return metas;
 }
 async function resolveRouter(runtime) {
   const router = {};
@@ -136,8 +156,6 @@ async function resolveRouter(runtime) {
       for (const meta of metas) {
         router[meta.Route.Pathname] = meta;
       }
-    } else {
-      throw new Error("Internal error");
     }
   }
   return router;

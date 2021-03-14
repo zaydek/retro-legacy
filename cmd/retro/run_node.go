@@ -96,7 +96,7 @@ type Message struct {
 
 type OutgoingMessage JSON
 
-func node(args ...string) (chan Message, chan string, chan string, error) {
+func runNode(args ...string) (chan Message, chan string, chan string, error) {
 	var (
 		stdin = make(chan Message)
 
@@ -130,13 +130,15 @@ func node(args ...string) (chan Message, chan string, chan string, error) {
 			close(stdout)
 		}()
 
-		// Increase the buffer from 64K to 512K; https://stackoverflow.com/a/39864391
 		scanner := bufio.NewScanner(stdoutPipe)
-		buf := make([]byte, 512*1024)
-		scanner.Buffer(buf, len(buf))
+
+		// Increase the buffer; https://stackoverflow.com/a/39864391
+		buf := make([]byte, 64*1024*1024)
+		scanner.Buffer(buf, 64*1024*1024)
 
 		// Read start-to-end
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
+
 		for scanner.Scan() {
 			stdout <- scanner.Text()
 		}
@@ -156,15 +158,17 @@ func node(args ...string) (chan Message, chan string, chan string, error) {
 			close(stderr)
 		}()
 
-		// Increase the buffer from 64K to 512K; https://stackoverflow.com/a/39864391
 		scanner := bufio.NewScanner(stderrPipe)
-		buf := make([]byte, 512*1024)
-		scanner.Buffer(buf, len(buf))
+
+		// Increase the buffer; https://stackoverflow.com/a/39864391
+		buf := make([]byte, 64*1024*1024)
+		scanner.Buffer(buf, 64*1024*1024)
 
 		// Read start-to-end
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
+
 		for scanner.Scan() {
-			stderr <- scanner.Text()
+			stdout <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)

@@ -96,23 +96,22 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 			// 	log.fatal(errors.badServerPropsReturn(page.src))
 			// }
 		} catch (error) {
-			throw new Error(`${route.Source}.serverProps: ${error.message}`)
+			// throw new Error(`${route.Source}.serverProps: ${error.message}`)
 		}
 	}
 
 	const pathInfo = newPathInfo(route.Source)
-
-	const Target = getTargetSyntax(runtime.Dirs, pathInfo)
-	const Pathname = getPathnameSyntax(runtime.Dirs, pathInfo)
+	const target = getTargetSyntax(runtime.Dirs, pathInfo)
+	const pathname = getPathnameSyntax(runtime.Dirs, pathInfo)
 
 	const meta: T.RouteMeta = {
 		Route: {
 			...route,
-			Target,
-			Pathname,
+			Target: target, // Uppercase
+			Pathname: pathname, // Uppercase
 		},
 		Props: {
-			path: Pathname, // Add path
+			path: pathname, // Add path
 			...props,
 		},
 	}
@@ -121,8 +120,40 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 
 async function resolveDynamicRouteMetas(runtime: T.Runtime, route: T.Route): Promise<T.RouteMeta[]> {
 	const mod = await resolveModule<T.DynamicModule>(runtime, route)
-	// ...
-	return [] as T.RouteMeta[]
+	// if (!valid.dynamicModuleExports(mod)) {
+	// 	log.fatal(errors.badDynamicPageExports(page.src))
+	// }
+
+	let paths: { path: string; props: T.Props }[] = []
+	try {
+		paths = await mod.serverPaths!()
+		// if (!valid.serverPathsReturn(paths)) {
+		// 	log.fatal(errors.badServerPathsReturn(page.src))
+		// }
+	} catch (error) {
+		// throw new Error(`${page.src}.serverPaths: ${error.message}`)
+	}
+
+	const metas: T.RouteMeta[] = []
+	for (const meta of paths) {
+		// Don’t use getTargetSyntax or getPathnameSyntax; paths must be computed
+		// from meta.path because of serverPaths API
+		const pathInfo = newPathInfo(route.Source)
+		const pathname = path.join(pathInfo.dirname.slice(runtime.Dirs.SrcPagesDir.length), meta.path)
+		const target = path.join(runtime.Dirs.ExportDir, pathname + ".html")
+		metas.push({
+			Route: {
+				...route,
+				Target: target, // Uppercase
+				Pathname: pathname, // Uppercase
+			},
+			Props: {
+				path: pathname, // Add path
+				...meta.props,
+			},
+		})
+	}
+	return metas
 }
 
 async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
@@ -142,8 +173,6 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
 				// }
 				router[meta.Route.Pathname] = meta
 			}
-		} else {
-			throw new Error("Internal error")
 		}
 	}
 	return router

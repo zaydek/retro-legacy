@@ -334,7 +334,7 @@ const (
 )
 
 func (r Runtime) Dev() {
-	stdin, stdout, stderr, err := node(filepath.Join("scripts", "node.js"))
+	stdin, stdout, stderr, err := runNode(filepath.Join("scripts", "node.js"))
 	if err != nil {
 		panic(err)
 	}
@@ -342,7 +342,9 @@ func (r Runtime) Dev() {
 	stdin <- Message{Kind: RESOLVE_ROUTER, Data: r}
 	select {
 	case str := <-stdout:
-		logger2.Stdout(str)
+		fmt.Println(len(str))
+		// fmt.Println(str)
+		// logger2.Stdout(str)
 	case str := <-stderr:
 		logger2.Stderr(str)
 		os.Exit(1)
