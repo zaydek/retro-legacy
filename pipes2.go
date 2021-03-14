@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -38,18 +39,53 @@ type Logger struct {
 	mu     sync.Mutex
 }
 
+// func (l *Logger) Stdout(args ...interface{}) {
+// 	logger.mu.Lock()
+// 	defer logger.mu.Unlock()
+// 	fmt.Fprintf(os.Stdout, "%s  %s %s\n", dim(time.Now().Format(l.format)), outcolor("stdout"),
+// 		fmt.Sprint(args...))
+// }
+//
+// func (l *Logger) Stderr(args ...interface{}) {
+// 	logger.mu.Lock()
+// 	defer logger.mu.Unlock()
+// 	fmt.Fprintf(os.Stderr, "%s  %s %s\n", dim(time.Now().Format(l.format)), errcolor("stderr"),
+// 		fmt.Sprint(args...))
+// }
+
+// func (l *Logger) Stdout(args ...interface{}) {
+// 	logger.mu.Lock()
+// 	defer logger.mu.Unlock()
+// 	fmt.Fprintf(os.Stdout, "%s  %s %s\n", dim(time.Now().Format(l.format)), outcolor("stdout"),
+// 		fmt.Sprint(args...))
+// }
+
 func (l *Logger) Stdout(args ...interface{}) {
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
-	fmt.Fprintf(os.Stdout, "%s  %s %s\n", dim(time.Now().Format(l.format)), outcolor("stdout"),
-		fmt.Sprint(args...))
+
+	// Remove extraneous ws at the end
+	str := strings.TrimRight(fmt.Sprint(args...), "\n")
+	lines := strings.Split(str, "\n")
+	for x, line := range lines {
+		tstr := time.Now().Format(l.format)
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), outcolor("stdout"), line)
+	}
+	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
 
 func (l *Logger) Stderr(args ...interface{}) {
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
-	fmt.Fprintf(os.Stderr, "%s  %s %s\n", dim(time.Now().Format(l.format)), errcolor("stderr"),
-		fmt.Sprint(args...))
+
+	// Remove extraneous ws at the end
+	str := strings.TrimRight(fmt.Sprint(args...), "\n")
+	lines := strings.Split(str, "\n")
+	for x, line := range lines {
+		tstr := time.Now().Format(l.format)
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), errcolor("stderr"), line)
+	}
+	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
 }
 
 func newLogger(args ...LoggerOptions) *Logger {
@@ -81,17 +117,19 @@ var logger = newLogger(LoggerOptions{Time: true})
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type Message struct {
-	Kind string                 `json:"kind"`
-	Data map[string]interface{} `json:"data"`
+type JSON map[string]interface{}
+
+type IncomingMessage struct {
+	Kind string
+	Data JSON
 }
 
-func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err error) {
-	stdin = make(chan Message)
-	stdout, stderr = make(chan Message), make(chan string)
+type OutgoingMessage JSON
 
+func runCmd(args ...string) (stdin chan IncomingMessage, stdout chan OutgoingMessage, stderr chan string, err error) {
 	cmd := exec.Command(args[0], args[1:]...)
 
+	stdin = make(chan IncomingMessage)
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -105,6 +143,7 @@ func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err
 		}
 	}()
 
+	stdout = make(chan OutgoingMessage)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -117,7 +156,7 @@ func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err
 		}()
 		scanner := bufio.NewScanner(stdoutPipe)
 		for scanner.Scan() {
-			var msg Message
+			msg := OutgoingMessage{} // Must use {} syntax
 			json.Unmarshal(scanner.Bytes(), &msg)
 			stdout <- msg
 		}
@@ -126,6 +165,7 @@ func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err
 		}
 	}()
 
+	stderr = make(chan string)
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -137,9 +177,11 @@ func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err
 			close(stderr)
 		}()
 		scanner := bufio.NewScanner(stderrPipe)
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			return len(data), data, nil
+		})
 		for scanner.Scan() {
-			str := scanner.Text()
-			stderr <- str
+			stderr <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
@@ -160,24 +202,53 @@ func main() {
 		panic(err)
 	}
 
-cmd:
-	for _, kind := range []string{"foo", "bar", "baz"} {
-		stdin <- Message{Kind: kind}
-		select {
-		// stdout messages are structured
-		case msg, ok := <-stdout:
-			if !ok {
-				break cmd
-			}
-			bstr, _ := json.Marshal(msg)
-			logger.Stdout(string(bstr))
-		// stderr messages are unstructured
-		case str, ok := <-stderr:
-			if !ok {
-				break cmd
-			}
-			logger.Stderr(str)
+	// 	fmt.Println("a")
+
+	stdin <- IncomingMessage{Kind: "foo", Data: JSON{"foo": "bar"}}
+	select {
+	case msg, ok := <-stdout:
+		if !ok {
+			break
 		}
+		bstr, _ := json.Marshal(msg)
+		logger.Stdout(string(bstr))
+	case str, ok := <-stderr:
+		if !ok {
+			break
+		}
+		logger.Stderr(str)
 	}
+
+	stdin <- IncomingMessage{Kind: "bar", Data: JSON{"foo": "bar"}}
+	select {
+	case msg, ok := <-stdout:
+		if !ok {
+			break
+		}
+		bstr, _ := json.Marshal(msg)
+		logger.Stdout(string(bstr))
+	case str, ok := <-stderr:
+		if !ok {
+			break
+		}
+		logger.Stderr(str)
+	}
+
+	stdin <- IncomingMessage{Kind: "baz", Data: JSON{"foo": "bar"}}
+	select {
+	case msg, ok := <-stdout:
+		if !ok {
+			break
+		}
+		bstr, _ := json.Marshal(msg)
+		logger.Stdout(string(bstr))
+	case str, ok := <-stderr:
+		if !ok {
+			break
+		}
+		logger.Stderr(str)
+	}
+
+	stdin <- IncomingMessage{Kind: "done"}
 	close(stdin)
 }

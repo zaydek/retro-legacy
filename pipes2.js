@@ -1,6 +1,6 @@
 const node_readline = require("readline")
 
-const stdout = console.log
+const stdout = data => console.log(JSON.stringify(data))
 const stderr = console.error
 
 function sleep(ms) {
@@ -26,16 +26,19 @@ async function main() {
 			break
 		}
 		const msg = JSON.parse(bstr)
-		switch (msg.kind) {
+		switch (msg.Kind) {
 			case "foo":
-				stderr("a")
+				stdout(msg)
 				break
 			case "bar":
-				stderr("b")
+				stderrx("oops\noops")
+				// stdout(msg)
 				break
 			case "baz":
-				stderr("c")
+				stdout(msg)
 				break
+			case "done":
+				return
 		}
 	}
 }
