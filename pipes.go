@@ -23,9 +23,9 @@ func must(err error) {
 ////////////////////////////////////////////////////////////////////////////////
 
 var (
-	dim      = terminal.New(terminal.DimCode).Sprint
-	outcolor = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
-	errcolor = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
+	dim  = terminal.New(terminal.DimCode).Sprint
+	cyan = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
+	red  = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
 )
 
 type LoggerOptions struct {
@@ -39,27 +39,6 @@ type Logger struct {
 	mu     sync.Mutex
 }
 
-// func (l *Logger) Stdout(args ...interface{}) {
-// 	logger.mu.Lock()
-// 	defer logger.mu.Unlock()
-// 	fmt.Fprintf(os.Stdout, "%s  %s %s\n", dim(time.Now().Format(l.format)), outcolor("stdout"),
-// 		fmt.Sprint(args...))
-// }
-//
-// func (l *Logger) Stderr(args ...interface{}) {
-// 	logger.mu.Lock()
-// 	defer logger.mu.Unlock()
-// 	fmt.Fprintf(os.Stderr, "%s  %s %s\n", dim(time.Now().Format(l.format)), errcolor("stderr"),
-// 		fmt.Sprint(args...))
-// }
-
-// func (l *Logger) Stdout(args ...interface{}) {
-// 	logger.mu.Lock()
-// 	defer logger.mu.Unlock()
-// 	fmt.Fprintf(os.Stdout, "%s  %s %s\n", dim(time.Now().Format(l.format)), outcolor("stdout"),
-// 		fmt.Sprint(args...))
-// }
-
 func (l *Logger) Stdout(args ...interface{}) {
 	logger.mu.Lock()
 	defer logger.mu.Unlock()
@@ -68,7 +47,7 @@ func (l *Logger) Stdout(args ...interface{}) {
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
 		tstr := time.Now().Format(l.format)
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), outcolor("stdout"), line)
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), cyan("stdout"), line)
 	}
 	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
@@ -81,7 +60,7 @@ func (l *Logger) Stderr(args ...interface{}) {
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
 		tstr := time.Now().Format(l.format)
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), errcolor("stderr"), line)
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), red("stderr"), line)
 	}
 	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
 }
@@ -124,14 +103,14 @@ type IncomingMessage struct {
 
 type OutgoingMessage JSON
 
-func runCmd(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan string, error) {
+func node(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan string, error) {
 	var (
 		stdin  = make(chan IncomingMessage)
 		stdout = make(chan OutgoingMessage)
 		stderr = make(chan string)
 	)
 
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.Command("node", args...)
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
@@ -197,7 +176,7 @@ func runCmd(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan st
 ////////////////////////////////////////////////////////////////////////////////
 
 func main() {
-	stdin, stdout, stderr, err := runCmd("node", "pipes2.js")
+	stdin, stdout, stderr, err := node("pipes2.js")
 	if err != nil {
 		panic(err)
 	}

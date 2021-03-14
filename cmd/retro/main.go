@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -329,7 +330,18 @@ For example:
 }
 
 func (r Runtime) Dev() {
-	fmt.Println("TODO")
+	stdin, stdout, stderr, err := node(filepath.Join("cmd", "retro", "js", "node.mjs"))
+	must(err)
+
+	stdin <- IncomingMessage{Kind: "foo", Data: JSON{"foo": "bar"}}
+	select {
+	case msg := <-stdout:
+		bstr, _ := json.Marshal(msg)
+		logger2.Stdout(string(bstr))
+	case str := <-stderr:
+		logger2.Stderr(str)
+		os.Exit(1)
+	}
 }
 
 func (r Runtime) Export() {
