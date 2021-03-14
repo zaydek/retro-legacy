@@ -334,7 +334,7 @@ const (
 )
 
 func (r Runtime) Dev() {
-	stdin, stdout, stderr, err := node(filepath.Join("cmd", "retro", "js", "node.js"))
+	stdin, stdout, stderr, err := node(filepath.Join("scripts", "node.js"))
 	if err != nil {
 		panic(err)
 	}

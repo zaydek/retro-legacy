@@ -43,8 +43,8 @@ export type Props = { [key: string]: unknown }
 export type RouteProps = Props & { path: string }
 
 export interface RouteMeta {
-	Route: Route
-	RouteProps: RouteProps
+	Route: Route & { Target: string; PathName: string }
+	Props: RouteProps
 }
 
 export interface Router {

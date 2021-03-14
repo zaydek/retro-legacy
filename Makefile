@@ -1,7 +1,7 @@
 esbuild:
-	@./node_modules/.bin/esbuild cmd/retro/js/node.ts \
+	@./node_modules/.bin/esbuild scripts/node.ts \
 		--bundle \
 		--external:esbuild \
 		--log-level=warning \
-		--outfile=cmd/retro/js/node.js \
+		--outfile=scripts/node.js \
 		--platform=node

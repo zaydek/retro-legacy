@@ -10,6 +10,25 @@ const RESOLVE_ROUTER = "resolve-router"
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// prettier-ignore
+interface PathInfo {
+	source: string   // e.g. "path/to/basename.ext"
+	dirname: string  // e.g. "path/to"
+	basename: string // e.g. "basename.ext"
+	name: string     // e.g. "basename"
+	extname: string  // e.g. ".ext"
+}
+
+function newPathInfo(source: string): PathInfo {
+	const dirname = path.dirname(source)
+	const basename = path.basename(source)
+	const extname = path.extname(source)
+	const name = basename.slice(0, -extname.length)
+	return { source, dirname, basename, name, extname }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 const transpile = (source: string, target: string): esbuild.BuildOptions => ({
 	bundle: true,
 	define: {
@@ -19,7 +38,7 @@ const transpile = (source: string, target: string): esbuild.BuildOptions => ({
 	entryPoints: [source],
 	external: ["react", "react-dom"], // Dedupe
 	format: "cjs",
-	inject: ["cmd/retro/js/react-shim.js"],
+	inject: ["scripts/react-shim.js"],
 	loader: {
 		".js": "jsx",
 	},
@@ -45,44 +64,27 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 	return mod
 }
 
-// prettier-ignore
-export interface PathInfo {
-	source: string   // e.g. "path/to/basename.ext"
-	dirname: string  // e.g. "path/to"
-	basename: string // e.g. "basename.ext"
-	name: string     // e.g. "basename"
-	extname: string  // e.g. ".ext"
-}
-
-export function parsePathInfo(source: string): PathInfo {
-	const dirname = path.dirname(source)
-	const basename = path.basename(source)
-	const extname = path.extname(source)
-	const name = basename.slice(0, -extname.length)
-	return { source, dirname, basename, name, extname }
-}
-
-export function getTargetSyntax(dirs: T.Dirs, parsed: PathInfo): string {
-	// prettier-ignore
-	const out = path.join(
+// src/pages/foo.html -> __export__/foo.html
+export function getTargetSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
+	const str = path.join(
 		dirs.ExportDir,
-		parsed.src.slice(dirs.SrcPagesDir.length, -parsed.extname.length) + ".html",
+		pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length) + ".html",
 	)
-	return out
+	return str
 }
 
-export function path_syntax(dirs: T.Dirs, parsed: PathInfo): string {
-	const out = parsed.src.slice(dirs.SrcPagesDir.length, -parsed.extname.length)
-	if (out.endsWith("/index")) {
-		return out.slice(0, -"index".length) // Keep "/"
+// src/pages/foo.html -> /foo
+export function getPathNameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
+	const str = pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length)
+	if (str.endsWith("/index")) {
+		return str.slice(0, -"index".length) // Keep "/"
 	}
-	return out
+	return str
 }
 
 async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promise<T.RouteMeta> {
 	const mod = await resolveModule<T.StaticModule>(runtime, route)
-
-	// if (!utils.validateStaticModuleExports(mod)) {
+	// if (!valid.staticModuleExports(mod)) {
 	// 	log.fatal(errors.badStaticPageExports(page.src))
 	// }
 
@@ -90,7 +92,7 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 	if (typeof mod.serverProps === "function") {
 		try {
 			props = await mod.serverProps!()
-			// if (!utils.validateServerPropsReturn(props)) {
+			// if (!valid.serverPropsReturn(props)) {
 			// 	log.fatal(errors.badServerPropsReturn(page.src))
 			// }
 		} catch (error) {
@@ -98,22 +100,22 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 		}
 	}
 
-	// const parsed = pages.parse(page.src)
-	// const path_ = pages.path_syntax(runtime.dirs, parsed)
-	// const dst = pages.dst_syntax(runtime.dirs, parsed)
+	const pathInfo = newPathInfo(route.Source)
 
-	// const meta: T.RouteMeta = {
-	// 	module: mod,
-	// 	route: {
-	// 		...page,
-	// 		dst,
-	// 		path: path_,
-	// 	},
-	// 	descriptProps: {
-	// 		path: path_, // Add path
-	// 		...props,
-	// 	},
-	// }
+	const Target = getTargetSyntax(runtime.Dirs, pathInfo)
+	const PathName = getPathNameSyntax(runtime.Dirs, pathInfo)
+
+	const meta: T.RouteMeta = {
+		Route: {
+			...route,
+			Target,
+			PathName,
+		},
+		Props: {
+			path: PathName, // Add pathname
+			...props,
+		},
+	}
 	return meta
 }
 
@@ -128,7 +130,8 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
 	const router: T.Router = {}
 	for (const route of runtime.Routes) {
 		if (route.Type === "static") {
-			const meta = resolveStaticRouteMeta(runtime, route)
+			const meta = await resolveStaticRouteMeta(runtime, route)
+			stdout(meta)
 		} else if (route.Type === "dynamic") {
 			const metas = await resolveDynamicRouteMetas(runtime, route)
 		} else {
@@ -153,7 +156,7 @@ async function main(): Promise<void> {
 				} catch (error) {
 					stderr(error)
 				}
-				stdout(router)
+				// stdout(router)
 				break
 			// case DIE:
 			// 	return
