@@ -129,13 +129,14 @@ func node(args ...string) (chan Message, chan string, chan string, error) {
 			stdoutPipe.Close()
 			close(stdout)
 		}()
+
+		// Increase the buffer from 64K to 512K; https://stackoverflow.com/a/39864391
 		scanner := bufio.NewScanner(stdoutPipe)
+		buf := make([]byte, 512*1024)
+		scanner.Buffer(buf, len(buf))
+
+		// Read start-to-end
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
-		// for scanner.Scan() {
-		// 	msg := OutgoingMessage{} // Must use {} syntax here
-		// 	json.Unmarshal(scanner.Bytes(), &msg)
-		// 	stdout <- msg
-		// }
 		for scanner.Scan() {
 			stdout <- scanner.Text()
 		}
@@ -154,7 +155,13 @@ func node(args ...string) (chan Message, chan string, chan string, error) {
 			stderrPipe.Close()
 			close(stderr)
 		}()
+
+		// Increase the buffer from 64K to 512K; https://stackoverflow.com/a/39864391
 		scanner := bufio.NewScanner(stderrPipe)
+		buf := make([]byte, 512*1024)
+		scanner.Buffer(buf, len(buf))
+
+		// Read start-to-end
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
 		for scanner.Scan() {
 			stderr <- scanner.Text()

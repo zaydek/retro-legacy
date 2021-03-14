@@ -24,7 +24,7 @@ var __toModule = (module2) => {
 // scripts/node.ts
 __markAsModule(exports);
 __export(exports, {
-  getPathNameSyntax: () => getPathNameSyntax,
+  getPathnameSyntax: () => getPathnameSyntax,
   getTargetSyntax: () => getTargetSyntax
 });
 var esbuild = __toModule(require("esbuild"));
@@ -88,7 +88,7 @@ function getTargetSyntax(dirs, pathInfo) {
   const str = path.join(dirs.ExportDir, pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length) + ".html");
   return str;
 }
-function getPathNameSyntax(dirs, pathInfo) {
+function getPathnameSyntax(dirs, pathInfo) {
   const str = pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length);
   if (str.endsWith("/index")) {
     return str.slice(0, -"index".length);
@@ -107,15 +107,15 @@ async function resolveStaticRouteMeta(runtime, route) {
   }
   const pathInfo = newPathInfo(route.Source);
   const Target = getTargetSyntax(runtime.Dirs, pathInfo);
-  const PathName = getPathNameSyntax(runtime.Dirs, pathInfo);
+  const Pathname = getPathnameSyntax(runtime.Dirs, pathInfo);
   const meta = {
     Route: {
       ...route,
       Target,
-      PathName
+      Pathname
     },
     Props: {
-      path: PathName,
+      path: Pathname,
       ...props
     }
   };
@@ -130,9 +130,12 @@ async function resolveRouter(runtime) {
   for (const route of runtime.Routes) {
     if (route.Type === "static") {
       const meta = await resolveStaticRouteMeta(runtime, route);
-      stdout(meta);
+      router[meta.Route.Pathname] = meta;
     } else if (route.Type === "dynamic") {
       const metas = await resolveDynamicRouteMetas(runtime, route);
+      for (const meta of metas) {
+        router[meta.Route.Pathname] = meta;
+      }
     } else {
       throw new Error("Internal error");
     }
@@ -148,9 +151,9 @@ async function main() {
     const msg = JSON.parse(bstr);
     switch (msg.Kind) {
       case RESOLVE_ROUTER:
-        let router;
         try {
-          router = await resolveRouter(msg.Data);
+          const router = await resolveRouter(msg.Data);
+          stdout(router);
         } catch (error) {
           stderr(error);
         }
@@ -163,6 +166,6 @@ async function main() {
 main();
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  getPathNameSyntax,
+  getPathnameSyntax,
   getTargetSyntax
 });

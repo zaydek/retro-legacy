@@ -74,7 +74,7 @@ export function getTargetSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 }
 
 // src/pages/foo.html -> /foo
-export function getPathNameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
+export function getPathnameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 	const str = pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length)
 	if (str.endsWith("/index")) {
 		return str.slice(0, -"index".length) // Keep "/"
@@ -103,16 +103,16 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 	const pathInfo = newPathInfo(route.Source)
 
 	const Target = getTargetSyntax(runtime.Dirs, pathInfo)
-	const PathName = getPathNameSyntax(runtime.Dirs, pathInfo)
+	const Pathname = getPathnameSyntax(runtime.Dirs, pathInfo)
 
 	const meta: T.RouteMeta = {
 		Route: {
 			...route,
 			Target,
-			PathName,
+			Pathname,
 		},
 		Props: {
-			path: PathName, // Add pathname
+			path: Pathname, // Add path
 			...props,
 		},
 	}
@@ -125,15 +125,23 @@ async function resolveDynamicRouteMetas(runtime: T.Runtime, route: T.Route): Pro
 	return [] as T.RouteMeta[]
 }
 
-// stdout(JSON.stringify(runtime.Routes, null, 2))
 async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
 	const router: T.Router = {}
 	for (const route of runtime.Routes) {
 		if (route.Type === "static") {
 			const meta = await resolveStaticRouteMeta(runtime, route)
-			stdout(meta)
+			// if (router[meta.route.path] !== undefined) {
+			// 	log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
+			// }
+			router[meta.Route.Pathname] = meta
 		} else if (route.Type === "dynamic") {
 			const metas = await resolveDynamicRouteMetas(runtime, route)
+			for (const meta of metas) {
+				// if (router[meta.route.path] !== undefined) {
+				// 	log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
+				// }
+				router[meta.Route.Pathname] = meta
+			}
 		} else {
 			throw new Error("Internal error")
 		}
@@ -150,16 +158,13 @@ async function main(): Promise<void> {
 		const msg = JSON.parse(bstr)
 		switch (msg.Kind) {
 			case RESOLVE_ROUTER:
-				let router: T.Router
 				try {
-					router = await resolveRouter(msg.Data)
+					const router = await resolveRouter(msg.Data)
+					stdout(router)
 				} catch (error) {
 					stderr(error)
 				}
-				// stdout(router)
 				break
-			// case DIE:
-			// 	return
 			default:
 				throw new Error("Internal error")
 		}

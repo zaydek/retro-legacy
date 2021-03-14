@@ -330,7 +330,7 @@ For example:
 
 const (
 	RESOLVE_ROUTER = "resolve-router"
-	//DIE            = "die"
+	// ...
 )
 
 func (r Runtime) Dev() {
