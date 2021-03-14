@@ -21,13 +21,6 @@ func must(err error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type Message struct {
-	Kind string                 `json:"kind"`
-	Data map[string]interface{} `json:"data"`
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
 var (
 	dim      = terminal.New(terminal.DimCode).Sprint
 	outcolor = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
@@ -87,6 +80,11 @@ func newLogger(args ...LoggerOptions) *Logger {
 var logger = newLogger(LoggerOptions{Time: true})
 
 ////////////////////////////////////////////////////////////////////////////////
+
+type Message struct {
+	Kind string                 `json:"kind"`
+	Data map[string]interface{} `json:"data"`
+}
 
 func runCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err error) {
 	stdin = make(chan Message)
@@ -162,18 +160,9 @@ func main() {
 		panic(err)
 	}
 
-	go func() {
-		defer close(stdin)
-		stdin <- Message{Kind: "foo"}
-		time.Sleep(1 * time.Second)
-		stdin <- Message{Kind: "bar"}
-		time.Sleep(1 * time.Second)
-		stdin <- Message{Kind: "baz"}
-		time.Sleep(1 * time.Second)
-	}()
-
 cmd:
-	for {
+	for _, kind := range []string{"foo", "bar", "baz"} {
+		stdin <- Message{Kind: kind}
 		select {
 		// stdout messages are structured
 		case msg, ok := <-stdout:
@@ -190,4 +179,5 @@ cmd:
 			logger.Stderr(str)
 		}
 	}
+	close(stdin)
 }
