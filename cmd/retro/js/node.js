@@ -17,6 +17,11 @@ var __toModule = (module2) => {
   return __exportStar(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", module2 && module2.__esModule && "default" in module2 ? {get: () => module2.default, enumerable: true} : {value: module2, enumerable: true})), module2);
 };
 
+// cmd/retro/js/node.ts
+__markAsModule(exports);
+var esbuild = __toModule(require("esbuild"));
+var path = __toModule(require("path"));
+
 // cmd/retro/js/utils.ts
 var node_readline = __toModule(require("readline"));
 var stdout = (...args) => console.log(...args);
@@ -34,10 +39,53 @@ var readline = (() => {
 
 // cmd/retro/js/node.ts
 var RESOLVE_ROUTER = "resolve-router";
+var transpile = (source, target) => ({
+  bundle: true,
+  define: {
+    __DEV__: JSON.stringify(process.env.NODE_ENV === "true"),
+    "process.env.NODE_ENV": JSON.stringify(process.env.NODE_ENV)
+  },
+  entryPoints: [source],
+  external: ["react", "react-dom"],
+  format: "cjs",
+  inject: ["cmd/retro/js/react-shim.js"],
+  loader: {
+    ".js": "jsx"
+  },
+  logLevel: "warning",
+  minify: false,
+  outfile: target
+});
+async function resolveModule(runtime, route) {
+  const source = route.Source;
+  const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"));
+  try {
+    await esbuild.build(transpile(source, target));
+  } catch (error) {
+    if (!("errors" in error) || !("warnings" in error))
+      throw error;
+  }
+  let mod;
+  try {
+    mod = require(path.resolve(target));
+  } catch (error) {
+    throw error;
+  }
+  stdout(mod);
+  return {};
+}
 async function resolveRouter(runtime) {
-  stdout(JSON.stringify(runtime.Routes, null, 2));
   const router = {};
-  return router;
+  for (const route of runtime.Routes) {
+    if (route.Type === "static") {
+      const mod = await resolveModule(runtime, route);
+    } else if (route.Type === "dynamic") {
+      const mod = await resolveModule(runtime, route);
+    } else {
+      throw new Error("Internal error");
+    }
+  }
+  return [router, null];
 }
 async function main() {
   while (true) {
@@ -48,7 +96,7 @@ async function main() {
     const msg = JSON.parse(bstr);
     switch (msg.Kind) {
       case RESOLVE_ROUTER:
-        const router = await resolveRouter(msg.Data);
+        const [router, err] = await resolveRouter(msg.Data);
         break;
       default:
         throw new Error("Internal error");

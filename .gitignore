@@ -7,3 +7,5 @@ wwww
 src
 __cache__
 __export__
+
+*.esbuild.*

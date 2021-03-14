@@ -1,4 +1,4 @@
-import { Link } from "../../packages/router"
+import { Link } from "../../npm/router"
 
 const paths = [
 	{

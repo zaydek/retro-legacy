@@ -4,7 +4,7 @@ export function Head() {
 	return <title>Welcome to my wonderful website.</title>
 }
 
-exportxdefault function Page() {
+export default function Page() {
 	return (
 		<div>
 			<Nav />

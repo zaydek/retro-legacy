@@ -330,7 +330,7 @@ For example:
 
 const (
 	RESOLVE_ROUTER = "resolve-router"
-	// ...
+	//DIE            = "die"
 )
 
 func (r Runtime) Dev() {
@@ -341,15 +341,14 @@ func (r Runtime) Dev() {
 
 	stdin <- Message{Kind: RESOLVE_ROUTER, Data: r}
 	select {
-	// case msg := <-stdout:
-	// 	bstr, _ := json.Marshal(msg)
-	// 	logger2.Stdout(string(bstr))
 	case str := <-stdout:
 		logger2.Stdout(str)
 	case str := <-stderr:
 		logger2.Stderr(str)
 		os.Exit(1)
 	}
+
+	// stdin <- Message{Kind: DIE}
 }
 
 func (r Runtime) Export() {
