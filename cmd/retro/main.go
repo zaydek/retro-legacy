@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -329,15 +328,24 @@ For example:
 	return runtime, nil
 }
 
-func (r Runtime) Dev() {
-	stdin, stdout, stderr, err := node(filepath.Join("cmd", "retro", "js", "node.mjs"))
-	must(err)
+const (
+	RESOLVE_ROUTER = "resolve-router"
+	// ...
+)
 
-	stdin <- IncomingMessage{Kind: "foo", Data: JSON{"foo": "bar"}}
+func (r Runtime) Dev() {
+	stdin, stdout, stderr, err := node(filepath.Join("cmd", "retro", "js", "node.js"))
+	if err != nil {
+		panic(err)
+	}
+
+	stdin <- Message{Kind: RESOLVE_ROUTER, Data: r}
 	select {
-	case msg := <-stdout:
-		bstr, _ := json.Marshal(msg)
-		logger2.Stdout(string(bstr))
+	// case msg := <-stdout:
+	// 	bstr, _ := json.Marshal(msg)
+	// 	logger2.Stdout(string(bstr))
+	case str := <-stdout:
+		logger2.Stdout(str)
 	case str := <-stderr:
 		logger2.Stderr(str)
 		os.Exit(1)

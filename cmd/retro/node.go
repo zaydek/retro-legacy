@@ -89,17 +89,18 @@ var logger2 = newLogger(LoggerOptions{Time: true})
 
 type JSON map[string]interface{}
 
-type IncomingMessage struct {
+type Message struct {
 	Kind string
-	Data JSON
+	Data interface{}
 }
 
 type OutgoingMessage JSON
 
-func node(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan string, error) {
+func node(args ...string) (chan Message, chan string, chan string, error) {
 	var (
-		stdin  = make(chan IncomingMessage)
-		stdout = make(chan OutgoingMessage)
+		stdin = make(chan Message)
+
+		stdout = make(chan string)
 		stderr = make(chan string)
 	)
 
@@ -129,10 +130,14 @@ func node(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan stri
 			close(stdout)
 		}()
 		scanner := bufio.NewScanner(stdoutPipe)
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
+		// for scanner.Scan() {
+		// 	msg := OutgoingMessage{} // Must use {} syntax here
+		// 	json.Unmarshal(scanner.Bytes(), &msg)
+		// 	stdout <- msg
+		// }
 		for scanner.Scan() {
-			msg := OutgoingMessage{} // Must use {} syntax here
-			json.Unmarshal(scanner.Bytes(), &msg)
-			stdout <- msg
+			stdout <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
@@ -149,7 +154,6 @@ func node(args ...string) (chan IncomingMessage, chan OutgoingMessage, chan stri
 			stderrPipe.Close()
 			close(stderr)
 		}()
-		// Scan start-to-end
 		scanner := bufio.NewScanner(stderrPipe)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
 		for scanner.Scan() {

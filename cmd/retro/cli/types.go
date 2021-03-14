@@ -1,17 +1,17 @@
 package cli
 
 type DevCmd struct {
-	Cached      bool `json:"cached"`
-	FastRefresh bool `json:"fast_refresh"`
-	Port        int  `json:"port"`
-	Sourcemap   bool `json:"sourcemap"`
+	Cached      bool
+	FastRefresh bool
+	Port        int
+	Sourcemap   bool
 }
 
 type ExportCmd struct {
-	Cached    bool `json:"cached"`
-	Sourcemap bool `json:"sourcemap"`
+	Cached    bool
+	Sourcemap bool
 }
 
 type ServeCmd struct {
-	Port int `json:"port"`
+	Port int
 }
