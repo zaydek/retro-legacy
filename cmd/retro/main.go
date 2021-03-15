@@ -335,16 +335,18 @@ func (r Runtime) Dev() {
 	}
 
 	stdin <- Message{Kind: "resolve_router", Data: r}
+
+	// Stream routes; stop on the router
 loop:
 	for {
 		select {
-		case str := <-stdout:
-			if str == "eof" {
+		case msg := <-stdout:
+			if msg.Kind == "eof" {
 				break loop
 			}
-			logger2.Stdout(str)
-		case str := <-stderr:
-			logger2.Stderr(str)
+			logger2.Stdout(msg.Data)
+		case err := <-stderr:
+			logger2.Stderr(err)
 			os.Exit(1)
 		}
 	}

@@ -13,17 +13,38 @@ type Route struct {
 	ComponentName string // e.g. <ComponentName />
 }
 
-// type ResolvedRoute struct {
-// 	Type          string // e.g. "static" or "dynamic"
-// 	Source        string // e.g. src/pages/foo/bar.js
-// 	Target        string // e.g. __export__/foo/bar.html
-// 	Pathname      string // e.g. <Link path={Pathname} />
-// 	ComponentName string // e.g. <ComponentSyntax />
-// }
-
 type Runtime struct {
 	Cmd      interface{}
 	Dirs     DirConfiguration
 	Template string
 	Routes   []Route
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+// export type Props = { [key: string]: unknown }
+type Props = map[string]interface{}
+
+// export type ServerProps = Props & { path: string }
+type ServerProps struct {
+	Props        // Embed
+	Path  string `json:"path"`
+}
+
+// export interface ServerRoute {
+//   Route: Route & { Target: string; Pathname: string }
+//   Props: ServerProps
+// }
+type ServerRoute struct {
+	Route struct {
+		Route    // Embed
+		Target   string
+		Pathname string
+	}
+	Props ServerProps
+}
+
+// export interface ServerRouter {
+//   [key: string]: ServerRoute
+// }
+type ServerRouter map[string]ServerRoute

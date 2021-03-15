@@ -1,27 +1,8 @@
 import * as esbuild from "esbuild"
 import * as path from "path"
-import * as T from "./T"
-
+import * as T from "./types"
 import { eof, readline, stderr, stdout } from "./utils"
-
-////////////////////////////////////////////////////////////////////////////////
-
-// prettier-ignore
-interface PathInfo {
-	source: string   // e.g. "path/to/basename.ext"
-	dirname: string  // e.g. "path/to"
-	basename: string // e.g. "basename.ext"
-	name: string     // e.g. "basename"
-	extname: string  // e.g. ".ext"
-}
-
-function newPathInfo(source: string): PathInfo {
-	const dirname = path.dirname(source)
-	const basename = path.basename(source)
-	const extname = path.extname(source)
-	const name = basename.slice(0, -extname.length)
-	return { source, dirname, basename, name, extname }
-}
+import { newPathInfo, PathInfo } from "./newPathInfo"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -78,10 +59,10 @@ export function getPathnameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 	return str
 }
 
-async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promise<T.RouteMeta> {
+async function resolveStaticServerRoute(runtime: T.Runtime, route: T.Route): Promise<T.ServerRoute> {
 	const mod = await resolveModule<T.StaticModule>(runtime, route)
 	// if (!valid.staticModuleExports(mod)) {
-	// 	log.fatal(errors.badStaticPageExports(page.src))
+	// 	throw new Error(errors.badStaticPageExports(page.src))
 	// }
 
 	let props = {}
@@ -89,7 +70,7 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 		try {
 			props = await mod.serverProps!()
 			// if (!valid.serverPropsReturn(props)) {
-			// 	log.fatal(errors.badServerPropsReturn(page.src))
+			// 	throw new Error(errors.badServerPropsReturn(page.src))
 			// }
 		} catch (error) {
 			// throw new Error(`${route.Source}.serverProps: ${error.message}`)
@@ -100,76 +81,78 @@ async function resolveStaticRouteMeta(runtime: T.Runtime, route: T.Route): Promi
 	const target = getTargetSyntax(runtime.Dirs, pathInfo)
 	const pathname = getPathnameSyntax(runtime.Dirs, pathInfo)
 
-	const meta: T.RouteMeta = {
+	const srvRoute: T.ServerRoute = {
 		Route: {
 			...route,
-			Target: target, // Uppercase
-			Pathname: pathname, // Uppercase
+			Target: target,
+			Pathname: pathname,
 		},
 		Props: {
 			path: pathname, // Add path
 			...props,
 		},
 	}
-	return meta
+	return srvRoute
 }
 
-async function resolveDynamicRouteMetas(runtime: T.Runtime, route: T.Route): Promise<T.RouteMeta[]> {
+async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): Promise<T.ServerRoute[]> {
 	const mod = await resolveModule<T.DynamicModule>(runtime, route)
 	// if (!valid.dynamicModuleExports(mod)) {
-	// 	log.fatal(errors.badDynamicPageExports(page.src))
+	// 	throw new Error(errors.badDynamicPageExports(page.src))
 	// }
 
 	let paths: { path: string; props: T.Props }[] = []
 	try {
 		paths = await mod.serverPaths!()
 		// if (!valid.serverPathsReturn(paths)) {
-		// 	log.fatal(errors.badServerPathsReturn(page.src))
+		// 	throw new Error(errors.badServerPathsReturn(page.src))
 		// }
 	} catch (error) {
 		// throw new Error(`${page.src}.serverPaths: ${error.message}`)
 	}
 
-	const metas: T.RouteMeta[] = []
+	const srvRoutes: T.ServerRoute[] = []
 	for (const meta of paths) {
 		// Don’t use getTargetSyntax or getPathnameSyntax; paths must be computed
 		// from meta.path because of serverPaths API
 		const pathInfo = newPathInfo(route.Source)
 		const pathname = path.join(pathInfo.dirname.slice(runtime.Dirs.SrcPagesDir.length), meta.path)
 		const target = path.join(runtime.Dirs.ExportDir, pathname + ".html")
-		metas.push({
+
+		const srvRoute: T.ServerRoute = {
 			Route: {
 				...route,
-				Target: target, // Uppercase
-				Pathname: pathname, // Uppercase
+				Target: target,
+				Pathname: pathname,
 			},
 			Props: {
 				path: pathname, // Add path
 				...meta.props,
 			},
-		})
+		}
+		srvRoutes.push(srvRoute)
 	}
-	return metas
+	return srvRoutes
 }
 
-async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
-	const router: T.Router = {}
+async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
+	const router: T.ServerRouter = {}
 	for (const route of runtime.Routes) {
 		if (route.Type === "static") {
-			const meta = await resolveStaticRouteMeta(runtime, route)
+			const srvRoute = await resolveStaticServerRoute(runtime, route)
 			// if (router[meta.route.path] !== undefined) {
-			// 	log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
+			// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 			// }
-			stdout(meta.Route.Pathname)
-			router[meta.Route.Pathname] = meta
+			stdout({ Kind: "server_route", Data: srvRoute })
+			router[srvRoute.Route.Pathname] = srvRoute
 		} else if (route.Type === "dynamic") {
-			const metas = await resolveDynamicRouteMetas(runtime, route)
-			for (const meta of metas) {
+			const srvRoutes = await resolveDynamicServerRoutes(runtime, route)
+			for (const srvRoute of srvRoutes) {
 				// if (router[meta.route.path] !== undefined) {
-				// 	log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
+				// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 				// }
-				stdout(meta.Route.Pathname)
-				router[meta.Route.Pathname] = meta
+				stdout({ Kind: "server_route", Data: srvRoute })
+				router[srvRoute.Route.Pathname] = srvRoute
 			}
 		}
 	}
@@ -182,17 +165,16 @@ async function main(): Promise<void> {
 		if (bstr === undefined) {
 			break
 		}
-		const msg = JSON.parse(bstr)
+		const msg: T.Message = JSON.parse(bstr)
 		switch (msg.Kind) {
 			case "resolve_router":
-				// try {
-				// 	const router = await resolveRouter(msg.Data)
-				// 	stdout(router)
-				// } catch (error) {
-				// 	stderr(error)
-				// }
-				await resolveRouter(msg.Data)
-				eof()
+				try {
+					const router = await resolveRouter(msg.Data)
+					stdout({ Kind: "server_router", Data: router })
+				} catch (error) {
+					stderr(error)
+				}
+				stdout({ Kind: "eof" })
 				break
 			case "done":
 				return

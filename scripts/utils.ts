@@ -1,9 +1,8 @@
 import * as node_readline from "readline"
+import * as T from "./types"
 
-export const stdout = (str: string): void => console.log(JSON.stringify(str))
+export const stdout = (msg: T.Message): void => console.log(JSON.stringify(msg))
 export const stderr = console.error
-
-export const eof = (): void => console.log("eof")
 
 // https://stackoverflow.com/a/55161953
 export const readline = (function (): () => Promise<string> {

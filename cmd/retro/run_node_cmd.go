@@ -96,13 +96,15 @@ type Message struct {
 
 type OutgoingMessage JSON
 
-func runNodeCmd(args ...string) (stdin chan Message, stdout, stderr chan string, err error) {
-	stdin = make(chan Message)
-	stdout, stderr = make(chan string), make(chan string)
+func runNodeCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err error) {
+	stdin, stdout = make(chan Message), make(chan Message)
+	stderr = make(chan string)
 
 	cmd := exec.Command("node", args...)
 
-	// STDIN
+	//////////////////////////////////////////////////////////////////////////////
+	// cmd.StdinPipe()
+
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -115,7 +117,9 @@ func runNodeCmd(args ...string) (stdin chan Message, stdout, stderr chan string,
 		}
 	}()
 
-	// STDOUT
+	//////////////////////////////////////////////////////////////////////////////
+	// cmd.StdoutPipe()
+
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -125,16 +129,23 @@ func runNodeCmd(args ...string) (stdin chan Message, stdout, stderr chan string,
 			stdoutPipe.Close()
 			close(stdout)
 		}()
+		// Upgrade the buffer
 		scanner := bufio.NewScanner(stdoutPipe)
+		buf := make([]byte, 1024*1024)
+		scanner.Buffer(buf, len(buf))
 		for scanner.Scan() {
-			stdout <- scanner.Text()
+			var msg Message
+			json.Unmarshal(scanner.Bytes(), &msg)
+			stdout <- msg
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
 		}
 	}()
 
-	// STDERR
+	//////////////////////////////////////////////////////////////////////////////
+	// cmd.StderrPipe()
+
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, nil, err
@@ -155,6 +166,8 @@ func runNodeCmd(args ...string) (stdin chan Message, stdout, stderr chan string,
 			panic(err)
 		}
 	}()
+
+	//////////////////////////////////////////////////////////////////////////////
 
 	if err := cmd.Start(); err != nil {
 		return nil, nil, nil, err
