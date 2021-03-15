@@ -28,7 +28,7 @@ dev basically works like this:
 watch src/pages and do the following (router operations)
 
 	if we watch src/pages manually the purpose is to refresh the server api. since
-	we want to granularly refresh teh server api, we need to be able to delete old
+	we want to granularly refresh the server api, we need to be able to delete old
 	data and or add new data.
 
 	- if a user deletes a route, we exclusively delete a route

@@ -113,8 +113,8 @@ async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): P
 
 	const srvRoutes: T.ServerRoute[] = []
 	for (const meta of paths) {
-		// Don’t use getTargetSyntax or getPathnameSyntax; paths must be computed
-		// from meta.path because of serverPaths API
+		// Compute pathname and target from meta.path (do not use getTargetSyntax or
+		// getPathnameSyntax)
 		const pathInfo = newPathInfo(route.Source)
 		const pathname = path.join(pathInfo.dirname.slice(runtime.Dirs.SrcPagesDir.length), meta.path)
 		const target = path.join(runtime.Dirs.ExportDir, pathname + ".html")
@@ -171,6 +171,7 @@ async function main(): Promise<void> {
 				// try {
 				const router = await resolveRouter(msg.Data)
 				stdout({ Kind: "server_router", Data: router })
+				throw new Error("oops")
 				stdout({ Kind: "eof" })
 				// } catch (error) {
 				// 	stderr(error)

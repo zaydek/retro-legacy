@@ -333,10 +333,12 @@ For example:
 func (r Runtime) Dev() {
 	var srvRouter ServerRouter
 
-	stdin, stdout, stderr, err := runNodeCmd(filepath.Join("scripts", "node_cmd.esbuild.js"))
+	stdin, stdout, stderr, err := runNodeBackend(filepath.Join("scripts", "backend.esbuild.js"))
 	if err != nil {
 		panic(err)
 	}
+
+	// TODO: Add an emergency timeout
 
 	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
 

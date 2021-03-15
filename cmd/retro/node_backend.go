@@ -20,25 +20,7 @@ type Logger struct {
 	format string
 }
 
-func (l *Logger) Stdout(args ...interface{}) {
-	str := strings.TrimRight(fmt.Sprint(args...), "\n")
-	lines := strings.Split(str, "\n")
-	for x, line := range lines {
-		tstr := time.Now().Format(l.format)
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), boldCyan("stdout"), line)
-	}
-	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
-}
-
-func (l *Logger) Stderr(args ...interface{}) {
-	str := strings.TrimRight(fmt.Sprint(args...), "\n")
-	lines := strings.Split(str, "\n")
-	for x, line := range lines {
-		tstr := time.Now().Format(l.format)
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), boldRed("stderr"), line)
-	}
-	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
-}
+var logger2 = newLogger(LoggerOptions{Time: true})
 
 func newLogger(args ...LoggerOptions) *Logger {
 	opt := LoggerOptions{Datetime: true}
@@ -65,7 +47,23 @@ func newLogger(args ...LoggerOptions) *Logger {
 	return logger
 }
 
-var logger2 = newLogger(LoggerOptions{Time: true})
+func (l *Logger) Stdout(args ...interface{}) {
+	str := strings.TrimRight(fmt.Sprint(args...), "\n")
+	lines := strings.Split(str, "\n")
+	for x, line := range lines {
+		lines[x] = fmt.Sprintf("%s  %s", dim(time.Now().Format(l.format)), line)
+	}
+	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
+}
+
+func (l *Logger) Stderr(args ...interface{}) {
+	str := strings.TrimRight(fmt.Sprint(args...), "\n")
+	lines := strings.Split(str, "\n")
+	for x, line := range lines {
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(time.Now().Format(l.format)), boldRed("stderr"), line)
+	}
+	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -79,7 +77,7 @@ type StdoutMessage struct {
 	Data json.RawMessage
 }
 
-func runNodeCmd(args ...string) (stdin chan StdinMessage, stdout chan StdoutMessage, stderr chan string, err error) {
+func runNodeBackend(args ...string) (stdin chan StdinMessage, stdout chan StdoutMessage, stderr chan string, err error) {
 	stdin, stdout = make(chan StdinMessage), make(chan StdoutMessage)
 	stderr = make(chan string)
 
@@ -99,6 +97,7 @@ func runNodeCmd(args ...string) (stdin chan StdinMessage, stdout chan StdoutMess
 			if err != nil {
 				panic(err)
 			}
+			// Add '\n' for EOF
 			stdinPipe.Write(append(bstr, '\n'))
 		}
 	}()
@@ -115,7 +114,8 @@ func runNodeCmd(args ...string) (stdin chan StdinMessage, stdout chan StdoutMess
 			stdoutPipe.Close()
 			close(stdout)
 		}()
-		// Upgrade the buffer
+
+		// Increase the buffer
 		scanner := bufio.NewScanner(stdoutPipe)
 		buf := make([]byte, 1024*1024)
 		scanner.Buffer(buf, len(buf))
@@ -143,6 +143,7 @@ func runNodeCmd(args ...string) (stdin chan StdinMessage, stdout chan StdoutMess
 			stderrPipe.Close()
 			close(stderr)
 		}()
+
 		// Read from start-to-end
 		// https://golang.org/pkg/bufio/#SplitFunc
 		scanner := bufio.NewScanner(stderrPipe)
