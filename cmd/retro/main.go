@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -334,7 +335,7 @@ func (r Runtime) Dev() {
 		panic(err)
 	}
 
-	stdin <- Message{Kind: "resolve_router", Data: r}
+	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
 
 	// Stream routes; stop on the router
 loop:
@@ -344,14 +345,29 @@ loop:
 			if msg.Kind == "eof" {
 				break loop
 			}
-			logger2.Stdout(msg.Data)
+			switch msg.Kind {
+			case "server_route":
+				var srvRoute ServerRoute
+				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
+					panic(err)
+				}
+				logger2.Stdout(srvRoute)
+			case "server_router":
+				var srvRouter ServerRouter
+				if err := json.Unmarshal(msg.Data, &srvRouter); err != nil {
+					panic(err)
+				}
+				logger2.Stdout(srvRouter)
+			default:
+				panic("Internal error")
+			}
 		case err := <-stderr:
 			logger2.Stderr(err)
 			os.Exit(1)
 		}
 	}
 
-	stdin <- Message{Kind: "done"}
+	stdin <- StdinMessage{Kind: "done"}
 	close(stdin)
 }
 

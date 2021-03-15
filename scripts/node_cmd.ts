@@ -166,6 +166,7 @@ async function main(): Promise<void> {
 			break
 		}
 		const msg: T.Message = JSON.parse(bstr)
+		// console.error(msg)
 		switch (msg.Kind) {
 			case "resolve_router":
 				try {

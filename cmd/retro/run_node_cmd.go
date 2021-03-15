@@ -87,17 +87,18 @@ var logger2 = newLogger(LoggerOptions{Time: true})
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type JSON map[string]interface{}
-
-type Message struct {
+type StdinMessage struct {
 	Kind string
 	Data interface{}
 }
 
-type OutgoingMessage JSON
+type StdoutMessage struct {
+	Kind string
+	Data json.RawMessage
+}
 
-func runNodeCmd(args ...string) (stdin, stdout chan Message, stderr chan string, err error) {
-	stdin, stdout = make(chan Message), make(chan Message)
+func runNodeCmd(args ...string) (stdin chan StdinMessage, stdout chan StdoutMessage, stderr chan string, err error) {
+	stdin, stdout = make(chan StdinMessage), make(chan StdoutMessage)
 	stderr = make(chan string)
 
 	cmd := exec.Command("node", args...)
@@ -112,7 +113,10 @@ func runNodeCmd(args ...string) (stdin, stdout chan Message, stderr chan string,
 	go func() {
 		defer stdinPipe.Close()
 		for msg := range stdin {
-			bstr, _ := json.Marshal(msg)
+			bstr, err := json.Marshal(msg)
+			if err != nil {
+				panic(err)
+			}
 			stdinPipe.Write(append(bstr, '\n'))
 		}
 	}()
@@ -134,8 +138,10 @@ func runNodeCmd(args ...string) (stdin, stdout chan Message, stderr chan string,
 		buf := make([]byte, 1024*1024)
 		scanner.Buffer(buf, len(buf))
 		for scanner.Scan() {
-			var msg Message
-			json.Unmarshal(scanner.Bytes(), &msg)
+			var msg StdoutMessage
+			if err := json.Unmarshal(scanner.Bytes(), &msg); err != nil {
+				panic(err)
+			}
 			stdout <- msg
 		}
 		if err := scanner.Err(); err != nil {

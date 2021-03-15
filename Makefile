@@ -4,4 +4,5 @@ esbuild:
 		--external:esbuild \
 		--log-level=warning \
 		--outfile=scripts/node_cmd.esbuild.js \
-		--platform=node
+		--platform=node \
+		--sourcemap
