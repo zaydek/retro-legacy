@@ -191,7 +191,8 @@ func newRoutes(dirs DirConfiguration) ([]Route, error) {
 			badSources = append(badSources, source)
 		} else {
 			// Exempt paths that start or end w/ "_" or "$"
-			name := d.Name()
+			basename := d.Name()
+			name := basename[:len(basename)-len(filepath.Ext(basename))]
 			if strings.HasPrefix(name, "_") || strings.HasPrefix(name, "$") {
 				return nil
 			} else if strings.HasSuffix(name, "_") || strings.HasSuffix(name, "$") {
@@ -260,16 +261,16 @@ func newRuntime() (Runtime, error) {
 
 For example:
 
-` + terminal.Dim.Sprint(`// `+index_html) + `
+` + dim(`// `+index_html) + `
 <!DOCTYPE html>
 	<head lang="en">
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		` + terminal.Magenta.Sprint("%head%") + `
-		` + terminal.Dim.Sprint("...") + `
+		` + dim("...") + `
 	</head>
 	<body>
-		` + terminal.Dim.Sprint("...") + `
+		` + dim("...") + `
 	</body>
 </html>
 `)
@@ -281,16 +282,16 @@ For example:
 
 For example:
 
-` + terminal.Dim.Sprint(`// `+index_html) + `
+` + dim(`// `+index_html) + `
 <!DOCTYPE html>
 	<head lang="en">
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		` + terminal.Dim.Sprint("...") + `
+		` + dim("...") + `
 	</head>
 	<body>
 		` + terminal.Magenta.Sprint("%app%") + `
-		` + terminal.Dim.Sprint("...") + `
+		` + dim("...") + `
 	</body>
 </html>
 `)
@@ -330,6 +331,8 @@ For example:
 }
 
 func (r Runtime) Dev() {
+	var srvRouter ServerRouter
+
 	stdin, stdout, stderr, err := runNodeCmd(filepath.Join("scripts", "node_cmd.esbuild.js"))
 	if err != nil {
 		panic(err)
@@ -337,7 +340,7 @@ func (r Runtime) Dev() {
 
 	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
 
-	// Stream routes; stop on the router
+	// Stream routes; expect an an eof after the router
 loop:
 	for {
 		select {
@@ -351,13 +354,11 @@ loop:
 				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
 					panic(err)
 				}
-				logger2.Stdout(srvRoute)
+				logger2.Stdout(prettyServerRoute(srvRoute))
 			case "server_router":
-				var srvRouter ServerRouter
 				if err := json.Unmarshal(msg.Data, &srvRouter); err != nil {
 					panic(err)
 				}
-				logger2.Stdout(srvRouter)
 			default:
 				panic("Internal error")
 			}

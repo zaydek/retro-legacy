@@ -9,16 +9,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/zaydek/retro/pkg/terminal"
-)
-
-////////////////////////////////////////////////////////////////////////////////
-
-var (
-	dim  = terminal.New(terminal.DimCode).Sprint
-	cyan = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
-	red  = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
 )
 
 type LoggerOptions struct {
@@ -40,7 +30,7 @@ func (l *Logger) Stdout(args ...interface{}) {
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
 		tstr := time.Now().Format(l.format)
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), cyan("stdout"), line)
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), boldCyan("stdout"), line)
 	}
 	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
@@ -53,7 +43,7 @@ func (l *Logger) Stderr(args ...interface{}) {
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
 		tstr := time.Now().Format(l.format)
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), red("stderr"), line)
+		lines[x] = fmt.Sprintf("%s  %s %s", dim(tstr), boldRed("stderr"), line)
 	}
 	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
 }
