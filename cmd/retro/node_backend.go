@@ -51,7 +51,7 @@ func (l *Logger) Stdout(args ...interface{}) {
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
-		lines[x] = fmt.Sprintf("%s  %s", dim(time.Now().Format(l.format)), line)
+		lines[x] = fmt.Sprintf(" %s  %s", dim(time.Now().Format(l.format)), line)
 	}
 	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
@@ -60,7 +60,7 @@ func (l *Logger) Stderr(args ...interface{}) {
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
-		lines[x] = fmt.Sprintf("%s  %s %s", dim(time.Now().Format(l.format)), boldRed("stderr"), line)
+		lines[x] = fmt.Sprintf(" %s  %s %s", dim(time.Now().Format(l.format)), boldRed("stderr"), line)
 	}
 	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
 }

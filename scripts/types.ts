@@ -72,6 +72,7 @@ export interface ServerRouter {
 // prettier-ignore
 type MessageKind =
 	| "resolve_router"
+	| "start"
 	| "server_route"
 	| "server_router"
 	| "eof"

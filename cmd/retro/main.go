@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/logger"
@@ -338,11 +339,16 @@ func (r Runtime) Dev() {
 		panic(err)
 	}
 
-	// TODO: Add an emergency timeout
+	// Stream routes; expect an an eof after the router
+	fmt.Println()
+	fmt.Println(" " + bold(`> Server API: `+cyan("'serverProps'")+` and `+cyan("'serverPaths'")+`:`))
+	fmt.Println()
 
+	sum := time.Now()
 	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
 
-	// Stream routes; expect an an eof after the router
+	// TODO: Add an emergency timeout
+	var one time.Time
 loop:
 	for {
 		select {
@@ -351,12 +357,15 @@ loop:
 				break loop
 			}
 			switch msg.Kind {
+			case "start":
+				one = time.Now() // Start
 			case "server_route":
 				var srvRoute ServerRoute
 				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
 					panic(err)
 				}
-				logger2.Stdout(prettyServerRoute(srvRoute))
+				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
+				one = time.Now() // Reset
 			case "server_router":
 				if err := json.Unmarshal(msg.Data, &srvRouter); err != nil {
 					panic(err)
@@ -372,6 +381,10 @@ loop:
 
 	stdin <- StdinMessage{Kind: "done"}
 	close(stdin)
+
+	fmt.Println()
+	fmt.Println(" " + dim(`(`+prettyDuration(time.Since(sum))+`)`))
+	fmt.Println()
 }
 
 func (r Runtime) Export() {

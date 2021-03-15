@@ -1,26 +1,42 @@
 package main
 
 import (
-	"path/filepath"
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const MAX_LEN = 40
 
-func wIndex(pathname string) string {
+func indexify(pathname string) string {
 	if strings.HasSuffix(pathname, "/") {
 		return pathname + "index"
 	}
 	return pathname
 }
 
-// <source> --- <target>
-func prettyServerRoute(srvRoute ServerRoute) string {
-	ext := filepath.Ext(srvRoute.Route.Source)
+func prettyDuration(dur time.Duration) string {
+	var str string
+	if amount := dur.Nanoseconds(); amount < 1_000 {
+		str = strconv.Itoa(int(amount)) + "ns"
+	} else if amount := dur.Microseconds(); amount < 1_000 {
+		str = strconv.Itoa(int(amount)) + "µs"
+	} else if amount := dur.Milliseconds(); amount < 1_000 {
+		str = strconv.Itoa(int(amount)) + "ms"
+	} else {
+		str = strconv.Itoa(int(amount)) + "s"
+	}
+	return str
+}
 
-	primary := normal
+// <source> --- <target> (<n>ms)
+func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
+	// primary := normal
+	primary := bold
 	if srvRoute.Route.Type == "dynamic" {
-		primary = cyan
+		// primary = cyan
+		primary = boldCyan
 	}
 
 	secondary := dim
@@ -28,17 +44,18 @@ func prettyServerRoute(srvRoute ServerRoute) string {
 		secondary = dimCyan
 	}
 
-	pathname := wIndex(srvRoute.Route.Pathname)
+	entry := srvRoute.Route.Source[len(dirs.SrcPagesDir):]
+	pathname := indexify(srvRoute.Route.Pathname)
 
 	var str string
 	str += secondary("/")
-	str += primary(pathname[1:])
-	str += secondary(ext)
+	str += primary(entry[1:])
 	str += " "
-	str += secondary(strings.Repeat("-", MAX_LEN-len(pathname+ext)))
+	str += secondary(strings.Repeat("-", MAX_LEN-len(entry[1:])))
 	str += " "
 	str += secondary("/")
 	str += primary(pathname[1:])
-	str += secondary(".html")
+	str += " "
+	str += secondary(fmt.Sprintf("(%s)", prettyDuration(dur)))
 	return str
 }

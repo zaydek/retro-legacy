@@ -136,9 +136,18 @@ async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): P
 }
 
 async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
+	let once = false
+	function start() {
+		if (!once) {
+			stdout({ Kind: "start" })
+			once = true
+		}
+	}
+
 	const router: T.ServerRouter = {}
 	for (const route of runtime.Routes) {
 		if (route.Type === "static") {
+			start()
 			const srvRoute = await resolveStaticServerRoute(runtime, route)
 			// if (router[meta.route.path] !== undefined) {
 			// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
@@ -146,6 +155,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 			stdout({ Kind: "server_route", Data: srvRoute })
 			router[srvRoute.Route.Pathname] = srvRoute
 		} else if (route.Type === "dynamic") {
+			start()
 			const srvRoutes = await resolveDynamicServerRoutes(runtime, route)
 			for (const srvRoute of srvRoutes) {
 				// if (router[meta.route.path] !== undefined) {
@@ -160,6 +170,9 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 }
 
 async function main(): Promise<void> {
+	// Warm up esbuild (start Go background process)
+	esbuild.build({})
+
 	while (true) {
 		const bstr = await readline()
 		if (bstr === undefined) {
@@ -171,7 +184,6 @@ async function main(): Promise<void> {
 				// try {
 				const router = await resolveRouter(msg.Data)
 				stdout({ Kind: "server_router", Data: router })
-				throw new Error("oops")
 				stdout({ Kind: "eof" })
 				// } catch (error) {
 				// 	stderr(error)
