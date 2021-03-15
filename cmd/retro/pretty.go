@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -44,12 +45,18 @@ func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Dur
 		secondary = dimCyan
 	}
 
-	entry := srvRoute.Route.Source[len(dirs.SrcPagesDir):]
+	ext := filepath.Ext(srvRoute.Route.Source)
+
+	var entry string
+	entry = srvRoute.Route.Source[len(dirs.SrcPagesDir):]
+	entry = entry[:len(entry)-len(ext)]
+
 	pathname := indexify(srvRoute.Route.Pathname)
 
 	var str string
 	str += secondary("/")
 	str += primary(entry[1:])
+	str += secondary(ext)
 	str += " "
 	str += secondary(strings.Repeat("-", MAX_LEN-len(entry[1:])))
 	str += " "

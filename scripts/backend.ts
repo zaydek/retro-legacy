@@ -178,6 +178,7 @@ async function main(): Promise<void> {
 		if (bstr === undefined) {
 			break
 		}
+		stderr("oops")
 		const msg: T.Message = JSON.parse(bstr)
 		switch (msg.Kind) {
 			case "resolve_router":
