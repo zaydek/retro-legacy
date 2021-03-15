@@ -178,7 +178,7 @@ func newRoutes(dirs DirConfiguration) ([]Route, error) {
 	var routes []Route
 
 	var badSources []string
-	err := filepath.WalkDir(dirs.SrcPagesDir, func(source string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(dirs.SrcPagesDir, func(source string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -191,7 +191,7 @@ func newRoutes(dirs DirConfiguration) ([]Route, error) {
 			badSources = append(badSources, source)
 		} else {
 			// Exempt paths that start or end w/ "_" or "$"
-			basename := d.Name()
+			basename := entry.Name()
 			name := basename[:len(basename)-len(filepath.Ext(basename))]
 			if strings.HasPrefix(name, "_") || strings.HasPrefix(name, "$") {
 				return nil

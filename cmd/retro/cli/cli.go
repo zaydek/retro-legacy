@@ -16,7 +16,6 @@ type ErrorKind int
 const (
 	BadCmdArgument ErrorKind = iota
 	BadArgument
-	BadFlag
 	BadPort
 )
 
@@ -25,7 +24,6 @@ type CmdError struct {
 
 	BadCmdArgument string
 	BadArgument    string
-	BadFlag        string
 	BadPort        int
 
 	Err error
@@ -49,9 +47,9 @@ Supported commands:
 	case BadArgument:
 		return fmt.Sprintf("Unrecognized argument '%s'.",
 			e.BadArgument)
-	case BadFlag:
-		return fmt.Sprintf("Unrecognized flag '%s'.",
-			e.BadFlag)
+	// case BadFlag:
+	// 	return fmt.Sprintf("Unrecognized flag '%s'.",
+	// 		e.BadFlag)
 	case BadPort:
 		return fmt.Sprintf("'--port' must be between '1000' and '10000'; used '%d'.",
 			e.BadPort)
@@ -74,7 +72,7 @@ func parseDevCmd(args ...string) (DevCmd, error) {
 	}
 	for _, arg := range args {
 		// Prepare a bad command error
-		cmdErr := CmdError{Kind: BadFlag, BadFlag: arg}
+		cmdErr := CmdError{Kind: BadArgument, BadArgument: arg}
 		if strings.HasPrefix(arg, "--cached") {
 			if arg == "--cached" {
 				cmd.Cached = true
@@ -107,7 +105,7 @@ func parseDevCmd(args ...string) (DevCmd, error) {
 				return DevCmd{}, cmdErr
 			}
 		} else {
-			return DevCmd{}, CmdError{Kind: BadFlag, BadFlag: arg}
+			return DevCmd{}, cmdErr
 		}
 	}
 	if cmd.Port < 1_000 || cmd.Port >= 10_000 {
@@ -123,7 +121,7 @@ func parseExportCmd(args ...string) (ExportCmd, error) {
 	}
 	for _, arg := range args {
 		// Prepare a bad command error
-		cmdErr := CmdError{Kind: BadFlag, BadFlag: arg}
+		cmdErr := CmdError{Kind: BadArgument, BadArgument: arg}
 		if strings.HasPrefix(arg, "--cached") {
 			if arg == "--cached" {
 				cmd.Cached = true
@@ -141,7 +139,7 @@ func parseExportCmd(args ...string) (ExportCmd, error) {
 				return ExportCmd{}, cmdErr
 			}
 		} else {
-			return ExportCmd{}, CmdError{Kind: BadFlag, BadFlag: arg}
+			return ExportCmd{}, cmdErr
 		}
 	}
 	return cmd, nil
@@ -153,7 +151,7 @@ func parseServeCmd(args ...string) (ServeCmd, error) {
 	}
 	for _, arg := range args {
 		// Prepare a bad command error
-		cmdErr := CmdError{Kind: BadFlag, BadFlag: arg}
+		cmdErr := CmdError{Kind: BadArgument, BadArgument: arg}
 		if strings.HasPrefix(arg, "--port") {
 			matches := portRegex.FindStringSubmatch(arg)
 			if len(matches) == 2 {
@@ -162,7 +160,7 @@ func parseServeCmd(args ...string) (ServeCmd, error) {
 				return ServeCmd{}, cmdErr
 			}
 		} else {
-			return ServeCmd{}, CmdError{Kind: BadFlag, BadFlag: arg}
+			return ServeCmd{}, cmdErr
 		}
 	}
 	if cmd.Port < 1_000 || cmd.Port >= 10_000 {

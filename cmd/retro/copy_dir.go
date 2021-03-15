@@ -12,14 +12,14 @@ type copyInfo struct {
 	target string
 }
 
-func copyDir(from_dir, to_dir string, excludes []string) error {
+func copyDir(src, dst string, excludes []string) error {
 	// Sweep for sources and targets
 	var infos []copyInfo
-	err := filepath.WalkDir(from_dir, func(source string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(src, func(source string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() {
+		if entry.IsDir() {
 			return nil
 		}
 		for _, exclude := range excludes {
@@ -29,7 +29,7 @@ func copyDir(from_dir, to_dir string, excludes []string) error {
 		}
 		info := copyInfo{
 			source: source,
-			target: filepath.Join(to_dir, source),
+			target: filepath.Join(dst, source),
 		}
 		infos = append(infos, info)
 		return nil
