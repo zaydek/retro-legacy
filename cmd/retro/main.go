@@ -328,25 +328,29 @@ For example:
 	return runtime, nil
 }
 
-const (
-	RESOLVE_ROUTER = "resolve-router"
-	// ...
-)
-
 func (r Runtime) Dev() {
-	stdin, stdout, stderr, err := runNode(filepath.Join("scripts", "node.js"))
+	stdin, stdout, stderr, err := runNodeCmd(filepath.Join("scripts", "node_cmd.esbuild.js"))
 	if err != nil {
 		panic(err)
 	}
 
-	stdin <- Message{Kind: RESOLVE_ROUTER, Data: r}
-
-	select {
-	case str := <-stdout:
-		logger2.Stdout(str)
-	case str := <-stderr:
-		logger2.Stderr(str)
+	stdin <- Message{Kind: "resolve_router", Data: r}
+loop:
+	for {
+		select {
+		case str := <-stdout:
+			if str == "eof" {
+				break loop
+			}
+			logger2.Stdout(str)
+		case str := <-stderr:
+			logger2.Stderr(str)
+			os.Exit(1)
+		}
 	}
+
+	stdin <- Message{Kind: "done"}
+	close(stdin)
 }
 
 func (r Runtime) Export() {

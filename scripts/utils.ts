@@ -1,15 +1,16 @@
 import * as node_readline from "readline"
 
-// stdout uses JSON.stringify(response) so node cannot add "\n"s
-export const stdout = (response: unknown): void => console.log(JSON.stringify(response))
-export const stderr = (...args: unknown[]): void => console.error(...args)
+export const stdout = (str: string): void => console.log(JSON.stringify(str))
+export const stderr = console.error
+
+export const eof = (): void => console.log("eof")
 
 // https://stackoverflow.com/a/55161953
-export const readline = ((): (() => Promise<string>) => {
-	const rl = node_readline.createInterface({ input: process.stdin })
+export const readline = (function (): () => Promise<string> {
+	const read = node_readline.createInterface({ input: process.stdin })
 	async function* generator(): AsyncGenerator<string> {
-		for await (const line of rl) {
-			yield line
+		for await (const next of read) {
+			yield next
 		}
 	}
 	const generate = generator()

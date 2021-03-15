@@ -1,7 +1,3 @@
-// todo: forgot to read index.html; add before copying www
-
-dest -> target
-
 we only know how to one-shot stdio, we need to learn how to coordinate long-
 lived pipes with discrete messages
 

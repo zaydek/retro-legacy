@@ -96,17 +96,17 @@ type Message struct {
 
 type OutgoingMessage JSON
 
-func runNode(args ...string) (stdin chan Message, stdout, stderr chan string, err error) {
+func runNodeCmd(args ...string) (stdin chan Message, stdout, stderr chan string, err error) {
 	stdin = make(chan Message)
 	stdout, stderr = make(chan string), make(chan string)
 
 	cmd := exec.Command("node", args...)
 
+	// STDIN
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
 	go func() {
 		defer stdinPipe.Close()
 		for msg := range stdin {
@@ -115,28 +115,17 @@ func runNode(args ...string) (stdin chan Message, stdout, stderr chan string, er
 		}
 	}()
 
+	// STDOUT
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, nil, err
 	}
-
-	stderrPipe, err := cmd.StderrPipe()
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
 	go func() {
 		defer func() {
 			stdoutPipe.Close()
 			close(stdout)
 		}()
-
 		scanner := bufio.NewScanner(stdoutPipe)
-
-		// Increase buffer
-		buf := make([]byte, 1024*1024)
-		scanner.Buffer(buf, len(buf))
-
 		for scanner.Scan() {
 			stdout <- scanner.Text()
 		}
@@ -145,13 +134,18 @@ func runNode(args ...string) (stdin chan Message, stdout, stderr chan string, er
 		}
 	}()
 
+	// STDERR
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	go func() {
 		defer func() {
 			stderrPipe.Close()
 			close(stderr)
 		}()
-
-		// Scan start-to-end
+		// Read from start-to-end
+		// https://golang.org/pkg/bufio/#SplitFunc
 		scanner := bufio.NewScanner(stderrPipe)
 		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
 		for scanner.Scan() {

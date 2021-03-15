@@ -21,25 +21,23 @@ const readline = (() => {
 
 async function main() {
 	while (true) {
-		const bstr = await readline()
-		if (bstr === undefined) {
-			break
-		}
-		const msg = JSON.parse(bstr)
-		switch (msg.Kind) {
+		const data = await readline()
+		const message = JSON.parse(data)
+		switch (message.Kind) {
 			case "foo":
-				stdout(msg)
+				stdout(message)
 				break
 			case "bar":
 				stderr("oops\noops")
 				// stdout(msg)
 				break
 			case "baz":
-				stdout(msg)
+				stdout(message)
 				break
-			case "done":
-				return
+			// case "done":
+			// 	return
 		}
+		await sleep(1_000)
 	}
 }
 

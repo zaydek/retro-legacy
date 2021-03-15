@@ -2,11 +2,7 @@ import * as esbuild from "esbuild"
 import * as path from "path"
 import * as T from "./T"
 
-import { readline, stderr, stdout } from "./utils"
-
-////////////////////////////////////////////////////////////////////////////////
-
-const RESOLVE_ROUTER = "resolve-router"
+import { eof, readline, stderr, stdout } from "./utils"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -164,6 +160,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
 			// if (router[meta.route.path] !== undefined) {
 			// 	log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 			// }
+			stdout(meta.Route.Pathname)
 			router[meta.Route.Pathname] = meta
 		} else if (route.Type === "dynamic") {
 			const metas = await resolveDynamicRouteMetas(runtime, route)
@@ -171,6 +168,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.Router> {
 				// if (router[meta.route.path] !== undefined) {
 				// 	log.fatal(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 				// }
+				stdout(meta.Route.Pathname)
 				router[meta.Route.Pathname] = meta
 			}
 		}
@@ -186,14 +184,18 @@ async function main(): Promise<void> {
 		}
 		const msg = JSON.parse(bstr)
 		switch (msg.Kind) {
-			case RESOLVE_ROUTER:
-				try {
-					const router = await resolveRouter(msg.Data)
-					stdout(router)
-				} catch (error) {
-					stderr(error)
-				}
+			case "resolve_router":
+				// try {
+				// 	const router = await resolveRouter(msg.Data)
+				// 	stdout(router)
+				// } catch (error) {
+				// 	stderr(error)
+				// }
+				await resolveRouter(msg.Data)
+				eof()
 				break
+			case "done":
+				return
 			default:
 				throw new Error("Internal error")
 		}

@@ -196,7 +196,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	stdin <- IncomingMessage{Kind: "bar", Data: JSON{"foo": "bar"}}
+	stdin <- IncomingMessage{Kind: "foo", Data: JSON{"foo": "bar"}}
 	select {
 	case msg := <-stdout:
 		bstr, _ := json.Marshal(msg)
@@ -206,7 +206,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	stdin <- IncomingMessage{Kind: "baz", Data: JSON{"foo": "bar"}}
+	stdin <- IncomingMessage{Kind: "foo", Data: JSON{"foo": "bar"}}
 	select {
 	case msg := <-stdout:
 		bstr, _ := json.Marshal(msg)
@@ -215,4 +215,24 @@ func main() {
 		logger.Stderr(str)
 		os.Exit(1)
 	}
+
+	//	stdin <- IncomingMessage{Kind: "bar", Data: JSON{"foo": "bar"}}
+	//	select {
+	//	case msg := <-stdout:
+	//		bstr, _ := json.Marshal(msg)
+	//		logger.Stdout(string(bstr))
+	//	case str := <-stderr:
+	//		logger.Stderr(str)
+	//		os.Exit(1)
+	//	}
+	//
+	//	stdin <- IncomingMessage{Kind: "baz", Data: JSON{"foo": "bar"}}
+	//	select {
+	//	case msg := <-stdout:
+	//		bstr, _ := json.Marshal(msg)
+	//		logger.Stdout(string(bstr))
+	//	case str := <-stderr:
+	//		logger.Stderr(str)
+	//		os.Exit(1)
+	//	}
 }
