@@ -168,13 +168,13 @@ async function main(): Promise<void> {
 		const msg: T.Message = JSON.parse(bstr)
 		switch (msg.Kind) {
 			case "resolve_router":
-				try {
-					const router = await resolveRouter(msg.Data)
-					stdout({ Kind: "server_router", Data: router })
-					stdout({ Kind: "eof" })
-				} catch (error) {
-					stderr(error)
-				}
+				// try {
+				const router = await resolveRouter(msg.Data)
+				stdout({ Kind: "server_router", Data: router })
+				stdout({ Kind: "eof" })
+				// } catch (error) {
+				// 	stderr(error)
+				// }
 				break
 			case "done":
 				return

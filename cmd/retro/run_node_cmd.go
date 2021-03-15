@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -19,13 +18,9 @@ type LoggerOptions struct {
 
 type Logger struct {
 	format string
-	mu     sync.Mutex
 }
 
 func (l *Logger) Stdout(args ...interface{}) {
-	logger2.mu.Lock()
-	defer logger2.mu.Unlock()
-
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
@@ -36,9 +31,6 @@ func (l *Logger) Stdout(args ...interface{}) {
 }
 
 func (l *Logger) Stderr(args ...interface{}) {
-	logger2.mu.Lock()
-	defer logger2.mu.Unlock()
-
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
@@ -56,7 +48,7 @@ func newLogger(args ...LoggerOptions) *Logger {
 
 	var format string
 	if opt.Datetime {
-		format += "Jan 02 15:04:05.000 PM"
+		format += "Jan 02 03:04:05.000 PM"
 	} else {
 		if opt.Date {
 			format += "Jan 02"
@@ -65,7 +57,7 @@ func newLogger(args ...LoggerOptions) *Logger {
 			if format != "" {
 				format += " "
 			}
-			format += "15:04:05.000 PM"
+			format += "03:04:05.000 PM"
 		}
 	}
 
