@@ -247,7 +247,9 @@ ${
 		.map(
 			([path, route]) => `
 			<Route path="${path}">
-				<${route.Route.ComponentName} {...${JSON.stringify(route.Props)}} />
+				<${route.Route.ComponentName} {
+					...${JSON.stringify(route.Props, null, "\t").replace(/\n\t?/g, " ")}
+				} />
 			</Route>`,
 		)
 		.join("\n") + "\n"

@@ -23,14 +23,8 @@ type Runtime struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// export type Props = { [key: string]: unknown }
-type Props = map[string]interface{}
-
 // export type ServerProps = Props & { path: string }
-type ServerProps struct {
-	Props        // Embed
-	Path  string `json:"path"`
-}
+type ServerProps map[string]interface{}
 
 // export interface ServerRoute {
 //   Route: Route & { Target: string; Pathname: string }

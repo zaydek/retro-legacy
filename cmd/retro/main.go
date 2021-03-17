@@ -137,19 +137,21 @@ func getType(source string) string {
 func getComponentName(source string, typ string) string {
 	component := strings.ToUpper(typ[0:1]) + typ[1:]
 
-	// Truncate ".js", ".jsx", ".ts", ".tsx"
-	trunc := source[:len(source)-len(filepath.Ext(source))]
-	for x, r := range trunc {
-		// Ignore ASCII-unsafe characters
+	basename := source[:len(source)-len(filepath.Ext(source))]
+
+	x := 0
+	for _, r := range basename {
 		if !testASCIIRune(r) {
 			continue
 		}
 		// Uppercase the start or the start of a part character
-		if x == 0 || (x-1 > 0 && trunc[x-1] == filepath.Separator) {
+		if x == 0 || (x-1 > 0 && basename[x-1] == filepath.Separator) {
 			component += strings.ToUpper(string(r))
 		} else {
 			component += string(r)
 		}
+		// Increment x on ASCII-safe characters
+		x++
 	}
 	return component
 }
