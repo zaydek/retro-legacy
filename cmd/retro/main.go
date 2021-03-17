@@ -474,50 +474,36 @@ loop:
 		return pathname
 	}
 
+	serveEvent := func(pathname string, statusCode int, dur time.Duration) {
+		logger2.Stdout(prettyServeEvent(ServeArgs{
+			Path:       pathname,
+			StatusCode: statusCode,
+			Duration:   dur,
+		}))
+	}
+
 	// __export__
 	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
 		start := time.Now()
-		defer func(pathname string, statusCode int) {
-			logger2.Stdout(prettyServeEvent(ServeArgs{
-				Path:       pathname,
-				StatusCode: statusCode,
-				Duration:   time.Since(start),
-			}))
-		}("/test", 404)
-
-		// TODO
 		pathname := getPathname(rq)
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, pathname))
+		serveEvent("/test", 404, time.Since(start))
 	})
 
 	// Serve __export__/app.js
 	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
 		start := time.Now()
-		defer func(pathname string, statusCode int) {
-			logger2.Stdout(prettyServeEvent(ServeArgs{
-				Path:       pathname,
-				StatusCode: statusCode,
-				Duration:   time.Since(start),
-			}))
-		}("/test", 404)
-
-		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, "app.js"))
+		pathname := "/app.js"
+		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, pathname))
+		serveEvent("/test", 404, time.Since(start))
 	})
 
 	// Serve __export__/www (use path.Join not filepath.Join)
 	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
 		start := time.Now()
-		defer func(pathname string, statusCode int) {
-			logger2.Stdout(prettyServeEvent(ServeArgs{
-				Path:       pathname,
-				StatusCode: statusCode,
-				Duration:   time.Since(start),
-			}))
-		}("/test", 404)
-
 		pathname := getPathname(rq)
-		fmt.Println(pathname)
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, pathname))
+		serveEvent("/test", 404, time.Since(start))
 	})
 
 	port := r.getPort()
