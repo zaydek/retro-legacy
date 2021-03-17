@@ -22,6 +22,7 @@ const transpileOnlyConfiguration = (source: string, target: string): esbuild.Bui
 	loader: {
 		".js": "jsx", // Process .js as .jsx
 	},
+	logLevel: "warning",
 	minify: false,
 	outfile: target,
 	// plugins: [...],
@@ -41,6 +42,7 @@ const bundleConfiguration = (source: string, target: string): esbuild.BuildOptio
 	loader: {
 		".js": "jsx", // Process .js as .jsx
 	},
+	logLevel: "warning",
 	minify: true,
 	outfile: target,
 	// plugins: [...],
@@ -286,23 +288,32 @@ ReactDOM.hydrate(
 }
 
 async function startDevServer(runtime: T.Runtime): Promise<void> {
-	const buildResult = await esbuild.build({
-		// prettier-ignore
-		...bundleConfiguration(
-			path.join(runtime.Dirs.CacheDir, "app.js"),
-			path.join(runtime.Dirs.ExportDir, "app.js"),
-		),
-		incremental: true,
-		watch: {
-			async onRebuild(error) {
-				// ...
+	const source = path.join(runtime.Dirs.CacheDir, "app.js")
+	const target = path.join(runtime.Dirs.ExportDir, "app.js")
+
+	let buildResult: esbuild.BuildResult
+	let buildError: Error
+	try {
+		buildResult = await esbuild.build({
+			...bundleConfiguration(source, target),
+			incremental: true,
+			watch: {
+				async onRebuild(buildFailure) {
+					stdout({
+						Kind: "rebuild",
+						Data: buildFailure,
+					})
+				},
 			},
-		},
+		})
+	} catch (error) {
+		buildError = error
+	}
+
+	stdout({
+		Kind: "build",
+		Data: { ...buildError!, ...buildResult! },
 	})
-
-	// ...
-
-	// stderr("here")
 }
 
 async function main(): Promise<void> {
@@ -328,7 +339,7 @@ async function main(): Promise<void> {
 				const srvRouterContents = serverRouterToString(msg.Data)
 				stdout({ Data: srvRouterContents })
 				break
-			case "start_dev_server":
+			case "dev_server":
 				await startDevServer(msg.Data)
 				break
 			case "done":

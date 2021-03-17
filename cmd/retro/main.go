@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/logger"
 	"github.com/zaydek/retro/pkg/terminal"
@@ -343,6 +345,11 @@ func (r Runtime) Dev() {
 		panic(err)
 	}
 
+	defer func() {
+		stdin <- StdinMessage{Kind: "done"}
+		close(stdin)
+	}()
+
 	// Stream routes
 	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
 
@@ -401,19 +408,123 @@ loop:
 	//////////////////////////////////////////////////////////////////////////////
 	// Dev server
 
-	stdin <- StdinMessage{Kind: "start_dev_server", Data: r}
-	logger2.Stderr(<-stderr)
+	type result struct {
+		Errors   []api.Message
+		Warnings []api.Message
+	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	dev := make(chan result)
 
-	wg.Wait()
+	go func() {
+		stdin <- StdinMessage{Kind: "dev_server", Data: r}
 
-	//////////////////////////////////////////////////////////////////////////////
-	// Done
+		for {
+			select {
+			case msg := <-stdout:
+				switch msg.Kind {
+				case "build":
+					var res result
+					if err := json.Unmarshal(msg.Data, &res); err != nil {
+						panic(err)
+					}
+					fmt.Println(res) // DEBUG
+					dev <- res
+				case "rebuild":
+					var res result
+					if err := json.Unmarshal(msg.Data, &res); err != nil {
+						panic(err)
+					}
+					fmt.Println(res) // DEBUG
+					dev <- res
+				default:
+					panic("Internal error")
+				}
+			case err := <-stderr:
+				logger2.Stderr(err)
+				// os.Exit(1)
+			}
+		}
+	}()
 
-	// stdin <- StdinMessage{Kind: "done"}
-	// close(stdin)
+	// ~/dev; sever-sent events
+	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
+		// Set SSE headers
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		flusher, _ := w.(http.Flusher)
+		for {
+			select {
+			case <-dev:
+				fmt.Fprintf(w, "event: reload\ndata\n\n")
+				flusher.Flush()
+			case <-rq.Context().Done():
+				return
+			}
+		}
+	})
+
+	getPathname := func(rq *http.Request) string {
+		pathname := rq.URL.Path
+		if strings.HasSuffix(rq.URL.Path, "/") {
+			pathname += "index.html"
+		} else if ext := filepath.Ext(rq.URL.Path); ext == "" {
+			pathname += ".html"
+		}
+		return pathname
+	}
+
+	// __export__
+	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
+		start := time.Now()
+		defer func(pathname string, statusCode int) {
+			logger2.Stdout(prettyServeEvent(ServeArgs{
+				Path:       pathname,
+				StatusCode: statusCode,
+				Duration:   time.Since(start),
+			}))
+		}("/test", 404)
+
+		// TODO
+		pathname := getPathname(rq)
+		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, pathname))
+	})
+
+	// Serve __export__/app.js
+	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
+		start := time.Now()
+		defer func(pathname string, statusCode int) {
+			logger2.Stdout(prettyServeEvent(ServeArgs{
+				Path:       pathname,
+				StatusCode: statusCode,
+				Duration:   time.Since(start),
+			}))
+		}("/test", 404)
+
+		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, "app.js"))
+	})
+
+	// Serve __export__/www (use path.Join not filepath.Join)
+	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
+		start := time.Now()
+		defer func(pathname string, statusCode int) {
+			logger2.Stdout(prettyServeEvent(ServeArgs{
+				Path:       pathname,
+				StatusCode: statusCode,
+				Duration:   time.Since(start),
+			}))
+		}("/test", 404)
+
+		pathname := getPathname(rq)
+		fmt.Println(pathname)
+		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, pathname))
+	})
+
+	port := r.getPort()
+	logger.OK(fmt.Sprintf("Ready on port '%s'", port))
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		panic(err)
+	}
 }
 
 func (r Runtime) Export() {

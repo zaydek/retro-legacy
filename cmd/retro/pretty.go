@@ -33,7 +33,6 @@ func prettyDuration(dur time.Duration) string {
 	return str
 }
 
-// <source> --- <target> (<n>ms)
 func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
 	primary := normal
 	if srvRoute.Route.Type == "dynamic" {
@@ -58,11 +57,41 @@ func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Dur
 	str += primary(entry[1:])
 	str += secondary(ext)
 	str += " "
-	str += secondary(strings.Repeat("-", MAX_LEN-len(entry[1:])))
+	str += secondary(strings.Repeat("-", MAX_LEN-len(entry[1:]+ext)))
 	str += " "
 	str += secondary("/")
 	str += primary(pathname[1:])
 	str += " "
 	str += secondary(fmt.Sprintf("(%s)", prettyDuration(dur)))
+	return str
+}
+
+// Based on api.ServeOnRequestArgs
+type ServeArgs struct {
+	Path       string
+	StatusCode int
+	Duration   time.Duration
+}
+
+func prettyServeEvent(args ServeArgs) string {
+	primary := normal
+	if args.StatusCode != 200 {
+		primary = red
+	}
+
+	secondary := dim
+	if args.StatusCode != 200 {
+		secondary = dimRed
+	}
+
+	var str string
+	str += secondary("/")
+	str += primary(args.Path[1:])
+	str += " "
+	str += secondary(strings.Repeat("-", MAX_LEN-len(args.Path[1:])))
+	str += " "
+	str += primary(args.StatusCode)
+	str += " "
+	str += secondary(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
 	return str
 }
