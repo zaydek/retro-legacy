@@ -332,9 +332,10 @@ For example:
 }
 
 func (r Runtime) Dev() {
-	var srvRouter ServerRouter
+	//////////////////////////////////////////////////////////////////////////////
+	// Server API
 
-	stdin, stdout, stderr, err := runNodeBackend(filepath.Join("scripts", "backend.esbuild.js"))
+	stdin, stdout, stderr, err := runNodeBackend(filepath.Join("scripts", "node_backend.esbuild.js"))
 	if err != nil {
 		panic(err)
 	}
@@ -344,8 +345,6 @@ func (r Runtime) Dev() {
 
 	var one time.Time
 	sum := time.Now()
-
-	// timeout := time.After(30 * time.Second)
 
 loop:
 	for {
@@ -365,7 +364,7 @@ loop:
 				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
 				one = time.Now() // Reset
 			case "server_router":
-				if err := json.Unmarshal(msg.Data, &srvRouter); err != nil {
+				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
 			default:
@@ -374,17 +373,35 @@ loop:
 		case err := <-stderr:
 			logger2.Stderr(err)
 			os.Exit(1)
-			// case <-timeout:
-			// 	logger.FatalError(errors.New("Server API took >30 seconds."))
 		}
 	}
-
-	stdin <- StdinMessage{Kind: "done"}
-	close(stdin)
 
 	fmt.Println()
 	fmt.Println(" " + dim(`(`+prettyDuration(time.Since(sum))+`)`))
 	fmt.Println()
+
+	//////////////////////////////////////////////////////////////////////////////
+	// Server router contents
+
+	stdin <- StdinMessage{Kind: "server_router_string", Data: r}
+
+	var contents string
+	select {
+	case msg := <-stdout:
+		if err := json.Unmarshal(msg.Data, &contents); err != nil {
+			panic(err)
+		}
+	case err := <-stderr:
+		logger2.Stderr(err)
+		os.Exit(1)
+	}
+
+	fmt.Println(contents)
+
+	//
+
+	stdin <- StdinMessage{Kind: "done"}
+	close(stdin)
 }
 
 func (r Runtime) Export() {
@@ -416,7 +433,4 @@ func main() {
 	case Serve:
 		runtime.Serve()
 	}
-
-	// bstr, _ := json.MarshalIndent(runtime, "", "\t")
-	// fmt.Println(string(bstr))
 }

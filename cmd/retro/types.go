@@ -14,10 +14,11 @@ type Route struct {
 }
 
 type Runtime struct {
-	Cmd      interface{}
-	Dirs     DirConfiguration
-	Template string
-	Routes   []Route
+	Cmd       interface{}
+	Dirs      DirConfiguration
+	Template  string
+	Routes    []Route
+	SrvRouter ServerRouter
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -34,6 +34,7 @@ export interface Runtime {
 	Dirs: Dirs
 	Template: string
 	Routes: Route[]
+	SrvRouter: ServerRouter
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,16 +70,17 @@ export interface ServerRouter {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// prettier-ignore
 type MessageKind =
 	| "resolve_router"
 	| "start"
 	| "server_route"
 	| "server_router"
+	| "server_route_string"
+	| "server_router_string"
 	| "eof"
 	| "done"
 
 export interface Message {
-	Kind: MessageKind
+	Kind?: MessageKind
 	Data?: any
 }

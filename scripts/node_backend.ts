@@ -1,8 +1,12 @@
 import * as esbuild from "esbuild"
 import * as path from "path"
+import * as React from "react"
+import * as ReactDOMServer from "react-dom/server"
 import * as T from "./types"
-import { eof, readline, stderr, stdout } from "./utils"
+import { readline, stderr, stdout } from "./utils"
 import { newPathInfo, PathInfo } from "./newPathInfo"
+
+const modCache: { [key: string]: T.AnyModule } = {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -25,24 +29,26 @@ const transpile = (source: string, target: string): esbuild.BuildOptions => ({
 	// plugins // TODO
 })
 
+////////////////////////////////////////////////////////////////////////////////
+
 async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, route: T.Route): Promise<Module> {
-	const source = route.Source // path.join(process.cwd(), route.Source)
+	const source = route.Source
 	const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"))
 
 	await esbuild.build(transpile(source, target))
 
-	let mod: Module
+	// // try {
+	// mod = require(path.resolve(target))
+	// // } catch (error) {
+	// // 	throw error
+	// // }
 
-	// Rethrow error; use catch to suppress esbuild
-	// prettier-ignore
-	try { mod = require(path.resolve(target)) }
-	catch (error) { throw error }
-
+	const mod = require(path.resolve(target))
 	return mod
 }
 
 // src/pages/foo.html -> __export__/foo.html
-export function getTargetSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
+function getTargetSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 	const str = path.join(
 		dirs.ExportDir,
 		pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length) + ".html",
@@ -51,7 +57,7 @@ export function getTargetSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 }
 
 // src/pages/foo.html -> /foo
-export function getPathnameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
+function getPathnameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 	const str = pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length)
 	if (str.endsWith("/index")) {
 		return str.slice(0, -"index".length) // Keep "/"
@@ -92,6 +98,9 @@ async function resolveStaticServerRoute(runtime: T.Runtime, route: T.Route): Pro
 			...props,
 		},
 	}
+
+	// Cache
+	modCache[srvRoute.Route.Pathname] = mod
 	return srvRoute
 }
 
@@ -130,6 +139,8 @@ async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): P
 				...meta.props,
 			},
 		}
+		// Cache
+		modCache[srvRoute.Route.Pathname] = mod
 		srvRoutes.push(srvRoute)
 	}
 	return srvRoutes
@@ -169,6 +180,91 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 	return router
 }
 
+function serverRouteToString(runtime: T.Runtime, srvRoute: T.ServerRoute, { dev }: { dev: boolean }): string {
+	const mod = modCache[srvRoute.Route.Pathname]
+	console.log(mod)
+	return ""
+
+	//	let head = "<!-- <Head { path, ...serverProps }> -->"
+	//	try {
+	//		if (typeof srvRoute.module.Head === "function") {
+	//			const str = ReactDOMServer.renderToStaticMarkup(React.createElement(srvRoute.module.Head, srvRoute.descriptProps))
+	//			head = str.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
+	//		}
+	//	} catch (error) {
+	//		log.fatal(`${srvRoute.route.src}.<Head>: ${error.message}`)
+	//	}
+	//
+	//	// TODO: Upgrade to <script src="/app.[hash].js">?
+	//	let app = ""
+	//	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
+	//	app += `\n\t\t<div id="root"></div>`
+	//	app += `\n\t\t<script src="/app.js"></script>`
+	//	app += !dev ? "" : `\n\t\t<script type="module">`
+	//	app += !dev ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
+	//	app += !dev ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
+	//	app += !dev ? "" : `\n\t\t\t\twindow.location.reload()`
+	//	app += !dev ? "" : `\n\t\t\t})`
+	//	app += !dev ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
+	//	app += !dev ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
+	//	app += !dev ? "" : `\n\t\t\t})`
+	//	app += !dev ? "" : `\n\t\t</script>`
+	//
+	//	try {
+	//		const str = ReactDOMServer.renderToString(React.createElement(srvRoute.module.default, srvRoute.descriptProps))
+	//		app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
+	//	} catch (error) {
+	//		// TODO
+	//		if (!dev) log.fatal(`${srvRoute.route.src}.<Page>: ${error.message}`)
+	//		if (dev) throw error
+	//	}
+	//
+	//	const contents = tmpl.replace("%head%", head).replace("%app%", app)
+	//	return contents
+}
+
+function serverRouterToString(runtime: T.Runtime): string {
+	// Map component names to sources
+	const importMap = new Map()
+	for (const srvRoute of Object.values(runtime.SrvRouter)) {
+		importMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
+	}
+
+	const imports = Array.from(importMap)
+
+	return `import React from "react"
+import ReactDOM from "react-dom"
+
+${imports.map(([componentName, source]) => `import ${componentName} from "../${source}"`).join("\n")}
+
+import { Route, Router } from "../packages/router"
+
+export default function App() {
+	return (
+		<Router>
+${
+	Object.entries(runtime.SrvRouter)
+		.map(
+			([path, route]) => `
+			<Route path="${path}">
+				<${route.Route.ComponentName} {...${JSON.stringify(route.Props)}} />
+			</Route>`,
+		)
+		.join("\n") + "\n"
+}
+		</Router>
+	)
+}
+
+ReactDOM.hydrate(
+	<React.StrictMode>
+		<App />
+	</React.StrictMode>,
+	document.getElementById("root"),
+)
+`
+}
+
 async function main(): Promise<void> {
 	// Warm up esbuild
 	// https://github.com/evanw/esbuild/issues/979
@@ -188,6 +284,13 @@ async function main(): Promise<void> {
 				// } catch (error) {
 				// 	stderr(error)
 				// }
+				break
+			case "server_route_string":
+				// TODO
+				break
+			case "server_router_string":
+				const srvRouterContents = serverRouterToString(msg.Data)
+				stdout({ Data: srvRouterContents })
 				break
 			case "done":
 				return
