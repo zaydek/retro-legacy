@@ -64,6 +64,8 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 	// // 	throw error
 	// // }
 
+	// Purge the cache
+	delete require.cache[path.resolve(target)]
 	const mod = require(path.resolve(target))
 	return mod
 }
@@ -171,7 +173,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 	let once = false
 	function start() {
 		if (!once) {
-			stdout({ Kind: "start" })
+			stdout({ Kind: "START" })
 			once = true
 		}
 	}
@@ -184,7 +186,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 			// if (router[meta.route.path] !== undefined) {
 			// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 			// }
-			stdout({ Kind: "server_route", Data: srvRoute })
+			stdout({ Kind: "SERVER_ROUTE", Data: srvRoute })
 			router[srvRoute.Route.Pathname] = srvRoute
 		} else if (route.Type === "dynamic") {
 			start()
@@ -193,7 +195,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 				// if (router[meta.route.path] !== undefined) {
 				// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 				// }
-				stdout({ Kind: "server_route", Data: srvRoute })
+				stdout({ Kind: "SERVER_ROUTE", Data: srvRoute })
 				router[srvRoute.Route.Pathname] = srvRoute
 			}
 		}
@@ -203,11 +205,11 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 
 interface ServerRouteContents {
 	Head: string
-	App: string
+	Body: string
 }
 
-function serverRouteContents(srvRoute: T.ServerRoute): ServerRouteContents {
-	const mod = modCache[srvRoute.Route.Pathname]!
+async function serverRouteContents(runtime: T.Runtime, srvRoute: T.ServerRoute): Promise<ServerRouteContents> {
+	const mod = await resolveModule(runtime, srvRoute.Route)
 
 	let head = "<!-- <Head> -->"
 	try {
@@ -220,40 +222,48 @@ function serverRouteContents(srvRoute: T.ServerRoute): ServerRouteContents {
 	}
 
 	// TODO: Upgrade to <script src="/app.[hash].js">?
-	let app = ""
-	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
-	app += `\n\t\t<div id="root"></div>`
-	app += `\n\t\t<script src="/app.js"></script>`
-	app += !true ? "" : `\n\t\t<script type="module">`
-	app += !true ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
-	app += !true ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
-	app += !true ? "" : `\n\t\t\t\twindow.location.reload()`
-	app += !true ? "" : `\n\t\t\t})`
-	app += !true ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
-	app += !true ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
-	app += !true ? "" : `\n\t\t\t})`
-	app += !true ? "" : `\n\t\t</script>`
+	let body = ""
+	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
+	body += `\n\t\t<div id="root"></div>`
+	body += `\n\t\t<script src="/app.js"></script>`
+	body += `\n\t\t<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", e => void window.location.reload()); dev.addEventListener("error", e => void console.error(JSON.parse(e.data)))</script>`
+
+	// app += !true ? "" : `\n\t\t<script type="module">`
+	// app += !true ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
+	// app += !true ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
+	// app += !true ? "" : `\n\t\t\t\twindow.location.reload()`
+	// app += !true ? "" : `\n\t\t\t})`
+	// app += !true ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
+	// app += !true ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
+	// app += !true ? "" : `\n\t\t\t})`
+	// app += !true ? "" : `\n\t\t</script>`
 
 	try {
-		const str = ReactDOMServer.renderToString(React.createElement(mod.default, srvRoute.Props))
-		app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
+		// prettier-ignore
+		body = body.replace(
+			`<div id="root"></div>`,
+			`<div id="root">` +
+				ReactDOMServer.renderToString(
+					React.createElement(mod.default, srvRoute.Props),
+				) +
+			`</div>`,
+		)
 	} catch (error) {
 		// if (!(process.env["__DEV__"] === "true")) log.fatal(`${srvRoute.Route.Source}.<Page>: ${error.message}`)
 		// if (process.env["__DEV__"] === "true") throw error
 	}
 
-	const contents: ServerRouteContents = { Head: head, App: app }
+	const contents: ServerRouteContents = { Head: head, Body: body }
 	return contents
 }
 
 function serverRouterContents(srvRouter: T.ServerRouter): string {
-	// Map components to sources
-	const distinctImportMap = new Map<string, string>()
+	const distinctImportsMap = new Map<string, string>()
 	for (const srvRoute of Object.values(srvRouter)) {
-		distinctImportMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
+		distinctImportsMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
 	}
 
-	const imports = Array.from(distinctImportMap)
+	const imports = Array.from(distinctImportsMap)
 	imports.sort()
 
 	return `import React from "react"
@@ -304,7 +314,7 @@ async function startDevServer(runtime: T.Runtime): Promise<void> {
 			watch: {
 				async onRebuild(buildFailure) {
 					stdout({
-						Kind: "rebuild",
+						Kind: "REBUILD",
 						Data: buildFailure,
 					})
 				},
@@ -315,39 +325,36 @@ async function startDevServer(runtime: T.Runtime): Promise<void> {
 	}
 
 	stdout({
-		Kind: "build",
+		Kind: "BUILD",
 		Data: { ...buildError!, ...buildResult! },
 	})
 }
 
 async function main(): Promise<void> {
 	// Warm up esbuild
-	// https://github.com/evanw/esbuild/issues/979
 	esbuild.build({})
+
 	while (true) {
-		const bstr = await readline()
-		if (bstr === undefined) {
-			break
-		}
-		const msg: T.Message = JSON.parse(bstr)
+		const encoded = await readline()
+		const msg: T.Message = JSON.parse(encoded)
 		switch (msg.Kind) {
-			case "resolve_router":
+			case "RESOLVE_SERVER_ROUTER":
 				const router = await resolveRouter(msg.Data)
-				stdout({ Kind: "server_router", Data: router })
-				stdout({ Kind: "eof" })
+				stdout({ Kind: "SERVER_ROUTER", Data: router })
+				stdout({ Kind: "EOF" })
 				break
-			case "server_route_contents":
-				const srvRouteContents = serverRouteContents(msg.Data)
-				stdout({ Kind: "server_route_contents", Data: srvRouteContents })
+			case "SERVER_ROUTE_CONTENTS":
+				const srvRouteContents = await serverRouteContents(msg.Data.Runtime, msg.Data.SrvRoute)
+				stdout({ Kind: "SERVER_ROUTE_CONTENTS", Data: srvRouteContents })
 				break
-			case "server_router_contents":
+			case "SERVER_ROUTER_CONTENTS":
 				const srvRouterContents = serverRouterContents(msg.Data)
-				stdout({ Kind: "server_router_contents", Data: srvRouterContents })
+				stdout({ Kind: "SERVER_ROUTER_CONTENTS", Data: srvRouterContents })
 				break
-			case "dev_server":
+			case "START_DEV_SERVER":
 				await startDevServer(msg.Data)
 				break
-			case "done":
+			case "DONE":
 				return
 			default:
 				throw new Error("Internal error")

@@ -34,7 +34,7 @@ func (t templateError) Error() string {
 
 // export function missingDocumentAppTag(src: string): string {
 // 	return format(`
-// 		${src}: Add '%app%' somewhere to '<body>'.
+// 		${src}: Add '%body%' somewhere to '<body>'.
 //
 // 		For example:
 //
@@ -44,7 +44,7 @@ func (t templateError) Error() string {
 // 				${terminal.dim("...")}
 // 			</head>
 // 			<body>
-// 				${terminal.magenta("%app%")}
+// 				${terminal.magenta("%body%")}
 // 				${terminal.dim("...")}
 // 			</body>
 // 		</html>
@@ -282,9 +282,9 @@ For example:
 `)
 	}
 
-	// Check %app%
-	if !bytes.Contains(tmpl, []byte("%app%")) {
-		return Runtime{}, newTemplateError(index_html + `: Add '%app%' somewhere to '<body>'.
+	// Check %body%
+	if !bytes.Contains(tmpl, []byte("%body%")) {
+		return Runtime{}, newTemplateError(index_html + `: Add '%body%' somewhere to '<body>'.
 
 For example:
 
@@ -296,7 +296,7 @@ For example:
 		` + dim("...") + `
 	</head>
 	<body>
-		` + terminal.Magenta.Sprint("%app%") + `
+		` + terminal.Magenta.Sprint("%body%") + `
 		` + dim("...") + `
 	</body>
 </html>
@@ -346,12 +346,12 @@ func (r Runtime) Dev() {
 	}
 
 	defer func() {
-		stdin <- StdinMessage{Kind: "done"}
+		stdin <- StdinMessage{Kind: "DONE"}
 		close(stdin)
 	}()
 
 	// Stream routes
-	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
+	stdin <- StdinMessage{Kind: "RESOLVE_SERVER_ROUTER", Data: r}
 
 	var one time.Time
 	sum := time.Now()
@@ -360,20 +360,20 @@ loop:
 	for {
 		select {
 		case msg := <-stdout:
-			if msg.Kind == "eof" {
+			if msg.Kind == "EOF" {
 				break loop
 			}
 			switch msg.Kind {
-			case "start":
+			case "START":
 				one = time.Now() // Start
-			case "server_route":
+			case "SERVER_ROUTE":
 				var srvRoute ServerRoute
 				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
 					panic(err)
 				}
 				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
 				one = time.Now() // Reset
-			case "server_router":
+			case "SERVER_ROUTER":
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
@@ -393,7 +393,7 @@ loop:
 	//////////////////////////////////////////////////////////////////////////////
 	// Server router contents
 
-	stdin <- StdinMessage{Kind: "server_router_contents", Data: r.SrvRouter}
+	stdin <- StdinMessage{Kind: "SERVER_ROUTER_CONTENTS", Data: r.SrvRouter}
 	msg := <-stdout
 	var contents string
 	if err := json.Unmarshal(msg.Data, &contents); err != nil {
@@ -414,41 +414,43 @@ loop:
 
 	type ServeRouteContents struct {
 		Head string // %head%
-		App  string // %app%
+		Body string // %body%
 	}
 
 	dev := make(chan result, 16)
 	out := make(chan string)
 
 	go func() {
-		stdin <- StdinMessage{Kind: "dev_server", Data: r}
+		stdin <- StdinMessage{Kind: "START_DEV_SERVER", Data: r}
 
 		for {
 			select {
 			case msg := <-stdout:
 				switch msg.Kind {
-				case "build":
+				case "BUILD":
+					fmt.Println("Triggered a build")
 					var res result
 					if err := json.Unmarshal(msg.Data, &res); err != nil {
 						panic(err)
 					}
 					fmt.Println(res) // DEBUG
 					dev <- res
-				case "rebuild":
+				case "REBUILD":
+					fmt.Println("Triggered a rebuild")
 					var res result
 					if err := json.Unmarshal(msg.Data, &res); err != nil {
 						panic(err)
 					}
 					fmt.Println(res) // DEBUG
 					dev <- res
-				case "server_route_contents":
+				case "SERVER_ROUTE_CONTENTS":
 					var contents ServeRouteContents
 					if err := json.Unmarshal(msg.Data, &contents); err != nil {
 						panic(err)
 					}
 					html := r.Template
 					html = strings.Replace(html, "%head%", contents.Head, 1)
-					html = strings.Replace(html, "%app%", contents.App, 1)
+					html = strings.Replace(html, "%body%", contents.Body, 1)
 					out <- html
 				default:
 					panic("Internal error")
@@ -480,7 +482,7 @@ loop:
 		return pathname
 	}
 
-	serveEvent := func(pathname string, statusCode int, dur time.Duration) {
+	report := func(pathname string, statusCode int, dur time.Duration) {
 		logger2.Stdout(prettyServeEvent(ServeArgs{
 			Path:       pathname,
 			StatusCode: statusCode,
@@ -490,7 +492,6 @@ loop:
 
 	// ~/dev; sever-sent events
 	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
-		// Set SSE headers
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -510,19 +511,20 @@ loop:
 	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
 		var (
 			start       = time.Now()
-			pathname    = getPathname(rq)
 			fs_pathname = getFSPathname(rq)
 		)
-
-		// Not found; 404
-		srvRoute, ok := r.SrvRouter[pathname]
+		// 404 page not found
+		srvRoute, ok := r.SrvRouter[getPathname(rq)]
 		if !ok {
 			http.NotFound(w, rq)
-			serveEvent(pathname, 404, time.Since(start))
+			report(fs_pathname, 404, time.Since(start))
 			return
 		}
-		// Found; 200
-		stdin <- StdinMessage{Kind: "server_route_contents", Data: srvRoute}
+		// 200 ok
+		stdin <- StdinMessage{Kind: "SERVER_ROUTE_CONTENTS", Data: struct {
+			Runtime  Runtime
+			SrvRoute ServerRoute
+		}{Runtime: r, SrvRoute: srvRoute}}
 		html := <-out
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
 			panic(err)
@@ -530,36 +532,47 @@ loop:
 		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(html), MODE_FILE); err != nil {
 			panic(err)
 		}
+		fmt.Println("triggered")
 		fmt.Fprintln(w, html)
-		serveEvent(fs_pathname, 200, time.Since(start))
+		report(fs_pathname, 200, time.Since(start))
 	})
 
 	// Serve __export__/app.js
 	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
 		var (
-			start = time.Now()
-			// pathname    = "/app"
+			start       = time.Now()
 			fs_pathname = "/app.js"
 		)
-
+		// 404 page not found
+		target := filepath.Join(r.Dirs.ExportDir, fs_pathname)
+		if _, err := os.Stat(target); os.IsNotExist(err) {
+			http.NotFound(w, rq)
+			report(fs_pathname, 404, time.Since(start))
+		}
+		// 200 ok
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, fs_pathname))
-		serveEvent(fs_pathname, 200, time.Since(start))
+		report(fs_pathname, 200, time.Since(start))
 	})
 
 	// Serve __export__/www (use path.Join not filepath.Join)
 	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
 		var (
-			start = time.Now()
-			// pathname    = getPathname(rq)
+			start       = time.Now()
 			fs_pathname = getFSPathname(rq)
 		)
-
+		// 404 page not found
+		target := filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname)
+		if _, err := os.Stat(target); os.IsNotExist(err) {
+			http.NotFound(w, rq)
+			report(fs_pathname, 404, time.Since(start))
+		}
+		// 200 ok
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
-		serveEvent("/test", 404, time.Since(start))
+		report(fs_pathname, 200, time.Since(start))
 	})
 
 	port := r.getPort()
-	logger.OK(fmt.Sprintf("Ready on port '%s'", port))
+	logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, underline("http://localhost:"+port)))
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		panic(err)
 	}
