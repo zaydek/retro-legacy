@@ -339,16 +339,14 @@ func (r Runtime) Dev() {
 		panic(err)
 	}
 
-	// Stream routes; expect an an eof after the router
-	fmt.Println()
-	fmt.Println(" " + bold(`> Server API: `+cyan("'serverProps'")+` and `+cyan("'serverPaths'")+`:`))
-	fmt.Println()
-
-	sum := time.Now()
+	// Stream routes
 	stdin <- StdinMessage{Kind: "resolve_router", Data: r}
 
-	// TODO: Add an emergency timeout
 	var one time.Time
+	sum := time.Now()
+
+	// timeout := time.After(30 * time.Second)
+
 loop:
 	for {
 		select {
@@ -376,6 +374,8 @@ loop:
 		case err := <-stderr:
 			logger2.Stderr(err)
 			os.Exit(1)
+			// case <-timeout:
+			// 	logger.FatalError(errors.New("Server API took >30 seconds."))
 		}
 	}
 

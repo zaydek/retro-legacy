@@ -170,15 +170,14 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 }
 
 async function main(): Promise<void> {
-	// Warm up esbuild (start Go background process)
+	// Warm up esbuild
+	// https://github.com/evanw/esbuild/issues/979
 	esbuild.build({})
-
 	while (true) {
 		const bstr = await readline()
 		if (bstr === undefined) {
 			break
 		}
-		stderr("oops")
 		const msg: T.Message = JSON.parse(bstr)
 		switch (msg.Kind) {
 			case "resolve_router":

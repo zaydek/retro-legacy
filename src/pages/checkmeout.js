@@ -1,3 +1,11 @@
+// export function serverProps() {
+// 	return new Promise(resolve => {
+// 		setTimeout(() => {
+// 			resolve("ok")
+// 		}, 5_000)
+// 	})
+// }
+
 export function Head() {
 	return <title>Hello, world!</title>
 }
