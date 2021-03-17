@@ -34,14 +34,14 @@ func prettyDuration(dur time.Duration) string {
 }
 
 func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
-	primary := normal
+	main := normal
 	if srvRoute.Route.Type == "dynamic" {
-		primary = cyan
+		main = cyan
 	}
 
-	secondary := dim
+	alt := dim
 	if srvRoute.Route.Type == "dynamic" {
-		secondary = dimCyan
+		alt = dimCyan
 	}
 
 	ext := filepath.Ext(srvRoute.Route.Source)
@@ -53,16 +53,16 @@ func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Dur
 	pathname := indexify(srvRoute.Route.Pathname)
 
 	var str string
-	str += secondary("/")
-	str += primary(entry[1:])
-	str += secondary(ext)
+	str += alt("/")
+	str += main(entry[1:])
+	str += alt(ext)
 	str += " "
-	str += secondary(strings.Repeat("-", MAX_LEN-len(entry[1:]+ext)))
+	str += alt(strings.Repeat("-", MAX_LEN-len(entry+ext)))
 	str += " "
-	str += secondary("/")
-	str += primary(pathname[1:])
+	str += alt("/")
+	str += main(pathname[1:])
 	str += " "
-	str += secondary(fmt.Sprintf("(%s)", prettyDuration(dur)))
+	str += alt(fmt.Sprintf("(%s)", prettyDuration(dur)))
 	return str
 }
 
@@ -74,24 +74,31 @@ type ServeArgs struct {
 }
 
 func prettyServeEvent(args ServeArgs) string {
-	primary := normal
+	main := normal
 	if args.StatusCode != 200 {
-		primary = red
+		main = red
 	}
 
-	secondary := dim
+	alt := dim
 	if args.StatusCode != 200 {
-		secondary = dimRed
+		alt = dimRed
 	}
+
+	ext := filepath.Ext(args.Path)
+
+	var entry string
+	entry = args.Path
+	entry = entry[:len(entry)-len(ext)]
 
 	var str string
-	str += secondary("/")
-	str += primary(args.Path[1:])
+	str += alt("/")
+	str += main(entry[1:])
+	str += alt(ext)
 	str += " "
-	str += secondary(strings.Repeat("-", MAX_LEN-len(args.Path[1:])))
+	str += alt(strings.Repeat("-", MAX_LEN-len(entry+ext)))
 	str += " "
-	str += primary(args.StatusCode)
+	str += main(args.StatusCode)
 	str += " "
-	str += secondary(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
+	str += alt(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
 	return str
 }

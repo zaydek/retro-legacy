@@ -41,7 +41,7 @@ func copyDir(src, dst string, excludes []string) error {
 	// Copy sources to targets
 	for _, info := range infos {
 		if dir := filepath.Dir(info.target); dir != "." {
-			if err := os.MkdirAll(dir, PERM_DIR); err != nil {
+			if err := os.MkdirAll(dir, MODE_DIR); err != nil {
 				return err
 			}
 		}

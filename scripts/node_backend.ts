@@ -1,5 +1,7 @@
 import * as esbuild from "esbuild"
 import * as path from "path"
+import * as React from "react"
+import * as ReactDOMServer from "react-dom/server"
 import * as T from "./types"
 import { readline, stderr, stdout } from "./utils"
 import { newPathInfo, PathInfo } from "./newPathInfo"
@@ -199,53 +201,55 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 	return router
 }
 
-function serverRouteToString(runtime: T.Runtime, srvRoute: T.ServerRoute, { dev }: { dev: boolean }): string {
-	const mod = modCache[srvRoute.Route.Pathname]
-	console.log(mod)
-	return ""
-
-	//	let head = "<!-- <Head { path, ...serverProps }> -->"
-	//	try {
-	//		if (typeof srvRoute.module.Head === "function") {
-	//			const str = ReactDOMServer.renderToStaticMarkup(React.createElement(srvRoute.module.Head, srvRoute.descriptProps))
-	//			head = str.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
-	//		}
-	//	} catch (error) {
-	//		log.fatal(`${srvRoute.route.src}.<Head>: ${error.message}`)
-	//	}
-	//
-	//	// TODO: Upgrade to <script src="/app.[hash].js">?
-	//	let app = ""
-	//	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
-	//	app += `\n\t\t<div id="root"></div>`
-	//	app += `\n\t\t<script src="/app.js"></script>`
-	//	app += !dev ? "" : `\n\t\t<script type="module">`
-	//	app += !dev ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
-	//	app += !dev ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
-	//	app += !dev ? "" : `\n\t\t\t\twindow.location.reload()`
-	//	app += !dev ? "" : `\n\t\t\t})`
-	//	app += !dev ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
-	//	app += !dev ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
-	//	app += !dev ? "" : `\n\t\t\t})`
-	//	app += !dev ? "" : `\n\t\t</script>`
-	//
-	//	try {
-	//		const str = ReactDOMServer.renderToString(React.createElement(srvRoute.module.default, srvRoute.descriptProps))
-	//		app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
-	//	} catch (error) {
-	//		// TODO
-	//		if (!dev) log.fatal(`${srvRoute.route.src}.<Page>: ${error.message}`)
-	//		if (dev) throw error
-	//	}
-	//
-	//	const contents = tmpl.replace("%head%", head).replace("%app%", app)
-	//	return contents
+interface ServerRouteContents {
+	Head: string
+	App: string
 }
 
-function serverRouterToString(runtime: T.Runtime): string {
-	// Map component names to sources
+function serverRouteContents(srvRoute: T.ServerRoute): ServerRouteContents {
+	const mod = modCache[srvRoute.Route.Pathname]!
+
+	let head = "<!-- <Head> -->"
+	try {
+		if (typeof mod.Head === "function") {
+			const str = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, srvRoute.Props))
+			head = str.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
+		}
+	} catch (error) {
+		// log.fatal(`${srvRoute.Route.Source}.<Head>: ${error.message}`)
+	}
+
+	// TODO: Upgrade to <script src="/app.[hash].js">?
+	let app = ""
+	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
+	app += `\n\t\t<div id="root"></div>`
+	app += `\n\t\t<script src="/app.js"></script>`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t<script type="module">`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t\twindow.location.reload()`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t})`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t})`
+	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t</script>`
+
+	try {
+		const str = ReactDOMServer.renderToString(React.createElement(mod.default, srvRoute.Props))
+		app = app.replace(`<div id="root"></div>`, `<div id="root">${str}</div>`)
+	} catch (error) {
+		// if (!(process.env["__DEV__"] === "true")) log.fatal(`${srvRoute.Route.Source}.<Page>: ${error.message}`)
+		// if (process.env["__DEV__"] === "true") throw error
+	}
+
+	const contents: ServerRouteContents = { Head: head, App: app }
+	return contents
+}
+
+function serverRouterContents(srvRouter: T.ServerRouter): string {
+	// Map components to sources
 	const distinctImportMap = new Map<string, string>()
-	for (const srvRoute of Object.values(runtime.SrvRouter)) {
+	for (const srvRoute of Object.values(srvRouter)) {
 		distinctImportMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
 	}
 
@@ -263,7 +267,7 @@ export default function App() {
 	return (
 		<Router>
 ${
-	Object.entries(runtime.SrvRouter)
+	Object.entries(srvRouter)
 		.map(
 			([path, route]) => `
 			<Route path="${path}">
@@ -332,11 +336,12 @@ async function main(): Promise<void> {
 				stdout({ Kind: "server_router", Data: router })
 				stdout({ Kind: "eof" })
 				break
-			// case "server_route_string":
-			// 	// TODO
-			// 	break
-			case "server_router_string":
-				const srvRouterContents = serverRouterToString(msg.Data)
+			case "server_route_contents":
+				const srvRouteContents = serverRouteContents(msg.Data)
+				stdout({ Data: srvRouteContents })
+				break
+			case "server_router_contents":
+				const srvRouterContents = serverRouterContents(msg.Data)
 				stdout({ Data: srvRouterContents })
 				break
 			case "dev_server":
