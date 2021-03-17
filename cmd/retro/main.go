@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
@@ -387,23 +388,32 @@ loop:
 
 	stdin <- StdinMessage{Kind: "server_router_string", Data: r}
 
+	msg := <-stdout
 	var contents string
-	select {
-	case msg := <-stdout:
-		if err := json.Unmarshal(msg.Data, &contents); err != nil {
-			panic(err)
-		}
-	case err := <-stderr:
-		logger2.Stderr(err)
-		os.Exit(1)
+	if err := json.Unmarshal(msg.Data, &contents); err != nil {
+		panic(err)
 	}
 
-	fmt.Println(contents)
+	if err := ioutil.WriteFile(filepath.Join(r.Dirs.CacheDir, "app.js"), []byte(contents), PERM_FILE); err != nil {
+		panic(err)
+	}
 
-	//
+	//////////////////////////////////////////////////////////////////////////////
+	// Dev server
 
-	stdin <- StdinMessage{Kind: "done"}
-	close(stdin)
+	stdin <- StdinMessage{Kind: "start_dev_server", Data: r}
+	logger2.Stderr(<-stderr)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	wg.Wait()
+
+	//////////////////////////////////////////////////////////////////////////////
+	// Done
+
+	// stdin <- StdinMessage{Kind: "done"}
+	// close(stdin)
 }
 
 func (r Runtime) Export() {

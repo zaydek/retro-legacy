@@ -70,17 +70,7 @@ export interface ServerRouter {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-type MessageKind =
-	| "resolve_router"
-	| "start"
-	| "server_route"
-	| "server_router"
-	| "server_route_string"
-	| "server_router_string"
-	| "eof"
-	| "done"
-
 export interface Message {
-	Kind?: MessageKind
+	Kind?: string
 	Data?: any
 }

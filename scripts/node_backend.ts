@@ -1,7 +1,5 @@
 import * as esbuild from "esbuild"
 import * as path from "path"
-import * as React from "react"
-import * as ReactDOMServer from "react-dom/server"
 import * as T from "./types"
 import { readline, stderr, stdout } from "./utils"
 import { newPathInfo, PathInfo } from "./newPathInfo"
@@ -10,23 +8,42 @@ const modCache: { [key: string]: T.AnyModule } = {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const transpile = (source: string, target: string): esbuild.BuildOptions => ({
+const transpileOnlyConfiguration = (source: string, target: string): esbuild.BuildOptions => ({
 	bundle: true,
+	color: true,
 	define: {
 		__DEV__: JSON.stringify(process.env["NODE_ENV"] === "true"),
-		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"]),
+		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] ?? "development"),
 	},
 	entryPoints: [source],
-	external: ["react", "react-dom"], // Dedupe
+	external: ["react", "react-dom"], // Dedupe React APIs
 	format: "cjs",
 	inject: ["scripts/react-shim.js"],
 	loader: {
-		".js": "jsx",
+		".js": "jsx", // Process .js as .jsx
 	},
-	logLevel: "warning",
 	minify: false,
 	outfile: target,
-	// plugins // TODO
+	// plugins: [...],
+})
+
+const bundleConfiguration = (source: string, target: string): esbuild.BuildOptions => ({
+	bundle: true,
+	color: true,
+	define: {
+		__DEV__: JSON.stringify(process.env["NODE_ENV"] === "true"),
+		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] ?? "development"),
+	},
+	entryPoints: [source],
+	external: [],
+	format: "iife",
+	inject: ["scripts/react-shim.js"],
+	loader: {
+		".js": "jsx", // Process .js as .jsx
+	},
+	minify: true,
+	outfile: target,
+	// plugins: [...],
 })
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -35,7 +52,7 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 	const source = route.Source
 	const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"))
 
-	await esbuild.build(transpile(source, target))
+	await esbuild.build(transpileOnlyConfiguration(source, target))
 
 	// // try {
 	// mod = require(path.resolve(target))
@@ -225,19 +242,20 @@ function serverRouteToString(runtime: T.Runtime, srvRoute: T.ServerRoute, { dev 
 
 function serverRouterToString(runtime: T.Runtime): string {
 	// Map component names to sources
-	const importMap = new Map()
+	const distinctImportMap = new Map<string, string>()
 	for (const srvRoute of Object.values(runtime.SrvRouter)) {
-		importMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
+		distinctImportMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
 	}
 
-	const imports = Array.from(importMap)
+	const imports = Array.from(distinctImportMap)
+	imports.sort()
 
 	return `import React from "react"
 import ReactDOM from "react-dom"
 
 ${imports.map(([componentName, source]) => `import ${componentName} from "../${source}"`).join("\n")}
 
-import { Route, Router } from "../packages/router"
+import { Route, Router } from "../npm/router"
 
 export default function App() {
 	return (
@@ -267,6 +285,26 @@ ReactDOM.hydrate(
 `
 }
 
+async function startDevServer(runtime: T.Runtime): Promise<void> {
+	const buildResult = await esbuild.build({
+		// prettier-ignore
+		...bundleConfiguration(
+			path.join(runtime.Dirs.CacheDir, "app.js"),
+			path.join(runtime.Dirs.ExportDir, "app.js"),
+		),
+		incremental: true,
+		watch: {
+			async onRebuild(error) {
+				// ...
+			},
+		},
+	})
+
+	// ...
+
+	// stderr("here")
+}
+
 async function main(): Promise<void> {
 	// Warm up esbuild
 	// https://github.com/evanw/esbuild/issues/979
@@ -279,20 +317,19 @@ async function main(): Promise<void> {
 		const msg: T.Message = JSON.parse(bstr)
 		switch (msg.Kind) {
 			case "resolve_router":
-				// try {
 				const router = await resolveRouter(msg.Data)
 				stdout({ Kind: "server_router", Data: router })
 				stdout({ Kind: "eof" })
-				// } catch (error) {
-				// 	stderr(error)
-				// }
 				break
-			case "server_route_string":
-				// TODO
-				break
+			// case "server_route_string":
+			// 	// TODO
+			// 	break
 			case "server_router_string":
 				const srvRouterContents = serverRouterToString(msg.Data)
 				stdout({ Data: srvRouterContents })
+				break
+			case "start_dev_server":
+				await startDevServer(msg.Data)
 				break
 			case "done":
 				return
