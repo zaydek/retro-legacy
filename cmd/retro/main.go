@@ -412,7 +412,13 @@ loop:
 		Warnings []api.Message
 	}
 
-	dev := make(chan result)
+	type ServeRouteContents struct {
+		Head string // %head%
+		App  string // %app%
+	}
+
+	dev := make(chan result, 16)
+	out := make(chan string)
 
 	go func() {
 		stdin <- StdinMessage{Kind: "dev_server", Data: r}
@@ -435,6 +441,15 @@ loop:
 					}
 					fmt.Println(res) // DEBUG
 					dev <- res
+				case "server_route_contents":
+					var contents ServeRouteContents
+					if err := json.Unmarshal(msg.Data, &contents); err != nil {
+						panic(err)
+					}
+					html := r.Template
+					html = strings.Replace(html, "%head%", contents.Head, 1)
+					html = strings.Replace(html, "%app%", contents.App, 1)
+					out <- html
 				default:
 					panic("Internal error")
 				}
@@ -491,34 +506,24 @@ loop:
 		}
 	})
 
-	type ServeRouteContents struct {
-		Head string // %head%
-		App  string // %app%
-	}
-
 	// __export__
 	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
-		start := time.Now()
-		pathname := getPathname(rq)
-		fs_pathname := getFSPathname(rq)
+		var (
+			start       = time.Now()
+			pathname    = getPathname(rq)
+			fs_pathname = getFSPathname(rq)
+		)
 
-		// Bad path; 404
+		// Not found; 404
 		srvRoute, ok := r.SrvRouter[pathname]
 		if !ok {
+			http.NotFound(w, rq)
 			serveEvent(pathname, 404, time.Since(start))
 			return
 		}
-
-		// 200
+		// Found; 200
 		stdin <- StdinMessage{Kind: "server_route_contents", Data: srvRoute}
-		msg := <-stdout
-		var contents ServeRouteContents
-		if err := json.Unmarshal(msg.Data, &contents); err != nil {
-			panic(err)
-		}
-		html := r.Template
-		html = strings.Replace(html, "%head%", contents.Head, 1)
-		html = strings.Replace(html, "%app%", contents.App, 1)
+		html := <-out
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
 			panic(err)
 		}
@@ -531,16 +536,24 @@ loop:
 
 	// Serve __export__/app.js
 	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
-		start := time.Now()
-		fs_pathname := "/app.js"
+		var (
+			start = time.Now()
+			// pathname    = "/app"
+			fs_pathname = "/app.js"
+		)
+
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, fs_pathname))
 		serveEvent(fs_pathname, 200, time.Since(start))
 	})
 
 	// Serve __export__/www (use path.Join not filepath.Join)
 	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
-		start := time.Now()
-		fs_pathname := getFSPathname(rq)
+		var (
+			start = time.Now()
+			// pathname    = getPathname(rq)
+			fs_pathname = getFSPathname(rq)
+		)
+
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
 		serveEvent("/test", 404, time.Since(start))
 	})

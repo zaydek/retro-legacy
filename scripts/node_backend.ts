@@ -224,15 +224,15 @@ function serverRouteContents(srvRoute: T.ServerRoute): ServerRouteContents {
 	app += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	app += `\n\t\t<div id="root"></div>`
 	app += `\n\t\t<script src="/app.js"></script>`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t<script type="module">`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t\twindow.location.reload()`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t})`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t\t})`
-	app += process.env["__DEV__"] === "true" ? "" : `\n\t\t</script>`
+	app += !true ? "" : `\n\t\t<script type="module">`
+	app += !true ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
+	app += !true ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
+	app += !true ? "" : `\n\t\t\t\twindow.location.reload()`
+	app += !true ? "" : `\n\t\t\t})`
+	app += !true ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
+	app += !true ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
+	app += !true ? "" : `\n\t\t\t})`
+	app += !true ? "" : `\n\t\t</script>`
 
 	try {
 		const str = ReactDOMServer.renderToString(React.createElement(mod.default, srvRoute.Props))
@@ -338,11 +338,11 @@ async function main(): Promise<void> {
 				break
 			case "server_route_contents":
 				const srvRouteContents = serverRouteContents(msg.Data)
-				stdout({ Data: srvRouteContents })
+				stdout({ Kind: "server_route_contents", Data: srvRouteContents })
 				break
 			case "server_router_contents":
 				const srvRouterContents = serverRouterContents(msg.Data)
-				stdout({ Data: srvRouterContents })
+				stdout({ Kind: "server_router_contents", Data: srvRouterContents })
 				break
 			case "dev_server":
 				await startDevServer(msg.Data)
