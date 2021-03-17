@@ -351,7 +351,7 @@ func (r Runtime) Dev() {
 	}()
 
 	// Stream routes
-	stdin <- StdinMessage{Kind: "RESOLVE_SERVER_ROUTER", Data: r}
+	stdin <- StdinMessage{Kind: "resolve_server_router", Data: r}
 
 	var one time.Time
 	sum := time.Now()
@@ -360,20 +360,20 @@ loop:
 	for {
 		select {
 		case msg := <-stdout:
-			if msg.Kind == "EOF" {
+			if msg.Kind == "eof" {
 				break loop
 			}
 			switch msg.Kind {
-			case "START":
+			case "start":
 				one = time.Now() // Start
-			case "SERVER_ROUTE":
+			case "server_route":
 				var srvRoute ServerRoute
 				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
 					panic(err)
 				}
 				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
 				one = time.Now() // Reset
-			case "SERVER_ROUTER":
+			case "server_router":
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
@@ -393,7 +393,7 @@ loop:
 	//////////////////////////////////////////////////////////////////////////////
 	// Server router contents
 
-	stdin <- StdinMessage{Kind: "SERVER_ROUTER_CONTENTS", Data: r.SrvRouter}
+	stdin <- StdinMessage{Kind: "server_router_contents", Data: r.SrvRouter}
 	msg := <-stdout
 	var contents string
 	if err := json.Unmarshal(msg.Data, &contents); err != nil {
@@ -421,29 +421,27 @@ loop:
 	out := make(chan string)
 
 	go func() {
-		stdin <- StdinMessage{Kind: "START_DEV_SERVER", Data: r}
+		stdin <- StdinMessage{Kind: "start_dev_server", Data: r}
 
 		for {
 			select {
 			case msg := <-stdout:
 				switch msg.Kind {
-				case "BUILD":
-					fmt.Println("Triggered a build")
+				case "build":
 					var res result
 					if err := json.Unmarshal(msg.Data, &res); err != nil {
 						panic(err)
 					}
 					fmt.Println(res) // DEBUG
 					dev <- res
-				case "REBUILD":
-					fmt.Println("Triggered a rebuild")
+				case "rebuild":
 					var res result
 					if err := json.Unmarshal(msg.Data, &res); err != nil {
 						panic(err)
 					}
 					fmt.Println(res) // DEBUG
 					dev <- res
-				case "SERVER_ROUTE_CONTENTS":
+				case "server_route_contents":
 					var contents ServeRouteContents
 					if err := json.Unmarshal(msg.Data, &contents); err != nil {
 						panic(err)
@@ -521,7 +519,7 @@ loop:
 			return
 		}
 		// 200 ok
-		stdin <- StdinMessage{Kind: "SERVER_ROUTE_CONTENTS", Data: struct {
+		stdin <- StdinMessage{Kind: "server_route_contents", Data: struct {
 			Runtime  Runtime
 			SrvRoute ServerRoute
 		}{Runtime: r, SrvRoute: srvRoute}}
@@ -532,7 +530,6 @@ loop:
 		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(html), MODE_FILE); err != nil {
 			panic(err)
 		}
-		fmt.Println("triggered")
 		fmt.Fprintln(w, html)
 		report(fs_pathname, 200, time.Since(start))
 	})

@@ -10,7 +10,7 @@ const modCache: { [key: string]: T.AnyModule } = {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const transpileOnlyConfiguration = (source: string, target: string): esbuild.BuildOptions => ({
+const transpile = (source: string, target: string): esbuild.BuildOptions => ({
 	bundle: true,
 	color: true,
 	define: {
@@ -30,7 +30,7 @@ const transpileOnlyConfiguration = (source: string, target: string): esbuild.Bui
 	// plugins: [...],
 })
 
-const bundleConfiguration = (source: string, target: string): esbuild.BuildOptions => ({
+const bundle = (source: string, target: string): esbuild.BuildOptions => ({
 	bundle: true,
 	color: true,
 	define: {
@@ -56,7 +56,7 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 	const source = route.Source
 	const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"))
 
-	await esbuild.build(transpileOnlyConfiguration(source, target))
+	await esbuild.build(transpile(source, target))
 
 	// // try {
 	// mod = require(path.resolve(target))
@@ -173,7 +173,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 	let once = false
 	function start() {
 		if (!once) {
-			stdout({ Kind: "START" })
+			stdout({ Kind: "start" })
 			once = true
 		}
 	}
@@ -186,7 +186,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 			// if (router[meta.route.path] !== undefined) {
 			// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 			// }
-			stdout({ Kind: "SERVER_ROUTE", Data: srvRoute })
+			stdout({ Kind: "server_route", Data: srvRoute })
 			router[srvRoute.Route.Pathname] = srvRoute
 		} else if (route.Type === "dynamic") {
 			start()
@@ -195,7 +195,7 @@ async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
 				// if (router[meta.route.path] !== undefined) {
 				// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 				// }
-				stdout({ Kind: "SERVER_ROUTE", Data: srvRoute })
+				stdout({ Kind: "server_route", Data: srvRoute })
 				router[srvRoute.Route.Pathname] = srvRoute
 			}
 		}
@@ -263,13 +263,13 @@ function serverRouterContents(srvRouter: T.ServerRouter): string {
 		distinctImportsMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
 	}
 
-	const imports = Array.from(distinctImportsMap)
-	imports.sort()
+	const distinctImports = Array.from(distinctImportsMap)
+	distinctImports.sort()
 
 	return `import React from "react"
 import ReactDOM from "react-dom"
 
-${imports.map(([componentName, source]) => `import ${componentName} from "../${source}"`).join("\n")}
+${distinctImports.map(([componentName, source]) => `import ${componentName} from "../${source}"`).join("\n")}
 
 import { Route, Router } from "../npm/router"
 
@@ -307,14 +307,15 @@ async function startDevServer(runtime: T.Runtime): Promise<void> {
 
 	let buildResult: esbuild.BuildResult
 	let buildError: Error
+
 	try {
 		buildResult = await esbuild.build({
-			...bundleConfiguration(source, target),
+			...bundle(source, target),
 			incremental: true,
 			watch: {
 				async onRebuild(buildFailure) {
 					stdout({
-						Kind: "REBUILD",
+						Kind: "rebuild",
 						Data: buildFailure,
 					})
 				},
@@ -325,7 +326,7 @@ async function startDevServer(runtime: T.Runtime): Promise<void> {
 	}
 
 	stdout({
-		Kind: "BUILD",
+		Kind: "build",
 		Data: { ...buildError!, ...buildResult! },
 	})
 }
@@ -338,26 +339,32 @@ async function main(): Promise<void> {
 		const encoded = await readline()
 		const msg: T.Message = JSON.parse(encoded)
 		switch (msg.Kind) {
-			case "RESOLVE_SERVER_ROUTER":
+			case "resolve_server_router": {
 				const router = await resolveRouter(msg.Data)
-				stdout({ Kind: "SERVER_ROUTER", Data: router })
-				stdout({ Kind: "EOF" })
+				stdout({ Kind: "server_router", Data: router })
+				stdout({ Kind: "eof" })
 				break
-			case "SERVER_ROUTE_CONTENTS":
-				const srvRouteContents = await serverRouteContents(msg.Data.Runtime, msg.Data.SrvRoute)
-				stdout({ Kind: "SERVER_ROUTE_CONTENTS", Data: srvRouteContents })
+			}
+			case "server_route_contents": {
+				const contents = await serverRouteContents(msg.Data.Runtime, msg.Data.SrvRoute)
+				stdout({ Kind: "server_route_contents", Data: contents })
 				break
-			case "SERVER_ROUTER_CONTENTS":
-				const srvRouterContents = serverRouterContents(msg.Data)
-				stdout({ Kind: "SERVER_ROUTER_CONTENTS", Data: srvRouterContents })
+			}
+			case "server_router_contents": {
+				const contents = serverRouterContents(msg.Data)
+				stdout({ Kind: "server_router_contents", Data: contents })
 				break
-			case "START_DEV_SERVER":
+			}
+			case "start_dev_server": {
 				await startDevServer(msg.Data)
 				break
-			case "DONE":
+			}
+			case "done": {
 				return
-			default:
+			}
+			default: {
 				throw new Error("Internal error")
+			}
 		}
 	}
 }
