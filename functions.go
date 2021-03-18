@@ -32,7 +32,6 @@ func newCmd(cmdStr string) (func(Message) (string, error), error) {
 		return nil, err
 	}
 
-	// Create a standard-input in-channel
 	stdin := make(chan Message)
 	go func() {
 		defer stdinPipe.Close()
@@ -41,19 +40,21 @@ func newCmd(cmdStr string) (func(Message) (string, error), error) {
 			if err != nil {
 				panic(err)
 			}
-			// Add an EOF for 'await stdin()' (Node.js)
+			// Add an EOF so 'await stdin()' can process
 			stdinPipe.Write(append(bstr, '\n'))
 		}
 	}()
 
-	// Create a standard-output out-channel
 	stdout := make(chan string)
 	go func() {
 		defer func() {
 			stdoutPipe.Close()
 			close(stdout)
 		}()
+		// Increase the buffer
 		scanner := bufio.NewScanner(stdoutPipe)
+		buf := make([]byte, 1024*1024)
+		scanner.Buffer(buf, len(buf))
 		for scanner.Scan() {
 			stdout <- scanner.Text()
 		}
@@ -62,7 +63,6 @@ func newCmd(cmdStr string) (func(Message) (string, error), error) {
 		}
 	}()
 
-	// Create a standard-error out-channel
 	stderr := make(chan string)
 	go func() {
 		defer func() {
@@ -72,7 +72,9 @@ func newCmd(cmdStr string) (func(Message) (string, error), error) {
 		// Read from start-to-end
 		// https://golang.org/pkg/bufio/#SplitFunc
 		scanner := bufio.NewScanner(stderrPipe)
-		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) { return len(data), data, nil })
+		scanner.Split(func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			return len(data), data, nil
+		})
 		for scanner.Scan() {
 			stderr <- scanner.Text()
 		}
@@ -105,17 +107,20 @@ func main() {
 		panic(err)
 	}
 
-	out1, err := input(Message{Kind: "run"})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
-		os.Exit(1)
-	}
-	fmt.Println(out1)
+	run := func() (string, error) { return input(Message{Kind: "run"}) }
+	rerun := func() (string, error) { return input(Message{Kind: "rerun"}) }
 
-	out2, err := input(Message{Kind: "rerun"})
+	s1, err := run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
 		os.Exit(1)
 	}
-	fmt.Println(out2)
+	fmt.Println(s1)
+
+	s2, err := rerun()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
+		os.Exit(1)
+	}
+	fmt.Println(s2)
 }
