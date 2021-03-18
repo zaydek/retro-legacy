@@ -279,8 +279,8 @@ export default function App() {
 ${
 	Object.entries(srvRouter)
 		.map(
-			([path, route]) => `
-			<Route path="${path}">
+			([pathname, route]) => `
+			<Route path="${pathname}">
 				<${route.Route.ComponentName} {
 					...${JSON.stringify(route.Props, null, "\t").replace(/\n\t?/g, " ")}
 				} />
@@ -313,10 +313,10 @@ async function startDevServer(runtime: T.Runtime): Promise<void> {
 			...bundle(source, target),
 			incremental: true,
 			watch: {
-				async onRebuild(buildFailure) {
+				async onRebuild(rebuildFailure) {
 					stdout({
 						Kind: "rebuild",
-						Data: buildFailure,
+						Data: rebuildFailure,
 					})
 				},
 			},

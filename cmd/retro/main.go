@@ -432,14 +432,14 @@ loop:
 					if err := json.Unmarshal(msg.Data, &res); err != nil {
 						panic(err)
 					}
-					fmt.Println(res) // DEBUG
+					// fmt. iPrintln(res) // DEBUG
 					dev <- res
 				case "rebuild":
 					var res result
 					if err := json.Unmarshal(msg.Data, &res); err != nil {
 						panic(err)
 					}
-					fmt.Println(res) // DEBUG
+					// fmt.Println(res) // DEBUG
 					dev <- res
 				case "server_route_contents":
 					var contents ServeRouteContents
@@ -463,7 +463,7 @@ loop:
 	getPathname := func(rq *http.Request) string {
 		pathname := rq.URL.Path
 		if strings.HasSuffix(rq.URL.Path, "/index.html") {
-			pathname = pathname[:len(pathname)-len("index.html")] // Keep "/"
+			pathname = pathname[:len(pathname)-len("index.html")]
 		} else if ext := filepath.Ext(rq.URL.Path); ext == ".html" {
 			pathname = pathname[:len(pathname)-len(".html")]
 		}
@@ -480,7 +480,7 @@ loop:
 		return pathname
 	}
 
-	report := func(pathname string, statusCode int, dur time.Duration) {
+	serveEvent := func(pathname string, statusCode int, dur time.Duration) {
 		logger2.Stdout(prettyServeEvent(ServeArgs{
 			Path:       pathname,
 			StatusCode: statusCode,
@@ -488,7 +488,7 @@ loop:
 		}))
 	}
 
-	// ~/dev; sever-sent events
+	// ~/dev
 	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -511,14 +511,14 @@ loop:
 			start       = time.Now()
 			fs_pathname = getFSPathname(rq)
 		)
-		// 404 page not found
+		// 404
 		srvRoute, ok := r.SrvRouter[getPathname(rq)]
 		if !ok {
 			http.NotFound(w, rq)
-			report(fs_pathname, 404, time.Since(start))
+			serveEvent(fs_pathname, 404, time.Since(start))
 			return
 		}
-		// 200 ok
+		// 200
 		stdin <- StdinMessage{Kind: "server_route_contents", Data: struct {
 			Runtime  Runtime
 			SrvRoute ServerRoute
@@ -531,7 +531,7 @@ loop:
 			panic(err)
 		}
 		fmt.Fprintln(w, html)
-		report(fs_pathname, 200, time.Since(start))
+		serveEvent(fs_pathname, 200, time.Since(start))
 	})
 
 	// Serve __export__/app.js
@@ -540,15 +540,15 @@ loop:
 			start       = time.Now()
 			fs_pathname = "/app.js"
 		)
-		// 404 page not found
+		// 404
 		target := filepath.Join(r.Dirs.ExportDir, fs_pathname)
 		if _, err := os.Stat(target); os.IsNotExist(err) {
 			http.NotFound(w, rq)
-			report(fs_pathname, 404, time.Since(start))
+			serveEvent(fs_pathname, 404, time.Since(start))
 		}
-		// 200 ok
+		// 200
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, fs_pathname))
-		report(fs_pathname, 200, time.Since(start))
+		serveEvent(fs_pathname, 200, time.Since(start))
 	})
 
 	// Serve __export__/www (use path.Join not filepath.Join)
@@ -557,15 +557,15 @@ loop:
 			start       = time.Now()
 			fs_pathname = getFSPathname(rq)
 		)
-		// 404 page not found
+		// 404
 		target := filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname)
 		if _, err := os.Stat(target); os.IsNotExist(err) {
 			http.NotFound(w, rq)
-			report(fs_pathname, 404, time.Since(start))
+			serveEvent(fs_pathname, 404, time.Since(start))
 		}
-		// 200 ok
+		// 200
 		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
-		report(fs_pathname, 200, time.Since(start))
+		serveEvent(fs_pathname, 200, time.Since(start))
 	})
 
 	port := r.getPort()
@@ -593,7 +593,9 @@ func main() {
 	case templateError:
 		logger.FatalError(err)
 	default:
-		must(err)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	switch kind := runtime.getCmdKind(); kind {
