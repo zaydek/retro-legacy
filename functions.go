@@ -8,7 +8,142 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/zaydek/retro/pkg/terminal"
 )
+
+////////////////////////////////////////////////////////////////////////////////
+
+var (
+	normal = terminal.Normal.Sprint
+
+	bold      = terminal.Bold.Sprint
+	dim       = terminal.Dim.Sprint
+	underline = terminal.Underline.Sprint
+	black     = terminal.Black.Sprint
+	red       = terminal.Red.Sprint
+	green     = terminal.Green.Sprint
+	yellow    = terminal.Yellow.Sprint
+	blue      = terminal.Blue.Sprint
+	magenta   = terminal.Magenta.Sprint
+	cyan      = terminal.Cyan.Sprint
+	white     = terminal.White.Sprint
+	bgBlack   = terminal.BgBlack.Sprint
+	bgRed     = terminal.BgRed.Sprint
+	bgGreen   = terminal.BgGreen.Sprint
+	bgYellow  = terminal.BgYellow.Sprint
+	bgBlue    = terminal.BgBlue.Sprint
+	bgMagenta = terminal.BgMagenta.Sprint
+	bgCyan    = terminal.BgCyan.Sprint
+	bgWhite   = terminal.BgWhite.Sprint
+
+	dimUnderline = terminal.New(terminal.DimCode, terminal.UnderlineCode).Sprint
+	dimBlack     = terminal.New(terminal.DimCode, terminal.BlackCode).Sprint
+	dimRed       = terminal.New(terminal.DimCode, terminal.RedCode).Sprint
+	dimGreen     = terminal.New(terminal.DimCode, terminal.GreenCode).Sprint
+	dimYellow    = terminal.New(terminal.DimCode, terminal.YellowCode).Sprint
+	dimBlue      = terminal.New(terminal.DimCode, terminal.BlueCode).Sprint
+	dimMagenta   = terminal.New(terminal.DimCode, terminal.MagentaCode).Sprint
+	dimCyan      = terminal.New(terminal.DimCode, terminal.CyanCode).Sprint
+	dimWhite     = terminal.New(terminal.DimCode, terminal.WhiteCode).Sprint
+	dimBgBlack   = terminal.New(terminal.DimCode, terminal.BgBlackCode).Sprint
+	dimBgRed     = terminal.New(terminal.DimCode, terminal.BgRedCode).Sprint
+	dimBgGreen   = terminal.New(terminal.DimCode, terminal.BgGreenCode).Sprint
+	dimBgYellow  = terminal.New(terminal.DimCode, terminal.BgYellowCode).Sprint
+	dimBgBlue    = terminal.New(terminal.DimCode, terminal.BgBlueCode).Sprint
+	dimBgMagenta = terminal.New(terminal.DimCode, terminal.BgMagentaCode).Sprint
+	dimBgCyan    = terminal.New(terminal.DimCode, terminal.BgCyanCode).Sprint
+	dimBgWhite   = terminal.New(terminal.DimCode, terminal.BgWhiteCode).Sprint
+
+	boldUnderline = terminal.New(terminal.BoldCode, terminal.UnderlineCode).Sprint
+	boldBlack     = terminal.New(terminal.BoldCode, terminal.BlackCode).Sprint
+	boldRed       = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
+	boldGreen     = terminal.New(terminal.BoldCode, terminal.GreenCode).Sprint
+	boldYellow    = terminal.New(terminal.BoldCode, terminal.YellowCode).Sprint
+	boldBlue      = terminal.New(terminal.BoldCode, terminal.BlueCode).Sprint
+	boldMagenta   = terminal.New(terminal.BoldCode, terminal.MagentaCode).Sprint
+	boldCyan      = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
+	boldWhite     = terminal.New(terminal.BoldCode, terminal.WhiteCode).Sprint
+	boldBgBlack   = terminal.New(terminal.BoldCode, terminal.BgBlackCode).Sprint
+	boldBgRed     = terminal.New(terminal.BoldCode, terminal.BgRedCode).Sprint
+	boldBgGreen   = terminal.New(terminal.BoldCode, terminal.BgGreenCode).Sprint
+	boldBgYellow  = terminal.New(terminal.BoldCode, terminal.BgYellowCode).Sprint
+	boldBgBlue    = terminal.New(terminal.BoldCode, terminal.BgBlueCode).Sprint
+	boldBgMagenta = terminal.New(terminal.BoldCode, terminal.BgMagentaCode).Sprint
+	boldBgCyan    = terminal.New(terminal.BoldCode, terminal.BgCyanCode).Sprint
+	boldBgWhite   = terminal.New(terminal.BoldCode, terminal.BgWhiteCode).Sprint
+)
+
+////////////////////////////////////////////////////////////////////////////////
+
+type LoggerOptions struct {
+	Datetime bool
+	Date     bool
+	Time     bool
+}
+
+type StdioLogger struct {
+	format string
+}
+
+var stdio = newLogger(LoggerOptions{Datetime: true})
+
+func newLogger(args ...LoggerOptions) *StdioLogger {
+	opt := LoggerOptions{}
+	if len(args) == 1 {
+		opt = args[0]
+	}
+
+	var format string
+	if opt.Datetime {
+		format += "Jan 02 03:04:05.000 PM"
+	} else {
+		if opt.Date {
+			format += "Jan 02"
+		}
+		if opt.Time {
+			if format != "" {
+				format += " "
+			}
+			format += "03:04:05.000 PM"
+		}
+	}
+
+	logger := &StdioLogger{format: format}
+	return logger
+}
+
+func (l *StdioLogger) Stdout(args ...interface{}) {
+	str := strings.TrimRight(fmt.Sprint(args...), "\n")
+	lines := strings.Split(str, "\n")
+	for x, line := range lines {
+		var tstr string
+		if l.format != "" {
+			tstr += dim(time.Now().Format(l.format))
+			tstr += "  "
+		}
+		// lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, boldCyan("stdout"), line)
+		lines[x] = fmt.Sprintf("%s%s\x1b[0m", tstr, line)
+	}
+	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
+}
+
+func (l *StdioLogger) Stderr(args ...interface{}) {
+	str := strings.TrimRight(fmt.Sprint(args...), "\n")
+	lines := strings.Split(str, "\n")
+	for x, line := range lines {
+		var tstr string
+		if l.format != "" {
+			tstr += dim(time.Now().Format(l.format))
+			tstr += "  "
+		}
+		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, boldRed("stderr"), line)
+	}
+	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 type Message struct {
 	Kind string
@@ -110,17 +245,17 @@ func main() {
 	run := func() (string, error) { return input(Message{Kind: "run"}) }
 	rerun := func() (string, error) { return input(Message{Kind: "rerun"}) }
 
-	s1, err := run()
+	out1, err := run()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
+		stdio.Stderr(fmt.Errorf("stderr: %w", err))
 		os.Exit(1)
 	}
-	fmt.Println(s1)
+	stdio.Stdout(out1)
 
-	s2, err := rerun()
+	out2, err := rerun()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
+		stdio.Stderr(fmt.Errorf("stderr: %w", err))
 		os.Exit(1)
 	}
-	fmt.Println(s2)
+	stdio.Stdout(out2)
 }
