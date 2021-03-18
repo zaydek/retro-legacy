@@ -57,8 +57,6 @@ async function main() {
 				}
 				rerun()
 				break
-			// case "done":
-			// 	return
 			default:
 				throw new Error("Internal error")
 		}

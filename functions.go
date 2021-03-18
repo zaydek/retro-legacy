@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 type Message struct {
@@ -14,8 +15,9 @@ type Message struct {
 	Data interface{}
 }
 
-func newRunCmd() (func() (func() (string, error), string, error), error) {
-	cmd := exec.Command("node", "functions-node.esbuild.js")
+func newCmd(cmdStr string) (func(Message) (string, error), error) {
+	cmdArgs := strings.Split(cmdStr, " ")
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
@@ -39,7 +41,7 @@ func newRunCmd() (func() (func() (string, error), string, error), error) {
 			if err != nil {
 				panic(err)
 			}
-			// Add an EOF so 'await stdin()' can process
+			// Add an EOF for 'await stdin()' (Node.js)
 			stdinPipe.Write(append(bstr, '\n'))
 		}
 	}()
@@ -84,60 +86,33 @@ func newRunCmd() (func() (func() (string, error), string, error), error) {
 		return nil, err
 	}
 
-	return func() (func() (string, error), string, error) {
-		stdin <- Message{Kind: "run"}
+	return func(msg Message) (string, error) {
+		stdin <- msg
 		var out string
 		select {
-		case msg := <-stdout:
-			out = msg
-		case errmsg := <-stderr:
-			return nil, "", errors.New(errmsg)
+		case str := <-stdout:
+			out = str
+		case errstr := <-stderr:
+			return "", errors.New(errstr)
 		}
-		return func() (string, error) {
-			stdin <- Message{Kind: "rerun"}
-			var out string
-			select {
-			case msg := <-stdout:
-				out = msg
-			case errmsg := <-stderr:
-				return "", errors.New(errmsg)
-			}
-			return out, nil
-		}, out, nil
+		return out, nil
 	}, nil
 }
 
 func main() {
-	run, err := newRunCmd()
+	input, err := newCmd("node functions-node.esbuild.js")
 	if err != nil {
-		panic(fmt.Errorf("stderr: %w", err))
+		panic(err)
 	}
 
-	// Run
-	rerun, out1, err := run()
+	out1, err := input(Message{Kind: "run"})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
 		os.Exit(1)
 	}
 	fmt.Println(out1)
 
-	// Rerun
-	var out2 string
-	out2, err = rerun()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
-		os.Exit(1)
-	}
-	fmt.Println(out2)
-
-	out2, err = rerun()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
-		os.Exit(1)
-	}
-	fmt.Println(out2)
-
-	out2, err = rerun()
+	out2, err := input(Message{Kind: "rerun"})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, fmt.Errorf("stderr: %w", err))
 		os.Exit(1)
