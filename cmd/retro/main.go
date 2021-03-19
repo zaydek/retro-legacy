@@ -458,22 +458,14 @@ loop:
 	}
 
 	// Serve __export__
+	// TODO: rebuild() and renderToString(srvRoute) can be concurrent
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		t := time.Now()
 		var (
 			start        = time.Now()
 			sys_pathname = getSystemPathname(req.URL.Path)
 		)
-		// TODO: rebuild() and renderToString(srvRoute) can be concurrent
-		if _, err := rebuild(); err != nil {
-			stdio_logger.Stderr(err)
-			fmt.Fprintln(w, "500 server error") // TODO
-			logServeEvent500(sys_pathname, start)
-			return
-		}
 		// Bad request (404)
-		fmt.Println("t1", time.Since(t))
-		t = time.Now()
 		srvRoute, ok := r.SrvRouter[getPathname(req.URL.Path)]
 		if !ok {
 			http.NotFound(w, req)
@@ -481,15 +473,26 @@ loop:
 			return
 		}
 		// OK (200)
-		fmt.Println("t2", time.Since(t))
+
+		// // TODO: Technically URL visits shouldn’t trigger a rebuild; only the watcher
+		// // should do that
+		// if _, err := rebuild(); err != nil {
+		// 	stdio_logger.Stderr(err)
+		// 	fmt.Fprintln(w, "500 server error") // TODO
+		// 	logServeEvent500(sys_pathname, start)
+		// 	return
+		// }
+		// fmt.Println("t1", time.Since(t))
 		t = time.Now()
+
+		// TODO: Implement a caching layer here
 		contents, err := renderToString(srvRoute)
 		if err != nil {
 			stdio_logger.Stderr(err)
 			fmt.Fprintln(w, "500 server error") // TODO
 			return
 		}
-		fmt.Println("t3", time.Since(t))
+		fmt.Println("t2", time.Since(t))
 		t = time.Now()
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
 			panic(err)
@@ -497,7 +500,7 @@ loop:
 		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(contents), MODE_FILE); err != nil {
 			panic(err)
 		}
-		fmt.Println("t4", time.Since(t))
+		fmt.Println("t3", time.Since(t))
 		fmt.Fprintln(w, contents)
 		logServeEvent200(sys_pathname, start)
 	})
