@@ -224,34 +224,34 @@ async function serverRouteString({
 	Runtime: T.Runtime
 	ServerRoute: T.ServerRoute
 }): Promise<string> {
-	// const mod = modCache[srvRoute.Route.Pathname]!
 	const mod = await resolveModule(runtime, srvRoute.Route.Source)
 
 	let head = "<!-- <Head> -->"
-	// try {
 	if (typeof mod.Head === "function") {
 		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, srvRoute.Props))
 		head = head.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 	}
-	// } catch (error) {
-	// 	throw error
-	// }
 
 	// TODO: Upgrade to <script src="/app.[hash].js">?
 	let body = ""
 	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	body += `\n\t\t<div id="root"></div>`
 	body += `\n\t\t<script src="/app.js"></script>`
-	body += `\n\t\t<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", e => void window.location.reload()); dev.addEventListener("error", e => void console.error(JSON.parse(e.data)))</script>`
+	body += `\n\t\t<!-- Server-sent events for /~dev -->`
+	body += `\n\t\t<script type="module">`
+	body += `\n\t\t\tconst dev = new EventSource("/~dev")`
+	body += `\n\t\t\tdev.addEventListener("reload", window.location.reload)`
+	body += `\n\t\t\tdev.addEventListener("error", e => {`
+	body += `\n\t\t\t\ttry {`
+	body += `\n\t\t\t\t\tconsole.error(JSON.parse(e.data))`
+	body += `\n\t\t\t\t} catch {}`
+	body += `\n\t\t\t})`
+	body += `\n\t\t</script>`
 
-	// try {
 	body = body.replace(
 		`<div id="root"></div>`,
 		`<div id="root">` + ReactDOMServer.renderToString(React.createElement(mod.default, srvRoute.Props)) + `</div>`,
 	)
-	// } catch (error) {
-	// 	throw error
-	// }
 
 	let contents = runtime.Template
 	contents = contents.replace("%head%", head)

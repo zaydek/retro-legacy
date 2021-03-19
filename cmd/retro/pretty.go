@@ -59,7 +59,7 @@ func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Dur
 	str += main(entry[1:])
 	str += alt(ext)
 	str += " "
-	str += alt(strings.Repeat("-", MAX_LEN-len(entry+ext)))
+	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry+ext)))
 	str += " "
 	str += alt("/")
 	str += main(pathname[1:])
@@ -98,7 +98,7 @@ func prettyServeEvent(args ServeArgs) string {
 	str += main(entry[1:])
 	str += alt(ext)
 	str += " "
-	str += alt(strings.Repeat("-", MAX_LEN-len(entry+ext)))
+	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry+ext)))
 	str += " "
 	str += main(args.StatusCode)
 	str += " "
