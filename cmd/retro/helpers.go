@@ -37,3 +37,8 @@ func logServeEvent404(pathname string, start time.Time) {
 	dur := time.Since(start)
 	stdio_logger.Stdout(prettyServeEvent(ServeArgs{Path: pathname, StatusCode: 404, Duration: dur}))
 }
+
+func logServeEvent500(pathname string, start time.Time) {
+	dur := time.Since(start)
+	stdio_logger.Stdout(prettyServeEvent(ServeArgs{Path: pathname, StatusCode: 500, Duration: dur}))
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/zaydek/retro/pkg/logger"
 	"github.com/zaydek/retro/pkg/stdio_logger"
 	"github.com/zaydek/retro/pkg/terminal"
+	"github.com/zaydek/retro/pkg/watch"
 )
 
 type templateError struct {
@@ -139,8 +140,7 @@ func getType(source string) string {
 }
 
 func getComponentName(source string, typ string) string {
-	component := strings.ToUpper(typ[0:1]) + typ[1:]
-
+	name := strings.ToUpper(typ[0:1]) + typ[1:]
 	basename := source[:len(source)-len(filepath.Ext(source))]
 
 	x := 0
@@ -149,15 +149,15 @@ func getComponentName(source string, typ string) string {
 			continue
 		}
 		// Uppercase the start or the start of a part character
-		if x == 0 || (x-1 > 0 && basename[x-1] == filepath.Separator) {
-			component += strings.ToUpper(string(r))
+		if x == 0 || basename[x] == filepath.Separator {
+			name += strings.ToUpper(string(r))
 		} else {
-			component += string(r)
+			name += string(r)
 		}
 		// Increment x on ASCII-safe characters
 		x++
 	}
-	return component
+	return name
 }
 
 func newRoute(dirs DirConfiguration, source string) Route {
@@ -405,11 +405,6 @@ loop:
 
 	browser := make(chan BuildResponse)
 
-	type Data struct {
-		Runtime     Runtime
-		ServerRoute ServerRoute
-	}
-
 	// E.g. 'await esbuild.build'
 	build := func() (BuildResponse, error) {
 		var res BuildResponse
@@ -428,7 +423,11 @@ loop:
 		return res, nil
 	}
 
-	serverRouteString := func(srvRoute ServerRoute) (string, error) {
+	renderToString := func(srvRoute ServerRoute) (string, error) {
+		type Data struct {
+			Runtime     Runtime
+			ServerRoute ServerRoute
+		}
 		var contents string
 		data := Data{Runtime: r, ServerRoute: srvRoute}
 		if err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: data}, &contents); err != nil {
@@ -437,9 +436,23 @@ loop:
 		return contents, nil
 	}
 
+	go func() {
+		for res := range watch.Directory(r.Dirs.SrcPagesDir, 500*time.Millisecond) {
+			if res.Err != nil {
+				panic(res.Err)
+			}
+			buildRes, err := rebuild()
+			if err != nil {
+				stdio_logger.Stderr(err)
+				// os.Exit(1) // TODO
+			}
+			browser <- buildRes
+		}
+	}()
+
 	if _, err := build(); err != nil {
 		stdio_logger.Stderr(err)
-		os.Exit(1) // TODO
+		// os.Exit(1) // TODO
 	}
 
 	// Serve __export__
@@ -450,20 +463,23 @@ loop:
 		)
 		if _, err := rebuild(); err != nil {
 			stdio_logger.Stderr(err)
-			os.Exit(1) // TODO
+			fmt.Fprintln(w, "500 server error") // TODO
+			logServeEvent500(sys_pathname, start)
+			return
 		}
 		// Bad request (404)
-		srvRoute, found := r.SrvRouter[getPathname(req.URL.Path)]
-		if !found {
+		srvRoute, ok := r.SrvRouter[getPathname(req.URL.Path)]
+		if !ok {
 			http.NotFound(w, req)
 			logServeEvent404(sys_pathname, start)
 			return
 		}
 		// OK (200)
-		contents, err := serverRouteString(srvRoute)
+		contents, err := renderToString(srvRoute)
 		if err != nil {
 			stdio_logger.Stderr(err)
-			os.Exit(1) // TODO
+			fmt.Fprintln(w, "500 server error") // TODO
+			return
 		}
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
 			panic(err)
@@ -534,8 +550,9 @@ loop:
 
 	port := r.getPort()
 
-	fmt.Println()
-	logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, terminal.Underline("http://localhost:"+port)))
+	// fmt.Println()
+	// logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, terminal.Underline("http://localhost:"+port)))
+
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		panic(err)
 	}

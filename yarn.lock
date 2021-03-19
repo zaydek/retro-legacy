@@ -33,10 +33,10 @@ csstype@^3.0.2:
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.0.7.tgz#2a5fb75e1015e84dd15692f71e89a1450290950b"
   integrity sha512-KxnUB0ZMlnUWCsx2Z8MUsr6qV6ja1w9ArPErJaJaF8a5SOWoHLIszeCTKGRGRgtLgYrs1E8CHkNSP1VZTTPc9g==
 
-esbuild@^0.9.2:
-  version "0.9.2"
-  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.9.2.tgz#7e9fde247c913ed8ee059e2648b0c53f7d00abe5"
-  integrity sha512-xE3oOILjnmN8PSjkG3lT9NBbd1DbxNqolJ5qNyrLhDWsFef3yTp/KTQz1C/x7BYFKbtrr9foYtKA6KA1zuNAUQ==
+esbuild@^0.9.4:
+  version "0.9.4"
+  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.9.4.tgz#4480ffc4c1e5d5bb25958f889b5de0279bfb2d6f"
+  integrity sha512-bF6laCiYE5+iAfZsX+v6Lwvi5QbvKN3tThxDIR2WLyLYzTzNn0ijdpqkvTVsafmRZjic2Nq1nkSf5RSWySDTjA==
 
 "js-tokens@^3.0.0 || ^4.0.0":
   version "4.0.0"

@@ -3,62 +3,67 @@ import * as path from "path"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as T from "./types"
-import { readline, stderr, stdout } from "./readline"
 import { newPathInfo, PathInfo } from "./path_info"
+import { readline, stderr, stdout } from "./readline"
 
-const modCache: { [key: string]: T.AnyModule } = {}
-
-////////////////////////////////////////////////////////////////////////////////
-
-const transpile = (source: string, target: string): esbuild.BuildOptions => ({
-	bundle: true,
-	color: true,
-	define: {
-		__DEV__: JSON.stringify(process.env["NODE_ENV"] === "true"),
-		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] ?? "development"),
-	},
-	entryPoints: [source],
-	external: ["react", "react-dom"], // Dedupe React APIs
-	format: "cjs",
-	inject: ["scripts/react_shim.js"],
-	loader: {
-		".js": "jsx", // Process .js as .jsx
-	},
-	logLevel: "warning",
-	minify: false,
-	outfile: target,
-	// plugins: [...],
-})
-
-const bundle = (source: string, target: string): esbuild.BuildOptions => ({
-	bundle: true,
-	color: true,
-	define: {
-		__DEV__: JSON.stringify(process.env["NODE_ENV"] === "true"),
-		"process.env.NODE_ENV": JSON.stringify(process.env["NODE_ENV"] ?? "development"),
-	},
-	entryPoints: [source],
-	external: [],
-	format: "iife",
-	inject: ["scripts/react_shim.js"],
-	loader: {
-		".js": "jsx", // Process .js as .jsx
-	},
-	logLevel: "warning",
-	minify: false, // TODO
-	outfile: target,
-	// plugins: [...],
-})
+// const modCache: { [key: string]: T.AnyModule } = {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, route: T.Route): Promise<Module> {
-	const source = route.Source
+// const transpile = (source: string, target: string): esbuild.BuildOptions => ({
+// 	bundle: true,
+// 	define: {
+// 		"process.env.NODE_ENV": '"development"',
+// 	},
+// 	entryPoints: [source],
+// 	external: ["react", "react-dom"], // Dedupe React APIs
+// 	format: "cjs",
+// 	loader: { ".js": "jsx" },
+// 	logLevel: "warning",
+// 	outfile: target,
+// })
+
+// const bundle = (source: string, target: string): esbuild.BuildOptions => ({
+// 	bundle: true,
+// 	define: {
+// 		"process.env.NODE_ENV": '"development"',
+// 	},
+// 	entryPoints: [source],
+// 	// external: [],
+// 	format: "iife",
+// 	loader: { ".js": "jsx" },
+// 	logLevel: "warning",
+// 	outfile: target,
+// })
+
+////////////////////////////////////////////////////////////////////////////////
+
+async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, source: string): Promise<Module> {
 	const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"))
 
-	await esbuild.build(transpile(source, target))
+	try {
+		// await esbuild.build(transpile(source, target))
+		await esbuild.build({
+			bundle: true,
+			define: {
+				"process.env.NODE_ENV": JSON.stringify("development"),
+			},
+			entryPoints: [source],
+			external: ["react", "react-dom"],
+			format: "cjs",
+			loader: {
+				".js": "jsx",
+			},
+			outfile: target,
+		})
+	} catch (error) {
+		// Rethrow non-esbuild errors
+		if (!("errors" in error) && !("warnings" in error)) {
+			throw error
+		}
+	}
 
-	// Wrap try-catch to suppress esbuild warning
+	// Use try-catch to no-op esbuild’s "require" warning
 	let mod: Module
 	try {
 		// Purge the cache
@@ -67,11 +72,6 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 	} catch (error) {
 		// Rethrow error
 		throw error
-
-		// // Rethrow non-esbuild errors
-		// if (!("errors" in error) && !("warnings" in error)) {
-		// 	throw error
-		// }
 	}
 
 	return mod!
@@ -96,7 +96,7 @@ function getPathnameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
 }
 
 async function resolveStaticServerRoute(runtime: T.Runtime, route: T.Route): Promise<T.ServerRoute> {
-	const mod = await resolveModule<T.StaticModule>(runtime, route)
+	const mod = await resolveModule<T.StaticModule>(runtime, route.Source)
 	// if (!valid.staticModuleExports(mod)) {
 	// 	throw new Error(errors.badStaticPageExports(page.src))
 	// }
@@ -130,12 +130,12 @@ async function resolveStaticServerRoute(runtime: T.Runtime, route: T.Route): Pro
 	}
 
 	// Cache
-	modCache[srvRoute.Route.Pathname] = mod
+	// modCache[srvRoute.Route.Pathname] = mod
 	return srvRoute
 }
 
 async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): Promise<T.ServerRoute[]> {
-	const mod = await resolveModule<T.DynamicModule>(runtime, route)
+	const mod = await resolveModule<T.DynamicModule>(runtime, route.Source)
 	// if (!valid.dynamicModuleExports(mod)) {
 	// 	throw new Error(errors.badDynamicPageExports(page.src))
 	// }
@@ -170,7 +170,7 @@ async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): P
 			},
 		}
 		// Cache
-		modCache[srvRoute.Route.Pathname] = mod
+		// modCache[srvRoute.Route.Pathname] = mod
 		srvRoutes.push(srvRoute)
 	}
 	return srvRoutes
@@ -213,7 +213,8 @@ async function serverRouteString({
 	Runtime: T.Runtime
 	ServerRoute: T.ServerRoute
 }): Promise<string> {
-	const mod = await resolveModule(runtime, srvRoute.Route)
+	// const mod = modCache[srvRoute.Route.Pathname]!
+	const mod = await resolveModule(runtime, srvRoute.Route.Source)
 
 	let head = "<!-- <Head> -->"
 	try {
@@ -222,6 +223,7 @@ async function serverRouteString({
 			head = str.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 		}
 	} catch (error) {
+		throw error
 		// log.fatal(`${srvRoute.Route.Source}.<Head>: ${error.message}`)
 	}
 
@@ -242,17 +244,26 @@ async function serverRouteString({
 	// app += !true ? "" : `\n\t\t\t})`
 	// app += !true ? "" : `\n\t\t</script>`
 
+	function Component() {
+		const [state, setState] = React.useState("Hello, world!")
+		return React.createElement("h1", null, state)
+	}
+
+	// stderr(ReactDOMServer.renderToString(React.createElement(Component)))
+
 	try {
 		// prettier-ignore
 		body = body.replace(
 			`<div id="root"></div>`,
 			`<div id="root">` +
-				ReactDOMServer.renderToString(
-					React.createElement(mod.default, srvRoute.Props),
-				) +
-			`</div>`,
+				ReactDOMServer.renderToString(React.createElement(mod.default))
+			+ `</div>`,
+				// ReactDOMServer.renderToString(
+				// 	React.createElement(mod.default, srvRoute.Props),
+				// ) +
 		)
 	} catch (error) {
+		throw error
 		// if (!(process.env["__DEV__"] === "true")) log.fatal(`${srvRoute.Route.Source}.<Page>: ${error.message}`)
 		// if (process.env["__DEV__"] === "true") throw error
 	}
@@ -260,6 +271,7 @@ async function serverRouteString({
 	let contents = runtime.Template
 	contents = contents.replace("%head%", head)
 	contents = contents.replace("%body%", body)
+
 	return contents
 }
 
@@ -307,17 +319,31 @@ ReactDOM.hydrate(
 `
 }
 
-let buildRes: esbuild.BuildIncremental
+let incremental: esbuild.BuildIncremental
 
 async function build(runtime: T.Runtime): Promise<any> {
+	let errors: esbuild.Message[] = []
+	let warnings: esbuild.Message[] = []
+
 	const source = path.join(runtime.Dirs.CacheDir, "app.js")
 	const target = path.join(runtime.Dirs.ExportDir, "app.js")
 
-	let buildErr: Error
-
 	try {
-		buildRes = await esbuild.build({
-			...bundle(source, target),
+		// prettier-ignore
+		incremental = await esbuild.build({
+			bundle: true,
+			define: {
+				"process.env.NODE_ENV": JSON.stringify("development"),
+			},
+			entryPoints: [source],
+			// external: ["react", "react-dom"],
+			// format: "cjs",
+			loader: {
+				".js": "jsx",
+			},
+			outfile: target,
+
+			// Add
 			incremental: true,
 			// watch: {
 			// 	async onRebuild(error) {
@@ -328,36 +354,41 @@ async function build(runtime: T.Runtime): Promise<any> {
 			// 	},
 			// },
 		})
+		warnings = incremental.warnings
 	} catch (error) {
 		// Rethrow non-esbuild errors
 		if (!("errors" in error) && !("warnings" in error)) {
 			throw error
 		}
-		buildErr = error
+		warnings = error.warnings
+		errors = error.errors
 	}
 
-	return { ...buildRes!, ...buildErr! }
+	return { errors, warnings }
 }
 
 async function rebuild(_: T.Runtime): Promise<any> {
-	let rebuildErr: Error
+	let errors: esbuild.Message[] = []
+	let warnings: esbuild.Message[] = []
 
 	// Coerce to truthy
-	if (buildRes.rebuild === undefined) {
+	if (incremental.rebuild === undefined) {
 		throw new Error("Internal error")
 	}
 
 	try {
-		await buildRes.rebuild!()
+		const result = await incremental.rebuild!()
+		warnings = result.warnings
 	} catch (error) {
 		// Rethrow non-esbuild errors
 		if (!("errors" in error) && !("warnings" in error)) {
 			throw error
 		}
-		rebuildErr = error
+		warnings = error.warnings
+		errors = error.errors
 	}
 
-	return { ...buildRes!, ...rebuildErr! }
+	return { errors, warnings }
 }
 
 async function main(): Promise<void> {
@@ -375,11 +406,9 @@ async function main(): Promise<void> {
 				})
 				break
 			case "server_route_string":
-				const str = await serverRouteString(msg.Data)
 				stdout({
 					Kind: "",
-					// Data: await serverRouteString(msg.Data),
-					Data: str,
+					Data: await serverRouteString(msg.Data),
 				})
 				break
 			case "server_router_string":

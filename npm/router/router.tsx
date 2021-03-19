@@ -17,7 +17,7 @@ interface RouterState {
 //
 // TODO: Implement synthetic pushState and replaceState functions?
 const routerStore = store.createStore<RouterState>({
-	// TODO: Add support for key.
+	// TODO: Add support for key
 	path: utils.getBrowserPath(),
 	type: "PUSH",
 	scrollTo: [0, 0],
@@ -68,7 +68,7 @@ export const Router: T.Router = ({ children }) => {
 			onceRef.current = true
 			return
 		}
-		// window.pushState / window.replaceState:
+		// window.pushState / window.replaceState
 		let { path, scrollTo } = router
 		if (path !== utils.getBrowserPath()) {
 			let emitHistoryEvent: Function
@@ -79,7 +79,7 @@ export const Router: T.Router = ({ children }) => {
 			}
 			emitHistoryEvent!()
 		}
-		// window.scrollTo:
+		// window.scrollTo
 		if (scrollTo !== undefined && scrollTo !== "no-op") {
 			const x = !Array.isArray(scrollTo) ? 0 : scrollTo[0]
 			const y = !Array.isArray(scrollTo) ? scrollTo : scrollTo[1]
@@ -87,11 +87,11 @@ export const Router: T.Router = ({ children }) => {
 		}
 	}, [router])
 
-	// cachedRoutes caches routes so rerenders are O(1).
+	// Cache routes so rerenders are O(1)
 	const cachedRoutes = React.useMemo(() => {
 		type RouteMap = { [key: string]: React.ReactElement<T.Route> }
 
-		// routeMap maps paths to components.
+		// Maps paths to components
 		const routeMap: RouteMap = {}
 		React.Children.forEach(children, child => {
 			if (!React.isValidElement(child)) return
@@ -102,7 +102,6 @@ export const Router: T.Router = ({ children }) => {
 		return routeMap
 	}, [children])
 
-	// Match the current route or the "/404" route or undefined:
 	const route = cachedRoutes[router.path] || cachedRoutes["/404"]
 	return <>{route}</>
 }

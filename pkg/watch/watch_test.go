@@ -20,7 +20,7 @@ func check(t *testing.T, err error) {
 	t.Fatalf("check: %s", err)
 }
 
-func TestNewDirectory(t *testing.T) {
+func TestDirectory(t *testing.T) {
 	var count int
 
 	dir, err := ioutil.TempDir(".", "tmp_")
@@ -29,7 +29,7 @@ func TestNewDirectory(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	ch := NewDirectory(dir, 10*time.Millisecond)
+	ch := Directory(dir, 10*time.Millisecond)
 	go func() {
 		for range ch {
 			count++

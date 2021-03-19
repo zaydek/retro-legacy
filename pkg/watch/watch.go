@@ -8,8 +8,8 @@ import (
 
 type WatchResult struct{ Err error }
 
-// New creates a new watcher for directory dir.
-func NewDirectory(dir string, poll time.Duration) <-chan WatchResult {
+// Directory creates a new watcher for directory dir.
+func Directory(dir string, poll time.Duration) <-chan WatchResult {
 	var (
 		ch       = make(chan WatchResult)
 		mtimeMap = map[string]time.Time{}
