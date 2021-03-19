@@ -4,7 +4,7 @@ import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as T from "./types"
 import { readline, stderr, stdout } from "./utils"
-import { newPathInfo, PathInfo } from "./newPathInfo"
+import { newPathInfo, PathInfo } from "./path_info"
 
 const modCache: { [key: string]: T.AnyModule } = {}
 

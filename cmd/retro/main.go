@@ -2,19 +2,14 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/logger"
 	"github.com/zaydek/retro/pkg/terminal"
@@ -337,242 +332,242 @@ For example:
 }
 
 func (r Runtime) Dev() {
-	//////////////////////////////////////////////////////////////////////////////
-	// Server API
-
-	stdin, stdout, stderr, err := runNodeBackend(filepath.Join("scripts", "node_backend.esbuild.js"))
-	if err != nil {
-		panic(err)
-	}
-
-	defer func() {
-		stdin <- StdinMessage{Kind: "DONE"}
-		close(stdin)
-	}()
-
-	// Stream routes
-	stdin <- StdinMessage{Kind: "resolve_server_router", Data: r}
-
-	var one time.Time
-	sum := time.Now()
-
-loop:
-	for {
-		select {
-		case msg := <-stdout:
-			if msg.Kind == "eof" {
-				break loop
-			}
-			switch msg.Kind {
-			case "start":
-				one = time.Now() // Start
-			case "server_route":
-				var srvRoute ServerRoute
-				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
-					panic(err)
-				}
-				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
-				one = time.Now() // Reset
-			case "server_router":
-				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
-					panic(err)
-				}
-			default:
-				panic("Internal error")
-			}
-		case err := <-stderr:
-			logger2.Stderr(err)
-			os.Exit(1)
-		}
-	}
-
-	fmt.Println()
-	fmt.Println(" " + dim(`(`+prettyDuration(time.Since(sum))+`)`))
-	fmt.Println()
-
-	//////////////////////////////////////////////////////////////////////////////
-	// Server router contents
-
-	stdin <- StdinMessage{Kind: "server_router_contents", Data: r.SrvRouter}
-	msg := <-stdout
-	var contents string
-	if err := json.Unmarshal(msg.Data, &contents); err != nil {
-		panic(err)
-	}
-
-	if err := ioutil.WriteFile(filepath.Join(r.Dirs.CacheDir, "app.js"), []byte(contents), MODE_FILE); err != nil {
-		panic(err)
-	}
-
-	//////////////////////////////////////////////////////////////////////////////
-	// Dev server
-
-	type result struct {
-		Errors   []api.Message
-		Warnings []api.Message
-	}
-
-	type ServeRouteContents struct {
-		Head string // %head%
-		Body string // %body%
-	}
-
-	dev := make(chan result, 16)
-	out := make(chan string)
-
-	go func() {
-		stdin <- StdinMessage{Kind: "start_dev_server", Data: r}
-
-		for {
-			select {
-			case msg := <-stdout:
-				switch msg.Kind {
-				case "build":
-					var res result
-					if err := json.Unmarshal(msg.Data, &res); err != nil {
-						panic(err)
-					}
-					// fmt. iPrintln(res) // DEBUG
-					dev <- res
-				case "rebuild":
-					var res result
-					if err := json.Unmarshal(msg.Data, &res); err != nil {
-						panic(err)
-					}
-					// fmt.Println(res) // DEBUG
-					dev <- res
-				case "server_route_contents":
-					var contents ServeRouteContents
-					if err := json.Unmarshal(msg.Data, &contents); err != nil {
-						panic(err)
-					}
-					html := r.Template
-					html = strings.Replace(html, "%head%", contents.Head, 1)
-					html = strings.Replace(html, "%body%", contents.Body, 1)
-					out <- html
-				default:
-					panic("Internal error")
-				}
-			case err := <-stderr:
-				logger2.Stderr(err)
-				// os.Exit(1)
-			}
-		}
-	}()
-
-	getPathname := func(rq *http.Request) string {
-		pathname := rq.URL.Path
-		if strings.HasSuffix(rq.URL.Path, "/index.html") {
-			pathname = pathname[:len(pathname)-len("index.html")]
-		} else if ext := filepath.Ext(rq.URL.Path); ext == ".html" {
-			pathname = pathname[:len(pathname)-len(".html")]
-		}
-		return pathname
-	}
-
-	getFSPathname := func(rq *http.Request) string {
-		pathname := rq.URL.Path
-		if strings.HasSuffix(rq.URL.Path, "/") {
-			pathname += "index.html"
-		} else if ext := filepath.Ext(rq.URL.Path); ext == "" {
-			pathname += ".html"
-		}
-		return pathname
-	}
-
-	serveEvent := func(pathname string, statusCode int, dur time.Duration) {
-		logger2.Stdout(prettyServeEvent(ServeArgs{
-			Path:       pathname,
-			StatusCode: statusCode,
-			Duration:   dur,
-		}))
-	}
-
-	// ~/dev
-	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-		flusher, _ := w.(http.Flusher)
-		for {
-			select {
-			case <-dev:
-				fmt.Fprintf(w, "event: reload\ndata\n\n")
-				flusher.Flush()
-			case <-rq.Context().Done():
-				return
-			}
-		}
-	})
-
-	// __export__
-	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
-		var (
-			start       = time.Now()
-			fs_pathname = getFSPathname(rq)
-		)
-		// 404
-		srvRoute, ok := r.SrvRouter[getPathname(rq)]
-		if !ok {
-			http.NotFound(w, rq)
-			serveEvent(fs_pathname, 404, time.Since(start))
-			return
-		}
-		// 200
-		stdin <- StdinMessage{Kind: "server_route_contents", Data: struct {
-			Runtime  Runtime
-			SrvRoute ServerRoute
-		}{Runtime: r, SrvRoute: srvRoute}}
-		html := <-out
-		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
-			panic(err)
-		}
-		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(html), MODE_FILE); err != nil {
-			panic(err)
-		}
-		fmt.Fprintln(w, html)
-		serveEvent(fs_pathname, 200, time.Since(start))
-	})
-
-	// Serve __export__/app.js
-	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
-		var (
-			start       = time.Now()
-			fs_pathname = "/app.js"
-		)
-		// 404
-		target := filepath.Join(r.Dirs.ExportDir, fs_pathname)
-		if _, err := os.Stat(target); os.IsNotExist(err) {
-			http.NotFound(w, rq)
-			serveEvent(fs_pathname, 404, time.Since(start))
-		}
-		// 200
-		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, fs_pathname))
-		serveEvent(fs_pathname, 200, time.Since(start))
-	})
-
-	// Serve __export__/www (use path.Join not filepath.Join)
-	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
-		var (
-			start       = time.Now()
-			fs_pathname = getFSPathname(rq)
-		)
-		// 404
-		target := filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname)
-		if _, err := os.Stat(target); os.IsNotExist(err) {
-			http.NotFound(w, rq)
-			serveEvent(fs_pathname, 404, time.Since(start))
-		}
-		// 200
-		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
-		serveEvent(fs_pathname, 200, time.Since(start))
-	})
-
-	port := r.getPort()
-	logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, underline("http://localhost:"+port)))
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		panic(err)
-	}
+	//	//////////////////////////////////////////////////////////////////////////////
+	//	// Server API
+	//
+	//	stdin, stdout, stderr, err := runNodeBackend(filepath.Join("scripts", "node_backend.esbuild.js"))
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	defer func() {
+	//		stdin <- StdinMessage{Kind: "DONE"}
+	//		close(stdin)
+	//	}()
+	//
+	//	// Stream routes
+	//	stdin <- StdinMessage{Kind: "resolve_server_router", Data: r}
+	//
+	//	var one time.Time
+	//	sum := time.Now()
+	//
+	//loop:
+	//	for {
+	//		select {
+	//		case msg := <-stdout:
+	//			if msg.Kind == "eof" {
+	//				break loop
+	//			}
+	//			switch msg.Kind {
+	//			case "start":
+	//				one = time.Now() // Start
+	//			case "server_route":
+	//				var srvRoute ServerRoute
+	//				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
+	//					panic(err)
+	//				}
+	//				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
+	//				one = time.Now() // Reset
+	//			case "server_router":
+	//				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
+	//					panic(err)
+	//				}
+	//			default:
+	//				panic("Internal error")
+	//			}
+	//		case err := <-stderr:
+	//			logger2.Stderr(err)
+	//			os.Exit(1)
+	//		}
+	//	}
+	//
+	//	fmt.Println()
+	//	fmt.Println(" " + dim(`(`+prettyDuration(time.Since(sum))+`)`))
+	//	fmt.Println()
+	//
+	//	//////////////////////////////////////////////////////////////////////////////
+	//	// Server router contents
+	//
+	//	stdin <- StdinMessage{Kind: "server_router_contents", Data: r.SrvRouter}
+	//	msg := <-stdout
+	//	var contents string
+	//	if err := json.Unmarshal(msg.Data, &contents); err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	if err := ioutil.WriteFile(filepath.Join(r.Dirs.CacheDir, "app.js"), []byte(contents), MODE_FILE); err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	//////////////////////////////////////////////////////////////////////////////
+	//	// Dev server
+	//
+	//	type result struct {
+	//		Errors   []api.Message
+	//		Warnings []api.Message
+	//	}
+	//
+	//	type ServeRouteContents struct {
+	//		Head string // %head%
+	//		Body string // %body%
+	//	}
+	//
+	//	dev := make(chan result, 16)
+	//	out := make(chan string)
+	//
+	//	go func() {
+	//		stdin <- StdinMessage{Kind: "start_dev_server", Data: r}
+	//
+	//		for {
+	//			select {
+	//			case msg := <-stdout:
+	//				switch msg.Kind {
+	//				case "build":
+	//					var res result
+	//					if err := json.Unmarshal(msg.Data, &res); err != nil {
+	//						panic(err)
+	//					}
+	//					// fmt. iPrintln(res) // DEBUG
+	//					dev <- res
+	//				case "rebuild":
+	//					var res result
+	//					if err := json.Unmarshal(msg.Data, &res); err != nil {
+	//						panic(err)
+	//					}
+	//					// fmt.Println(res) // DEBUG
+	//					dev <- res
+	//				case "server_route_contents":
+	//					var contents ServeRouteContents
+	//					if err := json.Unmarshal(msg.Data, &contents); err != nil {
+	//						panic(err)
+	//					}
+	//					html := r.Template
+	//					html = strings.Replace(html, "%head%", contents.Head, 1)
+	//					html = strings.Replace(html, "%body%", contents.Body, 1)
+	//					out <- html
+	//				default:
+	//					panic("Internal error")
+	//				}
+	//			case err := <-stderr:
+	//				logger2.Stderr(err)
+	//				// os.Exit(1)
+	//			}
+	//		}
+	//	}()
+	//
+	//	getPathname := func(rq *http.Request) string {
+	//		pathname := rq.URL.Path
+	//		if strings.HasSuffix(rq.URL.Path, "/index.html") {
+	//			pathname = pathname[:len(pathname)-len("index.html")]
+	//		} else if ext := filepath.Ext(rq.URL.Path); ext == ".html" {
+	//			pathname = pathname[:len(pathname)-len(".html")]
+	//		}
+	//		return pathname
+	//	}
+	//
+	//	getFSPathname := func(rq *http.Request) string {
+	//		pathname := rq.URL.Path
+	//		if strings.HasSuffix(rq.URL.Path, "/") {
+	//			pathname += "index.html"
+	//		} else if ext := filepath.Ext(rq.URL.Path); ext == "" {
+	//			pathname += ".html"
+	//		}
+	//		return pathname
+	//	}
+	//
+	//	serveEvent := func(pathname string, statusCode int, dur time.Duration) {
+	//		logger2.Stdout(prettyServeEvent(ServeArgs{
+	//			Path:       pathname,
+	//			StatusCode: statusCode,
+	//			Duration:   dur,
+	//		}))
+	//	}
+	//
+	//	// ~/dev
+	//	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
+	//		w.Header().Set("Content-Type", "text/event-stream")
+	//		w.Header().Set("Cache-Control", "no-cache")
+	//		w.Header().Set("Connection", "keep-alive")
+	//		flusher, _ := w.(http.Flusher)
+	//		for {
+	//			select {
+	//			case <-dev:
+	//				fmt.Fprintf(w, "event: reload\ndata\n\n")
+	//				flusher.Flush()
+	//			case <-rq.Context().Done():
+	//				return
+	//			}
+	//		}
+	//	})
+	//
+	//	// __export__
+	//	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
+	//		var (
+	//			start       = time.Now()
+	//			fs_pathname = getFSPathname(rq)
+	//		)
+	//		// 404
+	//		srvRoute, ok := r.SrvRouter[getPathname(rq)]
+	//		if !ok {
+	//			http.NotFound(w, rq)
+	//			serveEvent(fs_pathname, 404, time.Since(start))
+	//			return
+	//		}
+	//		// 200
+	//		stdin <- StdinMessage{Kind: "server_route_contents", Data: struct {
+	//			Runtime  Runtime
+	//			SrvRoute ServerRoute
+	//		}{Runtime: r, SrvRoute: srvRoute}}
+	//		html := <-out
+	//		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
+	//			panic(err)
+	//		}
+	//		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(html), MODE_FILE); err != nil {
+	//			panic(err)
+	//		}
+	//		fmt.Fprintln(w, html)
+	//		serveEvent(fs_pathname, 200, time.Since(start))
+	//	})
+	//
+	//	// Serve __export__/app.js
+	//	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
+	//		var (
+	//			start       = time.Now()
+	//			fs_pathname = "/app.js"
+	//		)
+	//		// 404
+	//		target := filepath.Join(r.Dirs.ExportDir, fs_pathname)
+	//		if _, err := os.Stat(target); os.IsNotExist(err) {
+	//			http.NotFound(w, rq)
+	//			serveEvent(fs_pathname, 404, time.Since(start))
+	//		}
+	//		// 200
+	//		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, fs_pathname))
+	//		serveEvent(fs_pathname, 200, time.Since(start))
+	//	})
+	//
+	//	// Serve __export__/www (use path.Join not filepath.Join)
+	//	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
+	//		var (
+	//			start       = time.Now()
+	//			fs_pathname = getFSPathname(rq)
+	//		)
+	//		// 404
+	//		target := filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname)
+	//		if _, err := os.Stat(target); os.IsNotExist(err) {
+	//			http.NotFound(w, rq)
+	//			serveEvent(fs_pathname, 404, time.Since(start))
+	//		}
+	//		// 200
+	//		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
+	//		serveEvent(fs_pathname, 200, time.Since(start))
+	//	})
+	//
+	//	port := r.getPort()
+	//	logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, underline("http://localhost:"+port)))
+	//	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	//		panic(err)
+	//	}
 }
 
 func (r Runtime) Export() {
