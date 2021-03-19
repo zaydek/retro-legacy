@@ -319,14 +319,14 @@ async function build(runtime: T.Runtime): Promise<any> {
 		buildRes = await esbuild.build({
 			...bundle(source, target),
 			incremental: true,
-			watch: {
-				async onRebuild(error) {
-					// 		stdout({
-					// 			Kind: "rebuild",
-					// 			Data: error,
-					// 		})
-				},
-			},
+			// watch: {
+			// 	async onRebuild(error) {
+			// 		stdout({
+			// 			Kind: "rebuild",
+			// 			Data: error,
+			// 		})
+			// 	},
+			// },
 		})
 	} catch (error) {
 		// Rethrow non-esbuild errors
@@ -343,7 +343,7 @@ async function rebuild(_: T.Runtime): Promise<any> {
 	let rebuildErr: Error
 
 	// Coerce to truthy
-	if (!!buildRes.rebuild) {
+	if (buildRes.rebuild === undefined) {
 		throw new Error("Internal error")
 	}
 
@@ -394,12 +394,12 @@ async function main(): Promise<void> {
 					Data: await build(msg.Data),
 				})
 				break
-			// case "rebuild":
-			// 	stdout({
-			// 		Kind: "",
-			// 		Data: await rebuild(msg.Data),
-			// 	})
-			// 	break
+			case "rebuild":
+				stdout({
+					Kind: "",
+					Data: await rebuild(msg.Data),
+				})
+				break
 			default:
 				throw new Error("Internal error")
 		}

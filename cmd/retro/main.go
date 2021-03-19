@@ -410,7 +410,7 @@ loop:
 		ServerRoute ServerRoute
 	}
 
-	// Forwards as 'await esbuild.build'
+	// E.g. 'await esbuild.build'
 	build := func() (BuildResponse, error) {
 		var res BuildResponse
 		if err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
@@ -419,14 +419,14 @@ loop:
 		return res, nil
 	}
 
-	// // Forwards as 'await esbuild.build({ incremental: true }).rebuild()'
-	// rebuild := func() (BuildResponse, error) {
-	// 	var res BuildResponse
-	// 	if err := service.Send(ipc.RequestMessage{Kind: "rebuild", Data: r}, &res); err != nil {
-	// 		return BuildResponse{}, err
-	// 	}
-	// 	return res, nil
-	// }
+	// E.g. 'await esbuild.build({ incremental: true }).rebuild()'
+	rebuild := func() (BuildResponse, error) {
+		var res BuildResponse
+		if err := service.Send(ipc.RequestMessage{Kind: "rebuild", Data: r}, &res); err != nil {
+			return BuildResponse{}, err
+		}
+		return res, nil
+	}
 
 	serverRouteString := func(srvRoute ServerRoute) (string, error) {
 		var contents string
@@ -448,8 +448,11 @@ loop:
 			start        = time.Now()
 			sys_pathname = getSystemPathname(req.URL.Path)
 		)
+		if _, err := rebuild(); err != nil {
+			stdio_logger.Stderr(err)
+			os.Exit(1) // TODO
+		}
 		// Bad request (404)
-		// rebuild() // TODO
 		srvRoute, found := r.SrvRouter[getPathname(req.URL.Path)]
 		if !found {
 			http.NotFound(w, req)
