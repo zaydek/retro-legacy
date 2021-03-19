@@ -1,16 +1,8 @@
 package cli
 
-import (
-	"github.com/zaydek/retro/pkg/terminal"
-)
+import "github.com/zaydek/retro/pkg/terminal"
 
-var (
-	bold      = terminal.Bold.Sprint
-	cyan      = terminal.Cyan.Sprint
-	underline = terminal.Underline.Sprint
-)
-
-var usage = bold("retro dev") + `
+var usage = terminal.Bold("retro dev") + `
 
 	Start the dev server
 
@@ -19,29 +11,29 @@ var usage = bold("retro dev") + `
 		--port=...          Use port (default '8000')
 		--sourcemap=...     Add source maps (default 'true')
 
-` + bold("retro export") + `
+` + terminal.Bold("retro export") + `
 
 	Export the production-ready build
 
 		--cached=...        Reuse cached resources (default 'false')
 		--sourcemap=...     Add source maps (default 'true')
 
-` + bold("retro serve") + `
+` + terminal.Bold("retro serve") + `
 
 	Serve the production-ready build
 
 		--port=...          Use port (default '8000')
 
-` + bold("Examples") + `
+` + terminal.Bold("Examples") + `
 
-	` + cyan("%") + ` retro dev
-	` + cyan("%") + ` retro dev --port=3000
-	` + cyan("%") + ` retro export
-	` + cyan("%") + ` retro export --cached && retro serve
-	` + cyan("%") + ` retro export && retro serve
+	` + terminal.Cyan("%") + ` retro dev
+	` + terminal.Cyan("%") + ` retro dev --port=3000
+	` + terminal.Cyan("%") + ` retro export
+	` + terminal.Cyan("%") + ` retro export --cached && retro serve
+	` + terminal.Cyan("%") + ` retro export && retro serve
 
-` + bold("Repository") + `
+` + terminal.Bold("Repository") + `
 
-	` + underline("https://github.com/zaydek/retro") + `
-	` + underline("https://github.com/evanw/esbuild") + `
+	` + terminal.Underline("https://github.com/zaydek/retro") + `
+	` + terminal.Underline("https://github.com/evanw/esbuild") + `
 `

@@ -26,8 +26,6 @@ test("dynamic module exports", () => {
 	expect(valid.dynamicModuleExports({ serverProps: undefined, Head: undefined, default: undefined })).toBe(false)
 })
 
-////////////////////////////////////////////////////////////////////////////////
-
 test("serverProps return", () => {
 	expect(valid.serverPropsReturn(undefined)).toBe(false)
 	expect(valid.serverPropsReturn({})).toBe(true)

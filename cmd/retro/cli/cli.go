@@ -29,8 +29,6 @@ type CmdError struct {
 	Err error
 }
 
-var dim = terminal.Dim.Sprint
-
 func (e CmdError) Error() string {
 	switch e.Kind {
 	case BadCmdArgument:
@@ -38,9 +36,9 @@ func (e CmdError) Error() string {
 
 Supported commands:
 
-`+dim("-")+` retro dev     Start the dev server
-`+dim("-")+` retro export  Export the production-ready build
-`+dim("-")+` retro serve   Serve the production-ready build
+`+terminal.Dim("-")+` retro dev     Start the dev server
+`+terminal.Dim("-")+` retro export  Export the production-ready build
+`+terminal.Dim("-")+` retro serve   Serve the production-ready build
 
 `,
 			e.BadCmdArgument)
@@ -172,7 +170,7 @@ func parseServeCmd(args ...string) (ServeCmd, error) {
 func ParseCLIArguments() (interface{}, error) {
 	// Guard '% retro'
 	if len(os.Args) == 1 {
-		fmt.Println("\n" + logger.Transform(usage, terminal.Cyan.Sprint) + "\n")
+		fmt.Println("\n" + logger.Transform(usage, terminal.Cyan) + "\n")
 		os.Exit(0)
 	}
 
@@ -183,7 +181,7 @@ func ParseCLIArguments() (interface{}, error) {
 		fmt.Println(os.Getenv("RETRO_VERSION"))
 		os.Exit(0)
 	} else if cmdArg == "usage" || cmdArg == "--usage" || cmdArg == "help" || cmdArg == "--help" {
-		fmt.Println("\n" + logger.Transform(usage, terminal.Cyan.Sprint) + "\n")
+		fmt.Println("\n" + logger.Transform(usage, terminal.Cyan) + "\n")
 		os.Exit(0)
 	} else if cmdArg == "dev" {
 		os.Setenv("__DEV__", "true")

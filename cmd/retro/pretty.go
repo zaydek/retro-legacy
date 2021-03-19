@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/zaydek/retro/pkg/terminal"
 )
 
 const MAX_LEN = 40
@@ -34,14 +36,14 @@ func prettyDuration(dur time.Duration) string {
 }
 
 func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
-	main := normal
+	main := terminal.Normal
 	if srvRoute.Route.Type == "dynamic" {
-		main = cyan
+		main = terminal.Cyan
 	}
 
-	alt := dim
+	alt := terminal.Dim
 	if srvRoute.Route.Type == "dynamic" {
-		alt = dimCyan
+		alt = terminal.DimCyan
 	}
 
 	ext := filepath.Ext(srvRoute.Route.Source)
@@ -74,14 +76,14 @@ type ServeArgs struct {
 }
 
 func prettyServeEvent(args ServeArgs) string {
-	main := normal
+	main := terminal.Normal
 	if args.StatusCode != 200 {
-		main = red
+		main = terminal.Red
 	}
 
-	alt := dim
+	alt := terminal.Dim
 	if args.StatusCode != 200 {
-		alt = dimRed
+		alt = terminal.DimRed
 	}
 
 	ext := filepath.Ext(args.Path)

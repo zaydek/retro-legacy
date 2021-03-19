@@ -3,7 +3,7 @@ import * as path from "path"
 import * as React from "react"
 import * as ReactDOMServer from "react-dom/server"
 import * as T from "./types"
-import { readline, stderr, stdout } from "./utils"
+import { readline, stderr, stdout } from "./readline"
 import { newPathInfo, PathInfo } from "./path_info"
 
 const modCache: { [key: string]: T.AnyModule } = {}
@@ -20,7 +20,7 @@ const transpile = (source: string, target: string): esbuild.BuildOptions => ({
 	entryPoints: [source],
 	external: ["react", "react-dom"], // Dedupe React APIs
 	format: "cjs",
-	inject: ["scripts/react-shim.js"],
+	inject: ["scripts/react_shim.js"],
 	loader: {
 		".js": "jsx", // Process .js as .jsx
 	},
@@ -40,7 +40,7 @@ const bundle = (source: string, target: string): esbuild.BuildOptions => ({
 	entryPoints: [source],
 	external: [],
 	format: "iife",
-	inject: ["scripts/react-shim.js"],
+	inject: ["scripts/react_shim.js"],
 	loader: {
 		".js": "jsx", // Process .js as .jsx
 	},
@@ -58,15 +58,16 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 
 	await esbuild.build(transpile(source, target))
 
-	// // try {
-	// mod = require(path.resolve(target))
-	// // } catch (error) {
-	// // 	throw error
-	// // }
-
-	// Purge the cache
-	delete require.cache[path.resolve(target)]
-	const mod = require(path.resolve(target))
+	// Wrap try-catch to suppress esbuild warning
+	let mod: Module
+	try {
+		// Purge the cache
+		delete require.cache[path.resolve(target)]
+		mod = require(path.resolve(target))
+	} catch (error) {
+		// Rethrow error
+		throw error
+	}
 	return mod
 }
 
@@ -169,38 +170,34 @@ async function resolveDynamicServerRoutes(runtime: T.Runtime, route: T.Route): P
 	return srvRoutes
 }
 
-async function resolveRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
-	let once = false
-	function start() {
-		if (!once) {
-			stdout({ Kind: "start" })
-			once = true
-		}
-	}
-
-	const router: T.ServerRouter = {}
-	for (const route of runtime.Routes) {
+async function resolveServerRouter(runtime: T.Runtime): Promise<T.ServerRouter> {
+	const srvRouter: T.ServerRouter = {}
+	for (const [x, route] of runtime.Routes.entries()) {
 		if (route.Type === "static") {
-			start()
+			if (x === 0) {
+				stdout({ Kind: "once" })
+			}
 			const srvRoute = await resolveStaticServerRoute(runtime, route)
 			// if (router[meta.route.path] !== undefined) {
 			// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 			// }
 			stdout({ Kind: "server_route", Data: srvRoute })
-			router[srvRoute.Route.Pathname] = srvRoute
+			srvRouter[srvRoute.Route.Pathname] = srvRoute
 		} else if (route.Type === "dynamic") {
-			start()
+			if (x === 0) {
+				stdout({ Kind: "once" })
+			}
 			const srvRoutes = await resolveDynamicServerRoutes(runtime, route)
 			for (const srvRoute of srvRoutes) {
 				// if (router[meta.route.path] !== undefined) {
 				// 	throw new Error(errors.repeatPath(meta.route, router[meta.route.path]!.route))
 				// }
 				stdout({ Kind: "server_route", Data: srvRoute })
-				router[srvRoute.Route.Pathname] = srvRoute
+				srvRouter[srvRoute.Route.Pathname] = srvRoute
 			}
 		}
 	}
-	return router
+	return srvRouter
 }
 
 interface ServerRouteContents {
@@ -340,9 +337,9 @@ async function main(): Promise<void> {
 		const msg: T.Message = JSON.parse(encoded)
 		switch (msg.Kind) {
 			case "resolve_server_router": {
-				const router = await resolveRouter(msg.Data)
+				const router = await resolveServerRouter(msg.Data)
 				stdout({ Kind: "server_router", Data: router })
-				stdout({ Kind: "eof" })
+				stdout({ Kind: "done" })
 				break
 			}
 			case "server_route_contents": {

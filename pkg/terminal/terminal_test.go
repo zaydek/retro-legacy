@@ -24,23 +24,22 @@ func TesetDeferRevert(t *testing.T) {
 }
 
 func TestBold(t *testing.T) {
-	expect.DeepEqual(t, Bold.Sprint(), "")
-	expect.DeepEqual(t, Bold.Sprintf(""), "")
-	expect.DeepEqual(t, Bold.Sprint("Hello, world!"), "\x1b[1mHello, world!\x1b[0m")
-	expect.DeepEqual(t, Bold.Sprintf("%s", "Hello, world!"), "\x1b[1mHello, world!\x1b[0m")
+	expect.DeepEqual(t, Bold(), "")
+	expect.DeepEqual(t, Boldf(""), "")
+	expect.DeepEqual(t, Bold("Hello, world!"), "\x1b[1mHello, world!\x1b[0m")
+	expect.DeepEqual(t, Boldf("%s", "Hello, world!"), "\x1b[1mHello, world!\x1b[0m")
 }
 
 func TestRed(t *testing.T) {
-	expect.DeepEqual(t, Red.Sprint(), "")
-	expect.DeepEqual(t, Red.Sprintf(""), "")
-	expect.DeepEqual(t, Red.Sprint("Hello, world!"), "\x1b[31mHello, world!\x1b[0m")
-	expect.DeepEqual(t, Red.Sprintf("%s", "Hello, world!"), "\x1b[31mHello, world!\x1b[0m")
+	expect.DeepEqual(t, Red(), "")
+	expect.DeepEqual(t, Redf(""), "")
+	expect.DeepEqual(t, Red("Hello, world!"), "\x1b[31mHello, world!\x1b[0m")
+	expect.DeepEqual(t, Redf("%s", "Hello, world!"), "\x1b[31mHello, world!\x1b[0m")
 }
 
 func TestBoldRed(t *testing.T) {
-	boldRed := New(BoldCode, RedCode)
-	expect.DeepEqual(t, boldRed.Sprint(), "")
-	expect.DeepEqual(t, boldRed.Sprintf(""), "")
-	expect.DeepEqual(t, boldRed.Sprint("Hello, world!"), "\x1b[1m\x1b[31mHello, world!\x1b[0m")
-	expect.DeepEqual(t, boldRed.Sprintf("%s", "Hello, world!"), "\x1b[1m\x1b[31mHello, world!\x1b[0m")
+	expect.DeepEqual(t, BoldRed(), "")
+	expect.DeepEqual(t, BoldRedf(""), "")
+	expect.DeepEqual(t, BoldRed("Hello, world!"), "\x1b[1m\x1b[31mHello, world!\x1b[0m")
+	expect.DeepEqual(t, BoldRedf("%s", "Hello, world!"), "\x1b[1m\x1b[31mHello, world!\x1b[0m")
 }

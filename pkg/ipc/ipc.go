@@ -3,36 +3,37 @@ package ipc
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"os/exec"
-	"strings"
 )
 
-type Message struct {
+type Request struct {
 	Kind string
 	Data interface{}
 }
 
-// NewCommand starts a new IPC command. NewCommand returns a send function that
-// sends messages to the subprocess.
-func NewCommand(cmdStr string) (func(Message) (string, error), error) {
-	cmdArgs := strings.Split(cmdStr, " ")
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+type Response struct {
+	Kind string
+	Data json.RawMessage
+}
+
+// NewCommand starts a new IPC command.
+func NewCommand(args ...string) (stdin chan Request, stdout chan Response, stderr chan string, err error) {
+	cmd := exec.Command(args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	stdin := make(chan Message)
+	stdin = make(chan Request)
 	go func() {
 		defer stdinPipe.Close()
 		for msg := range stdin {
@@ -45,7 +46,7 @@ func NewCommand(cmdStr string) (func(Message) (string, error), error) {
 		}
 	}()
 
-	stdout := make(chan string)
+	stdout = make(chan Response)
 	go func() {
 		defer func() {
 			stdoutPipe.Close()
@@ -56,14 +57,18 @@ func NewCommand(cmdStr string) (func(Message) (string, error), error) {
 		buf := make([]byte, 1024*1024)
 		scanner.Buffer(buf, len(buf))
 		for scanner.Scan() {
-			stdout <- scanner.Text()
+			var res Response
+			if err := json.Unmarshal(scanner.Bytes(), &res); err != nil {
+				panic(err)
+			}
+			stdout <- res
 		}
 		if err := scanner.Err(); err != nil {
 			panic(err)
 		}
 	}()
 
-	stderr := make(chan string)
+	stderr = make(chan string)
 	go func() {
 		defer func() {
 			stderrPipe.Close()
@@ -85,18 +90,27 @@ func NewCommand(cmdStr string) (func(Message) (string, error), error) {
 
 	// Start the command
 	if err := cmd.Start(); err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-
-	return func(msg Message) (string, error) {
-		stdin <- msg
-		var out string
-		select {
-		case str := <-stdout:
-			out = str
-		case errstr := <-stderr:
-			return "", errors.New(errstr)
-		}
-		return out, nil
-	}, nil
+	return stdin, stdout, stderr, nil
 }
+
+// type Messenger struct {
+// 	Stdin          chan Message
+// 	Stdout, Stderr chan []byte
+// }
+//
+// func (m Messenger) Send(msg Message) (Message, error) {
+// 	m.Stdin <- msg
+//
+// 	var res Message
+// 	select {
+// 	case bstr := <-m.Stdout:
+// 		if err := json.Unmarshal(bstr, &res); err != nil {
+// 			return Message{}, err
+// 		}
+// 	case bstr := <-m.Stderr:
+// 		return Message{}, errors.New(string(bstr))
+// 	}
+// 	return res, nil
+// }

@@ -27,18 +27,10 @@ func Transform(str string, accent func(...interface{}) string) string {
 
 var mu sync.Mutex
 
-var (
-	boldf   = terminal.Bold.Sprintf
-	green   = terminal.Green.Sprint
-	magenta = terminal.Magenta.Sprint
-	red     = terminal.Red.Sprint
-	yellow  = terminal.Yellow.Sprint
-)
-
 func OK(str string) {
 	mu.Lock()
 	defer mu.Unlock()
-	str = boldf(" > %s%s\n", green("ok:"), Transform(str, green))
+	str = terminal.Boldf(" > %s%s\n", terminal.Green("ok:"), Transform(str, terminal.Green))
 	fmt.Fprintln(os.Stdout, str)
 }
 
@@ -46,7 +38,7 @@ func Warning(err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	var str string
-	str = boldf(" > %s%s\n", yellow("warning:"), Transform(err.Error(), magenta))
+	str = terminal.Boldf(" > %s%s\n", terminal.Yellow("warning:"), Transform(err.Error(), terminal.Magenta))
 	fmt.Fprintln(os.Stderr, str)
 }
 
@@ -54,7 +46,7 @@ func FatalError(err error) {
 	mu.Lock()
 	defer mu.Unlock()
 	var str string
-	str = boldf(" > %s%s\n", red("error:"), Transform(err.Error(), magenta))
+	str = terminal.Boldf(" > %s%s\n", terminal.Red("error:"), Transform(err.Error(), terminal.Magenta))
 	fmt.Fprintln(os.Stderr, str)
 	os.Exit(1)
 }

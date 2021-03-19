@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -9,9 +10,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/zaydek/retro/cmd/retro/cli"
+	"github.com/zaydek/retro/pkg/ipc"
 	"github.com/zaydek/retro/pkg/logger"
+	"github.com/zaydek/retro/pkg/stdio_logger"
 	"github.com/zaydek/retro/pkg/terminal"
 )
 
@@ -262,16 +266,16 @@ func newRuntime() (Runtime, error) {
 
 For example:
 
-` + dim(`// `+index_html) + `
+` + terminal.Dimf(`// %s`, index_html) + `
 <!DOCTYPE html>
 	<head lang="en">
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		` + terminal.Magenta.Sprint("%head%") + `
-		` + dim("...") + `
+		` + terminal.Magenta("%head%") + `
+		` + terminal.Dim("...") + `
 	</head>
 	<body>
-		` + dim("...") + `
+		` + terminal.Dim("...") + `
 	</body>
 </html>
 `)
@@ -283,16 +287,16 @@ For example:
 
 For example:
 
-` + dim(`// `+index_html) + `
+` + terminal.Dimf(`// %s`, index_html) + `
 <!DOCTYPE html>
 	<head lang="en">
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		` + dim("...") + `
+		` + terminal.Dim("...") + `
 	</head>
 	<body>
-		` + terminal.Magenta.Sprint("%body%") + `
-		` + dim("...") + `
+		` + terminal.Magenta("%body%") + `
+		` + terminal.Dim("...") + `
 	</body>
 </html>
 `)
@@ -332,59 +336,52 @@ For example:
 }
 
 func (r Runtime) Dev() {
-	//	//////////////////////////////////////////////////////////////////////////////
-	//	// Server API
-	//
-	//	stdin, stdout, stderr, err := runNodeBackend(filepath.Join("scripts", "node_backend.esbuild.js"))
-	//	if err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	defer func() {
-	//		stdin <- StdinMessage{Kind: "DONE"}
-	//		close(stdin)
-	//	}()
-	//
-	//	// Stream routes
-	//	stdin <- StdinMessage{Kind: "resolve_server_router", Data: r}
-	//
-	//	var one time.Time
-	//	sum := time.Now()
-	//
-	//loop:
-	//	for {
-	//		select {
-	//		case msg := <-stdout:
-	//			if msg.Kind == "eof" {
-	//				break loop
-	//			}
-	//			switch msg.Kind {
-	//			case "start":
-	//				one = time.Now() // Start
-	//			case "server_route":
-	//				var srvRoute ServerRoute
-	//				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
-	//					panic(err)
-	//				}
-	//				logger2.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(one)))
-	//				one = time.Now() // Reset
-	//			case "server_router":
-	//				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
-	//					panic(err)
-	//				}
-	//			default:
-	//				panic("Internal error")
-	//			}
-	//		case err := <-stderr:
-	//			logger2.Stderr(err)
-	//			os.Exit(1)
-	//		}
-	//	}
-	//
-	//	fmt.Println()
-	//	fmt.Println(" " + dim(`(`+prettyDuration(time.Since(sum))+`)`))
-	//	fmt.Println()
-	//
+	//////////////////////////////////////////////////////////////////////////////
+	// Server API
+
+	stdin, stdout, stderr, err := ipc.NewCommand("node", filepath.Join("scripts", "backend.esbuild.js"))
+	if err != nil {
+		panic(err)
+	}
+	defer close(stdin)
+
+	once, sum := time.Time{}, time.Now()
+	stdin <- ipc.Request{Kind: "resolve_server_router", Data: r}
+
+loop:
+	for {
+		select {
+		case msg := <-stdout:
+			switch msg.Kind {
+			case "once":
+				once = time.Now() // Start
+			case "server_route":
+				var srvRoute ServerRoute
+				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
+					panic(err)
+				}
+				stdio_logger.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(once)))
+				once = time.Now() // Reset
+			case "server_router":
+				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
+					panic(err)
+				}
+			case "done":
+				break loop
+			default:
+				panic("Internal error")
+			}
+		case err := <-stderr:
+			stdio_logger.Stderr(err)
+			os.Exit(1)
+		}
+	}
+
+	fmt.Println()
+	fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(sum))))
+
+	// fmt.Println()
+
 	//	//////////////////////////////////////////////////////////////////////////////
 	//	// Server router contents
 	//
