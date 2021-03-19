@@ -67,8 +67,14 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, rou
 	} catch (error) {
 		// Rethrow error
 		throw error
+
+		// // Rethrow non-esbuild errors
+		// if (!("errors" in error) && !("warnings" in error)) {
+		// 	throw error
+		// }
 	}
-	return mod
+
+	return mod!
 }
 
 // src/pages/foo.html -> __export__/foo.html
@@ -200,12 +206,13 @@ async function resolveServerRouter(runtime: T.Runtime): Promise<T.ServerRouter> 
 	return srvRouter
 }
 
-interface ServerRouteContents {
-	Head: string
-	Body: string
-}
-
-async function serverRouteContents(runtime: T.Runtime, srvRoute: T.ServerRoute): Promise<ServerRouteContents> {
+async function serverRouteString({
+	Runtime: runtime,
+	ServerRoute: srvRoute,
+}: {
+	Runtime: T.Runtime
+	ServerRoute: T.ServerRoute
+}): Promise<string> {
 	const mod = await resolveModule(runtime, srvRoute.Route)
 
 	let head = "<!-- <Head> -->"
@@ -250,23 +257,25 @@ async function serverRouteContents(runtime: T.Runtime, srvRoute: T.ServerRoute):
 		// if (process.env["__DEV__"] === "true") throw error
 	}
 
-	const contents: ServerRouteContents = { Head: head, Body: body }
+	let contents = runtime.Template
+	contents = contents.replace("%head%", head)
+	contents = contents.replace("%body%", body)
 	return contents
 }
 
-function serverRouterString(runtime: T.Runtime): string {
-	const distinctImportsMap = new Map<string, string>()
+async function serverRouterString(runtime: T.Runtime): Promise<string> {
+	const importMap = new Map<string, string>()
 	for (const srvRoute of Object.values(runtime.SrvRouter)) {
-		distinctImportsMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
+		importMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
 	}
 
-	const distinctImports = Array.from(distinctImportsMap)
-	distinctImports.sort()
+	const imports = Array.from(importMap)
+	imports.sort()
 
 	return `import React from "react"
 import ReactDOM from "react-dom"
 
-${distinctImports.map(([componentName, source]) => `import ${componentName} from "../${source}"`).join("\n")}
+${imports.map(([componentName, source]) => `import ${componentName} from "../${source}"`).join("\n")}
 
 import { Route, Router } from "../npm/router"
 
@@ -298,34 +307,52 @@ ReactDOM.hydrate(
 `
 }
 
-async function startDevServer(runtime: T.Runtime): Promise<void> {
+let buildRes: esbuild.BuildIncremental
+
+async function build(runtime: T.Runtime): Promise<any> {
 	const source = path.join(runtime.Dirs.CacheDir, "app.js")
 	const target = path.join(runtime.Dirs.ExportDir, "app.js")
 
-	let buildResult: esbuild.BuildResult
-	let buildError: Error
+	let buildErr: Error
 
 	try {
-		buildResult = await esbuild.build({
+		buildRes = await esbuild.build({
 			...bundle(source, target),
 			incremental: true,
 			watch: {
-				async onRebuild(rebuildFailure) {
+				async onRebuild(error) {
 					stdout({
 						Kind: "rebuild",
-						Data: rebuildFailure,
+						Data: error,
 					})
 				},
 			},
 		})
 	} catch (error) {
-		buildError = error
+		// Rethrow non-esbuild errors
+		if (!("errors" in error) && !("warnings" in error)) {
+			throw error
+		}
+		buildErr = error
 	}
 
-	stdout({
-		Kind: "build",
-		Data: { ...buildError!, ...buildResult! },
-	})
+	return { ...buildRes!, ...buildErr! }
+}
+
+async function rebuild(_: T.Runtime): Promise<any> {
+	let rebuildErr: Error
+
+	try {
+		buildRes.rebuild()
+	} catch (error) {
+		// Rethrow non-esbuild errors
+		if (!("errors" in error) && !("warnings" in error)) {
+			throw error
+		}
+		rebuildErr = error
+	}
+
+	return { ...buildRes!, ...rebuildErr! }
 }
 
 async function main(): Promise<void> {
@@ -337,25 +364,37 @@ async function main(): Promise<void> {
 		const msg: T.Message = JSON.parse(encoded)
 		switch (msg.Kind) {
 			case "resolve_server_router":
-				const srvRouter = await resolveServerRouter(msg.Data)
-				stdout({ Kind: "server_router", Data: srvRouter })
+				stdout({
+					Kind: "done",
+					Data: await resolveServerRouter(msg.Data),
+				})
 				break
-			// case "server_route_contents": {
-			// 	// TODO
-			// 	const contents = await serverRouteContents(msg.Data.Runtime, msg.Data.SrvRoute)
-			// 	stdout({ Kind: "server_route_contents", Data: contents })
-			// 	break
-			// }
+			case "server_route_string":
+				const str = await serverRouteString(msg.Data)
+				stdout({
+					Kind: "",
+					// Data: await serverRouteString(msg.Data),
+					Data: str,
+				})
+				break
 			case "server_router_string":
-				const srvRouterStr = serverRouterString(msg.Data)
-				stdout({ Data: srvRouterStr })
+				stdout({
+					Kind: "",
+					Data: await serverRouterString(msg.Data),
+				})
 				break
-
-			// case "start_dev_server":
-			// 	await startDevServer(msg.Data)
-			// 	break
-			// case "done":
-			// 	return
+			case "build":
+				stdout({
+					Kind: "",
+					Data: await build(msg.Data),
+				})
+				break
+			case "rebuild":
+				stdout({
+					Kind: "",
+					Data: await rebuild(msg.Data),
+				})
+				break
 			default:
 				throw new Error("Internal error")
 		}

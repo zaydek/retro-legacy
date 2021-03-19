@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/ipc"
 	"github.com/zaydek/retro/pkg/logger"
@@ -335,10 +337,12 @@ For example:
 	return runtime, nil
 }
 
-func (r Runtime) Dev() {
-	//////////////////////////////////////////////////////////////////////////////
-	// Server API
+type BuildResponse struct {
+	Errors   []api.Message
+	Warnings []api.Message
+}
 
+func (r Runtime) Dev() {
 	stdio_logger.Set(stdio_logger.LoggerOptions{Time: true})
 
 	stdin, stdout, stderr, err := ipc.NewCommand("node", filepath.Join("scripts", "backend.esbuild.js"))
@@ -346,6 +350,11 @@ func (r Runtime) Dev() {
 		panic(err)
 	}
 	defer close(stdin)
+
+	service := ipc.Service{Stdin: stdin, Stdout: stdout, Stderr: stderr}
+
+	//////////////////////////////////////////////////////////////////////////////
+	// Server API
 
 	var once time.Time
 	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
@@ -364,7 +373,7 @@ loop:
 				}
 				stdio_logger.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(once)))
 				once = time.Now() // Reset
-			case "server_router":
+			case "done":
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
@@ -381,8 +390,6 @@ loop:
 	//////////////////////////////////////////////////////////////////////////////
 	// Server router contents
 
-	service := ipc.Service{Stdin: stdin, Stdout: stdout, Stderr: stderr}
-
 	var contents string
 	if err := service.Send(ipc.RequestMessage{Kind: "server_router_string", Data: r}, &contents); err != nil {
 		stdio_logger.Stderr(err)
@@ -393,175 +400,139 @@ loop:
 		panic(err)
 	}
 
-	//	//////////////////////////////////////////////////////////////////////////////
-	//	// Dev server
-	//
-	//	type result struct {
-	//		Errors   []api.Message
-	//		Warnings []api.Message
-	//	}
-	//
-	//	type ServeRouteContents struct {
-	//		Head string // %head%
-	//		Body string // %body%
-	//	}
-	//
-	//	dev := make(chan result, 16)
-	//	out := make(chan string)
-	//
-	//	go func() {
-	//		stdin <- StdinMessage{Kind: "start_dev_server", Data: r}
-	//
-	//		for {
-	//			select {
-	//			case msg := <-stdout:
-	//				switch msg.Kind {
-	//				case "build":
-	//					var res result
-	//					if err := json.Unmarshal(msg.Data, &res); err != nil {
-	//						panic(err)
-	//					}
-	//					// fmt. iPrintln(res) // DEBUG
-	//					dev <- res
-	//				case "rebuild":
-	//					var res result
-	//					if err := json.Unmarshal(msg.Data, &res); err != nil {
-	//						panic(err)
-	//					}
-	//					// fmt.Println(res) // DEBUG
-	//					dev <- res
-	//				case "server_route_contents":
-	//					var contents ServeRouteContents
-	//					if err := json.Unmarshal(msg.Data, &contents); err != nil {
-	//						panic(err)
-	//					}
-	//					html := r.Template
-	//					html = strings.Replace(html, "%head%", contents.Head, 1)
-	//					html = strings.Replace(html, "%body%", contents.Body, 1)
-	//					out <- html
-	//				default:
-	//					panic("Internal error")
-	//				}
-	//			case err := <-stderr:
-	//				logger2.Stderr(err)
-	//				// os.Exit(1)
-	//			}
-	//		}
-	//	}()
-	//
-	//	getPathname := func(rq *http.Request) string {
-	//		pathname := rq.URL.Path
-	//		if strings.HasSuffix(rq.URL.Path, "/index.html") {
-	//			pathname = pathname[:len(pathname)-len("index.html")]
-	//		} else if ext := filepath.Ext(rq.URL.Path); ext == ".html" {
-	//			pathname = pathname[:len(pathname)-len(".html")]
-	//		}
-	//		return pathname
-	//	}
-	//
-	//	getFSPathname := func(rq *http.Request) string {
-	//		pathname := rq.URL.Path
-	//		if strings.HasSuffix(rq.URL.Path, "/") {
-	//			pathname += "index.html"
-	//		} else if ext := filepath.Ext(rq.URL.Path); ext == "" {
-	//			pathname += ".html"
-	//		}
-	//		return pathname
-	//	}
-	//
-	//	serveEvent := func(pathname string, statusCode int, dur time.Duration) {
-	//		logger2.Stdout(prettyServeEvent(ServeArgs{
-	//			Path:       pathname,
-	//			StatusCode: statusCode,
-	//			Duration:   dur,
-	//		}))
-	//	}
-	//
-	//	// ~/dev
-	//	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
-	//		w.Header().Set("Content-Type", "text/event-stream")
-	//		w.Header().Set("Cache-Control", "no-cache")
-	//		w.Header().Set("Connection", "keep-alive")
-	//		flusher, _ := w.(http.Flusher)
-	//		for {
-	//			select {
-	//			case <-dev:
-	//				fmt.Fprintf(w, "event: reload\ndata\n\n")
-	//				flusher.Flush()
-	//			case <-rq.Context().Done():
-	//				return
-	//			}
-	//		}
-	//	})
-	//
-	//	// __export__
-	//	http.HandleFunc("/", func(w http.ResponseWriter, rq *http.Request) {
-	//		var (
-	//			start       = time.Now()
-	//			fs_pathname = getFSPathname(rq)
-	//		)
-	//		// 404
-	//		srvRoute, ok := r.SrvRouter[getPathname(rq)]
-	//		if !ok {
-	//			http.NotFound(w, rq)
-	//			serveEvent(fs_pathname, 404, time.Since(start))
-	//			return
-	//		}
-	//		// 200
-	//		stdin <- StdinMessage{Kind: "server_route_contents", Data: struct {
-	//			Runtime  Runtime
-	//			SrvRoute ServerRoute
-	//		}{Runtime: r, SrvRoute: srvRoute}}
-	//		html := <-out
-	//		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
-	//			panic(err)
-	//		}
-	//		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(html), MODE_FILE); err != nil {
-	//			panic(err)
-	//		}
-	//		fmt.Fprintln(w, html)
-	//		serveEvent(fs_pathname, 200, time.Since(start))
-	//	})
-	//
-	//	// Serve __export__/app.js
-	//	http.HandleFunc("/app.js", func(w http.ResponseWriter, rq *http.Request) {
-	//		var (
-	//			start       = time.Now()
-	//			fs_pathname = "/app.js"
-	//		)
-	//		// 404
-	//		target := filepath.Join(r.Dirs.ExportDir, fs_pathname)
-	//		if _, err := os.Stat(target); os.IsNotExist(err) {
-	//			http.NotFound(w, rq)
-	//			serveEvent(fs_pathname, 404, time.Since(start))
-	//		}
-	//		// 200
-	//		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, fs_pathname))
-	//		serveEvent(fs_pathname, 200, time.Since(start))
-	//	})
-	//
-	//	// Serve __export__/www (use path.Join not filepath.Join)
-	//	http.HandleFunc(path.Join("/"+r.Dirs.WwwDir), func(w http.ResponseWriter, rq *http.Request) {
-	//		var (
-	//			start       = time.Now()
-	//			fs_pathname = getFSPathname(rq)
-	//		)
-	//		// 404
-	//		target := filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname)
-	//		if _, err := os.Stat(target); os.IsNotExist(err) {
-	//			http.NotFound(w, rq)
-	//			serveEvent(fs_pathname, 404, time.Since(start))
-	//		}
-	//		// 200
-	//		http.ServeFile(w, rq, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
-	//		serveEvent(fs_pathname, 200, time.Since(start))
-	//	})
-	//
-	//	port := r.getPort()
-	//	logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, underline("http://localhost:"+port)))
-	//	if err := http.ListenAndServe(":"+port, nil); err != nil {
-	//		panic(err)
-	//	}
+	//////////////////////////////////////////////////////////////////////////////
+	// Dev server
+
+	browser := make(chan BuildResponse)
+
+	type Data struct {
+		Runtime     Runtime
+		ServerRoute ServerRoute
+	}
+
+	// Forwards to 'await esbuild.build'
+	build := func() (BuildResponse, error) {
+		var res BuildResponse
+		if err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
+			return BuildResponse{}, err
+		}
+		return res, nil
+	}
+
+	// Forwards to 'await esbuild.build({ incremental: true }).rebuild()'
+	rebuild := func() (BuildResponse, error) {
+		var res BuildResponse
+		if err := service.Send(ipc.RequestMessage{Kind: "rebuild", Data: r}, &res); err != nil {
+			return BuildResponse{}, err
+		}
+		return res, nil
+	}
+
+	serverRouteString := func(srvRoute ServerRoute) (string, error) {
+		var contents string
+		data := Data{Runtime: r, ServerRoute: srvRoute}
+		if err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: data}, &contents); err != nil {
+			return "", err
+		}
+		return contents, nil
+	}
+
+	if _, err := build(); err != nil {
+		stdio_logger.Stderr(err)
+		os.Exit(1) // TODO
+	}
+
+	// Serve __export__
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		var (
+			start        = time.Now()
+			sys_pathname = getSystemPathname(req.URL.Path)
+		)
+		// Bad request (404)
+		rebuild() // TODO
+		srvRoute, found := r.SrvRouter[getPathname(req.URL.Path)]
+		if !found {
+			http.NotFound(w, req)
+			logServeEvent404(sys_pathname, start)
+			return
+		}
+		// OK (200)
+		contents, err := serverRouteString(srvRoute)
+		if err != nil {
+			stdio_logger.Stderr(err)
+			os.Exit(1) // TODO
+		}
+		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
+			panic(err)
+		}
+		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(contents), MODE_FILE); err != nil {
+			panic(err)
+		}
+		fmt.Fprintln(w, contents)
+		logServeEvent200(sys_pathname, start)
+	})
+
+	// Serve __export__/app.js
+	http.HandleFunc("/app.js", func(w http.ResponseWriter, req *http.Request) {
+		var (
+			start       = time.Now()
+			fs_pathname = getSystemPathname(req.URL.Path)
+		)
+		// Bad request (404)
+		target := filepath.Join(r.Dirs.ExportDir, fs_pathname)
+		if _, err := os.Stat(target); os.IsNotExist(err) {
+			http.NotFound(w, req)
+			logServeEvent404(fs_pathname, start)
+			return
+		}
+		// OK (200)
+		http.ServeFile(w, req, filepath.Join(r.Dirs.ExportDir, fs_pathname))
+		logServeEvent200(fs_pathname, start)
+	})
+
+	// Serve __export__/www
+	http.HandleFunc("/"+r.Dirs.WwwDir, func(w http.ResponseWriter, req *http.Request) {
+		var (
+			start       = time.Now()
+			fs_pathname = getSystemPathname(req.URL.Path)
+		)
+		// Bad request (404)
+		target := filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname)
+		if _, err := os.Stat(target); os.IsNotExist(err) {
+			http.NotFound(w, req)
+			logServeEvent404(fs_pathname, start)
+			return
+		}
+		// OK (200)
+		http.ServeFile(w, req, filepath.Join(r.Dirs.ExportDir, r.Dirs.ExportDir, fs_pathname))
+		logServeEvent200(fs_pathname, start)
+	})
+
+	// ~/dev
+	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
+		// Set server-sent event headers
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		flusher, _ := w.(http.Flusher)
+		for {
+			select {
+			case <-browser:
+				fmt.Fprintf(w, "event: reload\ndata\n\n")
+				flusher.Flush()
+			case <-rq.Context().Done():
+				return
+			}
+		}
+	})
+
+	port := r.getPort()
+
+	fmt.Println()
+	logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, terminal.Underline("http://localhost:"+port)))
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		panic(err)
+	}
 }
 
 func (r Runtime) Export() {

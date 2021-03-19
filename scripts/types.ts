@@ -71,6 +71,6 @@ export interface ServerRouter {
 ////////////////////////////////////////////////////////////////////////////////
 
 export interface Message {
-	Kind?: string
+	Kind: string
 	Data?: any
 }

@@ -38,12 +38,12 @@ func prettyDuration(dur time.Duration) string {
 func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
 	main := terminal.Normal
 	if srvRoute.Route.Type == "dynamic" {
-		main = terminal.Cyan
+		main = terminal.Green
 	}
 
 	alt := terminal.Dim
 	if srvRoute.Route.Type == "dynamic" {
-		alt = terminal.DimCyan
+		alt = terminal.DimGreen
 	}
 
 	ext := filepath.Ext(srvRoute.Route.Source)

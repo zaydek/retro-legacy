@@ -52,6 +52,7 @@ async function main() {
 				rerun = run()
 				break
 			case "rerun":
+				throw new Error("Internal error")
 				if (rerun! === undefined) {
 					throw new Error("Internal error")
 				}

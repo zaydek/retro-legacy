@@ -1,56 +1,39 @@
 package main
 
 import (
-	"strconv"
+	"path/filepath"
+	"strings"
+	"time"
 
-	"github.com/zaydek/retro/cmd/retro/cli"
+	"github.com/zaydek/retro/pkg/stdio_logger"
 )
 
-type CmdKind uint8
-
-const (
-	Dev CmdKind = iota
-	Export
-	Serve
-)
-
-// func must(err error) {
-// 	if err == nil {
-// 		// No-op
-// 		return
-// 	}
-// 	loggers.ErrorAndEnd(err)
-// }
-
-func (r Runtime) getCmdKind() (ret CmdKind) {
-	switch r.Cmd.(type) {
-	case cli.DevCmd:
-		return Dev
-	case cli.ExportCmd:
-		return Export
-	case cli.ServeCmd:
-		return Serve
+func getPathname(url string) string {
+	pathname := url
+	if strings.HasSuffix(url, "/index.html") {
+		pathname = pathname[:len(pathname)-len("index.html")]
+	} else if ext := filepath.Ext(url); ext == ".html" {
+		pathname = pathname[:len(pathname)-len(".html")]
 	}
-	return
+	return pathname
 }
 
-// func (r Runtime) getCmdName() (ret string) {
-// 	switch r.getCmd() {
-// 	case DevCmd:
-// 		return "dev"
-// 	case ExportCmd:
-// 		return "export"
-// 	case ServeCmd:
-// 		return "serve"
-// 	}
-// 	return
-// }
-
-func (r Runtime) getPort() (ret string) {
-	if cmd := r.getCmdKind(); cmd == Dev {
-		return strconv.Itoa(r.Cmd.(cli.DevCmd).Port)
-	} else if cmd == Serve {
-		return strconv.Itoa(r.Cmd.(cli.ServeCmd).Port)
+func getSystemPathname(url string) string {
+	sys_pathname := url
+	if strings.HasSuffix(url, "/") {
+		sys_pathname += "index.html"
+	} else if ext := filepath.Ext(url); ext == "" {
+		sys_pathname += ".html"
 	}
-	return
+	return sys_pathname
+}
+
+func logServeEvent200(pathname string, start time.Time) {
+	dur := time.Since(start)
+	stdio_logger.Stdout(prettyServeEvent(ServeArgs{Path: pathname, StatusCode: 200, Duration: dur}))
+}
+
+func logServeEvent404(pathname string, start time.Time) {
+	dur := time.Since(start)
+	stdio_logger.Stdout(prettyServeEvent(ServeArgs{Path: pathname, StatusCode: 404, Duration: dur}))
 }
