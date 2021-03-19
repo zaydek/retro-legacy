@@ -410,7 +410,7 @@ loop:
 		ServerRoute ServerRoute
 	}
 
-	// Forwards to 'await esbuild.build'
+	// Forwards as 'await esbuild.build'
 	build := func() (BuildResponse, error) {
 		var res BuildResponse
 		if err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
@@ -419,14 +419,14 @@ loop:
 		return res, nil
 	}
 
-	// Forwards to 'await esbuild.build({ incremental: true }).rebuild()'
-	rebuild := func() (BuildResponse, error) {
-		var res BuildResponse
-		if err := service.Send(ipc.RequestMessage{Kind: "rebuild", Data: r}, &res); err != nil {
-			return BuildResponse{}, err
-		}
-		return res, nil
-	}
+	// // Forwards as 'await esbuild.build({ incremental: true }).rebuild()'
+	// rebuild := func() (BuildResponse, error) {
+	// 	var res BuildResponse
+	// 	if err := service.Send(ipc.RequestMessage{Kind: "rebuild", Data: r}, &res); err != nil {
+	// 		return BuildResponse{}, err
+	// 	}
+	// 	return res, nil
+	// }
 
 	serverRouteString := func(srvRoute ServerRoute) (string, error) {
 		var contents string
@@ -449,7 +449,7 @@ loop:
 			sys_pathname = getSystemPathname(req.URL.Path)
 		)
 		// Bad request (404)
-		rebuild() // TODO
+		// rebuild() // TODO
 		srvRoute, found := r.SrvRouter[getPathname(req.URL.Path)]
 		if !found {
 			http.NotFound(w, req)
@@ -514,7 +514,10 @@ loop:
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
-		flusher, _ := w.(http.Flusher)
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			panic("Internal error")
+		}
 		for {
 			select {
 			case <-browser:

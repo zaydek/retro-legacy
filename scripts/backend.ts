@@ -45,7 +45,7 @@ const bundle = (source: string, target: string): esbuild.BuildOptions => ({
 		".js": "jsx", // Process .js as .jsx
 	},
 	logLevel: "warning",
-	minify: true,
+	minify: false, // TODO
 	outfile: target,
 	// plugins: [...],
 })
@@ -321,10 +321,10 @@ async function build(runtime: T.Runtime): Promise<any> {
 			incremental: true,
 			watch: {
 				async onRebuild(error) {
-					stdout({
-						Kind: "rebuild",
-						Data: error,
-					})
+					// 		stdout({
+					// 			Kind: "rebuild",
+					// 			Data: error,
+					// 		})
 				},
 			},
 		})
@@ -342,8 +342,13 @@ async function build(runtime: T.Runtime): Promise<any> {
 async function rebuild(_: T.Runtime): Promise<any> {
 	let rebuildErr: Error
 
+	// Coerce to truthy
+	if (!!buildRes.rebuild) {
+		throw new Error("Internal error")
+	}
+
 	try {
-		buildRes.rebuild()
+		await buildRes.rebuild!()
 	} catch (error) {
 		// Rethrow non-esbuild errors
 		if (!("errors" in error) && !("warnings" in error)) {
@@ -389,12 +394,12 @@ async function main(): Promise<void> {
 					Data: await build(msg.Data),
 				})
 				break
-			case "rebuild":
-				stdout({
-					Kind: "",
-					Data: await rebuild(msg.Data),
-				})
-				break
+			// case "rebuild":
+			// 	stdout({
+			// 		Kind: "",
+			// 		Data: await rebuild(msg.Data),
+			// 	})
+			// 	break
 			default:
 				throw new Error("Internal error")
 		}

@@ -20,7 +20,7 @@ export function Head({ name, type }) {
 export default function Page({ name, type }) {
 	return (
 		<>
-			<h1>Yo, {name}!</h1>
+			<h1>Yo mama, {name}!</h1>
 			<p>
 				This page is about {name} -- a {type} type Pokémon!
 			</p>
