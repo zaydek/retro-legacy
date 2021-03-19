@@ -254,9 +254,9 @@ async function serverRouteContents(runtime: T.Runtime, srvRoute: T.ServerRoute):
 	return contents
 }
 
-function serverRouterContents(srvRouter: T.ServerRouter): string {
+function serverRouterString(runtime: T.Runtime): string {
 	const distinctImportsMap = new Map<string, string>()
-	for (const srvRoute of Object.values(srvRouter)) {
+	for (const srvRoute of Object.values(runtime.SrvRouter)) {
 		distinctImportsMap.set(srvRoute.Route.ComponentName, srvRoute.Route.Source)
 	}
 
@@ -274,7 +274,7 @@ export default function App() {
 	return (
 		<Router>
 ${
-	Object.entries(srvRouter)
+	Object.entries(runtime.SrvRouter)
 		.map(
 			([pathname, route]) => `
 			<Route path="${pathname}">
@@ -336,32 +336,28 @@ async function main(): Promise<void> {
 		const encoded = await readline()
 		const msg: T.Message = JSON.parse(encoded)
 		switch (msg.Kind) {
-			case "resolve_server_router": {
-				const router = await resolveServerRouter(msg.Data)
-				stdout({ Kind: "server_router", Data: router })
-				stdout({ Kind: "done" })
+			case "resolve_server_router":
+				const srvRouter = await resolveServerRouter(msg.Data)
+				stdout({ Kind: "server_router", Data: srvRouter })
 				break
-			}
-			case "server_route_contents": {
-				const contents = await serverRouteContents(msg.Data.Runtime, msg.Data.SrvRoute)
-				stdout({ Kind: "server_route_contents", Data: contents })
+			// case "server_route_contents": {
+			// 	// TODO
+			// 	const contents = await serverRouteContents(msg.Data.Runtime, msg.Data.SrvRoute)
+			// 	stdout({ Kind: "server_route_contents", Data: contents })
+			// 	break
+			// }
+			case "server_router_string":
+				const srvRouterStr = serverRouterString(msg.Data)
+				stdout({ Data: srvRouterStr })
 				break
-			}
-			case "server_router_contents": {
-				const contents = serverRouterContents(msg.Data)
-				stdout({ Kind: "server_router_contents", Data: contents })
-				break
-			}
-			case "start_dev_server": {
-				await startDevServer(msg.Data)
-				break
-			}
-			case "done": {
-				return
-			}
-			default: {
+
+			// case "start_dev_server":
+			// 	await startDevServer(msg.Data)
+			// 	break
+			// case "done":
+			// 	return
+			default:
 				throw new Error("Internal error")
-			}
 		}
 	}
 }

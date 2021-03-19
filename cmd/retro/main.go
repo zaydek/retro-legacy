@@ -339,14 +339,16 @@ func (r Runtime) Dev() {
 	//////////////////////////////////////////////////////////////////////////////
 	// Server API
 
+	stdio_logger.Set(stdio_logger.LoggerOptions{Time: true})
+
 	stdin, stdout, stderr, err := ipc.NewCommand("node", filepath.Join("scripts", "backend.esbuild.js"))
 	if err != nil {
 		panic(err)
 	}
 	defer close(stdin)
 
-	once, sum := time.Time{}, time.Now()
-	stdin <- ipc.Request{Kind: "resolve_server_router", Data: r}
+	var once time.Time
+	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
 
 loop:
 	for {
@@ -366,7 +368,6 @@ loop:
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
-			case "done":
 				break loop
 			default:
 				panic("Internal error")
@@ -377,25 +378,21 @@ loop:
 		}
 	}
 
-	fmt.Println()
-	fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(sum))))
+	//////////////////////////////////////////////////////////////////////////////
+	// Server router contents
 
-	// fmt.Println()
+	service := ipc.Service{Stdin: stdin, Stdout: stdout, Stderr: stderr}
 
-	//	//////////////////////////////////////////////////////////////////////////////
-	//	// Server router contents
-	//
-	//	stdin <- StdinMessage{Kind: "server_router_contents", Data: r.SrvRouter}
-	//	msg := <-stdout
-	//	var contents string
-	//	if err := json.Unmarshal(msg.Data, &contents); err != nil {
-	//		panic(err)
-	//	}
-	//
-	//	if err := ioutil.WriteFile(filepath.Join(r.Dirs.CacheDir, "app.js"), []byte(contents), MODE_FILE); err != nil {
-	//		panic(err)
-	//	}
-	//
+	var contents string
+	if err := service.Send(ipc.RequestMessage{Kind: "server_router_string", Data: r}, &contents); err != nil {
+		stdio_logger.Stderr(err)
+		os.Exit(1)
+	}
+
+	if err := ioutil.WriteFile(filepath.Join(r.Dirs.CacheDir, "app.js"), []byte(contents), MODE_FILE); err != nil {
+		panic(err)
+	}
+
 	//	//////////////////////////////////////////////////////////////////////////////
 	//	// Dev server
 	//

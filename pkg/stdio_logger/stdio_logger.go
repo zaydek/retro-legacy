@@ -19,18 +19,7 @@ type StdioLogger struct {
 	format string
 }
 
-var (
-	dim      = terminal.New(terminal.DimCode).Sprint
-	boldCyan = terminal.New(terminal.BoldCode, terminal.CyanCode).Sprint
-	boldRed  = terminal.New(terminal.BoldCode, terminal.RedCode).Sprint
-)
-
-func New(args ...LoggerOptions) *StdioLogger {
-	opt := LoggerOptions{}
-	if len(args) == 1 {
-		opt = args[0]
-	}
-
+func extractFormat(opt LoggerOptions) string {
 	var format string
 	if opt.Datetime {
 		format += "Jan 02 03:04:05.000 PM"
@@ -45,9 +34,20 @@ func New(args ...LoggerOptions) *StdioLogger {
 			format += "03:04:05.000 PM"
 		}
 	}
+	return format
+}
 
-	logger := &StdioLogger{format: format}
+func New(args ...LoggerOptions) *StdioLogger {
+	opt := LoggerOptions{}
+	if len(args) == 1 {
+		opt = args[0]
+	}
+	logger := &StdioLogger{format: extractFormat(opt)}
 	return logger
+}
+
+func (l *StdioLogger) Set(opt LoggerOptions) {
+	l.format = extractFormat(opt)
 }
 
 func (l *StdioLogger) Stdout(args ...interface{}) {
@@ -56,11 +56,10 @@ func (l *StdioLogger) Stdout(args ...interface{}) {
 	for x, line := range lines {
 		var tstr string
 		if l.format != "" {
-			tstr += dim(time.Now().Format(l.format))
+			tstr += terminal.Dim(time.Now().Format(l.format))
 			tstr += "  "
 		}
-		// lines[x] = fmt.Sprintf("%s%s\x1b[0m", tstr, line)
-		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, boldCyan("stdout"), line)
+		lines[x] = fmt.Sprintf("%s%s\x1b[0m", tstr, line)
 	}
 	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
@@ -71,15 +70,21 @@ func (l *StdioLogger) Stderr(args ...interface{}) {
 	for x, line := range lines {
 		var tstr string
 		if l.format != "" {
-			tstr += dim(time.Now().Format(l.format))
+			tstr += terminal.Dim(time.Now().Format(l.format))
 			tstr += "  "
 		}
-		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, boldRed("stderr"), line)
+		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, terminal.BoldRed("stderr"), line)
 	}
 	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 var stdio = New(LoggerOptions{Datetime: true})
+
+func Set(opt LoggerOptions) {
+	stdio.Set(opt)
+}
 
 func Stdout(args ...interface{}) {
 	stdio.Stdout(args...)

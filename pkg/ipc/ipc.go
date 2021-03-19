@@ -3,21 +3,22 @@ package ipc
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"os/exec"
 )
 
-type Request struct {
+type RequestMessage struct {
 	Kind string
 	Data interface{}
 }
 
-type Response struct {
+type ResponseMessage struct {
 	Kind string
 	Data json.RawMessage
 }
 
 // NewCommand starts a new IPC command.
-func NewCommand(args ...string) (stdin chan Request, stdout chan Response, stderr chan string, err error) {
+func NewCommand(args ...string) (stdin chan RequestMessage, stdout chan ResponseMessage, stderr chan string, err error) {
 	cmd := exec.Command(args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
@@ -33,7 +34,7 @@ func NewCommand(args ...string) (stdin chan Request, stdout chan Response, stder
 		return nil, nil, nil, err
 	}
 
-	stdin = make(chan Request)
+	stdin = make(chan RequestMessage)
 	go func() {
 		defer stdinPipe.Close()
 		for msg := range stdin {
@@ -46,7 +47,7 @@ func NewCommand(args ...string) (stdin chan Request, stdout chan Response, stder
 		}
 	}()
 
-	stdout = make(chan Response)
+	stdout = make(chan ResponseMessage)
 	go func() {
 		defer func() {
 			stdoutPipe.Close()
@@ -57,7 +58,7 @@ func NewCommand(args ...string) (stdin chan Request, stdout chan Response, stder
 		buf := make([]byte, 1024*1024)
 		scanner.Buffer(buf, len(buf))
 		for scanner.Scan() {
-			var res Response
+			var res ResponseMessage
 			if err := json.Unmarshal(scanner.Bytes(), &res); err != nil {
 				panic(err)
 			}
@@ -95,22 +96,22 @@ func NewCommand(args ...string) (stdin chan Request, stdout chan Response, stder
 	return stdin, stdout, stderr, nil
 }
 
-// type Messenger struct {
-// 	Stdin          chan Message
-// 	Stdout, Stderr chan []byte
-// }
-//
-// func (m Messenger) Send(msg Message) (Message, error) {
-// 	m.Stdin <- msg
-//
-// 	var res Message
-// 	select {
-// 	case bstr := <-m.Stdout:
-// 		if err := json.Unmarshal(bstr, &res); err != nil {
-// 			return Message{}, err
-// 		}
-// 	case bstr := <-m.Stderr:
-// 		return Message{}, errors.New(string(bstr))
-// 	}
-// 	return res, nil
-// }
+type Service struct {
+	Stdin  chan RequestMessage
+	Stdout chan ResponseMessage
+	Stderr chan string
+}
+
+// Send sends one message synchronously.
+func (s Service) Send(msg RequestMessage, ptr interface{}) error {
+	s.Stdin <- msg
+	select {
+	case msg := <-s.Stdout:
+		if err := json.Unmarshal(msg.Data, ptr); err != nil {
+			panic(err)
+		}
+		return nil
+	case bstr := <-s.Stderr:
+		return errors.New(string(bstr))
+	}
+}
