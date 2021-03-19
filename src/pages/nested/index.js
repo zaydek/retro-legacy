@@ -5,7 +5,7 @@ export function Head() {
 export default function Page() {
 	return (
 		<div>
-			<h1>My yo yo yo website nested</h1>
+			<h1>Hahaha website nested</h1>
 		</div>
 	)
 }

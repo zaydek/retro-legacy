@@ -86,6 +86,7 @@ func prettyServeEvent(args ServeArgs) string {
 		alt = terminal.DimRed
 	}
 
+	// TODO: Cover ".js.map" case
 	ext := filepath.Ext(args.Path)
 
 	var entry string

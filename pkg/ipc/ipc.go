@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os/exec"
 )
 
@@ -108,7 +109,7 @@ func (s Service) Send(msg RequestMessage, ptr interface{}) error {
 	select {
 	case msg := <-s.Stdout:
 		if err := json.Unmarshal(msg.Data, ptr); err != nil {
-			// fmt.Println(string(msg.Data)) // DEBUG
+			fmt.Println(string(msg.Data)) // DEBUG
 			panic(err)
 		}
 		return nil

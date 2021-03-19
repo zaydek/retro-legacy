@@ -6,6 +6,20 @@ import * as T from "./types"
 import { newPathInfo, PathInfo } from "./path_info"
 import { readline, stderr, stdout } from "./readline"
 
+const baseOptions: esbuild.BuildOptions = {
+	bundle: true,
+	color: true,
+	define: {
+		__DEV__: "true",
+		"process.env.NODE_ENV": JSON.stringify("development"),
+	},
+	inject: ["scripts/react_shim.js"],
+	loader: {
+		".js": "jsx",
+	},
+	// sourcemap: true,
+}
+
 // const modCache: { [key: string]: T.AnyModule } = {}
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,17 +58,14 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, sou
 	try {
 		// await esbuild.build(transpile(source, target))
 		await esbuild.build({
-			bundle: true,
-			define: {
-				"process.env.NODE_ENV": JSON.stringify("development"),
-			},
+			...baseOptions,
 			entryPoints: [source],
-			external: ["react", "react-dom"],
-			format: "cjs",
-			loader: {
-				".js": "jsx",
-			},
 			outfile: target,
+
+			// Etc.
+			external: ["react", "react-dom"], // Dedupe React APIs
+			format: "cjs", // For require(...)
+			// sourcemap: false,
 		})
 	} catch (error) {
 		// Rethrow non-esbuild errors
@@ -217,15 +228,14 @@ async function serverRouteString({
 	const mod = await resolveModule(runtime, srvRoute.Route.Source)
 
 	let head = "<!-- <Head> -->"
-	try {
-		if (typeof mod.Head === "function") {
-			const str = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, srvRoute.Props))
-			head = str.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
-		}
-	} catch (error) {
-		throw error
-		// log.fatal(`${srvRoute.Route.Source}.<Head>: ${error.message}`)
+	// try {
+	if (typeof mod.Head === "function") {
+		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, srvRoute.Props))
+		head = head.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 	}
+	// } catch (error) {
+	// 	throw error
+	// }
 
 	// TODO: Upgrade to <script src="/app.[hash].js">?
 	let body = ""
@@ -234,39 +244,14 @@ async function serverRouteString({
 	body += `\n\t\t<script src="/app.js"></script>`
 	body += `\n\t\t<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", e => void window.location.reload()); dev.addEventListener("error", e => void console.error(JSON.parse(e.data)))</script>`
 
-	// app += !true ? "" : `\n\t\t<script type="module">`
-	// app += !true ? "" : `\n\t\t\tconst dev = new EventSource("/~dev")`
-	// app += !true ? "" : `\n\t\t\tdev.addEventListener("reload", e => {`
-	// app += !true ? "" : `\n\t\t\t\twindow.location.reload()`
-	// app += !true ? "" : `\n\t\t\t})`
-	// app += !true ? "" : `\n\t\t\tdev.addEventListener("error", e => {`
-	// app += !true ? "" : `\n\t\t\t\tconsole.error(JSON.parse(e.data))`
-	// app += !true ? "" : `\n\t\t\t})`
-	// app += !true ? "" : `\n\t\t</script>`
-
-	function Component() {
-		const [state, setState] = React.useState("Hello, world!")
-		return React.createElement("h1", null, state)
-	}
-
-	// stderr(ReactDOMServer.renderToString(React.createElement(Component)))
-
-	try {
-		// prettier-ignore
-		body = body.replace(
-			`<div id="root"></div>`,
-			`<div id="root">` +
-				ReactDOMServer.renderToString(React.createElement(mod.default))
-			+ `</div>`,
-				// ReactDOMServer.renderToString(
-				// 	React.createElement(mod.default, srvRoute.Props),
-				// ) +
-		)
-	} catch (error) {
-		throw error
-		// if (!(process.env["__DEV__"] === "true")) log.fatal(`${srvRoute.Route.Source}.<Page>: ${error.message}`)
-		// if (process.env["__DEV__"] === "true") throw error
-	}
+	// try {
+	body = body.replace(
+		`<div id="root"></div>`,
+		`<div id="root">` + ReactDOMServer.renderToString(React.createElement(mod.default, srvRoute.Props)) + `</div>`,
+	)
+	// } catch (error) {
+	// 	throw error
+	// }
 
 	let contents = runtime.Template
 	contents = contents.replace("%head%", head)
@@ -331,28 +316,24 @@ async function build(runtime: T.Runtime): Promise<any> {
 	try {
 		// prettier-ignore
 		incremental = await esbuild.build({
-			bundle: true,
-			define: {
-				"process.env.NODE_ENV": JSON.stringify("development"),
-			},
+			...baseOptions,
 			entryPoints: [source],
-			// external: ["react", "react-dom"],
-			// format: "cjs",
-			loader: {
-				".js": "jsx",
-			},
 			outfile: target,
 
-			// Add
+			// Etc.
+			external: [],
+			format: "iife",
+			// sourcemap: true,
+
+			// minify: true,
+			// keepNames: true,
+
+  		// minify?: boolean;
+  		minifyWhitespace: true,
+  		minifyIdentifiers: false,
+  		minifySyntax: false,
+
 			incremental: true,
-			// watch: {
-			// 	async onRebuild(error) {
-			// 		stdout({
-			// 			Kind: "rebuild",
-			// 			Data: error,
-			// 		})
-			// 	},
-			// },
 		})
 		warnings = incremental.warnings
 	} catch (error) {
@@ -367,7 +348,7 @@ async function build(runtime: T.Runtime): Promise<any> {
 	return { errors, warnings }
 }
 
-async function rebuild(_: T.Runtime): Promise<any> {
+async function rebuild(): Promise<any> {
 	let errors: esbuild.Message[] = []
 	let warnings: esbuild.Message[] = []
 
@@ -387,6 +368,10 @@ async function rebuild(_: T.Runtime): Promise<any> {
 		warnings = error.warnings
 		errors = error.errors
 	}
+
+	// const t = Date.now()
+	// await incremental.rebuild!()
+	// stderr(Date.now() - t)
 
 	return { errors, warnings }
 }
@@ -426,7 +411,7 @@ async function main(): Promise<void> {
 			case "rebuild":
 				stdout({
 					Kind: "",
-					Data: await rebuild(msg.Data),
+					Data: await rebuild(),
 				})
 				break
 			default:

@@ -356,7 +356,7 @@ func (r Runtime) Dev() {
 	//////////////////////////////////////////////////////////////////////////////
 	// Server API
 
-	var once time.Time
+	start, once := time.Now(), time.Time{}
 	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
 
 loop:
@@ -377,6 +377,8 @@ loop:
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
+				fmt.Println()
+				fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(start))))
 				break loop
 			default:
 				panic("Internal error")
@@ -417,7 +419,7 @@ loop:
 	// E.g. 'await esbuild.build({ incremental: true }).rebuild()'
 	rebuild := func() (BuildResponse, error) {
 		var res BuildResponse
-		if err := service.Send(ipc.RequestMessage{Kind: "rebuild", Data: r}, &res); err != nil {
+		if err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
 			return BuildResponse{}, err
 		}
 		return res, nil
@@ -437,7 +439,7 @@ loop:
 	}
 
 	go func() {
-		for res := range watch.Directory(r.Dirs.SrcPagesDir, 500*time.Millisecond) {
+		for res := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
 			if res.Err != nil {
 				panic(res.Err)
 			}
@@ -457,10 +459,12 @@ loop:
 
 	// Serve __export__
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		t := time.Now()
 		var (
 			start        = time.Now()
 			sys_pathname = getSystemPathname(req.URL.Path)
 		)
+		// TODO: rebuild() and renderToString(srvRoute) can be concurrent
 		if _, err := rebuild(); err != nil {
 			stdio_logger.Stderr(err)
 			fmt.Fprintln(w, "500 server error") // TODO
@@ -468,6 +472,8 @@ loop:
 			return
 		}
 		// Bad request (404)
+		fmt.Println("t1", time.Since(t))
+		t = time.Now()
 		srvRoute, ok := r.SrvRouter[getPathname(req.URL.Path)]
 		if !ok {
 			http.NotFound(w, req)
@@ -475,24 +481,28 @@ loop:
 			return
 		}
 		// OK (200)
+		fmt.Println("t2", time.Since(t))
+		t = time.Now()
 		contents, err := renderToString(srvRoute)
 		if err != nil {
 			stdio_logger.Stderr(err)
 			fmt.Fprintln(w, "500 server error") // TODO
 			return
 		}
+		fmt.Println("t3", time.Since(t))
+		t = time.Now()
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
 			panic(err)
 		}
 		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(contents), MODE_FILE); err != nil {
 			panic(err)
 		}
+		fmt.Println("t4", time.Since(t))
 		fmt.Fprintln(w, contents)
 		logServeEvent200(sys_pathname, start)
 	})
 
-	// Serve __export__/app.js
-	http.HandleFunc("/app.js", func(w http.ResponseWriter, req *http.Request) {
+	handle_app_js := func(w http.ResponseWriter, req *http.Request) {
 		var (
 			start       = time.Now()
 			fs_pathname = getSystemPathname(req.URL.Path)
@@ -507,7 +517,11 @@ loop:
 		// OK (200)
 		http.ServeFile(w, req, filepath.Join(r.Dirs.ExportDir, fs_pathname))
 		logServeEvent200(fs_pathname, start)
-	})
+	}
+
+	// Serve __export__/app.js
+	http.HandleFunc("/app.js", handle_app_js)
+	http.HandleFunc("/app.js.map", handle_app_js)
 
 	// Serve __export__/www
 	http.HandleFunc("/"+r.Dirs.WwwDir, func(w http.ResponseWriter, req *http.Request) {
@@ -550,9 +564,8 @@ loop:
 
 	port := r.getPort()
 
-	// fmt.Println()
 	// logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, terminal.Underline("http://localhost:"+port)))
-
+	fmt.Println()
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		panic(err)
 	}
