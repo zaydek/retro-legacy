@@ -356,16 +356,16 @@ func (r Runtime) Dev() {
 	//////////////////////////////////////////////////////////////////////////////
 	// Server API
 
-	start, once := time.Now(), time.Time{}
 	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
 
+	var start, once time.Time
 loop:
 	for {
 		select {
 		case msg := <-stdout:
 			switch msg.Kind {
 			case "once":
-				once = time.Now() // Start
+				start, once = time.Now(), time.Now() // Start
 			case "server_route":
 				var srvRoute ServerRoute
 				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
@@ -405,9 +405,9 @@ loop:
 	//////////////////////////////////////////////////////////////////////////////
 	// Dev server
 
+	// Browser server-sent events
 	browser := make(chan BuildResponse)
 
-	// E.g. 'await esbuild.build'
 	build := func() (BuildResponse, error) {
 		var res BuildResponse
 		if err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
@@ -416,7 +416,6 @@ loop:
 		return res, nil
 	}
 
-	// E.g. 'await esbuild.build({ incremental: true }).rebuild()'
 	rebuild := func() (BuildResponse, error) {
 		var res BuildResponse
 		if err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
@@ -458,9 +457,7 @@ loop:
 	}
 
 	// Serve __export__
-	// TODO: rebuild() and renderToString(srvRoute) can be concurrent
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		t := time.Now()
 		var (
 			start        = time.Now()
 			sys_pathname = getSystemPathname(req.URL.Path)
@@ -473,34 +470,18 @@ loop:
 			return
 		}
 		// OK (200)
-
-		// // TODO: Technically URL visits shouldn’t trigger a rebuild; only the watcher
-		// // should do that
-		// if _, err := rebuild(); err != nil {
-		// 	stdio_logger.Stderr(err)
-		// 	fmt.Fprintln(w, "500 server error") // TODO
-		// 	logServeEvent500(sys_pathname, start)
-		// 	return
-		// }
-		// fmt.Println("t1", time.Since(t))
-		t = time.Now()
-
-		// TODO: Implement a caching layer here
-		contents, err := renderToString(srvRoute)
+		contents, err := renderToString(srvRoute) // TODO: Cache?
 		if err != nil {
 			stdio_logger.Stderr(err)
 			fmt.Fprintln(w, "500 server error") // TODO
 			return
 		}
-		fmt.Println("t2", time.Since(t))
-		t = time.Now()
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
 			panic(err)
 		}
 		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(contents), MODE_FILE); err != nil {
 			panic(err)
 		}
-		fmt.Println("t3", time.Since(t))
 		fmt.Fprintln(w, contents)
 		logServeEvent200(sys_pathname, start)
 	})
@@ -565,10 +546,9 @@ loop:
 		}
 	})
 
-	port := r.getPort()
-
-	// logger.OK(fmt.Sprintf("Ready on port '%[1]s'; open %s.", port, terminal.Underline("http://localhost:"+port)))
 	fmt.Println()
+
+	port := r.getPort()
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		panic(err)
 	}

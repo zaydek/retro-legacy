@@ -217,57 +217,33 @@ async function resolveServerRouter(runtime: T.Runtime): Promise<T.ServerRouter> 
 	return srvRouter
 }
 
-async function serverRouteString({
-	Runtime: runtime,
-	ServerRoute: srvRoute,
-}: {
+interface serverRouteStringParams {
 	Runtime: T.Runtime
 	ServerRoute: T.ServerRoute
-}): Promise<string> {
-	const mod = await resolveModule(runtime, srvRoute.Route.Source)
+}
+
+async function serverRouteString({ Runtime, ServerRoute }: serverRouteStringParams): Promise<string> {
+	const mod = await resolveModule(Runtime, ServerRoute.Route.Source)
 
 	let head = "<!-- <Head> -->"
 	if (typeof mod.Head === "function") {
-		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, srvRoute.Props))
+		head = ReactDOMServer.renderToStaticMarkup(React.createElement(mod.Head, ServerRoute.Props))
 		head = head.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 	}
 
-	// TODO: Upgrade to <script src="/app.[hash].js">?
 	let body = ""
 	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	body += `\n\t\t<div id="root"></div>`
 	body += `\n\t\t<script src="/app.js"></script>`
 	body += `\n\t\t<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => window.location.reload()); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} })</script>`
-	// body += `\n\t\t<script type="module">`
-	// body += `\n\t\t\tconst dev = new EventSource("/~dev")`
-	// body += `\n\t\t\tdev.addEventListener("reload", () => window.location.reload)`
-	// body += `\n\t\t\tdev.addEventListener("error", e => {`
-	// body += `\n\t\t\t\ttry {`
-	// body += `\n\t\t\t\t\tconsole.error(JSON.parse(e.data))`
-	// body += `\n\t\t\t\t} catch {}`
-	// body += `\n\t\t\t})`
-	// body += `\n\t\t</script>`
+	if (typeof mod.default === "function") {
+		body = body.replace(
+			`<div id="root"></div>`,
+			`<div id="root">` + ReactDOMServer.renderToString(React.createElement(mod.default, ServerRoute.Props)) + `</div>`,
+		)
+	}
 
-	// body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
-	// body += `\n\t\t<div id="root"></div>`
-	// body += `\n\t\t<script src="/app.js"></script>`
-	// body += `\n\t\t<!-- Server-sent events for /~dev -->`
-	// body += `\n\t\t<script type="module">`
-	// body += `\n\t\t\tconst dev = new EventSource("/~dev")`
-	// body += `\n\t\t\tdev.addEventListener("reload", window.location.reload)`
-	// body += `\n\t\t\tdev.addEventListener("error", e => {`
-	// body += `\n\t\t\t\ttry {`
-	// body += `\n\t\t\t\t\tconsole.error(JSON.parse(e.data))`
-	// body += `\n\t\t\t\t} catch {}`
-	// body += `\n\t\t\t})`
-	// body += `\n\t\t</script>`
-
-	body = body.replace(
-		`<div id="root"></div>`,
-		`<div id="root">` + ReactDOMServer.renderToString(React.createElement(mod.default, srvRoute.Props)) + `</div>`,
-	)
-
-	let contents = runtime.Template
+	let contents = Runtime.Template
 	contents = contents.replace("%head%", head)
 	contents = contents.replace("%body%", body)
 
