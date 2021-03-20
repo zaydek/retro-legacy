@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/ipc"
 	"github.com/zaydek/retro/pkg/logger"
@@ -336,10 +338,81 @@ For example:
 	return runtime, nil
 }
 
-// type BuildResponse struct {
-// 	Errors   []api.Message `json:"errors"`
-// 	Warnings []api.Message `json:"warnings"`
-// }
+type BuildResponse struct {
+	Errors   []api.Message
+	Warnings []api.Message
+}
+
+func (r BuildResponse) Dirty() bool {
+	return len(r.Errors) > 0 || len(r.Warnings) > 0
+}
+
+type Message api.Message
+
+func (m Message) String() string {
+	emphasis := "^"
+	if m.Location.Length < 0 {
+		emphasis = strings.Repeat("~", m.Location.Length)
+	}
+	return fmt.Sprintf(" > %s:%d:%d: %s", m.Location.File, m.Location.Line, m.Location.Column, m.Text) + `
+` + fmt.Sprintf("    %d │ %s", m.Location.Line, m.Location.LineText) + `
+` + fmt.Sprintf("    %s │ %s%s", strings.Repeat(" ", len(strconv.Itoa(m.Location.Line))), strings.Repeat(" ", m.Location.Column), emphasis) + `
+`
+}
+
+func (r BuildResponse) HTML() string {
+	cwd, _ := os.Getwd()
+
+	err := r.Errors[0]
+
+	return `<!DOCTYPE html>
+<html>
+	<head>
+		<title>
+			` + fmt.Sprintf("Error: %s", err.Text) + `
+		</title>
+		<style>
+			a {
+				color: unset;
+				text-decoration: unset;
+			}
+			body {
+				color: hsla(0, 0%, 0%, 0.95);
+				background-color: #fff;
+			}
+			@media (prefers-color-scheme: dark) {
+				body {
+					color: hsla(0, 0%, 100%, 0.95);
+					background-color: rgb(36, 36, 36);
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<a href="` + fmt.Sprintf("vscode://file%s/%s:%d:%d", cwd, err.Location.File, err.Location.Line, err.Location.Column) + `">
+			<pre><code>` + Message(err).String() + `</code></pre>
+		</a>
+		<script type="module">
+			const dev = new EventSource("/~dev")
+			dev.addEventListener("reload", () => {
+				localStorage.setItem("/~dev", "" + Date.now())
+				window.location.reload()
+			})
+			dev.addEventListener("error", e => {
+				try {
+					console.error(JSON.parse(e.data))
+				} catch {}
+			})
+			window.addEventListener("storage", e => {
+				if (e.key === "/~dev") {
+					window.location.reload()
+				}
+			})
+		</script>
+	</body>
+</html>
+`
+}
 
 func (r Runtime) Dev() {
 	stdio_logger.Set(stdio_logger.LoggerOptions{Time: true})
@@ -409,36 +482,31 @@ loop:
 	// Dev server
 
 	// Browser server-sent events
-	browser := make(chan map[string]interface{})
+	var res BuildResponse
+	browser := make(chan BuildResponse)
 
 	go func() {
 		for event := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
-			fmt.Println("a")
-
 			if event.Err != nil {
 				panic(event.Err)
 			}
 			// Send a message for 'esbuild.rebuild()'
-			var res map[string]interface{}
 			if stderr, err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
 				panic(err)
 			} else if stderr != "" {
-				fmt.Println(res)
 				stdio_logger.Stderr(stderr)
 			}
-
-			fmt.Println("b")
-			browser <- res
+			// browser <- res
 		}
 	}()
 
 	// Send a message for 'esbuild.build({ ... })'
-	var res map[string]interface{}
 	if stderr, err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
 		panic(err)
 	} else if stderr != "" {
 		stdio_logger.Stderr(stderr)
 	}
+	// browser <- res
 
 	type Data struct {
 		Runtime     Runtime
@@ -450,6 +518,12 @@ loop:
 			start        = time.Now()
 			sys_pathname = getSystemPathname(req.URL.Path)
 		)
+		// Server error (500)
+		if res.Dirty() {
+			fmt.Fprintln(w, res.HTML())
+			// logServeEvent500(sys_pathname, start)
+			return
+		}
 		// Bad request (404)
 		srvRoute, ok := r.SrvRouter[getPathname(req.URL.Path)]
 		if !ok {
@@ -463,24 +537,6 @@ loop:
 			panic(err)
 		} else if stderr != "" {
 			stdio_logger.Stderr(stderr)
-			fmt.Fprint(w, `<script type="module">
-	const dev = new EventSource("/~dev")
-	dev.addEventListener("reload", () => {
-		localStorage.setItem("/~dev", "" + Date.now())
-		window.location.reload()
-	})
-	dev.addEventListener("error", e => {
-		try {
-			console.error(JSON.parse(e.data))
-		} catch {}
-	})
-	window.addEventListener("storage", e => {
-		if (e.key === "/~dev") {
-			window.location.reload()
-		}
-	})
-</script>
-`)
 			logServeEvent500(sys_pathname, start)
 			return
 		}

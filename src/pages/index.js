@@ -6,7 +6,7 @@ export function Head() {
 	return <title>Welcome to my wonderful website.</title>
 }
 
-export default function Body() {
+exportxdefault function Body() {
 	const [state, setState] = useState("Hello, world!")
 	return (
 		<div>
