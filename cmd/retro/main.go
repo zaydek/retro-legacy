@@ -438,9 +438,9 @@ loop:
 	}
 
 	go func() {
-		for res := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
-			if res.Err != nil {
-				panic(res.Err)
+		for watchRes := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
+			if watchRes.Err != nil {
+				panic(watchRes.Err)
 			}
 			buildRes, err := rebuild()
 			if err != nil {
