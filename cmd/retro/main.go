@@ -355,15 +355,30 @@ type MessageKind int
 const (
 	Error MessageKind = iota
 	Warning
-	Note
 )
 
-func (m Message) Format(kind MessageKind) string {
+func getPos(x interface{}) string {
+	switch y := x.(type) {
+	case Message: // TODO: Use api.Message?
+		return fmt.Sprintf("%s:%d:%d", y.Location.File, y.Location.Line, y.Location.Column)
+	case api.Note:
+		return fmt.Sprintf("%s:%d:%d", y.Location.File, y.Location.Line, y.Location.Column)
+	}
+	panic("Internal error")
+}
+
+func getVSCodePos(x interface{}) string {
 	cwd, _ := os.Getwd()
+	switch y := x.(type) {
+	case Message: // TODO: Use api.Message?
+		return fmt.Sprintf("vscode://file%s/%s", cwd, getPos(y))
+	case api.Note:
+		return fmt.Sprintf("vscode://file%s/%s", cwd, getPos(y))
+	}
+	panic("Internal error")
+}
 
-	pos := fmt.Sprintf("%s:%d:%d", m.Location.File, m.Location.Line, m.Location.Column)
-	vscodePos := fmt.Sprintf("vscode://file%s/%s", cwd, pos)
-
+func (m Message) Format(kind MessageKind) string {
 	var class, typ string
 	switch kind {
 	case Error:
@@ -372,11 +387,6 @@ func (m Message) Format(kind MessageKind) string {
 	case Warning:
 		class = "yellow"
 		typ = "warning"
-	}
-
-	focus := "^"
-	if m.Location.Length > 0 {
-		focus = strings.Repeat("~", m.Location.Length)
 	}
 
 	// lineText := strings.ReplaceAll(m.Location.LineText, "\t", "  ")
@@ -393,13 +403,18 @@ func (m Message) Format(kind MessageKind) string {
 		return len
 	}
 
-	str := fmt.Sprintf(`
-<strong class="bold"> &gt; <a href="%s">%s</a>: <span class="%s">%s:</span> %s</strong>
+	focus := "^"
+	if m.Location.Length > 0 { // FIXME
+		focus = strings.Repeat("~", m.Location.Length)
+	}
+
+	var str string
+	str += fmt.Sprintf(`<strong class="bold"> &gt; <a href="%s">%s</a>: <span class="%s">%s:</span> %s</strong>
     %d │ %s<span class="focus">%s</span>%s
     %s | %s<span class="focus">%s</span>
 `,
-		vscodePos,
-		pos,
+		getVSCodePos(m),
+		getPos(m),
 		class,
 		typ,
 		m.Text,
@@ -411,37 +426,47 @@ func (m Message) Format(kind MessageKind) string {
 		strings.Repeat(" ", tabLen(m.Location.LineText[:m.Location.Column])),
 		focus,
 	)
+	if len(m.Notes) > 0 {
+		for _, n := range m.Notes {
+
+			focus := "^"
+			if n.Location.Length > 0 { // FIXME
+				focus = strings.Repeat("~", n.Location.Length)
+			}
+
+			str += fmt.Sprintf(`   <a href="%s">%s</a>: <span class="bold">note:</span> %s
+    %d │ %s<span class="focus">%s</span>%s
+    %s | %s<span class="focus">%s</span>
+`,
+				getVSCodePos(m),
+				getPos(m),
+				n.Text,
+				n.Location.Line,
+				html.EscapeString(n.Location.LineText[:n.Location.Column]),
+				html.EscapeString(n.Location.LineText[n.Location.Column:n.Location.Column+n.Location.Length]),
+				html.EscapeString(n.Location.LineText[n.Location.Column+n.Location.Length:]),
+				strings.Repeat(" ", len(strconv.Itoa(n.Location.Line))),
+				strings.Repeat(" ", tabLen(n.Location.LineText[:n.Location.Column])),
+				focus,
+			)
+		}
+	}
 	str = strings.ReplaceAll(str, "\t", "  ")
-	str = strings.TrimSpace(str)
+	// str = strings.TrimSpace(str)
+	str += "\n"
 	return str
 }
 
 func (r BuildResponse) HTML() string {
 	var body string
 	for _, msg := range r.Errors {
-		// var notes string
-		// for _, note := range msg.Notes {
-		// 	if notes != "" {
-		// 		notes += "\n"
-		// 	}
-		// 	notes += Message(note).Format(Note)
-		// }
 		body += `<pre><code>` +
 			Message(msg).Format(Error) +
-			// notes +
 			`</code></pre>`
 	}
 	for _, msg := range r.Warnings {
-		// var notes string
-		// for _, note := range msg.Notes {
-		// 	if notes != "" {
-		// 		notes += "\n"
-		// 	}
-		// 	notes += Message(note).Format(Note)
-		// }
 		body += `<pre><code>` +
 			Message(msg).Format(Warning) +
-			// notes +
 			`</code></pre>`
 	}
 
@@ -451,9 +476,21 @@ func (r BuildResponse) HTML() string {
 		<title>` + fmt.Sprintf("Error: %s", r.Errors[0].Text) + `</title>
 		<style>
 
+*,
+*::before,
+*::after {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box
+}
+
 body {
   color: #c7c7c7;
   background-color: #000000;
+}
+
+.console {
+	padding: 1em;
 }
 
 code {
@@ -471,7 +508,9 @@ a:hover { text-decoration: underline; }
 		</style>
 	</head>
 	<body>
-		` + body + `
+		<div class="console">
+			` + body + `
+		</div>
 		<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => { localStorage.setItem("/~dev", "" + Date.now()); window.location.reload() }); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} }); window.addEventListener("storage", e => { if (e.key === "/~dev") { window.location.reload() } })</script>
 	</body>
 </html>
