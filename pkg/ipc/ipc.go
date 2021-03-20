@@ -3,7 +3,6 @@ package ipc
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"os/exec"
 )
 
@@ -82,6 +81,9 @@ func NewCommand(args ...string) (stdin chan RequestMessage, stdout chan Response
 			return len(data), data, nil
 		})
 		for scanner.Scan() {
+			// if str := scanner.Text(); str != "" {
+			// 	stderr <- str
+			// }
 			stderr <- scanner.Text()
 		}
 		if err := scanner.Err(); err != nil {
@@ -102,15 +104,22 @@ type Service struct {
 	Stderr chan string
 }
 
-func (s Service) Send(msg RequestMessage, ptr interface{}) (stderr error) {
+func (s Service) Send(msg RequestMessage, ptr interface{}) (stderr string, err error) {
 	s.Stdin <- msg
-	select {
-	case msg := <-s.Stdout:
-		if err := json.Unmarshal(msg.Data, ptr); err != nil {
-			panic(err)
+
+loop:
+	for {
+		select {
+		case out := <-s.Stdout:
+			if out.Kind == "eof" {
+				if err := json.Unmarshal(out.Data, ptr); err != nil {
+					return "", err
+				}
+				break loop
+			}
+		case str := <-s.Stderr:
+			stderr = str
 		}
-		return nil
-	case bstr := <-s.Stderr:
-		return errors.New(string(bstr))
 	}
+	return stderr, nil
 }

@@ -9,7 +9,7 @@ export function Head() {
 export default function Body() {
 	const [state, setState] = useState("Hello, world!")
 	return (
-		<div>
+		<div
 			<Nav />
 			<h1>Hello, world!</h1>
 			{/* <h1>Hello, world!</h1> */}

@@ -68,7 +68,6 @@ func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Dur
 	pathname := indexify(srvRoute.Route.Pathname)
 
 	var str string
-	str += " "
 	str += prettyFilepath(entry, primary, secondary)
 	str += " "
 	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry)))
@@ -100,7 +99,6 @@ func prettyServeEvent(args ServeArgs) string {
 	}
 
 	var str string
-	str += " "
 	str += prettyFilepath(args.Path, primary, secondary)
 	str += " "
 	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(args.Path)))

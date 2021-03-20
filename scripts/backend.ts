@@ -273,7 +273,7 @@ ReactDOM.hydrate(
 let app: esbuild.BuildIncremental
 
 async function build(runtime: T.Runtime): Promise<T.BuildResponse> {
-	const buildRes: T.BuildResponse = {
+	const resp: T.BuildResponse = {
 		errors: [],
 		warnings: [],
 	}
@@ -287,25 +287,28 @@ async function build(runtime: T.Runtime): Promise<T.BuildResponse> {
 			// Etc.
 			external: [],
 			format: "iife",
-			minifyWhitespace: true, // Use for better performance
+			minifyWhitespace: true, // Perf
 			// sourcemap: true, // TODO
 
 			incremental: true,
 		})
-		buildRes.warnings = app.warnings
+		if (app.warnings !== undefined) {
+			resp.warnings = app.warnings
+		}
 	} catch (error) {
-		// if (!("errors" in error) && !("warnings" in error)) {
-		// 	throw error
-		// }
-		buildRes.warnings = error.warnings
-		buildRes.errors = error.errors
+		if (error.warnings !== undefined) {
+			resp.warnings = error.warnings
+		}
+		if (error.errors !== undefined) {
+			resp.errors = error.errors
+		}
 	}
 
-	return buildRes
+	return resp
 }
 
 async function rebuild(): Promise<T.BuildResponse> {
-	const rebuildRes: T.BuildResponse = {
+	const resp: T.BuildResponse = {
 		errors: [],
 		warnings: [],
 	}
@@ -316,16 +319,19 @@ async function rebuild(): Promise<T.BuildResponse> {
 
 	try {
 		const result = await app.rebuild()
-		rebuildRes.warnings = result.warnings
+		if (result.warnings !== undefined) {
+			resp.warnings = result.warnings
+		}
 	} catch (error) {
-		// if (!("errors" in error) && !("warnings" in error)) {
-		// 	throw error
-		// }
-		rebuildRes.warnings = error.warnings
-		rebuildRes.errors = error.errors
+		if (error.warnings !== undefined) {
+			resp.warnings = error.warnings
+		}
+		if (error.warnings !== undefined) {
+			resp.errors = error.errors
+		}
 	}
 
-	return rebuildRes
+	return resp
 }
 
 async function main(): Promise<void> {
@@ -337,31 +343,31 @@ async function main(): Promise<void> {
 		switch (msg.Kind) {
 			case "resolve_server_router":
 				stdout({
-					Kind: "done",
+					Kind: "eof",
 					Data: await resolveServerRouter(msg.Data),
 				})
 				break
 			case "server_route_string":
 				stdout({
-					Kind: "",
+					Kind: "eof",
 					Data: await serverRouteString(msg.Data),
 				})
 				break
 			case "server_router_string":
 				stdout({
-					Kind: "",
+					Kind: "eof",
 					Data: await serverRouterString(msg.Data),
 				})
 				break
 			case "build":
 				stdout({
-					Kind: "",
+					Kind: "eof",
 					Data: await build(msg.Data),
 				})
 				break
 			case "rebuild":
 				stdout({
-					Kind: "",
+					Kind: "eof",
 					Data: await rebuild(),
 				})
 				break

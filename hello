@@ -1,0 +1,50 @@
+const stdin = (() => {
+  const read = require("readline").createInterface({input: process.stdin});
+  async function* generator() {
+    for await (const next of read) {
+      yield next;
+    }
+  }
+  const generate = generator();
+  return async () => (await generate.next()).value;
+})();
+function stdout(...args) {
+  console.log(...args);
+}
+function stderr(...args) {
+  console.error(...args);
+}
+function run() {
+  let count = 0;
+  console.log(`Hello, world! count=${count}`);
+  count++;
+  return () => {
+    console.log(`Hello, world! count=${count}`);
+    count++;
+  };
+}
+async function main() {
+  let rerun;
+  while (true) {
+    const jsonMsg = await stdin();
+    if (jsonMsg === void 0) {
+      return;
+    }
+    const msg = JSON.parse(jsonMsg);
+    switch (msg.Kind) {
+      case "run":
+        rerun = run();
+        break;
+      case "rerun":
+        throw new Error("Internal error");
+        if (rerun === void 0) {
+          throw new Error("Internal error");
+        }
+        rerun();
+        break;
+      default:
+        throw new Error("Internal error");
+    }
+  }
+}
+main();

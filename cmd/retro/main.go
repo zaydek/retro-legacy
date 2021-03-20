@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/evanw/esbuild/pkg/api"
 	"github.com/zaydek/retro/cmd/retro/cli"
 	"github.com/zaydek/retro/pkg/ipc"
 	"github.com/zaydek/retro/pkg/logger"
@@ -337,10 +336,10 @@ For example:
 	return runtime, nil
 }
 
-type BuildResponse struct {
-	Errors   []api.Message
-	Warnings []api.Message
-}
+// type BuildResponse struct {
+// 	Errors   []api.Message `json:"errors"`
+// 	Warnings []api.Message `json:"warnings"`
+// }
 
 func (r Runtime) Dev() {
 	stdio_logger.Set(stdio_logger.LoggerOptions{Time: true})
@@ -358,14 +357,16 @@ func (r Runtime) Dev() {
 
 	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
 
-	var start, once time.Time
+	// var start, once time.Time
+	var once time.Time
 loop:
 	for {
 		select {
 		case msg := <-stdout:
 			switch msg.Kind {
 			case "once":
-				start, once = time.Now(), time.Now() // Start
+				// start, once = time.Now(), time.Now() // Start
+				once = time.Now() // Start
 			case "server_route":
 				var srvRoute ServerRoute
 				if err := json.Unmarshal(msg.Data, &srvRoute); err != nil {
@@ -373,12 +374,12 @@ loop:
 				}
 				stdio_logger.Stdout(prettyServerRoute(r.Dirs, srvRoute, time.Since(once)))
 				once = time.Now() // Reset
-			case "done":
+			case "eof":
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
-				fmt.Println()
-				fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(start))))
+				// fmt.Println()
+				// fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(start))))
 				break loop
 			default:
 				panic("Internal error")
@@ -393,7 +394,9 @@ loop:
 	// Server router contents
 
 	var contents string
-	if err := service.Send(ipc.RequestMessage{Kind: "server_router_string", Data: r}, &contents); err != nil {
+	if stderr, err := service.Send(ipc.RequestMessage{Kind: "server_router_string", Data: r}, &contents); err != nil {
+		panic(err)
+	} else if stderr != "" {
 		stdio_logger.Stderr(err)
 		os.Exit(1)
 	}
@@ -406,46 +409,35 @@ loop:
 	// Dev server
 
 	// Browser server-sent events
-	browser := make(chan BuildResponse)
+	browser := make(chan map[string]interface{})
 
-	build := func() (BuildResponse, error) {
-		var res BuildResponse
-		if err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
-			return BuildResponse{}, err
-		}
-		return res, nil
-	}
-
-	rebuild := func() (BuildResponse, error) {
-		var res BuildResponse
-		if err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
-			return BuildResponse{}, err
-		}
-		return res, nil
-	}
-
-	renderToString := func(srvRoute ServerRoute) (string, error) {
-		type Data struct {
-			Runtime     Runtime
-			ServerRoute ServerRoute
-		}
-		var contents string
-		data := Data{Runtime: r, ServerRoute: srvRoute}
-		if err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: data}, &contents); err != nil {
-			return "", err
-		}
-		return contents, nil
-	}
-
-	// unshift := func(str string) string {
-	// 	arr := strings.Split(str, "\n")
-	// 	for x, v := range arr {
-	// 		if strings.HasPrefix(v, " ") {
-	// 			arr[x] = v[1:]
-	// 		}
+	// build := func() (map[string]interface{}, error) {
+	// 	var res map[string]interface{}
+	// 	if err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
+	// 		return nil, err
 	// 	}
-	// 	out := strings.Join(arr, "\n")
-	// 	return out
+	// 	return res, nil
+	// }
+
+	// rebuild := func() (map[string]interface{}, error) {
+	// 	var res map[string]interface{}
+	// 	if err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
+	// 		return nil, err
+	// 	}
+	// 	return res, nil
+	// }
+
+	// renderToString := func(srvRoute ServerRoute) (string, error) {
+	// 	type Data struct {
+	// 		Runtime     Runtime
+	// 		ServerRoute ServerRoute
+	// 	}
+	// 	var contents string
+	// 	data := Data{Runtime: r, ServerRoute: srvRoute}
+	// 	if err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: data}, &contents); err != nil {
+	// 		return "", err
+	// 	}
+	// 	return contents, nil
 	// }
 
 	go func() {
@@ -454,50 +446,89 @@ loop:
 				panic(watchRes.Err)
 			}
 
-			res, stderr := rebuild()
-			if stderr != nil {
+			var res map[string]interface{}
+			if stderr, err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
+				panic(err)
+			} else if stderr != "" {
 				fmt.Println(res)
 				stdio_logger.Stderr(stderr)
 				os.Exit(1) // TODO
 			}
-			browser <- res
+			fmt.Println(res)
+			// os.Exit(1)
+
+			// return res, nil
+
+			// 	var res map[string]interface{}
+			// 	stdin <- ipc.RequestMessage{Kind: "rebuild"}
+			// loop:
+			// 	for {
+			// 		select {
+			// 		case out := <-stdout:
+			// 			if out.Kind == "eof" {
+			// 				if err := json.Unmarshal(out.Data, &res); err != nil {
+			// 					panic(err)
+			// 				}
+			// 				break loop
+			// 			}
+			// 		case err := <-stderr:
+			// 			fmt.Println("err", err)
+			// 		}
+			// 	}
+			// 	fmt.Println(res)
+
+			// res, stderr := rebuild()
+			// fmt.Println("res:", res, "stderr:", stderr)
+			// if stderr != nil {
+			// 	stdio_logger.Stderr(stderr)
+			// 	os.Exit(1) // TODO
+			// }
+			// browser <- res
 		}
 	}()
 
-	if _, stderr := build(); stderr != nil {
+	// if _, stderr := build(); stderr != nil {
+	// 	stdio_logger.Stderr(stderr)
+	// 	os.Exit(1) // TODO
+	// }
+
+	var res map[string]interface{}
+	if stderr, err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
+		panic(err)
+	} else if stderr != "" {
 		stdio_logger.Stderr(stderr)
 		os.Exit(1) // TODO
 	}
 
-	// Serve __export__
-	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		var (
-			start        = time.Now()
-			sys_pathname = getSystemPathname(req.URL.Path)
-		)
-		// Bad request (404)
-		srvRoute, ok := r.SrvRouter[getPathname(req.URL.Path)]
-		if !ok {
-			http.NotFound(w, req)
-			logServeEvent404(sys_pathname, start)
-			return
-		}
-		// OK (200)
-		contents, err := renderToString(srvRoute) // TODO: Cache?
-		if err != nil {
-			stdio_logger.Stderr(err)
-			fmt.Fprintln(w, "500 server error") // TODO
-			return
-		}
-		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
-			panic(err)
-		}
-		if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(contents), MODE_FILE); err != nil {
-			panic(err)
-		}
-		fmt.Fprintln(w, contents)
-		logServeEvent200(sys_pathname, start)
-	})
+	// // Serve __export__
+	// http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+	// 	var (
+	// 		start        = time.Now()
+	// 		sys_pathname = getSystemPathname(req.URL.Path)
+	// 	)
+	// 	// Bad request (404)
+	// 	srvRoute, ok := r.SrvRouter[getPathname(req.URL.Path)]
+	// 	if !ok {
+	// 		http.NotFound(w, req)
+	// 		logServeEvent404(sys_pathname, start)
+	// 		return
+	// 	}
+	// 	// OK (200)
+	// 	contents, err := renderToString(srvRoute) // TODO: Cache?
+	// 	if err != nil {
+	// 		stdio_logger.Stderr(err)
+	// 		fmt.Fprintln(w, "500 server error") // TODO
+	// 		return
+	// 	}
+	// 	if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
+	// 		panic(err)
+	// 	}
+	// 	if err := ioutil.WriteFile(srvRoute.Route.Target, []byte(contents), MODE_FILE); err != nil {
+	// 		panic(err)
+	// 	}
+	// 	fmt.Fprintln(w, contents)
+	// 	logServeEvent200(sys_pathname, start)
+	// })
 
 	handle_app_js := func(w http.ResponseWriter, req *http.Request) {
 		var (
