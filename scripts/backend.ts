@@ -228,6 +228,7 @@ async function serverRouteString({ Runtime, ServerRoute }: serverRouteStringPara
 					window.location.reload()
 				}
 			})
+		</script>
 	`.trim()
 	if (typeof mod.default === "function") {
 		body = body.replace(

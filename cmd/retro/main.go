@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io/fs"
 	"io/ioutil"
 	"net/http"
@@ -354,6 +355,7 @@ type MessageKind int
 const (
 	Error MessageKind = iota
 	Warning
+	Note
 )
 
 func (m Message) Format(kind MessageKind) string {
@@ -377,10 +379,24 @@ func (m Message) Format(kind MessageKind) string {
 		focus = strings.Repeat("~", m.Location.Length)
 	}
 
+	// lineText := strings.ReplaceAll(m.Location.LineText, "\t", "  ")
+
+	tabLen := func(str string) int {
+		var len int
+		for _, ch := range str {
+			if ch == '\t' {
+				len += 2
+				continue
+			}
+			len++
+		}
+		return len
+	}
+
 	str := fmt.Sprintf(`
 <strong class="bold"> &gt; <a href="%s">%s</a>: <span class="%s">%s:</span> %s</strong>
-   %d │ %s<span class="focus">%s</span>%s
-   %s | %s<span class="focus">%s</span>
+    %d │ %s<span class="focus">%s</span>%s
+    %s | %s<span class="focus">%s</span>
 `,
 		vscodePos,
 		pos,
@@ -388,89 +404,75 @@ func (m Message) Format(kind MessageKind) string {
 		typ,
 		m.Text,
 		m.Location.Line,
-		m.Location.LineText[:m.Location.Column],
-		m.Location.LineText[m.Location.Column:m.Location.Column+m.Location.Length],
-		m.Location.LineText[m.Location.Column+m.Location.Length:],
+		html.EscapeString(m.Location.LineText[:m.Location.Column]),
+		html.EscapeString(m.Location.LineText[m.Location.Column:m.Location.Column+m.Location.Length]),
+		html.EscapeString(m.Location.LineText[m.Location.Column+m.Location.Length:]),
 		strings.Repeat(" ", len(strconv.Itoa(m.Location.Line))),
-		strings.Repeat(" ", m.Location.Column),
+		strings.Repeat(" ", tabLen(m.Location.LineText[:m.Location.Column])),
 		focus,
 	)
+	str = strings.ReplaceAll(str, "\t", "  ")
 	str = strings.TrimSpace(str)
 	return str
 }
 
 func (r BuildResponse) HTML() string {
-	err := r.Errors[0]
-	// r.Warnings = append(r.Warnings, err) // DEBUG
-	// r.Warnings = append(r.Warnings, err) // DEBUG
-
 	var body string
 	for _, msg := range r.Errors {
+		// var notes string
+		// for _, note := range msg.Notes {
+		// 	if notes != "" {
+		// 		notes += "\n"
+		// 	}
+		// 	notes += Message(note).Format(Note)
+		// }
 		body += `<pre><code>` +
 			Message(msg).Format(Error) +
+			// notes +
 			`</code></pre>`
 	}
 	for _, msg := range r.Warnings {
+		// var notes string
+		// for _, note := range msg.Notes {
+		// 	if notes != "" {
+		// 		notes += "\n"
+		// 	}
+		// 	notes += Message(note).Format(Note)
+		// }
 		body += `<pre><code>` +
 			Message(msg).Format(Warning) +
+			// notes +
 			`</code></pre>`
 	}
 
 	return `<!DOCTYPE html>
 <html>
 	<head>
-		<title>` + fmt.Sprintf("Error: %s", err.Text) + `</title>
+		<title>` + fmt.Sprintf("Error: %s", r.Errors[0].Text) + `</title>
 		<style>
+
+body {
+  color: #c7c7c7;
+  background-color: #000000;
+}
 
 code {
 	font-family: "Monaco", monospace;
 }
 
-.bold {
-	color: #feffff;
-}
-
-.red {
-	color: #ff6d67;
-}
-
-.yellow {
-	color: #fefb67;
-}
-
-.focus {
-	color: #00c200;
-}
-
 a { color: unset; text-decoration: unset; }
 a:hover { text-decoration: underline; }
 
-body {
-	color: #c7c7c7;
-	background-color: #000000;
-}
+.bold { color: #feffff; }
+.red { color: #ff6d67; }
+.yellow { color: #fefb67; }
+.focus { color: #00c200; }
 
 		</style>
 	</head>
 	<body>
 		` + body + `
-		<script type="module">
-			const dev = new EventSource("/~dev")
-			dev.addEventListener("reload", () => {
-				localStorage.setItem("/~dev", "" + Date.now())
-				window.location.reload()
-			})
-			dev.addEventListener("error", e => {
-				try {
-					console.error(JSON.parse(e.data))
-				} catch {}
-			})
-			window.addEventListener("storage", e => {
-				if (e.key === "/~dev") {
-					window.location.reload()
-				}
-			})
-		</script>
+		<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => { localStorage.setItem("/~dev", "" + Date.now()); window.location.reload() }); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} }); window.addEventListener("storage", e => { if (e.key === "/~dev") { window.location.reload() } })</script>
 	</body>
 </html>
 `
@@ -545,7 +547,7 @@ loop:
 
 	// Browser server-sent events
 	var res BuildResponse
-	browser := make(chan BuildResponse)
+	browser := make(chan BuildResponse, 1)
 
 	go func() {
 		for event := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
@@ -556,9 +558,11 @@ loop:
 			if stderr, err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
 				panic(err)
 			} else if stderr != "" {
-				stdio_logger.Stderr(stderr)
+				// bstr, _ := json.Marshal(res)
+				// fmt.Println(string(bstr))
+				stdio_logger.Stderr(stderr) // TODO
 			}
-			// browser <- res
+			browser <- res
 		}
 	}()
 
@@ -566,9 +570,9 @@ loop:
 	if stderr, err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
 		panic(err)
 	} else if stderr != "" {
-		stdio_logger.Stderr(stderr)
+		// stdio_logger.Stderr(stderr)
 	}
-	// browser <- res
+	browser <- res
 
 	type Data struct {
 		Runtime     Runtime
@@ -583,7 +587,6 @@ loop:
 		// Server error (500)
 		if res.Dirty() {
 			fmt.Fprintln(w, res.HTML())
-			// logServeEvent500(sys_pathname, start)
 			return
 		}
 		// Bad request (404)
@@ -598,8 +601,8 @@ loop:
 		if stderr, err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: Data{Runtime: r, ServerRoute: srvRoute}}, &contents); err != nil {
 			panic(err)
 		} else if stderr != "" {
-			stdio_logger.Stderr(stderr)
-			logServeEvent500(sys_pathname, start)
+			stdio_logger.Stderr(stderr)           // TODO
+			logServeEvent500(sys_pathname, start) // TODO
 			return
 		}
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {
@@ -649,7 +652,7 @@ loop:
 		logServeEvent200(fs_pathname, start)
 	})
 
-	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
+	http.HandleFunc("/~dev", func(w http.ResponseWriter, req *http.Request) {
 		// Set server-sent event headers
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
@@ -660,10 +663,15 @@ loop:
 		}
 		for {
 			select {
-			case <-browser:
-				fmt.Fprintf(w, "event: reload\ndata\n\n")
+			case res := <-browser:
+				fmt.Println(res)
+				bstr, err := json.Marshal(res)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Fprint(w, `event: reload`+"\n"+`data: %s`+"\n\n", string(bstr))
 				flusher.Flush()
-			case <-rq.Context().Done():
+			case <-req.Context().Done():
 				return
 			}
 		}
