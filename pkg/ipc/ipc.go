@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os/exec"
 )
 
@@ -103,13 +102,11 @@ type Service struct {
 	Stderr chan string
 }
 
-// Send sends one message synchronously.
 func (s Service) Send(msg RequestMessage, ptr interface{}) error {
 	s.Stdin <- msg
 	select {
 	case msg := <-s.Stdout:
 		if err := json.Unmarshal(msg.Data, ptr); err != nil {
-			fmt.Println(string(msg.Data)) // DEBUG
 			panic(err)
 		}
 		return nil

@@ -17,46 +17,14 @@ const baseOptions: esbuild.BuildOptions = {
 	loader: {
 		".js": "jsx",
 	},
-	// sourcemap: true,
 }
 
-// const modCache: { [key: string]: T.AnyModule } = {}
-
-////////////////////////////////////////////////////////////////////////////////
-
-// const transpile = (source: string, target: string): esbuild.BuildOptions => ({
-// 	bundle: true,
-// 	define: {
-// 		"process.env.NODE_ENV": '"development"',
-// 	},
-// 	entryPoints: [source],
-// 	external: ["react", "react-dom"], // Dedupe React APIs
-// 	format: "cjs",
-// 	loader: { ".js": "jsx" },
-// 	logLevel: "warning",
-// 	outfile: target,
-// })
-
-// const bundle = (source: string, target: string): esbuild.BuildOptions => ({
-// 	bundle: true,
-// 	define: {
-// 		"process.env.NODE_ENV": '"development"',
-// 	},
-// 	entryPoints: [source],
-// 	// external: [],
-// 	format: "iife",
-// 	loader: { ".js": "jsx" },
-// 	logLevel: "warning",
-// 	outfile: target,
-// })
-
-////////////////////////////////////////////////////////////////////////////////
-
+// TODO: Do we want to generate sourcemaps? How can we reuse sourcemaps for
+// React, etc.?
 async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, source: string): Promise<Module> {
 	const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"))
 
 	try {
-		// await esbuild.build(transpile(source, target))
 		await esbuild.build({
 			...baseOptions,
 			entryPoints: [source],
@@ -64,8 +32,8 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, sou
 
 			// Etc.
 			external: ["react", "react-dom"], // Dedupe React APIs
-			format: "cjs", // For require(...)
-			// sourcemap: false,
+			format: "cjs",
+			// sourcemap: true, // TODO
 		})
 	} catch (error) {
 		// Rethrow non-esbuild errors
@@ -89,17 +57,14 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, sou
 }
 
 // src/pages/foo.html -> __export__/foo.html
-function getTargetSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
-	const str = path.join(
-		dirs.ExportDir,
-		pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length) + ".html",
-	)
+function getTargetSyntax(dirs: T.Dirs, p: PathInfo): string {
+	const str = path.join(dirs.ExportDir, p.source.slice(dirs.SrcPagesDir.length, -p.extname.length) + ".html")
 	return str
 }
 
 // src/pages/foo.html -> /foo
-function getPathnameSyntax(dirs: T.Dirs, pathInfo: PathInfo): string {
-	const str = pathInfo.source.slice(dirs.SrcPagesDir.length, -pathInfo.extname.length)
+function getPathnameSyntax(dirs: T.Dirs, p: PathInfo): string {
+	const str = p.source.slice(dirs.SrcPagesDir.length, -p.extname.length)
 	if (str.endsWith("/index")) {
 		return str.slice(0, -"index".length) // Keep "/"
 	}
@@ -124,9 +89,9 @@ async function resolveStaticServerRoute(runtime: T.Runtime, route: T.Route): Pro
 		}
 	}
 
-	const pathInfo = newPathInfo(route.Source)
-	const target = getTargetSyntax(runtime.Dirs, pathInfo)
-	const pathname = getPathnameSyntax(runtime.Dirs, pathInfo)
+	const p = newPathInfo(route.Source)
+	const target = getTargetSyntax(runtime.Dirs, p)
+	const pathname = getPathnameSyntax(runtime.Dirs, p)
 
 	const srvRoute: T.ServerRoute = {
 		Route: {
@@ -231,27 +196,6 @@ async function serverRouteString({ Runtime, ServerRoute }: serverRouteStringPara
 		head = head.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 	}
 
-	// <noscript>You need to enable JavaScript to run this app.</noscript>
-	// <div id="root">...</div>
-	// <script src="/app.js"></script>
-	// <script type="module">
-	//   const dev = new EventSource("/~dev")
-	//   dev.addEventListener("reload", () => {
-	//     localStorage.setItem("/~dev", "" + Date.now())
-	//     window.location.reload()
-	//   })
-	//   dev.addEventListener("error", e => {
-	//     try {
-	//       console.error(JSON.parse(e.data))
-	//     } catch {}
-	//   })
-	//   window.addEventListener("storage", e => {
-	//     if (e.key === "/~dev") {
-	//       window.location.reload()
-	//     }
-	//   })
-	// </script>
-
 	let body = ""
 	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	body += `\n\t\t<div id="root"></div>`
@@ -267,7 +211,6 @@ async function serverRouteString({ Runtime, ServerRoute }: serverRouteStringPara
 	let contents = Runtime.Template
 	contents = contents.replace("%head%", head)
 	contents = contents.replace("%body%", body)
-
 	return contents
 }
 
@@ -315,80 +258,67 @@ ReactDOM.hydrate(
 `
 }
 
-let incremental: esbuild.BuildIncremental
+let app: esbuild.BuildIncremental
 
-async function build(runtime: T.Runtime): Promise<any> {
-	let errors: esbuild.Message[] = []
-	let warnings: esbuild.Message[] = []
-
-	const source = path.join(runtime.Dirs.CacheDir, "app.js")
-	const target = path.join(runtime.Dirs.ExportDir, "app.js")
+async function build(runtime: T.Runtime): Promise<T.BuildResponse> {
+	const res: T.BuildResponse = {
+		errors: [],
+		warnings: [],
+	}
 
 	try {
-		// prettier-ignore
-		incremental = await esbuild.build({
+		app = await esbuild.build({
 			...baseOptions,
-			entryPoints: [source],
-			outfile: target,
+			entryPoints: [path.join(runtime.Dirs.CacheDir, "app.js")],
+			outfile: path.join(runtime.Dirs.ExportDir, "app.js"),
 
 			// Etc.
 			external: [],
 			format: "iife",
-			// sourcemap: true,
-
-			// minify: true,
-			// keepNames: true,
-
-  		// minify?: boolean;
-  		minifyWhitespace: true,
-  		minifyIdentifiers: false,
-  		minifySyntax: false,
+			minifyWhitespace: true, // Use for better performance
+			// sourcemap: true, // TODO
 
 			incremental: true,
 		})
-		warnings = incremental.warnings
+		res.warnings = app.warnings
 	} catch (error) {
 		// Rethrow non-esbuild errors
 		if (!("errors" in error) && !("warnings" in error)) {
 			throw error
 		}
-		warnings = error.warnings
-		errors = error.errors
+		res.warnings = error.warnings
+		res.errors = error.errors
 	}
 
-	return { errors, warnings }
+	return res
 }
 
-async function rebuild(): Promise<any> {
-	let errors: esbuild.Message[] = []
-	let warnings: esbuild.Message[] = []
+async function rebuild(): Promise<T.BuildResponse> {
+	const res: T.BuildResponse = {
+		errors: [],
+		warnings: [],
+	}
 
-	// Coerce to truthy
-	if (incremental.rebuild === undefined) {
+	if (app.rebuild === undefined) {
 		throw new Error("Internal error")
 	}
 
 	try {
-		const result = await incremental.rebuild!()
-		warnings = result.warnings
+		const result = await app.rebuild()
+		res.warnings = result.warnings
 	} catch (error) {
 		// Rethrow non-esbuild errors
 		if (!("errors" in error) && !("warnings" in error)) {
 			throw error
 		}
-		warnings = error.warnings
-		errors = error.errors
+		res.warnings = error.warnings
+		res.errors = error.errors
 	}
 
-	// const t = Date.now()
-	// await incremental.rebuild!()
-	// stderr(Date.now() - t)
-
-	return { errors, warnings }
+	return res
 }
 
 async function main(): Promise<void> {
-	// Warm up esbuild
 	esbuild.build({})
 
 	while (true) {

@@ -1,3 +1,5 @@
+import * as esbuild from "esbuild"
+
 export interface DevCmd {
 	Cached: boolean
 	FastRefresh: boolean
@@ -73,4 +75,9 @@ export interface ServerRouter {
 export interface Message {
 	Kind: string
 	Data?: any
+}
+
+export interface BuildResponse {
+	errors: esbuild.Message[]
+	warnings: esbuild.Message[]
 }
