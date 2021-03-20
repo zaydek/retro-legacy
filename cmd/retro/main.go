@@ -349,49 +349,111 @@ func (r BuildResponse) Dirty() bool {
 
 type Message api.Message
 
-func (m Message) String() string {
-	emphasis := "^"
-	if m.Location.Length < 0 {
-		emphasis = strings.Repeat("~", m.Location.Length)
+type MessageKind int
+
+const (
+	Error MessageKind = iota
+	Warning
+)
+
+func (m Message) Format(kind MessageKind) string {
+	cwd, _ := os.Getwd()
+
+	pos := fmt.Sprintf("%s:%d:%d", m.Location.File, m.Location.Line, m.Location.Column)
+	vscodePos := fmt.Sprintf("vscode://file%s/%s", cwd, pos)
+
+	var class, typ string
+	switch kind {
+	case Error:
+		class = "red"
+		typ = "error"
+	case Warning:
+		class = "yellow"
+		typ = "warning"
 	}
-	return fmt.Sprintf(" > %s:%d:%d: %s", m.Location.File, m.Location.Line, m.Location.Column, m.Text) + `
-` + fmt.Sprintf("    %d │ %s", m.Location.Line, m.Location.LineText) + `
-` + fmt.Sprintf("    %s │ %s%s", strings.Repeat(" ", len(strconv.Itoa(m.Location.Line))), strings.Repeat(" ", m.Location.Column), emphasis) + `
-`
+
+	focus := "^"
+	if m.Location.Length > 0 {
+		focus = strings.Repeat("~", m.Location.Length)
+	}
+
+	str := fmt.Sprintf(`
+<strong class="bold"> &gt; <a href="%s">%s</a>: <span class="%s">%s:</span> %s</strong>
+   %d │ %s<span class="focus">%s</span>%s
+   %s | %s<span class="focus">%s</span>
+`,
+		vscodePos,
+		pos,
+		class,
+		typ,
+		m.Text,
+		m.Location.Line,
+		m.Location.LineText[:m.Location.Column],
+		m.Location.LineText[m.Location.Column:m.Location.Column+m.Location.Length],
+		m.Location.LineText[m.Location.Column+m.Location.Length:],
+		strings.Repeat(" ", len(strconv.Itoa(m.Location.Line))),
+		strings.Repeat(" ", m.Location.Column),
+		focus,
+	)
+	str = strings.TrimSpace(str)
+	return str
 }
 
 func (r BuildResponse) HTML() string {
-	cwd, _ := os.Getwd()
-
 	err := r.Errors[0]
+	// r.Warnings = append(r.Warnings, err) // DEBUG
+	// r.Warnings = append(r.Warnings, err) // DEBUG
+
+	var body string
+	for _, msg := range r.Errors {
+		body += `<pre><code>` +
+			Message(msg).Format(Error) +
+			`</code></pre>`
+	}
+	for _, msg := range r.Warnings {
+		body += `<pre><code>` +
+			Message(msg).Format(Warning) +
+			`</code></pre>`
+	}
 
 	return `<!DOCTYPE html>
 <html>
 	<head>
-		<title>
-			` + fmt.Sprintf("Error: %s", err.Text) + `
-		</title>
+		<title>` + fmt.Sprintf("Error: %s", err.Text) + `</title>
 		<style>
-			a {
-				color: unset;
-				text-decoration: unset;
-			}
-			body {
-				color: hsla(0, 0%, 0%, 0.95);
-				background-color: #fff;
-			}
-			@media (prefers-color-scheme: dark) {
-				body {
-					color: hsla(0, 0%, 100%, 0.95);
-					background-color: rgb(36, 36, 36);
-				}
-			}
+
+code {
+	font-family: "Monaco", monospace;
+}
+
+.bold {
+	color: #feffff;
+}
+
+.red {
+	color: #ff6d67;
+}
+
+.yellow {
+	color: #fefb67;
+}
+
+.focus {
+	color: #00c200;
+}
+
+a { color: unset; text-decoration: unset; }
+a:hover { text-decoration: underline; }
+
+body {
+	color: #c7c7c7;
+	background-color: #000000;
+}
+
 		</style>
 	</head>
 	<body>
-		<a href="` + fmt.Sprintf("vscode://file%s/%s:%d:%d", cwd, err.Location.File, err.Location.Line, err.Location.Column) + `">
-			<pre><code>` + Message(err).String() + `</code></pre>
-		</a>
+		` + body + `
 		<script type="module">
 			const dev = new EventSource("/~dev")
 			dev.addEventListener("reload", () => {

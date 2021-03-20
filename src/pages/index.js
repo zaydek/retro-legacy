@@ -11,7 +11,7 @@ exportxdefault function Body() {
 	return (
 		<div>
 			<Nav />
-			<h1>Wow, world!</h1>
+			<h1>Hello, world!</h1>
 			{/* <h1>Hello, world!</h1> */}
 			<h1 onClick={() => setState("Oops")}>{state}</h1>
 		</div>
