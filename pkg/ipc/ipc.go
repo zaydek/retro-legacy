@@ -102,7 +102,7 @@ type Service struct {
 	Stderr chan string
 }
 
-func (s Service) Send(msg RequestMessage, ptr interface{}) error {
+func (s Service) Send(msg RequestMessage, ptr interface{}) (stderr error) {
 	s.Stdin <- msg
 	select {
 	case msg := <-s.Stdout:

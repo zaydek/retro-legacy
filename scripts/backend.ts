@@ -22,10 +22,16 @@ const baseOptions: esbuild.BuildOptions = {
 // TODO: Do we want to generate sourcemaps? How can we reuse sourcemaps for
 // React, etc.?
 async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, source: string): Promise<Module> {
+	const buildRes: T.BuildResponse = {
+		errors: [],
+		warnings: [],
+	}
+
+	// Remember target
 	const target = path.join(runtime.Dirs.CacheDir, source.replace(/\..*$/, ".esbuild.js"))
 
 	try {
-		await esbuild.build({
+		const result = await esbuild.build({
 			...baseOptions,
 			entryPoints: [source],
 			outfile: target,
@@ -35,12 +41,18 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, sou
 			format: "cjs",
 			// sourcemap: true, // TODO
 		})
+		buildRes.warnings = result.warnings
 	} catch (error) {
-		// Rethrow non-esbuild errors
 		if (!("errors" in error) && !("warnings" in error)) {
 			throw error
 		}
+		buildRes.warnings = error.warnings
+		buildRes.errors = error.errors
 	}
+
+	// if (buildRes.errors.length > 0 || buildRes.warnings.length > 0) {
+	// 	stderr(buildRes)
+	// }
 
 	// Use try-catch to no-op esbuild’s "require" warning
 	let mod: Module
@@ -261,7 +273,7 @@ ReactDOM.hydrate(
 let app: esbuild.BuildIncremental
 
 async function build(runtime: T.Runtime): Promise<T.BuildResponse> {
-	const res: T.BuildResponse = {
+	const buildRes: T.BuildResponse = {
 		errors: [],
 		warnings: [],
 	}
@@ -280,21 +292,20 @@ async function build(runtime: T.Runtime): Promise<T.BuildResponse> {
 
 			incremental: true,
 		})
-		res.warnings = app.warnings
+		buildRes.warnings = app.warnings
 	} catch (error) {
-		// Rethrow non-esbuild errors
-		if (!("errors" in error) && !("warnings" in error)) {
-			throw error
-		}
-		res.warnings = error.warnings
-		res.errors = error.errors
+		// if (!("errors" in error) && !("warnings" in error)) {
+		// 	throw error
+		// }
+		buildRes.warnings = error.warnings
+		buildRes.errors = error.errors
 	}
 
-	return res
+	return buildRes
 }
 
 async function rebuild(): Promise<T.BuildResponse> {
-	const res: T.BuildResponse = {
+	const rebuildRes: T.BuildResponse = {
 		errors: [],
 		warnings: [],
 	}
@@ -305,17 +316,16 @@ async function rebuild(): Promise<T.BuildResponse> {
 
 	try {
 		const result = await app.rebuild()
-		res.warnings = result.warnings
+		rebuildRes.warnings = result.warnings
 	} catch (error) {
-		// Rethrow non-esbuild errors
-		if (!("errors" in error) && !("warnings" in error)) {
-			throw error
-		}
-		res.warnings = error.warnings
-		res.errors = error.errors
+		// if (!("errors" in error) && !("warnings" in error)) {
+		// 	throw error
+		// }
+		rebuildRes.warnings = error.warnings
+		rebuildRes.errors = error.errors
 	}
 
-	return res
+	return rebuildRes
 }
 
 async function main(): Promise<void> {

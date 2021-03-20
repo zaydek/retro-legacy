@@ -437,23 +437,36 @@ loop:
 		return contents, nil
 	}
 
+	// unshift := func(str string) string {
+	// 	arr := strings.Split(str, "\n")
+	// 	for x, v := range arr {
+	// 		if strings.HasPrefix(v, " ") {
+	// 			arr[x] = v[1:]
+	// 		}
+	// 	}
+	// 	out := strings.Join(arr, "\n")
+	// 	return out
+	// }
+
 	go func() {
 		for watchRes := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
 			if watchRes.Err != nil {
 				panic(watchRes.Err)
 			}
-			buildRes, err := rebuild()
-			if err != nil {
-				stdio_logger.Stderr(err)
-				// os.Exit(1) // TODO
+
+			res, stderr := rebuild()
+			if stderr != nil {
+				fmt.Println(res)
+				stdio_logger.Stderr(stderr)
+				os.Exit(1) // TODO
 			}
-			browser <- buildRes
+			browser <- res
 		}
 	}()
 
-	if _, err := build(); err != nil {
-		stdio_logger.Stderr(err)
-		// os.Exit(1) // TODO
+	if _, stderr := build(); stderr != nil {
+		stdio_logger.Stderr(stderr)
+		os.Exit(1) // TODO
 	}
 
 	// Serve __export__
