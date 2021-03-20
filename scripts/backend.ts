@@ -237,16 +237,30 @@ async function serverRouteString({
 	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
 	body += `\n\t\t<div id="root"></div>`
 	body += `\n\t\t<script src="/app.js"></script>`
-	body += `\n\t\t<!-- Server-sent events for /~dev -->`
-	body += `\n\t\t<script type="module">`
-	body += `\n\t\t\tconst dev = new EventSource("/~dev")`
-	body += `\n\t\t\tdev.addEventListener("reload", window.location.reload)`
-	body += `\n\t\t\tdev.addEventListener("error", e => {`
-	body += `\n\t\t\t\ttry {`
-	body += `\n\t\t\t\t\tconsole.error(JSON.parse(e.data))`
-	body += `\n\t\t\t\t} catch {}`
-	body += `\n\t\t\t})`
-	body += `\n\t\t</script>`
+	body += `\n\t\t<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => window.location.reload()); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} })</script>`
+	// body += `\n\t\t<script type="module">`
+	// body += `\n\t\t\tconst dev = new EventSource("/~dev")`
+	// body += `\n\t\t\tdev.addEventListener("reload", () => window.location.reload)`
+	// body += `\n\t\t\tdev.addEventListener("error", e => {`
+	// body += `\n\t\t\t\ttry {`
+	// body += `\n\t\t\t\t\tconsole.error(JSON.parse(e.data))`
+	// body += `\n\t\t\t\t} catch {}`
+	// body += `\n\t\t\t})`
+	// body += `\n\t\t</script>`
+
+	// body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
+	// body += `\n\t\t<div id="root"></div>`
+	// body += `\n\t\t<script src="/app.js"></script>`
+	// body += `\n\t\t<!-- Server-sent events for /~dev -->`
+	// body += `\n\t\t<script type="module">`
+	// body += `\n\t\t\tconst dev = new EventSource("/~dev")`
+	// body += `\n\t\t\tdev.addEventListener("reload", window.location.reload)`
+	// body += `\n\t\t\tdev.addEventListener("error", e => {`
+	// body += `\n\t\t\t\ttry {`
+	// body += `\n\t\t\t\t\tconsole.error(JSON.parse(e.data))`
+	// body += `\n\t\t\t\t} catch {}`
+	// body += `\n\t\t\t})`
+	// body += `\n\t\t</script>`
 
 	body = body.replace(
 		`<div id="root"></div>`,

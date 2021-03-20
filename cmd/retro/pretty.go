@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -35,36 +35,48 @@ func prettyDuration(dur time.Duration) string {
 	return str
 }
 
+var greedyExtRe = regexp.MustCompile(`(\.).*$`)
+
+func prettyFilepath(filepath string, primary, secondary func(args ...interface{}) string) string {
+	var ext string
+	if matches := greedyExtRe.FindAllString(filepath, -1); len(matches) == 1 {
+		ext = matches[0]
+		filepath = filepath[:len(filepath)-len(ext)] // Remove .ext
+	}
+	parts := strings.Split(filepath, "/")
+	for x, part := range parts {
+		parts[x] = primary(part)
+	}
+	var str string
+	str += strings.Join(parts, secondary("/"))
+	str += secondary(ext)
+	return str
+}
+
 func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
-	main := terminal.Normal
+	primary := terminal.Normal
 	if srvRoute.Route.Type == "dynamic" {
-		main = terminal.Green
+		primary = terminal.Cyan
 	}
 
-	alt := terminal.Dim
+	secondary := terminal.Dim
 	if srvRoute.Route.Type == "dynamic" {
-		alt = terminal.DimGreen
+		secondary = terminal.DimCyan
 	}
 
-	ext := filepath.Ext(srvRoute.Route.Source)
-
-	var entry string
-	entry = srvRoute.Route.Source[len(dirs.SrcPagesDir):]
-	entry = entry[:len(entry)-len(ext)]
-
+	entry := srvRoute.Route.Source[len(dirs.SrcPagesDir):]
 	pathname := indexify(srvRoute.Route.Pathname)
 
 	var str string
-	str += alt("/")
-	str += main(entry[1:])
-	str += alt(ext)
+	str += prettyFilepath(entry, primary, secondary)
 	str += " "
-	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry+ext)))
+	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry)))
 	str += " "
-	str += alt("/")
-	str += main(pathname[1:])
-	str += " "
-	str += alt(fmt.Sprintf("(%s)", prettyDuration(dur)))
+	str += prettyFilepath(pathname, primary, secondary)
+	if dur > time.Millisecond {
+		str += " "
+		str += secondary(fmt.Sprintf("(%s)", prettyDuration(dur)))
+	}
 	return str
 }
 
@@ -76,32 +88,25 @@ type ServeArgs struct {
 }
 
 func prettyServeEvent(args ServeArgs) string {
-	main := terminal.Normal
+	primary := terminal.Normal
 	if args.StatusCode != 200 {
-		main = terminal.Red
+		primary = terminal.Red
 	}
 
-	alt := terminal.Dim
+	secondary := terminal.Dim
 	if args.StatusCode != 200 {
-		alt = terminal.DimRed
+		secondary = terminal.DimRed
 	}
-
-	// TODO: Cover ".js.map" case
-	ext := filepath.Ext(args.Path)
-
-	var entry string
-	entry = args.Path
-	entry = entry[:len(entry)-len(ext)]
 
 	var str string
-	str += alt("/")
-	str += main(entry[1:])
-	str += alt(ext)
+	str += prettyFilepath(args.Path, primary, secondary)
 	str += " "
-	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry+ext)))
+	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(args.Path)))
 	str += " "
-	str += main(args.StatusCode)
-	str += " "
-	str += alt(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
+	str += primary(args.StatusCode)
+	if args.Duration > time.Millisecond {
+		str += " "
+		str += secondary(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
+	}
 	return str
 }

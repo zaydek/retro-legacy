@@ -59,7 +59,7 @@ func (l *StdioLogger) Stdout(args ...interface{}) {
 			tstr += terminal.Dim(time.Now().Format(l.format))
 			tstr += "  "
 		}
-		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, terminal.BoldGreen("stdout"), line)
+		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, terminal.BoldCyan("stdout"), line)
 	}
 	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
