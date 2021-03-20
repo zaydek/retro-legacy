@@ -411,24 +411,14 @@ loop:
 	// Browser server-sent events
 	browser := make(chan map[string]interface{})
 
-	// renderToString := func(srvRoute ServerRoute) (string, error) {
-	// 	type Data struct {
-	// 		Runtime     Runtime
-	// 		ServerRoute ServerRoute
-	// 	}
-	// 	var contents string
-	// 	data := Data{Runtime: r, ServerRoute: srvRoute}
-	// 	if stderr, err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: data}, &contents); err != nil {
-	// 		return "", err
-	// 	}
-	// 	return contents, nil
-	// }
-
 	go func() {
 		for event := range watch.Directory(r.Dirs.SrcPagesDir, 100*time.Millisecond) {
+			fmt.Println("a")
+
 			if event.Err != nil {
 				panic(event.Err)
 			}
+			// Send a message for 'esbuild.rebuild()'
 			var res map[string]interface{}
 			if stderr, err := service.Send(ipc.RequestMessage{Kind: "rebuild"}, &res); err != nil {
 				panic(err)
@@ -436,10 +426,13 @@ loop:
 				fmt.Println(res)
 				stdio_logger.Stderr(stderr)
 			}
+
+			fmt.Println("b")
 			browser <- res
 		}
 	}()
 
+	// Send a message for 'esbuild.build({ ... })'
 	var res map[string]interface{}
 	if stderr, err := service.Send(ipc.RequestMessage{Kind: "build", Data: r}, &res); err != nil {
 		panic(err)
@@ -447,13 +440,12 @@ loop:
 		stdio_logger.Stderr(stderr)
 	}
 
-	// Serve __export__
-	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
-		type Data struct {
-			Runtime     Runtime
-			ServerRoute ServerRoute
-		}
+	type Data struct {
+		Runtime     Runtime
+		ServerRoute ServerRoute
+	}
 
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		var (
 			start        = time.Now()
 			sys_pathname = getSystemPathname(req.URL.Path)
@@ -471,7 +463,24 @@ loop:
 			panic(err)
 		} else if stderr != "" {
 			stdio_logger.Stderr(stderr)
-			fmt.Fprintln(w, "500 server error") // TODO
+			fmt.Fprint(w, `<script type="module">
+	const dev = new EventSource("/~dev")
+	dev.addEventListener("reload", () => {
+		localStorage.setItem("/~dev", "" + Date.now())
+		window.location.reload()
+	})
+	dev.addEventListener("error", e => {
+		try {
+			console.error(JSON.parse(e.data))
+		} catch {}
+	})
+	window.addEventListener("storage", e => {
+		if (e.key === "/~dev") {
+			window.location.reload()
+		}
+	})
+</script>
+`)
 			logServeEvent500(sys_pathname, start)
 			return
 		}
@@ -485,7 +494,7 @@ loop:
 		logServeEvent200(sys_pathname, start)
 	})
 
-	handleApp := func(w http.ResponseWriter, req *http.Request) {
+	app := func(w http.ResponseWriter, req *http.Request) {
 		var (
 			start       = time.Now()
 			fs_pathname = getSystemPathname(req.URL.Path)
@@ -502,11 +511,9 @@ loop:
 		logServeEvent200(fs_pathname, start)
 	}
 
-	// Serve __export__/app.js
-	http.HandleFunc("/app.js", handleApp)
-	http.HandleFunc("/app.js.map", handleApp)
+	http.HandleFunc("/app.js", app)
+	http.HandleFunc("/app.js.map", app)
 
-	// Serve __export__/www
 	http.HandleFunc("/"+r.Dirs.WwwDir, func(w http.ResponseWriter, req *http.Request) {
 		var (
 			start       = time.Now()
@@ -524,7 +531,6 @@ loop:
 		logServeEvent200(fs_pathname, start)
 	})
 
-	// ~/dev
 	http.HandleFunc("/~dev", func(w http.ResponseWriter, rq *http.Request) {
 		// Set server-sent event headers
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -545,7 +551,7 @@ loop:
 		}
 	})
 
-	fmt.Println()
+	// fmt.Println()
 
 	port := r.getPort()
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
