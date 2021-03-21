@@ -348,8 +348,6 @@ func (r BuildResponse) Dirty() bool {
 	return len(r.Errors) > 0 || len(r.Warnings) > 0
 }
 
-type Message api.Message
-
 type MessageKind int
 
 const (
@@ -357,12 +355,12 @@ const (
 	Warning
 )
 
-func getPos(x interface{}) string {
+func getPos(x interface{}, offset int) string {
 	switch y := x.(type) {
-	case Message: // TODO: Use api.Message?
-		return fmt.Sprintf("%s:%d:%d", y.Location.File, y.Location.Line, y.Location.Column)
+	case api.Message:
+		return fmt.Sprintf("%s:%d:%d", y.Location.File, y.Location.Line, y.Location.Column+offset)
 	case api.Note:
-		return fmt.Sprintf("%s:%d:%d", y.Location.File, y.Location.Line, y.Location.Column)
+		return fmt.Sprintf("%s:%d:%d", y.Location.File, y.Location.Line, y.Location.Column+offset)
 	}
 	panic("Internal error")
 }
@@ -370,15 +368,15 @@ func getPos(x interface{}) string {
 func getVSCodePos(x interface{}) string {
 	cwd, _ := os.Getwd()
 	switch y := x.(type) {
-	case Message: // TODO: Use api.Message?
-		return fmt.Sprintf("vscode://file%s/%s", cwd, getPos(y))
+	case api.Message:
+		return fmt.Sprintf("vscode://file%s/%s", cwd, getPos(y, 1))
 	case api.Note:
-		return fmt.Sprintf("vscode://file%s/%s", cwd, getPos(y))
+		return fmt.Sprintf("vscode://file%s/%s", cwd, getPos(y, 1))
 	}
 	panic("Internal error")
 }
 
-func (m Message) Format(kind MessageKind) string {
+func formatMessage(m api.Message, kind MessageKind) string {
 	var class, typ string
 	switch kind {
 	case Error:
@@ -414,7 +412,7 @@ func (m Message) Format(kind MessageKind) string {
     %s | %s<span class="focus">%s</span>
 `,
 		getVSCodePos(m),
-		getPos(m),
+		getPos(m, 0),
 		class,
 		typ,
 		m.Text,
@@ -438,8 +436,8 @@ func (m Message) Format(kind MessageKind) string {
     %d │ %s<span class="focus">%s</span>%s
     %s | %s<span class="focus">%s</span>
 `,
-				getVSCodePos(m),
-				getPos(m),
+				getVSCodePos(n),
+				getPos(n, 0),
 				n.Text,
 				n.Location.Line,
 				html.EscapeString(n.Location.LineText[:n.Location.Column]),
@@ -452,22 +450,24 @@ func (m Message) Format(kind MessageKind) string {
 		}
 	}
 	str = strings.ReplaceAll(str, "\t", "  ")
-	// str = strings.TrimSpace(str)
-	str += "\n"
 	return str
 }
 
 func (r BuildResponse) HTML() string {
 	var body string
+
 	for _, msg := range r.Errors {
-		body += `<pre><code>` +
-			Message(msg).Format(Error) +
-			`</code></pre>`
+		if body != "" {
+			body += "<br>"
+		}
+		body += `<pre><code>` + formatMessage(msg, Error) + `</code></pre>`
 	}
+
 	for _, msg := range r.Warnings {
-		body += `<pre><code>` +
-			Message(msg).Format(Warning) +
-			`</code></pre>`
+		if body != "" {
+			body += "<br>"
+		}
+		body += `<pre><code>` + formatMessage(msg, Warning) + `</code></pre>`
 	}
 
 	return `<!DOCTYPE html>
@@ -476,12 +476,93 @@ func (r BuildResponse) HTML() string {
 		<title>` + fmt.Sprintf("Error: %s", r.Errors[0].Text) + `</title>
 		<style>
 
+/*
+ * Reset
+ */
+
+/*! minireset.css v0.0.6 | MIT License | github.com/jgthms/minireset.css */
+html,
+body,
+p,
+ol,
+ul,
+li,
+dl,
+dt,
+dd,
+blockquote,
+figure,
+fieldset,
+legend,
+textarea,
+pre,
+iframe,
+hr,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  padding: 0;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: 100%;
+  font-weight: normal;
+}
+ul {
+  list-style: none;
+}
+button,
+input,
+select {
+  margin: 0;
+}
+html {
+  box-sizing: border-box;
+}
 *,
 *::before,
 *::after {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box
+  box-sizing: inherit;
+}
+img,
+video {
+  height: auto;
+  max-width: 100%;
+}
+iframe {
+  border: 0;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+td,
+th {
+  padding: 0;
+}
+
+/*
+ * CSS
+ */
+
+:root {
+	--inset: 14px;
+
+	--color: #c7c7c7;
+	--bg: #000000;
+
+	--bold: #feffff;
+	--red: #ff6d67;
+	--yellow: #fefb67;
+	--focus: #00c200;
 }
 
 body {
@@ -490,27 +571,28 @@ body {
 }
 
 .console {
-	padding: 1em;
+	padding: var(--inset);
 }
 
 code {
-	font-family: "Monaco", monospace;
+	font:
+		var(--inset) /
+		calc(1.5 * var(--inset))
+		"Monaco", monospace;
 }
 
 a { color: unset; text-decoration: unset; }
 a:hover { text-decoration: underline; }
 
-.bold { color: #feffff; }
-.red { color: #ff6d67; }
-.yellow { color: #fefb67; }
-.focus { color: #00c200; }
+.bold   { color: var(--bold);   }
+.red    { color: var(--red);    }
+.yellow { color: var(--yellow); }
+.focus  { color: var(--focus);  }
 
 		</style>
 	</head>
 	<body>
-		<div class="console">
-			` + body + `
-		</div>
+		<div class="console">` + body + `</div>
 		<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => { localStorage.setItem("/~dev", "" + Date.now()); window.location.reload() }); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} }); window.addEventListener("storage", e => { if (e.key === "/~dev") { window.location.reload() } })</script>
 	</body>
 </html>
