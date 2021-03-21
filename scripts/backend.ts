@@ -208,28 +208,34 @@ async function serverRouteString({ Runtime, ServerRoute }: serverRouteStringPara
 		head = head.replace(/></g, ">\n\t\t<").replace(/\/>/g, " />")
 	}
 
-	let body = `
-		<noscript>You need to enable JavaScript to run this app.</noscript>
-		<div id="root"></div>
-		<script src="/app.js"></script>
-		<script type="module">
-			const dev = new EventSource("/~dev")
-			dev.addEventListener("reload", () => {
-				localStorage.setItem("/~dev", "" + Date.now())
-				window.location.reload()
-			})
-			dev.addEventListener("error", e => {
-				try {
-					console.error(JSON.parse(e.data))
-				} catch {}
-			})
-			window.addEventListener("storage", e => {
-				if (e.key === "/~dev") {
-					window.location.reload()
-				}
-			})
-		</script>
-	`.trim()
+	// let body = `
+	// 	<noscript>You need to enable JavaScript to run this app.</noscript>
+	// 	<div id="root"></div>
+	// 	<script src="/app.js"></script>
+	// 	<script type="module">
+	// 		const dev = new EventSource("/~dev")
+	// 		dev.addEventListener("reload", () => {
+	// 			localStorage.setItem("/~dev", "" + Date.now())
+	// 			window.location.reload()
+	// 		})
+	// 		dev.addEventListener("error", e => {
+	// 			try {
+	// 				console.error(JSON.parse(e.data))
+	// 			} catch {}
+	// 		})
+	// 		window.addEventListener("storage", e => {
+	// 			if (e.key === "/~dev") {
+	// 				window.location.reload()
+	// 			}
+	// 		})
+	// 	</script>
+	// `.trim()
+
+	let body = ""
+	body += `<noscript>You need to enable JavaScript to run this app.</noscript>`
+	body += `\n\t\t<div id="root"></div>`
+	body += `\n\t\t<script src="/app.js"></script>`
+	body += `\n\t\t<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => { localStorage.setItem("/~dev", "" + Date.now()); window.location.reload() }); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} }); window.addEventListener("storage", e => { if (e.key === "/~dev") { window.location.reload() } })</script>`
 	if (typeof mod.default === "function") {
 		body = body.replace(
 			`<div id="root"></div>`,
@@ -357,39 +363,46 @@ async function main(): Promise<void> {
 	while (true) {
 		const encoded = await readline()
 		const msg: T.Message = JSON.parse(encoded)
-		switch (msg.Kind) {
-			case "resolve_server_router":
-				stdout({
-					Kind: "eof",
-					Data: await resolveServerRouter(msg.Data),
-				})
-				break
-			case "server_route_string":
-				stdout({
-					Kind: "eof",
-					Data: await serverRouteString(msg.Data),
-				})
-				break
-			case "server_router_string":
-				stdout({
-					Kind: "eof",
-					Data: await serverRouterString(msg.Data),
-				})
-				break
-			case "build":
-				stdout({
-					Kind: "eof",
-					Data: await build(msg.Data),
-				})
-				break
-			case "rebuild":
-				stdout({
-					Kind: "eof",
-					Data: await rebuild(),
-				})
-				break
-			default:
-				throw new Error("Internal error")
+		try {
+			switch (msg.Kind) {
+				case "resolve_server_router":
+					stdout({
+						Kind: "eof",
+						Data: await resolveServerRouter(msg.Data),
+					})
+					break
+				case "server_route_string":
+					stdout({
+						Kind: "eof",
+						Data: await serverRouteString(msg.Data),
+					})
+					break
+				case "server_router_string":
+					stdout({
+						Kind: "eof",
+						Data: await serverRouterString(msg.Data),
+					})
+					break
+				case "build":
+					stdout({
+						Kind: "eof",
+						Data: await build(msg.Data),
+					})
+					break
+				case "rebuild":
+					stdout({
+						Kind: "eof",
+						Data: await rebuild(),
+					})
+					break
+				default:
+					throw new Error("Internal error")
+			}
+		} catch (error) {
+			// if (error.message === "Internal error") {
+			// 	throw error
+			// }
+			stderr(error.stack)
 		}
 	}
 }

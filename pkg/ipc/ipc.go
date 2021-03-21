@@ -17,20 +17,20 @@ type ResponseMessage struct {
 }
 
 // NewCommand starts a new IPC command.
-func NewCommand(args ...string) (stdin chan RequestMessage, stdout chan ResponseMessage, stderr chan string, err error) {
+func NewCommand(args ...string) (stdin chan RequestMessage, stdout chan ResponseMessage, stderr chan string, service Service, err error) {
 	cmd := exec.Command(args[0], args[1:]...)
 
 	stdinPipe, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, Service{}, err
 	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, Service{}, err
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, Service{}, err
 	}
 
 	stdin = make(chan RequestMessage)
@@ -93,10 +93,14 @@ func NewCommand(args ...string) (stdin chan RequestMessage, stdout chan Response
 
 	// Start the command
 	if err := cmd.Start(); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, Service{}, err
 	}
-	return stdin, stdout, stderr, nil
+
+	service = Service{Stdin: stdin, Stdout: stdout, Stderr: stderr}
+	return stdin, stdout, stderr, service, nil
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 type Service struct {
 	Stdin  chan RequestMessage

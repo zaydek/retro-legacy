@@ -531,21 +531,16 @@ a:hover { text-decoration: underline; }
 }
 
 func (r Runtime) Dev() {
-	stdin, stdout, stderr, err := ipc.NewCommand("node", filepath.Join("scripts", "backend.esbuild.js"))
+	//////////////////////////////////////////////////////////////////////////////
+	// Server API
+
+	stdin, stdout, stderr, service, err := ipc.NewCommand("node", filepath.Join("scripts", "backend.esbuild.js"))
 	if err != nil {
 		panic(err)
 	}
 	defer close(stdin)
 
-	service := ipc.Service{Stdin: stdin, Stdout: stdout, Stderr: stderr}
-
-	//////////////////////////////////////////////////////////////////////////////
-	// Server API
-
 	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
-
-	// fmt.Println()
-	// logger.OK("'serverProps' and 'serverPaths'…")
 
 	// var start, once time.Time
 	var once time.Time
@@ -568,16 +563,35 @@ loop:
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
-				fmt.Println()
 				// fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(start))))
+				fmt.Println()
 				fmt.Println(terminal.Dim("---"))
 				fmt.Println()
 				break loop
 			default:
 				panic("Internal error")
 			}
-		case err := <-stderr:
-			stdio_logger.Stderr(err)
+		case stack := <-stderr:
+
+			type V8StackFrame struct {
+				Caller string // E.g. Object.<anonymous>
+				Path   string // E.g. foo/bar/baz.ext
+				Line   string // E.g. 1
+				Column string // E.g. 2
+			}
+
+			type V8StackTrace struct {
+				Error  string
+				Frames []V8StackFrame
+			}
+
+			newV8Trace := func(stack string) V8StackTrace {
+				return V8StackTrace{}
+			}
+
+			// stdio_logger.Stderr(err)
+			bstr, _ := json.Marshal(newV8Trace(stack))
+			fmt.Println(string(bstr))
 			os.Exit(1)
 		}
 	}

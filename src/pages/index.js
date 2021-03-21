@@ -1,6 +1,8 @@
-// import Nav from "./Nav_"
+import Nav from "./Nav_"
 
 import React, { useState } from "react"
+
+throw new Error("oops")
 
 export function Head() {
 	return <title>Welcome to my wonderful website.</title>
