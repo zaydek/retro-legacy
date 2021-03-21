@@ -476,85 +476,19 @@ func (r BuildResponse) HTML() string {
 		<title>` + fmt.Sprintf("Error: %s", r.Errors[0].Text) + `</title>
 		<style>
 
-/*
- * Reset
- */
-
-/*! minireset.css v0.0.6 | MIT License | github.com/jgthms/minireset.css */
-html,
-body,
-p,
-ol,
-ul,
-li,
-dl,
-dt,
-dd,
-blockquote,
-figure,
-fieldset,
-legend,
-textarea,
-pre,
-iframe,
-hr,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  margin: 0;
-  padding: 0;
-}
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-size: 100%;
-  font-weight: normal;
-}
-ul {
-  list-style: none;
-}
-button,
-input,
-select {
-  margin: 0;
-}
-html {
-  box-sizing: border-box;
-}
 *,
 *::before,
 *::after {
-  box-sizing: inherit;
-}
-img,
-video {
-  height: auto;
-  max-width: 100%;
-}
-iframe {
-  border: 0;
-}
-table {
-  border-collapse: collapse;
-  border-spacing: 0;
-}
-td,
-th {
-  padding: 0;
-}
+	/* Zero-out margin and padding */
+	margin: 0;
+	padding: 0;
 
-/*
- * CSS
- */
+	/* Reset border-box */
+  box-sizing: border-box;
+}
 
 :root {
-	--inset: 14px;
+	--font-size: 14px;
 
 	--color: #c7c7c7;
 	--bg: #000000;
@@ -570,29 +504,26 @@ body {
   background-color: #000000;
 }
 
-.console {
-	padding: var(--inset);
+.terminal {
+	padding: var(--font-size);
 }
 
 code {
-	font:
-		var(--inset) /
-		calc(1.5 * var(--inset))
-		"Monaco", monospace;
+	font: var(--font-size) / calc(1.5 * var(--font-size)) "Monaco", monospace;
 }
 
 a { color: unset; text-decoration: unset; }
 a:hover { text-decoration: underline; }
 
-.bold   { color: var(--bold);   }
-.red    { color: var(--red);    }
+.bold { color: var(--bold); }
+.red { color: var(--red); }
 .yellow { color: var(--yellow); }
-.focus  { color: var(--focus);  }
+.focus { color: var(--focus); }
 
 		</style>
 	</head>
 	<body>
-		<div class="console">` + body + `</div>
+		<div class="terminal">` + body + `</div>
 		<script type="module">const dev = new EventSource("/~dev"); dev.addEventListener("reload", () => { localStorage.setItem("/~dev", "" + Date.now()); window.location.reload() }); dev.addEventListener("error", e => { try { console.error(JSON.parse(e.data)) } catch {} }); window.addEventListener("storage", e => { if (e.key === "/~dev") { window.location.reload() } })</script>
 	</body>
 </html>
@@ -600,8 +531,6 @@ a:hover { text-decoration: underline; }
 }
 
 func (r Runtime) Dev() {
-	stdio_logger.Set(stdio_logger.LoggerOptions{Time: true})
-
 	stdin, stdout, stderr, err := ipc.NewCommand("node", filepath.Join("scripts", "backend.esbuild.js"))
 	if err != nil {
 		panic(err)
@@ -614,6 +543,9 @@ func (r Runtime) Dev() {
 	// Server API
 
 	stdin <- ipc.RequestMessage{Kind: "resolve_server_router", Data: r}
+
+	// fmt.Println()
+	// logger.OK("'serverProps' and 'serverPaths'…")
 
 	// var start, once time.Time
 	var once time.Time
@@ -636,8 +568,10 @@ loop:
 				if err := json.Unmarshal(msg.Data, &r.SrvRouter); err != nil {
 					panic(err)
 				}
-				// fmt.Println()
+				fmt.Println()
 				// fmt.Println(terminal.Dimf("(%s)", prettyDuration(time.Since(start))))
+				fmt.Println(terminal.Dim("---"))
+				fmt.Println()
 				break loop
 			default:
 				panic("Internal error")
@@ -785,7 +719,6 @@ loop:
 		for {
 			select {
 			case res := <-browser:
-				fmt.Println(res)
 				bstr, err := json.Marshal(res)
 				if err != nil {
 					panic(err)
@@ -797,8 +730,6 @@ loop:
 			}
 		}
 	})
-
-	// fmt.Println()
 
 	port := r.getPort()
 	if err := http.ListenAndServe(":"+port, nil); err != nil {

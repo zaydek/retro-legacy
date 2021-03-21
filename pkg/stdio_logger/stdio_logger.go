@@ -51,28 +51,30 @@ func (l *StdioLogger) Set(opt LoggerOptions) {
 }
 
 func (l *StdioLogger) Stdout(args ...interface{}) {
+	var tstr string
+	if l.format != "" {
+		tstr += terminal.Dim(time.Now().Format(l.format))
+		tstr += "  "
+	}
+
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
-		var tstr string
-		if l.format != "" {
-			tstr += terminal.Dim(time.Now().Format(l.format))
-			tstr += "  "
-		}
-		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, terminal.BoldCyan("stdout"), line)
+		lines[x] = fmt.Sprintf("%s%s\x1b[0m", tstr, line)
 	}
 	fmt.Fprintln(os.Stdout, strings.Join(lines, "\n"))
 }
 
 func (l *StdioLogger) Stderr(args ...interface{}) {
+	var tstr string
+	if l.format != "" {
+		tstr += terminal.Dim(time.Now().Format(l.format))
+		tstr += "  "
+	}
+
 	str := strings.TrimRight(fmt.Sprint(args...), "\n")
 	lines := strings.Split(str, "\n")
 	for x, line := range lines {
-		var tstr string
-		if l.format != "" {
-			tstr += terminal.Dim(time.Now().Format(l.format))
-			tstr += "  "
-		}
 		lines[x] = fmt.Sprintf("%s%s %s\x1b[0m", tstr, terminal.BoldRed("stderr"), line)
 	}
 	fmt.Fprintln(os.Stderr, strings.Join(lines, "\n"))

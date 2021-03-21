@@ -54,24 +54,30 @@ func prettyFilepath(filepath string, primary, secondary func(args ...interface{}
 }
 
 func prettyServerRoute(dirs DirConfiguration, srvRoute ServerRoute, dur time.Duration) string {
-	primary := terminal.Normal
+	primary := terminal.Bold
 	if srvRoute.Route.Type == "dynamic" {
-		primary = terminal.Cyan
+		primary = terminal.Bold
 	}
 
 	secondary := terminal.Dim
 	if srvRoute.Route.Type == "dynamic" {
-		secondary = terminal.DimCyan
+		secondary = terminal.Dim
 	}
 
-	entry := srvRoute.Route.Source[len(dirs.SrcPagesDir):]
+	// entry := srvRoute.Route.Source[len(dirs.SrcPagesDir):]
 	pathname := indexify(srvRoute.Route.Pathname)
 
 	var str string
-	str += prettyFilepath(entry, primary, secondary)
-	str += " "
-	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry)))
-	str += " "
+	// str += primary("→")
+	// str += " "
+	// if srvRoute.Route.Type == "dynamic" {
+	// 	// str += prettyFilepath(entry, primary, secondary)
+	// 	// str += " "
+	// 	str += primary("→")
+	// 	str += " "
+	// }
+	// str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(entry)))
+	// str += " "
 	str += prettyFilepath(pathname, primary, secondary)
 	if dur > time.Millisecond {
 		str += " "
@@ -88,9 +94,9 @@ type ServeArgs struct {
 }
 
 func prettyServeEvent(args ServeArgs) string {
-	primary := terminal.Normal
+	primary := terminal.Bold
 	if args.StatusCode != 200 {
-		primary = terminal.Red
+		primary = terminal.BoldRed
 	}
 
 	secondary := terminal.Dim
@@ -99,11 +105,14 @@ func prettyServeEvent(args ServeArgs) string {
 	}
 
 	var str string
+	// str += secondary(fmt.Sprintf("http://localhost:8000"))
 	str += prettyFilepath(args.Path, primary, secondary)
-	str += " "
-	str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(args.Path)))
-	str += " "
-	str += primary(args.StatusCode)
+	if args.StatusCode != 200 {
+		str += " "
+		// str += terminal.Dim(strings.Repeat("-", MAX_LEN-len(args.Path)))
+		// str += " "
+		str += primary(args.StatusCode)
+	}
 	if args.Duration > time.Millisecond {
 		str += " "
 		str += secondary(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
