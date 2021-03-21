@@ -658,8 +658,8 @@ loop:
 		if stderr, err := service.Send(ipc.RequestMessage{Kind: "server_route_string", Data: Data{Runtime: r, ServerRoute: srvRoute}}, &contents); err != nil {
 			panic(err)
 		} else if stderr != "" {
-			stdio_logger.Stderr(stderr)           // TODO
-			logServeEvent500(sys_pathname, start) // TODO
+			stdio_logger.Stderr(stderr) // TODO
+			// logServeEvent500(sys_pathname, start) // TODO
 			return
 		}
 		if err := os.MkdirAll(filepath.Dir(srvRoute.Route.Target), MODE_DIR); err != nil {

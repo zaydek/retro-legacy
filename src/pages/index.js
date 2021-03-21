@@ -2,7 +2,7 @@ import Nav from "./Nav_"
 
 import React, { useState } from "react"
 
-throw new Error("oops")
+// throw new Error("oops")
 
 export function Head() {
 	return <title>Welcome to my wonderful website.</title>
@@ -10,6 +10,11 @@ export function Head() {
 
 export default function Body() {
 	const [state, setState] = useState("Hello, world!")
+
+	// React.useLayoutEffect(() => {
+	// 	console.log("Hello, world!")
+	// }, [])
+
 	return (
 		<div>
 			<Nav />
