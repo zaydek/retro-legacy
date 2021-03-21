@@ -21,6 +21,7 @@ import (
 	"github.com/zaydek/retro/pkg/logger"
 	"github.com/zaydek/retro/pkg/stdio_logger"
 	"github.com/zaydek/retro/pkg/terminal"
+	v8 "github.com/zaydek/retro/pkg/v8"
 	"github.com/zaydek/retro/pkg/watch"
 )
 
@@ -573,25 +574,12 @@ loop:
 			}
 		case stack := <-stderr:
 
-			type V8StackFrame struct {
-				Caller string // E.g. Object.<anonymous>
-				Path   string // E.g. foo/bar/baz.ext
-				Line   string // E.g. 1
-				Column string // E.g. 2
-			}
+			// logger.SourceError(source, trace.Frames[0].Line, trace.Frames[0].Column, errors.New(prettyV8StackTrace(trace)))
 
-			type V8StackTrace struct {
-				Error  string
-				Frames []V8StackFrame
-			}
+			trace := v8.NewStackTrace(stack)
 
-			newV8Trace := func(stack string) V8StackTrace {
-				return V8StackTrace{}
-			}
-
-			// stdio_logger.Stderr(err)
-			bstr, _ := json.Marshal(newV8Trace(stack))
-			fmt.Println(string(bstr))
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, prettyV8StackTrace(trace))
 			os.Exit(1)
 		}
 	}

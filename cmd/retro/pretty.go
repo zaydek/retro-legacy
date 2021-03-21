@@ -2,12 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/zaydek/retro/pkg/terminal"
+	v8 "github.com/zaydek/retro/pkg/v8"
 )
 
 const MAX_LEN = 40
@@ -118,4 +121,71 @@ func prettyServeEvent(args ServeArgs) string {
 		str += secondary(fmt.Sprintf("(%s)", prettyDuration(args.Duration)))
 	}
 	return str
+}
+
+func prettyV8StackTrace(trace v8.StackTrace) string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	var out string
+	for _, frame := range trace.Frames {
+		var caller string
+		if frame.Caller == "Object.<anonymous>" {
+			caller = "<anonymous>"
+		} else {
+			caller += fmt.Sprintf("%s(...)", frame.Caller)
+		}
+
+		var background bool
+
+		// Step-over node:internal frames
+		if strings.HasPrefix(frame.Source, "node:internal") {
+			// continue
+			background = true
+		}
+
+		// /Users/...
+		source := frame.Source
+		if strings.HasPrefix(source, string(filepath.Separator)) {
+			source, err = filepath.Rel(cwd, source)
+			if err != nil {
+				panic(err)
+			}
+			// node_modules/...
+			if strings.HasPrefix(source, "node_modules") {
+				source, err = filepath.Rel(cwd, "node_modules")
+				if err != nil {
+					panic(err)
+				}
+				background = true
+			}
+		}
+
+		sprintf := fmt.Sprintf
+		if background {
+			sprintf = terminal.Dimf
+		}
+
+		if out != "" {
+			out += "\n"
+		}
+		out += sprintf("   %s\n     %s:%d:%d", caller, source, frame.Line, frame.Column)
+	}
+
+	source, err := filepath.Rel(cwd, trace.Frames[0].Source)
+	if err != nil {
+		panic(err)
+	}
+
+	pretty := fmt.Sprintf("%s\n\n%s\n",
+		terminal.Boldf(" > %s: %s %s",
+			fmt.Sprintf("%s:%d:%d", source, trace.Frames[0].Line, trace.Frames[0].Column),
+			terminal.Red("error:"),
+			trace.Error,
+		),
+		out,
+	)
+	return pretty
 }

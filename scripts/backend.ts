@@ -39,7 +39,10 @@ async function resolveModule<Module extends T.AnyModule>(runtime: T.Runtime, sou
 			// Etc.
 			external: ["react", "react-dom"], // Dedupe React APIs
 			format: "cjs",
-			// sourcemap: true, // TODO
+
+			// Source map support
+			banner: { js: `require("source-map-support").install();\n` },
+			sourcemap: true,
 		})
 		buildRes.warnings = result.warnings
 	} catch (error) {
